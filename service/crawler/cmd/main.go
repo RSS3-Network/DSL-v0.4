@@ -1,29 +1,22 @@
 package main
 
 import (
-	"net"
-
 	"github.com/naturalselectionlabs/pregod/common/constant"
-	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
-	"github.com/naturalselectionlabs/pregod/service/hub/internal/server"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/server"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 var rootCommand = cobra.Command{
-	Use:           "hub",
+	Use:           "crawler",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Version:       constant.Version,
 }
 
 func main() {
-	srv := server.New(&config.Config{
-		HTTP: &config.HTTP{
-			Host: net.IPv4zero.String(),
-			Port: 80,
-		},
-	})
+	srv := server.New(&config.Config{})
 
 	rootCommand.RunE = func(cmd *cobra.Command, args []string) error {
 		return srv.Run()

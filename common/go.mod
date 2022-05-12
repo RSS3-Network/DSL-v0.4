@@ -2,7 +2,10 @@ module github.com/naturalselectionlabs/pregod/common
 
 go 1.18
 
-require entgo.io/ent v0.10.1
+require (
+	entgo.io/ent v0.10.1
+	github.com/ethereum/go-ethereum v1.10.17
+)
 
 require (
 	ariga.io/atlas v0.3.7-0.20220303204946-787354f533c3 // indirect
@@ -15,7 +18,9 @@ require (
 	github.com/mitchellh/go-wordwrap v0.0.0-20150314170334-ad45545899c7 // indirect
 	github.com/stretchr/testify v1.7.1 // indirect
 	github.com/zclconf/go-cty v1.8.0 // indirect
+	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122 // indirect
 	golang.org/x/mod v0.5.1 // indirect
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f // indirect
 )
