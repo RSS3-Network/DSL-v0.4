@@ -1,4 +1,4 @@
-package message
+package protocol
 
 type Message struct {
 	Address string `json:"address"`

@@ -5,8 +5,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database"
-	"github.com/naturalselectionlabs/pregod/common/message"
 	"github.com/naturalselectionlabs/pregod/common/moralis"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/indexer"
 	"github.com/sirupsen/logrus"
@@ -21,12 +21,12 @@ type Indexer struct {
 }
 
 func (i *Indexer) Initialize() error {
-	i.moralisClient = moralis.NewClient(i.config.RabbitMQ.URL)
+	i.moralisClient = moralis.NewClient(i.config.Moralis.Key)
 
 	return nil
 }
 
-func (i *Indexer) Handle(message *message.Message) error {
+func (i *Indexer) Handle(message *protocol.Message) error {
 	transfers, _, err := i.moralisClient.GetTokenTransfers(context.Background(), common.HexToAddress(message.Address), nil)
 	if err != nil {
 		return err

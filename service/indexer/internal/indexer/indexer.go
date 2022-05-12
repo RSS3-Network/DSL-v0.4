@@ -1,8 +1,8 @@
 package indexer
 
-import "github.com/naturalselectionlabs/pregod/common/message"
+import "github.com/naturalselectionlabs/pregod/common/protocol"
 
 type Worker interface {
 	Initialize() error
-	Handle(message *message.Message) error
+	Handle(message *protocol.Message) error
 }

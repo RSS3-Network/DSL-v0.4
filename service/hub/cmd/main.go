@@ -23,6 +23,9 @@ func main() {
 			Host: net.IPv4zero.String(),
 			Port: 80,
 		},
+		RabbitMQ: &config.RabbitMQ{
+			URL: "",
+		},
 	})
 
 	rootCommand.RunE = func(cmd *cobra.Command, args []string) error {

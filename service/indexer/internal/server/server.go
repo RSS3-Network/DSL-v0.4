@@ -1,9 +1,11 @@
 package server
 
 import (
+	"encoding/json"
+
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
-	"github.com/naturalselectionlabs/pregod/common/message"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
@@ -15,6 +17,7 @@ type Server struct {
 	config             *config.Config
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
+	rabbitmqQueue      rabbitmq.Queue
 	databaseClient     *database.Client
 }
 
@@ -29,6 +32,24 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	if err := s.rabbitmqChannel.ExchangeDeclare(
+		protocol.ExchangeJob, "direct", true, false, false, false, nil,
+	); err != nil {
+		return err
+	}
+
+	if s.rabbitmqQueue, err = s.rabbitmqChannel.QueueDeclare(
+		"", false, false, false, false, nil,
+	); err != nil {
+		return err
+	}
+
+	if err := s.rabbitmqChannel.QueueBind(
+		s.rabbitmqQueue.Name, "", protocol.ExchangeJob, false, nil,
+	); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -37,26 +58,24 @@ func (s *Server) Run() error {
 		return err
 	}
 
-	queue, err := s.rabbitmqChannel.QueueDeclare("", false, false, false, false, nil)
-	if err != nil {
-		return err
-	}
-
-	if err := s.rabbitmqChannel.QueueBind(queue.Name, "", "", false, nil); err != nil {
-		return err
-	}
-
-	deliveryCh, err := s.rabbitmqChannel.Consume(queue.Name, "", false, false, false, false, nil)
+	deliveryCh, err := s.rabbitmqChannel.Consume(s.rabbitmqQueue.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return err
 	}
 
 	for delivery := range deliveryCh {
-		logrus.Infoln(delivery)
+		message := protocol.Message{}
+		if err := json.Unmarshal(delivery.Body, &message); err != nil {
+			logrus.Errorln(err)
+
+			continue
+		}
+
+		logrus.Infoln(message.Address, message.Network)
 
 		switch "" {
-		case message.NetworkEthereum, message.NetworkPolygon, message.NetworkBinanceSmartCain:
-		case message.NetworkZkSync:
+		case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartCain:
+		case protocol.NetworkZkSync:
 		}
 	}
 

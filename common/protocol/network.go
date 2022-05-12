@@ -1,4 +1,4 @@
-package message
+package protocol
 
 const (
 	NetworkEthereum         = "ethereum"

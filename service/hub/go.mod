@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/labstack/echo v3.3.10+incompatible
+	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
 )
