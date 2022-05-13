@@ -4,6 +4,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -16,6 +17,12 @@ type TransactionCreate struct {
 	config
 	mutation *TransactionMutation
 	hooks    []Hook
+}
+
+// SetHash sets the "hash" field.
+func (tc *TransactionCreate) SetHash(s string) *TransactionCreate {
+	tc.mutation.SetHash(s)
+	return tc
 }
 
 // Mutation returns the TransactionMutation object of the builder.
@@ -88,6 +95,9 @@ func (tc *TransactionCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (tc *TransactionCreate) check() error {
+	if _, ok := tc.mutation.Hash(); !ok {
+		return &ValidationError{Name: "hash", err: errors.New(`database: missing required field "Transaction.hash"`)}
+	}
 	return nil
 }
 
@@ -115,6 +125,14 @@ func (tc *TransactionCreate) createSpec() (*Transaction, *sqlgraph.CreateSpec) {
 			},
 		}
 	)
+	if value, ok := tc.mutation.Hash(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transaction.FieldHash,
+		})
+		_node.Hash = value
+	}
 	return _node, _spec
 }
 

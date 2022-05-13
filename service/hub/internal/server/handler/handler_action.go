@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -13,7 +14,7 @@ type GetActionListRequest struct {
 }
 
 func (h *Handler) GetActionListFunc(c echo.Context) error {
-	tracer := h.TracerProvider.Tracer("get_action_list")
+	tracer := h.TracerProvider.Tracer("handler_get_action_list")
 
 	ctx, spanHTTPHandler := tracer.Start(c.Request().Context(), "http")
 	defer spanHTTPHandler.End()
@@ -45,11 +46,12 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 
 	ctx, spanDatabase := tracer.Start(ctx, "postgres")
 
-	if _, err := h.DatabaseClient.Transaction.Query().All(ctx); err != nil {
+	transfers, err := h.DatabaseClient.Transfer.Query().All(ctx)
+	if err != nil {
 		return err
 	}
 
 	spanDatabase.End()
 
-	return nil
+	return c.JSON(http.StatusOK, transfers)
 }

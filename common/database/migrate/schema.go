@@ -11,6 +11,7 @@ var (
 	// TransactionsColumns holds the columns for the "transactions" table.
 	TransactionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "hash", Type: field.TypeString},
 	}
 	// TransactionsTable holds the schema information for the "transactions" table.
 	TransactionsTable = &schema.Table{
@@ -18,9 +19,24 @@ var (
 		Columns:    TransactionsColumns,
 		PrimaryKey: []*schema.Column{TransactionsColumns[0]},
 	}
+	// TransfersColumns holds the columns for the "transfers" table.
+	TransfersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "transaction_hash", Type: field.TypeString},
+		{Name: "transaction_log_index", Type: field.TypeInt},
+	}
+	// TransfersTable holds the schema information for the "transfers" table.
+	TransfersTable = &schema.Table{
+		Name:       "transfers",
+		Columns:    TransfersColumns,
+		PrimaryKey: []*schema.Column{TransfersColumns[0]},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		TransactionsTable,
+		TransfersTable,
 	}
 )
 

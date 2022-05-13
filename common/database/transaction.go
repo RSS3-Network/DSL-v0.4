@@ -12,9 +12,11 @@ import (
 
 // Transaction is the model entity for the Transaction schema.
 type Transaction struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// Hash holds the value of the "hash" field.
+	Hash string `json:"hash,omitempty"`
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -24,6 +26,8 @@ func (*Transaction) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case transaction.FieldID:
 			values[i] = new(sql.NullInt64)
+		case transaction.FieldHash:
+			values[i] = new(sql.NullString)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Transaction", columns[i])
 		}
@@ -45,6 +49,12 @@ func (t *Transaction) assignValues(columns []string, values []interface{}) error
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			t.ID = int(value.Int64)
+		case transaction.FieldHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field hash", values[i])
+			} else if value.Valid {
+				t.Hash = value.String
+			}
 		}
 	}
 	return nil
@@ -73,6 +83,8 @@ func (t *Transaction) String() string {
 	var builder strings.Builder
 	builder.WriteString("Transaction(")
 	builder.WriteString(fmt.Sprintf("id=%v", t.ID))
+	builder.WriteString(", hash=")
+	builder.WriteString(t.Hash)
 	builder.WriteByte(')')
 	return builder.String()
 }

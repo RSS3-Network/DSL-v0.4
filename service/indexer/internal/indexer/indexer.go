@@ -1,8 +1,11 @@
 package indexer
 
-import "github.com/naturalselectionlabs/pregod/common/protocol"
+import (
+	"context"
+
+	"github.com/naturalselectionlabs/pregod/common/protocol"
+)
 
 type Worker interface {
-	Initialize() error
-	Handle(message *protocol.Message) error
+	Handle(ctx context.Context, message *protocol.Message) error
 }

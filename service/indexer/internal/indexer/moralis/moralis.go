@@ -4,34 +4,47 @@ import (
 	"context"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/moralis"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/indexer"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/sdk/trace"
 )
 
 var _ indexer.Worker = &Indexer{}
 
 type Indexer struct {
-	config         *configx.Moralis
-	databaseClient *database.Client
-	moralisClient  *moralis.Client
+	DatabaseClient *database.Client
+	MoralisClient  *moralis.Client
+	TracerProvider *trace.TracerProvider
 }
 
-func (i *Indexer) Initialize() error {
-	i.moralisClient = moralis.NewClient(i.config.Key)
+func (i *Indexer) Handle(ctx context.Context, message *protocol.Message) error {
+	tracer := i.TracerProvider.Tracer("worker_moralis")
 
-	return nil
-}
+	ctx, spanWorkerHandler := tracer.Start(ctx, "worker")
+	defer spanWorkerHandler.End()
 
-func (i *Indexer) Handle(message *protocol.Message) error {
+	ctx, spanMoralisHandler := tracer.Start(ctx, "moralis")
+
 	// TODO Query latest timestamp
-	transfers, _, err := i.moralisClient.GetNFTTransfers(context.Background(), common.HexToAddress(message.Address), nil)
+	transfers, _, err := i.MoralisClient.GetNFTTransfers(context.Background(), common.HexToAddress(message.Address), nil)
 	if err != nil {
 		return err
 	}
+
+	spanMoralisHandler.End()
+
+	ctx, spanDatabaseHandler := tracer.Start(ctx, "postgres")
+	tx, err := i.DatabaseClient.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		_ = tx.Rollback()
+	}()
 
 	switch message.Network {
 	case protocol.NetworkEthereum:
@@ -40,14 +53,22 @@ func (i *Indexer) Handle(message *protocol.Message) error {
 	}
 
 	for _, transfer := range transfers {
-		logrus.Infoln(transfer)
+		if err := tx.Transfer.
+			Create().
+			SetTransactionHash(transfer.TransactionHash).
+			SetTransactionLogIndex(transfer.LogIndex).
+			Exec(ctx); err != nil {
+			logrus.Errorln(err)
+
+			return err
+		}
 	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	spanDatabaseHandler.End()
 
 	return nil
-}
-
-func New(config *configx.Moralis) indexer.Worker {
-	return &Indexer{
-		config: config,
-	}
 }

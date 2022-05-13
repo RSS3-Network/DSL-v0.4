@@ -7,6 +7,8 @@ const (
 	Label = "transaction"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldHash holds the string denoting the hash field in the database.
+	FieldHash = "hash"
 	// Table holds the table name of the transaction in the database.
 	Table = "transactions"
 )
@@ -14,6 +16,7 @@ const (
 // Columns holds all SQL columns for transaction fields.
 var Columns = []string{
 	FieldID,
+	FieldHash,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

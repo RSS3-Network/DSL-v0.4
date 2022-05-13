@@ -27,6 +27,12 @@ func (tu *TransactionUpdate) Where(ps ...predicate.Transaction) *TransactionUpda
 	return tu
 }
 
+// SetHash sets the "hash" field.
+func (tu *TransactionUpdate) SetHash(s string) *TransactionUpdate {
+	tu.mutation.SetHash(s)
+	return tu
+}
+
 // Mutation returns the TransactionMutation object of the builder.
 func (tu *TransactionUpdate) Mutation() *TransactionMutation {
 	return tu.mutation
@@ -104,6 +110,13 @@ func (tu *TransactionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := tu.mutation.Hash(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transaction.FieldHash,
+		})
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, tu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{transaction.Label}
@@ -121,6 +134,12 @@ type TransactionUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *TransactionMutation
+}
+
+// SetHash sets the "hash" field.
+func (tuo *TransactionUpdateOne) SetHash(s string) *TransactionUpdateOne {
+	tuo.mutation.SetHash(s)
+	return tuo
 }
 
 // Mutation returns the TransactionMutation object of the builder.
@@ -223,6 +242,13 @@ func (tuo *TransactionUpdateOne) sqlSave(ctx context.Context) (_node *Transactio
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := tuo.mutation.Hash(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transaction.FieldHash,
+		})
 	}
 	_node = &Transaction{config: tuo.config}
 	_spec.Assign = _node.assignValues

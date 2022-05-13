@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/migrate"
 
 	"github.com/naturalselectionlabs/pregod/common/database/transaction"
+	"github.com/naturalselectionlabs/pregod/common/database/transfer"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
@@ -22,6 +23,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// Transaction is the client for interacting with the Transaction builders.
 	Transaction *TransactionClient
+	// Transfer is the client for interacting with the Transfer builders.
+	Transfer *TransferClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -36,6 +39,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Transaction = NewTransactionClient(c.config)
+	c.Transfer = NewTransferClient(c.config)
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -70,6 +74,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:         ctx,
 		config:      cfg,
 		Transaction: NewTransactionClient(cfg),
+		Transfer:    NewTransferClient(cfg),
 	}, nil
 }
 
@@ -90,6 +95,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:         ctx,
 		config:      cfg,
 		Transaction: NewTransactionClient(cfg),
+		Transfer:    NewTransferClient(cfg),
 	}, nil
 }
 
@@ -120,6 +126,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Transaction.Use(hooks...)
+	c.Transfer.Use(hooks...)
 }
 
 // TransactionClient is a client for the Transaction schema.
@@ -210,4 +217,94 @@ func (c *TransactionClient) GetX(ctx context.Context, id int) *Transaction {
 // Hooks returns the client hooks.
 func (c *TransactionClient) Hooks() []Hook {
 	return c.hooks.Transaction
+}
+
+// TransferClient is a client for the Transfer schema.
+type TransferClient struct {
+	config
+}
+
+// NewTransferClient returns a client for the Transfer from the given config.
+func NewTransferClient(c config) *TransferClient {
+	return &TransferClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `transfer.Hooks(f(g(h())))`.
+func (c *TransferClient) Use(hooks ...Hook) {
+	c.hooks.Transfer = append(c.hooks.Transfer, hooks...)
+}
+
+// Create returns a create builder for Transfer.
+func (c *TransferClient) Create() *TransferCreate {
+	mutation := newTransferMutation(c.config, OpCreate)
+	return &TransferCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Transfer entities.
+func (c *TransferClient) CreateBulk(builders ...*TransferCreate) *TransferCreateBulk {
+	return &TransferCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Transfer.
+func (c *TransferClient) Update() *TransferUpdate {
+	mutation := newTransferMutation(c.config, OpUpdate)
+	return &TransferUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TransferClient) UpdateOne(t *Transfer) *TransferUpdateOne {
+	mutation := newTransferMutation(c.config, OpUpdateOne, withTransfer(t))
+	return &TransferUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TransferClient) UpdateOneID(id int) *TransferUpdateOne {
+	mutation := newTransferMutation(c.config, OpUpdateOne, withTransferID(id))
+	return &TransferUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Transfer.
+func (c *TransferClient) Delete() *TransferDelete {
+	mutation := newTransferMutation(c.config, OpDelete)
+	return &TransferDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *TransferClient) DeleteOne(t *Transfer) *TransferDeleteOne {
+	return c.DeleteOneID(t.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *TransferClient) DeleteOneID(id int) *TransferDeleteOne {
+	builder := c.Delete().Where(transfer.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TransferDeleteOne{builder}
+}
+
+// Query returns a query builder for Transfer.
+func (c *TransferClient) Query() *TransferQuery {
+	return &TransferQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Transfer entity by its id.
+func (c *TransferClient) Get(ctx context.Context, id int) (*Transfer, error) {
+	return c.Query().Where(transfer.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TransferClient) GetX(ctx context.Context, id int) *Transfer {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TransferClient) Hooks() []Hook {
+	return c.hooks.Transfer
 }

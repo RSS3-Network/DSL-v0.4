@@ -15,7 +15,7 @@ rabbitmq:
   user: guest
   password: guest
 
-openTelemetry:
+opentelemetry:
   host: 127.0.0.1
   port: 14268
   path: /api/traces

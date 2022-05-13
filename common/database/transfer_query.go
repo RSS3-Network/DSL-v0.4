@@ -12,69 +12,69 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/naturalselectionlabs/pregod/common/database/predicate"
-	"github.com/naturalselectionlabs/pregod/common/database/transaction"
+	"github.com/naturalselectionlabs/pregod/common/database/transfer"
 )
 
-// TransactionQuery is the builder for querying Transaction entities.
-type TransactionQuery struct {
+// TransferQuery is the builder for querying Transfer entities.
+type TransferQuery struct {
 	config
 	limit      *int
 	offset     *int
 	unique     *bool
 	order      []OrderFunc
 	fields     []string
-	predicates []predicate.Transaction
+	predicates []predicate.Transfer
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the TransactionQuery builder.
-func (tq *TransactionQuery) Where(ps ...predicate.Transaction) *TransactionQuery {
+// Where adds a new predicate for the TransferQuery builder.
+func (tq *TransferQuery) Where(ps ...predicate.Transfer) *TransferQuery {
 	tq.predicates = append(tq.predicates, ps...)
 	return tq
 }
 
 // Limit adds a limit step to the query.
-func (tq *TransactionQuery) Limit(limit int) *TransactionQuery {
+func (tq *TransferQuery) Limit(limit int) *TransferQuery {
 	tq.limit = &limit
 	return tq
 }
 
 // Offset adds an offset step to the query.
-func (tq *TransactionQuery) Offset(offset int) *TransactionQuery {
+func (tq *TransferQuery) Offset(offset int) *TransferQuery {
 	tq.offset = &offset
 	return tq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (tq *TransactionQuery) Unique(unique bool) *TransactionQuery {
+func (tq *TransferQuery) Unique(unique bool) *TransferQuery {
 	tq.unique = &unique
 	return tq
 }
 
 // Order adds an order step to the query.
-func (tq *TransactionQuery) Order(o ...OrderFunc) *TransactionQuery {
+func (tq *TransferQuery) Order(o ...OrderFunc) *TransferQuery {
 	tq.order = append(tq.order, o...)
 	return tq
 }
 
-// First returns the first Transaction entity from the query.
-// Returns a *NotFoundError when no Transaction was found.
-func (tq *TransactionQuery) First(ctx context.Context) (*Transaction, error) {
+// First returns the first Transfer entity from the query.
+// Returns a *NotFoundError when no Transfer was found.
+func (tq *TransferQuery) First(ctx context.Context) (*Transfer, error) {
 	nodes, err := tq.Limit(1).All(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{transaction.Label}
+		return nil, &NotFoundError{transfer.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (tq *TransactionQuery) FirstX(ctx context.Context) *Transaction {
+func (tq *TransferQuery) FirstX(ctx context.Context) *Transfer {
 	node, err := tq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -82,22 +82,22 @@ func (tq *TransactionQuery) FirstX(ctx context.Context) *Transaction {
 	return node
 }
 
-// FirstID returns the first Transaction ID from the query.
-// Returns a *NotFoundError when no Transaction ID was found.
-func (tq *TransactionQuery) FirstID(ctx context.Context) (id int, err error) {
+// FirstID returns the first Transfer ID from the query.
+// Returns a *NotFoundError when no Transfer ID was found.
+func (tq *TransferQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = tq.Limit(1).IDs(ctx); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{transaction.Label}
+		err = &NotFoundError{transfer.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (tq *TransactionQuery) FirstIDX(ctx context.Context) int {
+func (tq *TransferQuery) FirstIDX(ctx context.Context) int {
 	id, err := tq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -105,10 +105,10 @@ func (tq *TransactionQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns a single Transaction entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Transaction entity is found.
-// Returns a *NotFoundError when no Transaction entities are found.
-func (tq *TransactionQuery) Only(ctx context.Context) (*Transaction, error) {
+// Only returns a single Transfer entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one Transfer entity is found.
+// Returns a *NotFoundError when no Transfer entities are found.
+func (tq *TransferQuery) Only(ctx context.Context) (*Transfer, error) {
 	nodes, err := tq.Limit(2).All(ctx)
 	if err != nil {
 		return nil, err
@@ -117,14 +117,14 @@ func (tq *TransactionQuery) Only(ctx context.Context) (*Transaction, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{transaction.Label}
+		return nil, &NotFoundError{transfer.Label}
 	default:
-		return nil, &NotSingularError{transaction.Label}
+		return nil, &NotSingularError{transfer.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (tq *TransactionQuery) OnlyX(ctx context.Context) *Transaction {
+func (tq *TransferQuery) OnlyX(ctx context.Context) *Transfer {
 	node, err := tq.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -132,10 +132,10 @@ func (tq *TransactionQuery) OnlyX(ctx context.Context) *Transaction {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Transaction ID in the query.
-// Returns a *NotSingularError when more than one Transaction ID is found.
+// OnlyID is like Only, but returns the only Transfer ID in the query.
+// Returns a *NotSingularError when more than one Transfer ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (tq *TransactionQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (tq *TransferQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = tq.Limit(2).IDs(ctx); err != nil {
 		return
@@ -144,15 +144,15 @@ func (tq *TransactionQuery) OnlyID(ctx context.Context) (id int, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{transaction.Label}
+		err = &NotFoundError{transfer.Label}
 	default:
-		err = &NotSingularError{transaction.Label}
+		err = &NotSingularError{transfer.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (tq *TransactionQuery) OnlyIDX(ctx context.Context) int {
+func (tq *TransferQuery) OnlyIDX(ctx context.Context) int {
 	id, err := tq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -160,8 +160,8 @@ func (tq *TransactionQuery) OnlyIDX(ctx context.Context) int {
 	return id
 }
 
-// All executes the query and returns a list of Transactions.
-func (tq *TransactionQuery) All(ctx context.Context) ([]*Transaction, error) {
+// All executes the query and returns a list of Transfers.
+func (tq *TransferQuery) All(ctx context.Context) ([]*Transfer, error) {
 	if err := tq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (tq *TransactionQuery) All(ctx context.Context) ([]*Transaction, error) {
 }
 
 // AllX is like All, but panics if an error occurs.
-func (tq *TransactionQuery) AllX(ctx context.Context) []*Transaction {
+func (tq *TransferQuery) AllX(ctx context.Context) []*Transfer {
 	nodes, err := tq.All(ctx)
 	if err != nil {
 		panic(err)
@@ -177,17 +177,17 @@ func (tq *TransactionQuery) AllX(ctx context.Context) []*Transaction {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Transaction IDs.
-func (tq *TransactionQuery) IDs(ctx context.Context) ([]int, error) {
+// IDs executes the query and returns a list of Transfer IDs.
+func (tq *TransferQuery) IDs(ctx context.Context) ([]int, error) {
 	var ids []int
-	if err := tq.Select(transaction.FieldID).Scan(ctx, &ids); err != nil {
+	if err := tq.Select(transfer.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (tq *TransactionQuery) IDsX(ctx context.Context) []int {
+func (tq *TransferQuery) IDsX(ctx context.Context) []int {
 	ids, err := tq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -196,7 +196,7 @@ func (tq *TransactionQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (tq *TransactionQuery) Count(ctx context.Context) (int, error) {
+func (tq *TransferQuery) Count(ctx context.Context) (int, error) {
 	if err := tq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
@@ -204,7 +204,7 @@ func (tq *TransactionQuery) Count(ctx context.Context) (int, error) {
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (tq *TransactionQuery) CountX(ctx context.Context) int {
+func (tq *TransferQuery) CountX(ctx context.Context) int {
 	count, err := tq.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -213,7 +213,7 @@ func (tq *TransactionQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (tq *TransactionQuery) Exist(ctx context.Context) (bool, error) {
+func (tq *TransferQuery) Exist(ctx context.Context) (bool, error) {
 	if err := tq.prepareQuery(ctx); err != nil {
 		return false, err
 	}
@@ -221,7 +221,7 @@ func (tq *TransactionQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (tq *TransactionQuery) ExistX(ctx context.Context) bool {
+func (tq *TransferQuery) ExistX(ctx context.Context) bool {
 	exist, err := tq.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -229,18 +229,18 @@ func (tq *TransactionQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the TransactionQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the TransferQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (tq *TransactionQuery) Clone() *TransactionQuery {
+func (tq *TransferQuery) Clone() *TransferQuery {
 	if tq == nil {
 		return nil
 	}
-	return &TransactionQuery{
+	return &TransferQuery{
 		config:     tq.config,
 		limit:      tq.limit,
 		offset:     tq.offset,
 		order:      append([]OrderFunc{}, tq.order...),
-		predicates: append([]predicate.Transaction{}, tq.predicates...),
+		predicates: append([]predicate.Transfer{}, tq.predicates...),
 		// clone intermediate query.
 		sql:    tq.sql.Clone(),
 		path:   tq.path,
@@ -254,17 +254,17 @@ func (tq *TransactionQuery) Clone() *TransactionQuery {
 // Example:
 //
 //	var v []struct {
-//		Hash string `json:"hash,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Transaction.Query().
-//		GroupBy(transaction.FieldHash).
+//	client.Transfer.Query().
+//		GroupBy(transfer.FieldCreatedAt).
 //		Aggregate(database.Count()).
 //		Scan(ctx, &v)
 //
-func (tq *TransactionQuery) GroupBy(field string, fields ...string) *TransactionGroupBy {
-	group := &TransactionGroupBy{config: tq.config}
+func (tq *TransferQuery) GroupBy(field string, fields ...string) *TransferGroupBy {
+	group := &TransferGroupBy{config: tq.config}
 	group.fields = append([]string{field}, fields...)
 	group.path = func(ctx context.Context) (prev *sql.Selector, err error) {
 		if err := tq.prepareQuery(ctx); err != nil {
@@ -281,21 +281,21 @@ func (tq *TransactionQuery) GroupBy(field string, fields ...string) *Transaction
 // Example:
 //
 //	var v []struct {
-//		Hash string `json:"hash,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
-//	client.Transaction.Query().
-//		Select(transaction.FieldHash).
+//	client.Transfer.Query().
+//		Select(transfer.FieldCreatedAt).
 //		Scan(ctx, &v)
 //
-func (tq *TransactionQuery) Select(fields ...string) *TransactionSelect {
+func (tq *TransferQuery) Select(fields ...string) *TransferSelect {
 	tq.fields = append(tq.fields, fields...)
-	return &TransactionSelect{TransactionQuery: tq}
+	return &TransferSelect{TransferQuery: tq}
 }
 
-func (tq *TransactionQuery) prepareQuery(ctx context.Context) error {
+func (tq *TransferQuery) prepareQuery(ctx context.Context) error {
 	for _, f := range tq.fields {
-		if !transaction.ValidColumn(f) {
+		if !transfer.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("database: invalid field %q for query", f)}
 		}
 	}
@@ -309,13 +309,13 @@ func (tq *TransactionQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (tq *TransactionQuery) sqlAll(ctx context.Context) ([]*Transaction, error) {
+func (tq *TransferQuery) sqlAll(ctx context.Context) ([]*Transfer, error) {
 	var (
-		nodes = []*Transaction{}
+		nodes = []*Transfer{}
 		_spec = tq.querySpec()
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
-		node := &Transaction{config: tq.config}
+		node := &Transfer{config: tq.config}
 		nodes = append(nodes, node)
 		return node.scanValues(columns)
 	}
@@ -335,7 +335,7 @@ func (tq *TransactionQuery) sqlAll(ctx context.Context) ([]*Transaction, error) 
 	return nodes, nil
 }
 
-func (tq *TransactionQuery) sqlCount(ctx context.Context) (int, error) {
+func (tq *TransferQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := tq.querySpec()
 	_spec.Node.Columns = tq.fields
 	if len(tq.fields) > 0 {
@@ -344,7 +344,7 @@ func (tq *TransactionQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, tq.driver, _spec)
 }
 
-func (tq *TransactionQuery) sqlExist(ctx context.Context) (bool, error) {
+func (tq *TransferQuery) sqlExist(ctx context.Context) (bool, error) {
 	n, err := tq.sqlCount(ctx)
 	if err != nil {
 		return false, fmt.Errorf("database: check existence: %w", err)
@@ -352,14 +352,14 @@ func (tq *TransactionQuery) sqlExist(ctx context.Context) (bool, error) {
 	return n > 0, nil
 }
 
-func (tq *TransactionQuery) querySpec() *sqlgraph.QuerySpec {
+func (tq *TransferQuery) querySpec() *sqlgraph.QuerySpec {
 	_spec := &sqlgraph.QuerySpec{
 		Node: &sqlgraph.NodeSpec{
-			Table:   transaction.Table,
-			Columns: transaction.Columns,
+			Table:   transfer.Table,
+			Columns: transfer.Columns,
 			ID: &sqlgraph.FieldSpec{
 				Type:   field.TypeInt,
-				Column: transaction.FieldID,
+				Column: transfer.FieldID,
 			},
 		},
 		From:   tq.sql,
@@ -370,9 +370,9 @@ func (tq *TransactionQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := tq.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, transaction.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, transfer.FieldID)
 		for i := range fields {
-			if fields[i] != transaction.FieldID {
+			if fields[i] != transfer.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
@@ -400,12 +400,12 @@ func (tq *TransactionQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (tq *TransactionQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (tq *TransferQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(tq.driver.Dialect())
-	t1 := builder.Table(transaction.Table)
+	t1 := builder.Table(transfer.Table)
 	columns := tq.fields
 	if len(columns) == 0 {
-		columns = transaction.Columns
+		columns = transfer.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if tq.sql != nil {
@@ -432,8 +432,8 @@ func (tq *TransactionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// TransactionGroupBy is the group-by builder for Transaction entities.
-type TransactionGroupBy struct {
+// TransferGroupBy is the group-by builder for Transfer entities.
+type TransferGroupBy struct {
 	config
 	fields []string
 	fns    []AggregateFunc
@@ -443,13 +443,13 @@ type TransactionGroupBy struct {
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (tgb *TransactionGroupBy) Aggregate(fns ...AggregateFunc) *TransactionGroupBy {
+func (tgb *TransferGroupBy) Aggregate(fns ...AggregateFunc) *TransferGroupBy {
 	tgb.fns = append(tgb.fns, fns...)
 	return tgb
 }
 
 // Scan applies the group-by query and scans the result into the given value.
-func (tgb *TransactionGroupBy) Scan(ctx context.Context, v interface{}) error {
+func (tgb *TransferGroupBy) Scan(ctx context.Context, v interface{}) error {
 	query, err := tgb.path(ctx)
 	if err != nil {
 		return err
@@ -459,7 +459,7 @@ func (tgb *TransactionGroupBy) Scan(ctx context.Context, v interface{}) error {
 }
 
 // ScanX is like Scan, but panics if an error occurs.
-func (tgb *TransactionGroupBy) ScanX(ctx context.Context, v interface{}) {
+func (tgb *TransferGroupBy) ScanX(ctx context.Context, v interface{}) {
 	if err := tgb.Scan(ctx, v); err != nil {
 		panic(err)
 	}
@@ -467,9 +467,9 @@ func (tgb *TransactionGroupBy) ScanX(ctx context.Context, v interface{}) {
 
 // Strings returns list of strings from group-by.
 // It is only allowed when executing a group-by query with one field.
-func (tgb *TransactionGroupBy) Strings(ctx context.Context) ([]string, error) {
+func (tgb *TransferGroupBy) Strings(ctx context.Context) ([]string, error) {
 	if len(tgb.fields) > 1 {
-		return nil, errors.New("database: TransactionGroupBy.Strings is not achievable when grouping more than 1 field")
+		return nil, errors.New("database: TransferGroupBy.Strings is not achievable when grouping more than 1 field")
 	}
 	var v []string
 	if err := tgb.Scan(ctx, &v); err != nil {
@@ -479,7 +479,7 @@ func (tgb *TransactionGroupBy) Strings(ctx context.Context) ([]string, error) {
 }
 
 // StringsX is like Strings, but panics if an error occurs.
-func (tgb *TransactionGroupBy) StringsX(ctx context.Context) []string {
+func (tgb *TransferGroupBy) StringsX(ctx context.Context) []string {
 	v, err := tgb.Strings(ctx)
 	if err != nil {
 		panic(err)
@@ -489,7 +489,7 @@ func (tgb *TransactionGroupBy) StringsX(ctx context.Context) []string {
 
 // String returns a single string from a group-by query.
 // It is only allowed when executing a group-by query with one field.
-func (tgb *TransactionGroupBy) String(ctx context.Context) (_ string, err error) {
+func (tgb *TransferGroupBy) String(ctx context.Context) (_ string, err error) {
 	var v []string
 	if v, err = tgb.Strings(ctx); err != nil {
 		return
@@ -498,15 +498,15 @@ func (tgb *TransactionGroupBy) String(ctx context.Context) (_ string, err error)
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{transaction.Label}
+		err = &NotFoundError{transfer.Label}
 	default:
-		err = fmt.Errorf("database: TransactionGroupBy.Strings returned %d results when one was expected", len(v))
+		err = fmt.Errorf("database: TransferGroupBy.Strings returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // StringX is like String, but panics if an error occurs.
-func (tgb *TransactionGroupBy) StringX(ctx context.Context) string {
+func (tgb *TransferGroupBy) StringX(ctx context.Context) string {
 	v, err := tgb.String(ctx)
 	if err != nil {
 		panic(err)
@@ -516,9 +516,9 @@ func (tgb *TransactionGroupBy) StringX(ctx context.Context) string {
 
 // Ints returns list of ints from group-by.
 // It is only allowed when executing a group-by query with one field.
-func (tgb *TransactionGroupBy) Ints(ctx context.Context) ([]int, error) {
+func (tgb *TransferGroupBy) Ints(ctx context.Context) ([]int, error) {
 	if len(tgb.fields) > 1 {
-		return nil, errors.New("database: TransactionGroupBy.Ints is not achievable when grouping more than 1 field")
+		return nil, errors.New("database: TransferGroupBy.Ints is not achievable when grouping more than 1 field")
 	}
 	var v []int
 	if err := tgb.Scan(ctx, &v); err != nil {
@@ -528,7 +528,7 @@ func (tgb *TransactionGroupBy) Ints(ctx context.Context) ([]int, error) {
 }
 
 // IntsX is like Ints, but panics if an error occurs.
-func (tgb *TransactionGroupBy) IntsX(ctx context.Context) []int {
+func (tgb *TransferGroupBy) IntsX(ctx context.Context) []int {
 	v, err := tgb.Ints(ctx)
 	if err != nil {
 		panic(err)
@@ -538,7 +538,7 @@ func (tgb *TransactionGroupBy) IntsX(ctx context.Context) []int {
 
 // Int returns a single int from a group-by query.
 // It is only allowed when executing a group-by query with one field.
-func (tgb *TransactionGroupBy) Int(ctx context.Context) (_ int, err error) {
+func (tgb *TransferGroupBy) Int(ctx context.Context) (_ int, err error) {
 	var v []int
 	if v, err = tgb.Ints(ctx); err != nil {
 		return
@@ -547,15 +547,15 @@ func (tgb *TransactionGroupBy) Int(ctx context.Context) (_ int, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{transaction.Label}
+		err = &NotFoundError{transfer.Label}
 	default:
-		err = fmt.Errorf("database: TransactionGroupBy.Ints returned %d results when one was expected", len(v))
+		err = fmt.Errorf("database: TransferGroupBy.Ints returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // IntX is like Int, but panics if an error occurs.
-func (tgb *TransactionGroupBy) IntX(ctx context.Context) int {
+func (tgb *TransferGroupBy) IntX(ctx context.Context) int {
 	v, err := tgb.Int(ctx)
 	if err != nil {
 		panic(err)
@@ -565,9 +565,9 @@ func (tgb *TransactionGroupBy) IntX(ctx context.Context) int {
 
 // Float64s returns list of float64s from group-by.
 // It is only allowed when executing a group-by query with one field.
-func (tgb *TransactionGroupBy) Float64s(ctx context.Context) ([]float64, error) {
+func (tgb *TransferGroupBy) Float64s(ctx context.Context) ([]float64, error) {
 	if len(tgb.fields) > 1 {
-		return nil, errors.New("database: TransactionGroupBy.Float64s is not achievable when grouping more than 1 field")
+		return nil, errors.New("database: TransferGroupBy.Float64s is not achievable when grouping more than 1 field")
 	}
 	var v []float64
 	if err := tgb.Scan(ctx, &v); err != nil {
@@ -577,7 +577,7 @@ func (tgb *TransactionGroupBy) Float64s(ctx context.Context) ([]float64, error) 
 }
 
 // Float64sX is like Float64s, but panics if an error occurs.
-func (tgb *TransactionGroupBy) Float64sX(ctx context.Context) []float64 {
+func (tgb *TransferGroupBy) Float64sX(ctx context.Context) []float64 {
 	v, err := tgb.Float64s(ctx)
 	if err != nil {
 		panic(err)
@@ -587,7 +587,7 @@ func (tgb *TransactionGroupBy) Float64sX(ctx context.Context) []float64 {
 
 // Float64 returns a single float64 from a group-by query.
 // It is only allowed when executing a group-by query with one field.
-func (tgb *TransactionGroupBy) Float64(ctx context.Context) (_ float64, err error) {
+func (tgb *TransferGroupBy) Float64(ctx context.Context) (_ float64, err error) {
 	var v []float64
 	if v, err = tgb.Float64s(ctx); err != nil {
 		return
@@ -596,15 +596,15 @@ func (tgb *TransactionGroupBy) Float64(ctx context.Context) (_ float64, err erro
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{transaction.Label}
+		err = &NotFoundError{transfer.Label}
 	default:
-		err = fmt.Errorf("database: TransactionGroupBy.Float64s returned %d results when one was expected", len(v))
+		err = fmt.Errorf("database: TransferGroupBy.Float64s returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // Float64X is like Float64, but panics if an error occurs.
-func (tgb *TransactionGroupBy) Float64X(ctx context.Context) float64 {
+func (tgb *TransferGroupBy) Float64X(ctx context.Context) float64 {
 	v, err := tgb.Float64(ctx)
 	if err != nil {
 		panic(err)
@@ -614,9 +614,9 @@ func (tgb *TransactionGroupBy) Float64X(ctx context.Context) float64 {
 
 // Bools returns list of bools from group-by.
 // It is only allowed when executing a group-by query with one field.
-func (tgb *TransactionGroupBy) Bools(ctx context.Context) ([]bool, error) {
+func (tgb *TransferGroupBy) Bools(ctx context.Context) ([]bool, error) {
 	if len(tgb.fields) > 1 {
-		return nil, errors.New("database: TransactionGroupBy.Bools is not achievable when grouping more than 1 field")
+		return nil, errors.New("database: TransferGroupBy.Bools is not achievable when grouping more than 1 field")
 	}
 	var v []bool
 	if err := tgb.Scan(ctx, &v); err != nil {
@@ -626,7 +626,7 @@ func (tgb *TransactionGroupBy) Bools(ctx context.Context) ([]bool, error) {
 }
 
 // BoolsX is like Bools, but panics if an error occurs.
-func (tgb *TransactionGroupBy) BoolsX(ctx context.Context) []bool {
+func (tgb *TransferGroupBy) BoolsX(ctx context.Context) []bool {
 	v, err := tgb.Bools(ctx)
 	if err != nil {
 		panic(err)
@@ -636,7 +636,7 @@ func (tgb *TransactionGroupBy) BoolsX(ctx context.Context) []bool {
 
 // Bool returns a single bool from a group-by query.
 // It is only allowed when executing a group-by query with one field.
-func (tgb *TransactionGroupBy) Bool(ctx context.Context) (_ bool, err error) {
+func (tgb *TransferGroupBy) Bool(ctx context.Context) (_ bool, err error) {
 	var v []bool
 	if v, err = tgb.Bools(ctx); err != nil {
 		return
@@ -645,15 +645,15 @@ func (tgb *TransactionGroupBy) Bool(ctx context.Context) (_ bool, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{transaction.Label}
+		err = &NotFoundError{transfer.Label}
 	default:
-		err = fmt.Errorf("database: TransactionGroupBy.Bools returned %d results when one was expected", len(v))
+		err = fmt.Errorf("database: TransferGroupBy.Bools returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // BoolX is like Bool, but panics if an error occurs.
-func (tgb *TransactionGroupBy) BoolX(ctx context.Context) bool {
+func (tgb *TransferGroupBy) BoolX(ctx context.Context) bool {
 	v, err := tgb.Bool(ctx)
 	if err != nil {
 		panic(err)
@@ -661,9 +661,9 @@ func (tgb *TransactionGroupBy) BoolX(ctx context.Context) bool {
 	return v
 }
 
-func (tgb *TransactionGroupBy) sqlScan(ctx context.Context, v interface{}) error {
+func (tgb *TransferGroupBy) sqlScan(ctx context.Context, v interface{}) error {
 	for _, f := range tgb.fields {
-		if !transaction.ValidColumn(f) {
+		if !transfer.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("invalid field %q for group-by", f)}
 		}
 	}
@@ -680,7 +680,7 @@ func (tgb *TransactionGroupBy) sqlScan(ctx context.Context, v interface{}) error
 	return sql.ScanSlice(rows, v)
 }
 
-func (tgb *TransactionGroupBy) sqlQuery() *sql.Selector {
+func (tgb *TransferGroupBy) sqlQuery() *sql.Selector {
 	selector := tgb.sql.Select()
 	aggregation := make([]string, 0, len(tgb.fns))
 	for _, fn := range tgb.fns {
@@ -699,33 +699,33 @@ func (tgb *TransactionGroupBy) sqlQuery() *sql.Selector {
 	return selector.GroupBy(selector.Columns(tgb.fields...)...)
 }
 
-// TransactionSelect is the builder for selecting fields of Transaction entities.
-type TransactionSelect struct {
-	*TransactionQuery
+// TransferSelect is the builder for selecting fields of Transfer entities.
+type TransferSelect struct {
+	*TransferQuery
 	// intermediate query (i.e. traversal path).
 	sql *sql.Selector
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (ts *TransactionSelect) Scan(ctx context.Context, v interface{}) error {
+func (ts *TransferSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := ts.prepareQuery(ctx); err != nil {
 		return err
 	}
-	ts.sql = ts.TransactionQuery.sqlQuery(ctx)
+	ts.sql = ts.TransferQuery.sqlQuery(ctx)
 	return ts.sqlScan(ctx, v)
 }
 
 // ScanX is like Scan, but panics if an error occurs.
-func (ts *TransactionSelect) ScanX(ctx context.Context, v interface{}) {
+func (ts *TransferSelect) ScanX(ctx context.Context, v interface{}) {
 	if err := ts.Scan(ctx, v); err != nil {
 		panic(err)
 	}
 }
 
 // Strings returns list of strings from a selector. It is only allowed when selecting one field.
-func (ts *TransactionSelect) Strings(ctx context.Context) ([]string, error) {
+func (ts *TransferSelect) Strings(ctx context.Context) ([]string, error) {
 	if len(ts.fields) > 1 {
-		return nil, errors.New("database: TransactionSelect.Strings is not achievable when selecting more than 1 field")
+		return nil, errors.New("database: TransferSelect.Strings is not achievable when selecting more than 1 field")
 	}
 	var v []string
 	if err := ts.Scan(ctx, &v); err != nil {
@@ -735,7 +735,7 @@ func (ts *TransactionSelect) Strings(ctx context.Context) ([]string, error) {
 }
 
 // StringsX is like Strings, but panics if an error occurs.
-func (ts *TransactionSelect) StringsX(ctx context.Context) []string {
+func (ts *TransferSelect) StringsX(ctx context.Context) []string {
 	v, err := ts.Strings(ctx)
 	if err != nil {
 		panic(err)
@@ -744,7 +744,7 @@ func (ts *TransactionSelect) StringsX(ctx context.Context) []string {
 }
 
 // String returns a single string from a selector. It is only allowed when selecting one field.
-func (ts *TransactionSelect) String(ctx context.Context) (_ string, err error) {
+func (ts *TransferSelect) String(ctx context.Context) (_ string, err error) {
 	var v []string
 	if v, err = ts.Strings(ctx); err != nil {
 		return
@@ -753,15 +753,15 @@ func (ts *TransactionSelect) String(ctx context.Context) (_ string, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{transaction.Label}
+		err = &NotFoundError{transfer.Label}
 	default:
-		err = fmt.Errorf("database: TransactionSelect.Strings returned %d results when one was expected", len(v))
+		err = fmt.Errorf("database: TransferSelect.Strings returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // StringX is like String, but panics if an error occurs.
-func (ts *TransactionSelect) StringX(ctx context.Context) string {
+func (ts *TransferSelect) StringX(ctx context.Context) string {
 	v, err := ts.String(ctx)
 	if err != nil {
 		panic(err)
@@ -770,9 +770,9 @@ func (ts *TransactionSelect) StringX(ctx context.Context) string {
 }
 
 // Ints returns list of ints from a selector. It is only allowed when selecting one field.
-func (ts *TransactionSelect) Ints(ctx context.Context) ([]int, error) {
+func (ts *TransferSelect) Ints(ctx context.Context) ([]int, error) {
 	if len(ts.fields) > 1 {
-		return nil, errors.New("database: TransactionSelect.Ints is not achievable when selecting more than 1 field")
+		return nil, errors.New("database: TransferSelect.Ints is not achievable when selecting more than 1 field")
 	}
 	var v []int
 	if err := ts.Scan(ctx, &v); err != nil {
@@ -782,7 +782,7 @@ func (ts *TransactionSelect) Ints(ctx context.Context) ([]int, error) {
 }
 
 // IntsX is like Ints, but panics if an error occurs.
-func (ts *TransactionSelect) IntsX(ctx context.Context) []int {
+func (ts *TransferSelect) IntsX(ctx context.Context) []int {
 	v, err := ts.Ints(ctx)
 	if err != nil {
 		panic(err)
@@ -791,7 +791,7 @@ func (ts *TransactionSelect) IntsX(ctx context.Context) []int {
 }
 
 // Int returns a single int from a selector. It is only allowed when selecting one field.
-func (ts *TransactionSelect) Int(ctx context.Context) (_ int, err error) {
+func (ts *TransferSelect) Int(ctx context.Context) (_ int, err error) {
 	var v []int
 	if v, err = ts.Ints(ctx); err != nil {
 		return
@@ -800,15 +800,15 @@ func (ts *TransactionSelect) Int(ctx context.Context) (_ int, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{transaction.Label}
+		err = &NotFoundError{transfer.Label}
 	default:
-		err = fmt.Errorf("database: TransactionSelect.Ints returned %d results when one was expected", len(v))
+		err = fmt.Errorf("database: TransferSelect.Ints returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // IntX is like Int, but panics if an error occurs.
-func (ts *TransactionSelect) IntX(ctx context.Context) int {
+func (ts *TransferSelect) IntX(ctx context.Context) int {
 	v, err := ts.Int(ctx)
 	if err != nil {
 		panic(err)
@@ -817,9 +817,9 @@ func (ts *TransactionSelect) IntX(ctx context.Context) int {
 }
 
 // Float64s returns list of float64s from a selector. It is only allowed when selecting one field.
-func (ts *TransactionSelect) Float64s(ctx context.Context) ([]float64, error) {
+func (ts *TransferSelect) Float64s(ctx context.Context) ([]float64, error) {
 	if len(ts.fields) > 1 {
-		return nil, errors.New("database: TransactionSelect.Float64s is not achievable when selecting more than 1 field")
+		return nil, errors.New("database: TransferSelect.Float64s is not achievable when selecting more than 1 field")
 	}
 	var v []float64
 	if err := ts.Scan(ctx, &v); err != nil {
@@ -829,7 +829,7 @@ func (ts *TransactionSelect) Float64s(ctx context.Context) ([]float64, error) {
 }
 
 // Float64sX is like Float64s, but panics if an error occurs.
-func (ts *TransactionSelect) Float64sX(ctx context.Context) []float64 {
+func (ts *TransferSelect) Float64sX(ctx context.Context) []float64 {
 	v, err := ts.Float64s(ctx)
 	if err != nil {
 		panic(err)
@@ -838,7 +838,7 @@ func (ts *TransactionSelect) Float64sX(ctx context.Context) []float64 {
 }
 
 // Float64 returns a single float64 from a selector. It is only allowed when selecting one field.
-func (ts *TransactionSelect) Float64(ctx context.Context) (_ float64, err error) {
+func (ts *TransferSelect) Float64(ctx context.Context) (_ float64, err error) {
 	var v []float64
 	if v, err = ts.Float64s(ctx); err != nil {
 		return
@@ -847,15 +847,15 @@ func (ts *TransactionSelect) Float64(ctx context.Context) (_ float64, err error)
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{transaction.Label}
+		err = &NotFoundError{transfer.Label}
 	default:
-		err = fmt.Errorf("database: TransactionSelect.Float64s returned %d results when one was expected", len(v))
+		err = fmt.Errorf("database: TransferSelect.Float64s returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // Float64X is like Float64, but panics if an error occurs.
-func (ts *TransactionSelect) Float64X(ctx context.Context) float64 {
+func (ts *TransferSelect) Float64X(ctx context.Context) float64 {
 	v, err := ts.Float64(ctx)
 	if err != nil {
 		panic(err)
@@ -864,9 +864,9 @@ func (ts *TransactionSelect) Float64X(ctx context.Context) float64 {
 }
 
 // Bools returns list of bools from a selector. It is only allowed when selecting one field.
-func (ts *TransactionSelect) Bools(ctx context.Context) ([]bool, error) {
+func (ts *TransferSelect) Bools(ctx context.Context) ([]bool, error) {
 	if len(ts.fields) > 1 {
-		return nil, errors.New("database: TransactionSelect.Bools is not achievable when selecting more than 1 field")
+		return nil, errors.New("database: TransferSelect.Bools is not achievable when selecting more than 1 field")
 	}
 	var v []bool
 	if err := ts.Scan(ctx, &v); err != nil {
@@ -876,7 +876,7 @@ func (ts *TransactionSelect) Bools(ctx context.Context) ([]bool, error) {
 }
 
 // BoolsX is like Bools, but panics if an error occurs.
-func (ts *TransactionSelect) BoolsX(ctx context.Context) []bool {
+func (ts *TransferSelect) BoolsX(ctx context.Context) []bool {
 	v, err := ts.Bools(ctx)
 	if err != nil {
 		panic(err)
@@ -885,7 +885,7 @@ func (ts *TransactionSelect) BoolsX(ctx context.Context) []bool {
 }
 
 // Bool returns a single bool from a selector. It is only allowed when selecting one field.
-func (ts *TransactionSelect) Bool(ctx context.Context) (_ bool, err error) {
+func (ts *TransferSelect) Bool(ctx context.Context) (_ bool, err error) {
 	var v []bool
 	if v, err = ts.Bools(ctx); err != nil {
 		return
@@ -894,15 +894,15 @@ func (ts *TransactionSelect) Bool(ctx context.Context) (_ bool, err error) {
 	case 1:
 		return v[0], nil
 	case 0:
-		err = &NotFoundError{transaction.Label}
+		err = &NotFoundError{transfer.Label}
 	default:
-		err = fmt.Errorf("database: TransactionSelect.Bools returned %d results when one was expected", len(v))
+		err = fmt.Errorf("database: TransferSelect.Bools returned %d results when one was expected", len(v))
 	}
 	return
 }
 
 // BoolX is like Bool, but panics if an error occurs.
-func (ts *TransactionSelect) BoolX(ctx context.Context) bool {
+func (ts *TransferSelect) BoolX(ctx context.Context) bool {
 	v, err := ts.Bool(ctx)
 	if err != nil {
 		panic(err)
@@ -910,7 +910,7 @@ func (ts *TransactionSelect) BoolX(ctx context.Context) bool {
 	return v
 }
 
-func (ts *TransactionSelect) sqlScan(ctx context.Context, v interface{}) error {
+func (ts *TransferSelect) sqlScan(ctx context.Context, v interface{}) error {
 	rows := &sql.Rows{}
 	query, args := ts.sql.Query()
 	if err := ts.driver.Query(ctx, query, args, rows); err != nil {

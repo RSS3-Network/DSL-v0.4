@@ -22,6 +22,19 @@ func (f TransactionFunc) Mutate(ctx context.Context, m database.Mutation) (datab
 	return f(ctx, mv)
 }
 
+// The TransferFunc type is an adapter to allow the use of ordinary
+// function as Transfer mutator.
+type TransferFunc func(context.Context, *database.TransferMutation) (database.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TransferFunc) Mutate(ctx context.Context, m database.Mutation) (database.Value, error) {
+	mv, ok := m.(*database.TransferMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *database.TransferMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // Condition is a hook condition function.
 type Condition func(context.Context, database.Mutation) bool
 
