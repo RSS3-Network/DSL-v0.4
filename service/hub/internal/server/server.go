@@ -1,16 +1,25 @@
 package server
 
 import (
+	"context"
 	"net"
 	"strconv"
 
+	"entgo.io/ent/dialect"
 	"github.com/labstack/echo"
+	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+	"go.uber.org/zap"
 )
 
 var _ command.Interface = &Server{}
@@ -22,9 +31,41 @@ type Server struct {
 	databaseClient     *database.Client
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
+	exporter           *jaeger.Exporter
+	tracerProvider     *trace.TracerProvider
+	logger             *zap.Logger
 }
 
 func (s *Server) Initialize() (err error) {
+	s.logger, err = zap.NewProduction()
+	if err != nil {
+		return err
+	}
+
+	s.exporter, err = jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(s.config.Jaeger.URL)))
+	if err != nil {
+		return err
+	}
+
+	s.tracerProvider = trace.NewTracerProvider(
+		trace.WithBatcher(s.exporter),
+		trace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("pregod-hub"),
+		)),
+	)
+
+	otel.SetTracerProvider(s.tracerProvider)
+
+	s.databaseClient, err = database.Open(dialect.Postgres, s.config.Postgres.DSN)
+	if err != nil {
+		return err
+	}
+
+	if err := s.databaseClient.Schema.Create(context.Background()); err != nil {
+		return err
+	}
+
 	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.URL)
 	if err != nil {
 		return err
@@ -47,6 +88,7 @@ func (s *Server) Initialize() (err error) {
 		DatabaseClient:     s.databaseClient,
 		RabbitmqConnection: s.rabbitmqConnection,
 		RabbitmqChannel:    s.rabbitmqChannel,
+		TracerProvider:     s.tracerProvider,
 	}
 
 	s.httpServer.GET("/:address/actions", s.httpHandler.GetActionListFunc)
