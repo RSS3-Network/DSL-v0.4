@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"entgo.io/ent/dialect"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -91,7 +91,9 @@ func (s *Server) Initialize() (err error) {
 		TracerProvider:     s.tracerProvider,
 	}
 
-	s.httpServer.GET("/:address/actions", s.httpHandler.GetActionListFunc)
+	s.httpServer.HTTPErrorHandler = s.httpHandler.ErrorFunc
+
+	s.httpServer.GET("/addresses/:address/actions", s.httpHandler.GetActionListFunc)
 
 	return nil
 }

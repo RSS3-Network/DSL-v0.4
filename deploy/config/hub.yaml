@@ -1,0 +1,21 @@
+http:
+  host: 0.0.0.0
+  port: 80
+
+postgres:
+  host: 127.0.0.1
+  port: 5432
+  user: postgres
+  password: password
+  database: postgres
+
+rabbitmq:
+  host: 127.0.0.1
+  port: 5672
+  user: guest
+  password: guest
+
+openTelemetry:
+  host: 127.0.0.1
+  port: 14268
+  path: /api/traces

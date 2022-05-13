@@ -7,6 +7,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/indexer"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/indexer/moralis"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 )
@@ -19,6 +21,7 @@ type Server struct {
 	rabbitmqChannel    *rabbitmq.Channel
 	rabbitmqQueue      rabbitmq.Queue
 	databaseClient     *database.Client
+	indexerMoralis     indexer.Worker
 }
 
 func (s *Server) Initialize() (err error) {
@@ -50,6 +53,11 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	s.indexerMoralis = moralis.New(s.config.Moralis)
+	if err := s.indexerMoralis.Initialize(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -73,8 +81,13 @@ func (s *Server) Run() error {
 
 		logrus.Infoln(message.Address, message.Network)
 
-		switch "" {
+		switch message.Network {
 		case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartCain:
+			if err := s.indexerMoralis.Handle(&message); err != nil {
+				logrus.Errorln(err)
+
+				continue
+			}
 		case protocol.NetworkZkSync:
 		}
 	}

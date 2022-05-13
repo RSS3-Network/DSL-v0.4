@@ -2,7 +2,8 @@ package handler
 
 import (
 	"encoding/json"
-	"github.com/labstack/echo"
+
+	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 )
