@@ -60,6 +60,30 @@ func (tc *TransferCreate) SetTransactionLogIndex(i int) *TransferCreate {
 	return tc
 }
 
+// SetAddressFrom sets the "address_from" field.
+func (tc *TransferCreate) SetAddressFrom(s string) *TransferCreate {
+	tc.mutation.SetAddressFrom(s)
+	return tc
+}
+
+// SetAddressTo sets the "address_to" field.
+func (tc *TransferCreate) SetAddressTo(s string) *TransferCreate {
+	tc.mutation.SetAddressTo(s)
+	return tc
+}
+
+// SetTokenAddress sets the "token_address" field.
+func (tc *TransferCreate) SetTokenAddress(s string) *TransferCreate {
+	tc.mutation.SetTokenAddress(s)
+	return tc
+}
+
+// SetTokenID sets the "token_id" field.
+func (tc *TransferCreate) SetTokenID(s string) *TransferCreate {
+	tc.mutation.SetTokenID(s)
+	return tc
+}
+
 // Mutation returns the TransferMutation object of the builder.
 func (tc *TransferCreate) Mutation() *TransferMutation {
 	return tc.mutation
@@ -155,6 +179,18 @@ func (tc *TransferCreate) check() error {
 	if _, ok := tc.mutation.TransactionLogIndex(); !ok {
 		return &ValidationError{Name: "transaction_log_index", err: errors.New(`database: missing required field "Transfer.transaction_log_index"`)}
 	}
+	if _, ok := tc.mutation.AddressFrom(); !ok {
+		return &ValidationError{Name: "address_from", err: errors.New(`database: missing required field "Transfer.address_from"`)}
+	}
+	if _, ok := tc.mutation.AddressTo(); !ok {
+		return &ValidationError{Name: "address_to", err: errors.New(`database: missing required field "Transfer.address_to"`)}
+	}
+	if _, ok := tc.mutation.TokenAddress(); !ok {
+		return &ValidationError{Name: "token_address", err: errors.New(`database: missing required field "Transfer.token_address"`)}
+	}
+	if _, ok := tc.mutation.TokenID(); !ok {
+		return &ValidationError{Name: "token_id", err: errors.New(`database: missing required field "Transfer.token_id"`)}
+	}
 	return nil
 }
 
@@ -213,6 +249,38 @@ func (tc *TransferCreate) createSpec() (*Transfer, *sqlgraph.CreateSpec) {
 			Column: transfer.FieldTransactionLogIndex,
 		})
 		_node.TransactionLogIndex = value
+	}
+	if value, ok := tc.mutation.AddressFrom(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transfer.FieldAddressFrom,
+		})
+		_node.AddressFrom = value
+	}
+	if value, ok := tc.mutation.AddressTo(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transfer.FieldAddressTo,
+		})
+		_node.AddressTo = value
+	}
+	if value, ok := tc.mutation.TokenAddress(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transfer.FieldTokenAddress,
+		})
+		_node.TokenAddress = value
+	}
+	if value, ok := tc.mutation.TokenID(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transfer.FieldTokenID,
+		})
+		_node.TokenID = value
 	}
 	return _node, _spec
 }

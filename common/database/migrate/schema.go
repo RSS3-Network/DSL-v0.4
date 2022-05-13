@@ -26,6 +26,10 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "transaction_hash", Type: field.TypeString},
 		{Name: "transaction_log_index", Type: field.TypeInt},
+		{Name: "address_from", Type: field.TypeString},
+		{Name: "address_to", Type: field.TypeString},
+		{Name: "token_address", Type: field.TypeString},
+		{Name: "token_id", Type: field.TypeString},
 	}
 	// TransfersTable holds the schema information for the "transfers" table.
 	TransfersTable = &schema.Table{

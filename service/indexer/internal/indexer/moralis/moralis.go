@@ -57,6 +57,10 @@ func (i *Indexer) Handle(ctx context.Context, message *protocol.Message) error {
 			Create().
 			SetTransactionHash(transfer.TransactionHash).
 			SetTransactionLogIndex(transfer.LogIndex).
+			SetAddressFrom(transfer.FromAddress).
+			SetAddressTo(transfer.ToAddress).
+			SetTokenAddress(transfer.TokenAddress).
+			SetTokenID(transfer.TokenId).
 			Exec(ctx); err != nil {
 			logrus.Errorln(err)
 

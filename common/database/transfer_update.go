@@ -53,6 +53,30 @@ func (tu *TransferUpdate) AddTransactionLogIndex(i int) *TransferUpdate {
 	return tu
 }
 
+// SetAddressFrom sets the "address_from" field.
+func (tu *TransferUpdate) SetAddressFrom(s string) *TransferUpdate {
+	tu.mutation.SetAddressFrom(s)
+	return tu
+}
+
+// SetAddressTo sets the "address_to" field.
+func (tu *TransferUpdate) SetAddressTo(s string) *TransferUpdate {
+	tu.mutation.SetAddressTo(s)
+	return tu
+}
+
+// SetTokenAddress sets the "token_address" field.
+func (tu *TransferUpdate) SetTokenAddress(s string) *TransferUpdate {
+	tu.mutation.SetTokenAddress(s)
+	return tu
+}
+
+// SetTokenID sets the "token_id" field.
+func (tu *TransferUpdate) SetTokenID(s string) *TransferUpdate {
+	tu.mutation.SetTokenID(s)
+	return tu
+}
+
 // Mutation returns the TransferMutation object of the builder.
 func (tu *TransferUpdate) Mutation() *TransferMutation {
 	return tu.mutation
@@ -167,6 +191,34 @@ func (tu *TransferUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: transfer.FieldTransactionLogIndex,
 		})
 	}
+	if value, ok := tu.mutation.AddressFrom(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transfer.FieldAddressFrom,
+		})
+	}
+	if value, ok := tu.mutation.AddressTo(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transfer.FieldAddressTo,
+		})
+	}
+	if value, ok := tu.mutation.TokenAddress(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transfer.FieldTokenAddress,
+		})
+	}
+	if value, ok := tu.mutation.TokenID(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transfer.FieldTokenID,
+		})
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, tu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{transfer.Label}
@@ -208,6 +260,30 @@ func (tuo *TransferUpdateOne) SetTransactionLogIndex(i int) *TransferUpdateOne {
 // AddTransactionLogIndex adds i to the "transaction_log_index" field.
 func (tuo *TransferUpdateOne) AddTransactionLogIndex(i int) *TransferUpdateOne {
 	tuo.mutation.AddTransactionLogIndex(i)
+	return tuo
+}
+
+// SetAddressFrom sets the "address_from" field.
+func (tuo *TransferUpdateOne) SetAddressFrom(s string) *TransferUpdateOne {
+	tuo.mutation.SetAddressFrom(s)
+	return tuo
+}
+
+// SetAddressTo sets the "address_to" field.
+func (tuo *TransferUpdateOne) SetAddressTo(s string) *TransferUpdateOne {
+	tuo.mutation.SetAddressTo(s)
+	return tuo
+}
+
+// SetTokenAddress sets the "token_address" field.
+func (tuo *TransferUpdateOne) SetTokenAddress(s string) *TransferUpdateOne {
+	tuo.mutation.SetTokenAddress(s)
+	return tuo
+}
+
+// SetTokenID sets the "token_id" field.
+func (tuo *TransferUpdateOne) SetTokenID(s string) *TransferUpdateOne {
+	tuo.mutation.SetTokenID(s)
 	return tuo
 }
 
@@ -347,6 +423,34 @@ func (tuo *TransferUpdateOne) sqlSave(ctx context.Context) (_node *Transfer, err
 			Type:   field.TypeInt,
 			Value:  value,
 			Column: transfer.FieldTransactionLogIndex,
+		})
+	}
+	if value, ok := tuo.mutation.AddressFrom(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transfer.FieldAddressFrom,
+		})
+	}
+	if value, ok := tuo.mutation.AddressTo(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transfer.FieldAddressTo,
+		})
+	}
+	if value, ok := tuo.mutation.TokenAddress(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transfer.FieldTokenAddress,
+		})
+	}
+	if value, ok := tuo.mutation.TokenID(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Value:  value,
+			Column: transfer.FieldTokenID,
 		})
 	}
 	_node = &Transfer{config: tuo.config}

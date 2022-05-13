@@ -120,6 +120,34 @@ func TransactionLogIndex(v int) predicate.Transfer {
 	})
 }
 
+// AddressFrom applies equality check predicate on the "address_from" field. It's identical to AddressFromEQ.
+func AddressFrom(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldAddressFrom), v))
+	})
+}
+
+// AddressTo applies equality check predicate on the "address_to" field. It's identical to AddressToEQ.
+func AddressTo(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldAddressTo), v))
+	})
+}
+
+// TokenAddress applies equality check predicate on the "token_address" field. It's identical to TokenAddressEQ.
+func TokenAddress(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldTokenAddress), v))
+	})
+}
+
+// TokenID applies equality check predicate on the "token_id" field. It's identical to TokenIDEQ.
+func TokenID(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldTokenID), v))
+	})
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Transfer {
 	return predicate.Transfer(func(s *sql.Selector) {
@@ -456,6 +484,450 @@ func TransactionLogIndexLT(v int) predicate.Transfer {
 func TransactionLogIndexLTE(v int) predicate.Transfer {
 	return predicate.Transfer(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldTransactionLogIndex), v))
+	})
+}
+
+// AddressFromEQ applies the EQ predicate on the "address_from" field.
+func AddressFromEQ(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldAddressFrom), v))
+	})
+}
+
+// AddressFromNEQ applies the NEQ predicate on the "address_from" field.
+func AddressFromNEQ(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldAddressFrom), v))
+	})
+}
+
+// AddressFromIn applies the In predicate on the "address_from" field.
+func AddressFromIn(vs ...string) predicate.Transfer {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Transfer(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldAddressFrom), v...))
+	})
+}
+
+// AddressFromNotIn applies the NotIn predicate on the "address_from" field.
+func AddressFromNotIn(vs ...string) predicate.Transfer {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Transfer(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldAddressFrom), v...))
+	})
+}
+
+// AddressFromGT applies the GT predicate on the "address_from" field.
+func AddressFromGT(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldAddressFrom), v))
+	})
+}
+
+// AddressFromGTE applies the GTE predicate on the "address_from" field.
+func AddressFromGTE(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldAddressFrom), v))
+	})
+}
+
+// AddressFromLT applies the LT predicate on the "address_from" field.
+func AddressFromLT(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldAddressFrom), v))
+	})
+}
+
+// AddressFromLTE applies the LTE predicate on the "address_from" field.
+func AddressFromLTE(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldAddressFrom), v))
+	})
+}
+
+// AddressFromContains applies the Contains predicate on the "address_from" field.
+func AddressFromContains(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldAddressFrom), v))
+	})
+}
+
+// AddressFromHasPrefix applies the HasPrefix predicate on the "address_from" field.
+func AddressFromHasPrefix(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldAddressFrom), v))
+	})
+}
+
+// AddressFromHasSuffix applies the HasSuffix predicate on the "address_from" field.
+func AddressFromHasSuffix(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldAddressFrom), v))
+	})
+}
+
+// AddressFromEqualFold applies the EqualFold predicate on the "address_from" field.
+func AddressFromEqualFold(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldAddressFrom), v))
+	})
+}
+
+// AddressFromContainsFold applies the ContainsFold predicate on the "address_from" field.
+func AddressFromContainsFold(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldAddressFrom), v))
+	})
+}
+
+// AddressToEQ applies the EQ predicate on the "address_to" field.
+func AddressToEQ(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldAddressTo), v))
+	})
+}
+
+// AddressToNEQ applies the NEQ predicate on the "address_to" field.
+func AddressToNEQ(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldAddressTo), v))
+	})
+}
+
+// AddressToIn applies the In predicate on the "address_to" field.
+func AddressToIn(vs ...string) predicate.Transfer {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Transfer(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldAddressTo), v...))
+	})
+}
+
+// AddressToNotIn applies the NotIn predicate on the "address_to" field.
+func AddressToNotIn(vs ...string) predicate.Transfer {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Transfer(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldAddressTo), v...))
+	})
+}
+
+// AddressToGT applies the GT predicate on the "address_to" field.
+func AddressToGT(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldAddressTo), v))
+	})
+}
+
+// AddressToGTE applies the GTE predicate on the "address_to" field.
+func AddressToGTE(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldAddressTo), v))
+	})
+}
+
+// AddressToLT applies the LT predicate on the "address_to" field.
+func AddressToLT(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldAddressTo), v))
+	})
+}
+
+// AddressToLTE applies the LTE predicate on the "address_to" field.
+func AddressToLTE(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldAddressTo), v))
+	})
+}
+
+// AddressToContains applies the Contains predicate on the "address_to" field.
+func AddressToContains(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldAddressTo), v))
+	})
+}
+
+// AddressToHasPrefix applies the HasPrefix predicate on the "address_to" field.
+func AddressToHasPrefix(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldAddressTo), v))
+	})
+}
+
+// AddressToHasSuffix applies the HasSuffix predicate on the "address_to" field.
+func AddressToHasSuffix(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldAddressTo), v))
+	})
+}
+
+// AddressToEqualFold applies the EqualFold predicate on the "address_to" field.
+func AddressToEqualFold(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldAddressTo), v))
+	})
+}
+
+// AddressToContainsFold applies the ContainsFold predicate on the "address_to" field.
+func AddressToContainsFold(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldAddressTo), v))
+	})
+}
+
+// TokenAddressEQ applies the EQ predicate on the "token_address" field.
+func TokenAddressEQ(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldTokenAddress), v))
+	})
+}
+
+// TokenAddressNEQ applies the NEQ predicate on the "token_address" field.
+func TokenAddressNEQ(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldTokenAddress), v))
+	})
+}
+
+// TokenAddressIn applies the In predicate on the "token_address" field.
+func TokenAddressIn(vs ...string) predicate.Transfer {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Transfer(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldTokenAddress), v...))
+	})
+}
+
+// TokenAddressNotIn applies the NotIn predicate on the "token_address" field.
+func TokenAddressNotIn(vs ...string) predicate.Transfer {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Transfer(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldTokenAddress), v...))
+	})
+}
+
+// TokenAddressGT applies the GT predicate on the "token_address" field.
+func TokenAddressGT(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldTokenAddress), v))
+	})
+}
+
+// TokenAddressGTE applies the GTE predicate on the "token_address" field.
+func TokenAddressGTE(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldTokenAddress), v))
+	})
+}
+
+// TokenAddressLT applies the LT predicate on the "token_address" field.
+func TokenAddressLT(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldTokenAddress), v))
+	})
+}
+
+// TokenAddressLTE applies the LTE predicate on the "token_address" field.
+func TokenAddressLTE(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldTokenAddress), v))
+	})
+}
+
+// TokenAddressContains applies the Contains predicate on the "token_address" field.
+func TokenAddressContains(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldTokenAddress), v))
+	})
+}
+
+// TokenAddressHasPrefix applies the HasPrefix predicate on the "token_address" field.
+func TokenAddressHasPrefix(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldTokenAddress), v))
+	})
+}
+
+// TokenAddressHasSuffix applies the HasSuffix predicate on the "token_address" field.
+func TokenAddressHasSuffix(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldTokenAddress), v))
+	})
+}
+
+// TokenAddressEqualFold applies the EqualFold predicate on the "token_address" field.
+func TokenAddressEqualFold(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldTokenAddress), v))
+	})
+}
+
+// TokenAddressContainsFold applies the ContainsFold predicate on the "token_address" field.
+func TokenAddressContainsFold(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldTokenAddress), v))
+	})
+}
+
+// TokenIDEQ applies the EQ predicate on the "token_id" field.
+func TokenIDEQ(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldTokenID), v))
+	})
+}
+
+// TokenIDNEQ applies the NEQ predicate on the "token_id" field.
+func TokenIDNEQ(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldTokenID), v))
+	})
+}
+
+// TokenIDIn applies the In predicate on the "token_id" field.
+func TokenIDIn(vs ...string) predicate.Transfer {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Transfer(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldTokenID), v...))
+	})
+}
+
+// TokenIDNotIn applies the NotIn predicate on the "token_id" field.
+func TokenIDNotIn(vs ...string) predicate.Transfer {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Transfer(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldTokenID), v...))
+	})
+}
+
+// TokenIDGT applies the GT predicate on the "token_id" field.
+func TokenIDGT(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldTokenID), v))
+	})
+}
+
+// TokenIDGTE applies the GTE predicate on the "token_id" field.
+func TokenIDGTE(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldTokenID), v))
+	})
+}
+
+// TokenIDLT applies the LT predicate on the "token_id" field.
+func TokenIDLT(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldTokenID), v))
+	})
+}
+
+// TokenIDLTE applies the LTE predicate on the "token_id" field.
+func TokenIDLTE(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldTokenID), v))
+	})
+}
+
+// TokenIDContains applies the Contains predicate on the "token_id" field.
+func TokenIDContains(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldTokenID), v))
+	})
+}
+
+// TokenIDHasPrefix applies the HasPrefix predicate on the "token_id" field.
+func TokenIDHasPrefix(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldTokenID), v))
+	})
+}
+
+// TokenIDHasSuffix applies the HasSuffix predicate on the "token_id" field.
+func TokenIDHasSuffix(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldTokenID), v))
+	})
+}
+
+// TokenIDEqualFold applies the EqualFold predicate on the "token_id" field.
+func TokenIDEqualFold(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldTokenID), v))
+	})
+}
+
+// TokenIDContainsFold applies the ContainsFold predicate on the "token_id" field.
+func TokenIDContainsFold(v string) predicate.Transfer {
+	return predicate.Transfer(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldTokenID), v))
 	})
 }
 

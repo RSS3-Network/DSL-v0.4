@@ -351,6 +351,10 @@ type TransferMutation struct {
 	transaction_hash         *string
 	transaction_log_index    *int
 	addtransaction_log_index *int
+	address_from             *string
+	address_to               *string
+	token_address            *string
+	token_id                 *string
 	clearedFields            map[string]struct{}
 	done                     bool
 	oldValue                 func(context.Context) (*Transfer, error)
@@ -619,6 +623,150 @@ func (m *TransferMutation) ResetTransactionLogIndex() {
 	m.addtransaction_log_index = nil
 }
 
+// SetAddressFrom sets the "address_from" field.
+func (m *TransferMutation) SetAddressFrom(s string) {
+	m.address_from = &s
+}
+
+// AddressFrom returns the value of the "address_from" field in the mutation.
+func (m *TransferMutation) AddressFrom() (r string, exists bool) {
+	v := m.address_from
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAddressFrom returns the old "address_from" field's value of the Transfer entity.
+// If the Transfer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransferMutation) OldAddressFrom(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAddressFrom is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAddressFrom requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAddressFrom: %w", err)
+	}
+	return oldValue.AddressFrom, nil
+}
+
+// ResetAddressFrom resets all changes to the "address_from" field.
+func (m *TransferMutation) ResetAddressFrom() {
+	m.address_from = nil
+}
+
+// SetAddressTo sets the "address_to" field.
+func (m *TransferMutation) SetAddressTo(s string) {
+	m.address_to = &s
+}
+
+// AddressTo returns the value of the "address_to" field in the mutation.
+func (m *TransferMutation) AddressTo() (r string, exists bool) {
+	v := m.address_to
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAddressTo returns the old "address_to" field's value of the Transfer entity.
+// If the Transfer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransferMutation) OldAddressTo(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAddressTo is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAddressTo requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAddressTo: %w", err)
+	}
+	return oldValue.AddressTo, nil
+}
+
+// ResetAddressTo resets all changes to the "address_to" field.
+func (m *TransferMutation) ResetAddressTo() {
+	m.address_to = nil
+}
+
+// SetTokenAddress sets the "token_address" field.
+func (m *TransferMutation) SetTokenAddress(s string) {
+	m.token_address = &s
+}
+
+// TokenAddress returns the value of the "token_address" field in the mutation.
+func (m *TransferMutation) TokenAddress() (r string, exists bool) {
+	v := m.token_address
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTokenAddress returns the old "token_address" field's value of the Transfer entity.
+// If the Transfer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransferMutation) OldTokenAddress(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTokenAddress is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTokenAddress requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTokenAddress: %w", err)
+	}
+	return oldValue.TokenAddress, nil
+}
+
+// ResetTokenAddress resets all changes to the "token_address" field.
+func (m *TransferMutation) ResetTokenAddress() {
+	m.token_address = nil
+}
+
+// SetTokenID sets the "token_id" field.
+func (m *TransferMutation) SetTokenID(s string) {
+	m.token_id = &s
+}
+
+// TokenID returns the value of the "token_id" field in the mutation.
+func (m *TransferMutation) TokenID() (r string, exists bool) {
+	v := m.token_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTokenID returns the old "token_id" field's value of the Transfer entity.
+// If the Transfer object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransferMutation) OldTokenID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTokenID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTokenID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTokenID: %w", err)
+	}
+	return oldValue.TokenID, nil
+}
+
+// ResetTokenID resets all changes to the "token_id" field.
+func (m *TransferMutation) ResetTokenID() {
+	m.token_id = nil
+}
+
 // Where appends a list predicates to the TransferMutation builder.
 func (m *TransferMutation) Where(ps ...predicate.Transfer) {
 	m.predicates = append(m.predicates, ps...)
@@ -638,7 +786,7 @@ func (m *TransferMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TransferMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 8)
 	if m.created_at != nil {
 		fields = append(fields, transfer.FieldCreatedAt)
 	}
@@ -650,6 +798,18 @@ func (m *TransferMutation) Fields() []string {
 	}
 	if m.transaction_log_index != nil {
 		fields = append(fields, transfer.FieldTransactionLogIndex)
+	}
+	if m.address_from != nil {
+		fields = append(fields, transfer.FieldAddressFrom)
+	}
+	if m.address_to != nil {
+		fields = append(fields, transfer.FieldAddressTo)
+	}
+	if m.token_address != nil {
+		fields = append(fields, transfer.FieldTokenAddress)
+	}
+	if m.token_id != nil {
+		fields = append(fields, transfer.FieldTokenID)
 	}
 	return fields
 }
@@ -667,6 +827,14 @@ func (m *TransferMutation) Field(name string) (ent.Value, bool) {
 		return m.TransactionHash()
 	case transfer.FieldTransactionLogIndex:
 		return m.TransactionLogIndex()
+	case transfer.FieldAddressFrom:
+		return m.AddressFrom()
+	case transfer.FieldAddressTo:
+		return m.AddressTo()
+	case transfer.FieldTokenAddress:
+		return m.TokenAddress()
+	case transfer.FieldTokenID:
+		return m.TokenID()
 	}
 	return nil, false
 }
@@ -684,6 +852,14 @@ func (m *TransferMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldTransactionHash(ctx)
 	case transfer.FieldTransactionLogIndex:
 		return m.OldTransactionLogIndex(ctx)
+	case transfer.FieldAddressFrom:
+		return m.OldAddressFrom(ctx)
+	case transfer.FieldAddressTo:
+		return m.OldAddressTo(ctx)
+	case transfer.FieldTokenAddress:
+		return m.OldTokenAddress(ctx)
+	case transfer.FieldTokenID:
+		return m.OldTokenID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Transfer field %s", name)
 }
@@ -720,6 +896,34 @@ func (m *TransferMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTransactionLogIndex(v)
+		return nil
+	case transfer.FieldAddressFrom:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAddressFrom(v)
+		return nil
+	case transfer.FieldAddressTo:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAddressTo(v)
+		return nil
+	case transfer.FieldTokenAddress:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTokenAddress(v)
+		return nil
+	case transfer.FieldTokenID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTokenID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Transfer field %s", name)
@@ -796,6 +1000,18 @@ func (m *TransferMutation) ResetField(name string) error {
 		return nil
 	case transfer.FieldTransactionLogIndex:
 		m.ResetTransactionLogIndex()
+		return nil
+	case transfer.FieldAddressFrom:
+		m.ResetAddressFrom()
+		return nil
+	case transfer.FieldAddressTo:
+		m.ResetAddressTo()
+		return nil
+	case transfer.FieldTokenAddress:
+		m.ResetTokenAddress()
+		return nil
+	case transfer.FieldTokenID:
+		m.ResetTokenID()
 		return nil
 	}
 	return fmt.Errorf("unknown Transfer field %s", name)

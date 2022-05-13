@@ -6,7 +6,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/response"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
+	"github.com/shopspring/decimal"
 )
 
 type GetActionListRequest struct {
@@ -53,5 +55,35 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 
 	spanDatabase.End()
 
-	return c.JSON(http.StatusOK, transfers)
+	feeds := make([]response.Feed, 0)
+
+	for _, transfer := range transfers {
+		tokenID, err := decimal.NewFromString(transfer.TokenID)
+		if err != nil {
+			return err
+		}
+
+		feeds = append(feeds, response.Feed{
+			Tags:    []string{"transfer"},
+			Network: "ethereum",
+			Proof:   transfer.TransactionHash,
+			Actions: []response.Action{
+				{
+					Type:          "transfer",
+					From:          transfer.AddressFrom,
+					To:            transfer.TokenAddress,
+					Token:         "",
+					TokenAddress:  transfer.TokenAddress,
+					TokenStandard: "erc721",
+					TokenID:       tokenID,
+					TokenValue:    decimal.NewFromInt(1),
+				},
+			},
+		})
+	}
+
+	return c.JSON(http.StatusOK, &response.Response{
+		Total:  int64(len(feeds)),
+		Result: feeds,
+	})
 }

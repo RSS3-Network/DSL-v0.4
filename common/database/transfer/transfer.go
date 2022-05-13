@@ -19,6 +19,14 @@ const (
 	FieldTransactionHash = "transaction_hash"
 	// FieldTransactionLogIndex holds the string denoting the transaction_log_index field in the database.
 	FieldTransactionLogIndex = "transaction_log_index"
+	// FieldAddressFrom holds the string denoting the address_from field in the database.
+	FieldAddressFrom = "address_from"
+	// FieldAddressTo holds the string denoting the address_to field in the database.
+	FieldAddressTo = "address_to"
+	// FieldTokenAddress holds the string denoting the token_address field in the database.
+	FieldTokenAddress = "token_address"
+	// FieldTokenID holds the string denoting the token_id field in the database.
+	FieldTokenID = "token_id"
 	// Table holds the table name of the transfer in the database.
 	Table = "transfers"
 )
@@ -30,6 +38,10 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldTransactionHash,
 	FieldTransactionLogIndex,
+	FieldAddressFrom,
+	FieldAddressTo,
+	FieldTokenAddress,
+	FieldTokenID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

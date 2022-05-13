@@ -24,6 +24,14 @@ type Transfer struct {
 	TransactionHash string `json:"transaction_hash,omitempty"`
 	// TransactionLogIndex holds the value of the "transaction_log_index" field.
 	TransactionLogIndex int `json:"transaction_log_index,omitempty"`
+	// AddressFrom holds the value of the "address_from" field.
+	AddressFrom string `json:"address_from,omitempty"`
+	// AddressTo holds the value of the "address_to" field.
+	AddressTo string `json:"address_to,omitempty"`
+	// TokenAddress holds the value of the "token_address" field.
+	TokenAddress string `json:"token_address,omitempty"`
+	// TokenID holds the value of the "token_id" field.
+	TokenID string `json:"token_id,omitempty"`
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -33,7 +41,7 @@ func (*Transfer) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case transfer.FieldID, transfer.FieldTransactionLogIndex:
 			values[i] = new(sql.NullInt64)
-		case transfer.FieldTransactionHash:
+		case transfer.FieldTransactionHash, transfer.FieldAddressFrom, transfer.FieldAddressTo, transfer.FieldTokenAddress, transfer.FieldTokenID:
 			values[i] = new(sql.NullString)
 		case transfer.FieldCreatedAt, transfer.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -82,6 +90,30 @@ func (t *Transfer) assignValues(columns []string, values []interface{}) error {
 			} else if value.Valid {
 				t.TransactionLogIndex = int(value.Int64)
 			}
+		case transfer.FieldAddressFrom:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field address_from", values[i])
+			} else if value.Valid {
+				t.AddressFrom = value.String
+			}
+		case transfer.FieldAddressTo:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field address_to", values[i])
+			} else if value.Valid {
+				t.AddressTo = value.String
+			}
+		case transfer.FieldTokenAddress:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field token_address", values[i])
+			} else if value.Valid {
+				t.TokenAddress = value.String
+			}
+		case transfer.FieldTokenID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field token_id", values[i])
+			} else if value.Valid {
+				t.TokenID = value.String
+			}
 		}
 	}
 	return nil
@@ -118,6 +150,14 @@ func (t *Transfer) String() string {
 	builder.WriteString(t.TransactionHash)
 	builder.WriteString(", transaction_log_index=")
 	builder.WriteString(fmt.Sprintf("%v", t.TransactionLogIndex))
+	builder.WriteString(", address_from=")
+	builder.WriteString(t.AddressFrom)
+	builder.WriteString(", address_to=")
+	builder.WriteString(t.AddressTo)
+	builder.WriteString(", token_address=")
+	builder.WriteString(t.TokenAddress)
+	builder.WriteString(", token_id=")
+	builder.WriteString(t.TokenID)
 	builder.WriteByte(')')
 	return builder.String()
 }
