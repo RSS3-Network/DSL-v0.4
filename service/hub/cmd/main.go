@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 
+	"github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server"
@@ -19,12 +20,27 @@ var rootCommand = cobra.Command{
 
 func main() {
 	srv := server.New(&config.Config{
-		HTTP: &config.HTTP{
+		HTTP: &configx.HTTP{
 			Host: net.IPv4zero.String(),
 			Port: 80,
 		},
-		RabbitMQ: &config.RabbitMQ{
-			URL: "",
+		RabbitMQ: &configx.RabbitMQ{
+			Host:     "localhost",
+			Port:     5672,
+			User:     "guest",
+			Password: "guest",
+		},
+		OpenTelemetry: &configx.OpenTelemetry{
+			Host: "localhost",
+			Port: 14268,
+			Path: "/api/traces",
+		},
+		Postgres: &configx.Postgres{
+			Host:     "localhost",
+			Port:     5432,
+			User:     "postgres",
+			Password: "password",
+			Database: "postgres",
 		},
 	})
 

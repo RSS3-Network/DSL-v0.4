@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/server"
@@ -17,8 +18,14 @@ var rootCommand = cobra.Command{
 
 func main() {
 	srv := server.New(&config.Config{
-		RabbitMQ: &config.RabbitMQ{
-			URL: "",
+		RabbitMQ: &configx.RabbitMQ{
+			Host:     "localhost",
+			Port:     5672,
+			User:     "guest",
+			Password: "guest",
+		},
+		Moralis: &configx.Moralis{
+			Key: "",
 		},
 	})
 

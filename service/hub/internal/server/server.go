@@ -42,7 +42,7 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
-	s.exporter, err = jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(s.config.Jaeger.URL)))
+	s.exporter, err = jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(s.config.OpenTelemetry.String())))
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (s *Server) Initialize() (err error) {
 
 	otel.SetTracerProvider(s.tracerProvider)
 
-	s.databaseClient, err = database.Open(dialect.Postgres, s.config.Postgres.DSN)
+	s.databaseClient, err = database.Open(dialect.Postgres, s.config.Postgres.String())
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
-	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.URL)
+	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
 	if err != nil {
 		return err
 	}

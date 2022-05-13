@@ -22,7 +22,7 @@ type Server struct {
 }
 
 func (s *Server) Initialize() (err error) {
-	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.URL)
+	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
 	if err != nil {
 		return err
 	}

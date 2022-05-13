@@ -1,14 +1,8 @@
 package config
 
+import "github.com/naturalselectionlabs/pregod/common/config"
+
 type Config struct {
-	RabbitMQ *RabbitMQ
-	Moralis  *Moralis
-}
-
-type RabbitMQ struct {
-	URL string
-}
-
-type Moralis struct {
-	Key string
+	RabbitMQ *configx.RabbitMQ
+	Moralis  *configx.Moralis
 }
