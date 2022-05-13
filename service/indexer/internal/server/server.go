@@ -118,7 +118,7 @@ func (s *Server) Run() error {
 		logrus.Infoln(message.Address, message.Network)
 
 		switch message.Network {
-		case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartCain:
+		case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain:
 			if err := s.indexerMoralis.Handle(context.Background(), &message); err != nil {
 				logrus.Errorln(err)
 
