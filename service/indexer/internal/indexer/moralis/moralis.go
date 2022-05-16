@@ -4,18 +4,20 @@ import (
 	"context"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/moralis"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/indexer"
-	"github.com/sirupsen/logrus"
+	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel/sdk/trace"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var _ indexer.Worker = &Indexer{}
 
 type Indexer struct {
-	DatabaseClient *database.Client
+	DatabaseClient *gorm.DB
 	MoralisClient  *moralis.Client
 	TracerProvider *trace.TracerProvider
 }
@@ -37,7 +39,7 @@ func (i *Indexer) Handle(ctx context.Context, message *protocol.Message) error {
 	spanMoralisHandler.End()
 
 	ctx, spanDatabaseHandler := tracer.Start(ctx, "postgres")
-	tx, err := i.DatabaseClient.BeginTx(ctx, nil)
+	tx := i.DatabaseClient.Begin()
 	if err != nil {
 		return err
 	}
@@ -53,22 +55,38 @@ func (i *Indexer) Handle(ctx context.Context, message *protocol.Message) error {
 	}
 
 	for _, transfer := range transfers {
-		if err := tx.Transfer.
-			Create().
-			SetTransactionHash(transfer.TransactionHash).
-			SetTransactionLogIndex(transfer.LogIndex).
-			SetAddressFrom(transfer.FromAddress).
-			SetAddressTo(transfer.ToAddress).
-			SetTokenAddress(transfer.TokenAddress).
-			SetTokenID(transfer.TokenId).
-			Exec(ctx); err != nil {
-			logrus.Errorln(err)
+		tokenValue, err := decimal.NewFromString(transfer.Amount)
+		if err != nil {
+			return err
+		}
 
+		tokenID, err := decimal.NewFromString(transfer.TokenId)
+		if err != nil {
+			return err
+		}
+
+		if err := tx.
+			Model((*model.Transfer)(nil)).
+			Clauses(clause.OnConflict{
+				UpdateAll: true,
+			}).
+			Create(&model.Transfer{
+				TransactionHash:     transfer.TransactionHash,
+				TransactionLogIndex: transfer.LogIndex,
+				AddressFrom:         transfer.FromAddress,
+				AddressTo:           transfer.ToAddress,
+				TokenAddress:        transfer.TokenAddress,
+				TokenStandard:       "erc721",
+				TokenValue:          tokenValue,
+				TokenID:             tokenID,
+				Network:             "ethereum",
+			}).
+			Error; err != nil {
 			return err
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit().Error; err != nil {
 		return err
 	}
 

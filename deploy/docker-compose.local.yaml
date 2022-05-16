@@ -3,6 +3,7 @@ version: "3"
 services:
   postgres:
     image: postgres
+    restart: always
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_DB=postgres
@@ -11,6 +12,7 @@ services:
       - "5432:5432"
   rabbitmq:
     image: rabbitmq:3-management
+    restart: always
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
@@ -19,6 +21,7 @@ services:
       - "15672:15672"
   jaeger:
     image: jaegertracing/all-in-one
+    restart: always
     ports:
       - "5775:5775/udp"
       - "6831:6831/udp"

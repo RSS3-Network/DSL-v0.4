@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/response"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
-	"github.com/shopspring/decimal"
 )
 
 type GetActionListRequest struct {
@@ -48,8 +48,8 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 
 	ctx, spanDatabase := tracer.Start(ctx, "postgres")
 
-	transfers, err := h.DatabaseClient.Transfer.Query().All(ctx)
-	if err != nil {
+	transfers := make([]model.Transfer, 0)
+	if err := h.DatabaseClient.Model((*model.Transfer)(nil)).Find(&transfers).Error; err != nil {
 		return err
 	}
 
@@ -58,25 +58,20 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 	feeds := make([]response.Feed, 0)
 
 	for _, transfer := range transfers {
-		tokenID, err := decimal.NewFromString(transfer.TokenID)
-		if err != nil {
-			return err
-		}
-
 		feeds = append(feeds, response.Feed{
 			Tags:    []string{"transfer"},
-			Network: "ethereum",
+			Network: transfer.Network,
 			Proof:   transfer.TransactionHash,
 			Actions: []response.Action{
 				{
 					Type:          "transfer",
 					From:          transfer.AddressFrom,
-					To:            transfer.TokenAddress,
+					To:            transfer.AddressTo,
 					Token:         "",
 					TokenAddress:  transfer.TokenAddress,
-					TokenStandard: "erc721",
-					TokenID:       tokenID,
-					TokenValue:    decimal.NewFromInt(1),
+					TokenStandard: transfer.TokenStandard,
+					TokenID:       transfer.TokenID,
+					TokenValue:    transfer.TokenValue,
 				},
 			},
 		})

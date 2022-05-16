@@ -2,8 +2,6 @@ VERSION=$(shell git rev-parse --short HEAD)
 
 initialize:
 	go work sync
-	go install entgo.io/ent/cmd/ent@latest
-	cd ./common/database && go run entgo.io/ent/cmd/ent generate ./schema
 
 .PHONY: build
 build:

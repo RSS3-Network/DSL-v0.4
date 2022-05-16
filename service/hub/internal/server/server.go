@@ -1,11 +1,9 @@
 package server
 
 import (
-	"context"
 	"net"
 	"strconv"
 
-	"entgo.io/ent/dialect"
 	"github.com/labstack/echo/v4"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/command"
@@ -20,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 var _ command.Interface = &Server{}
@@ -28,7 +27,7 @@ type Server struct {
 	config             *config.Config
 	httpServer         *echo.Echo
 	httpHandler        *handler.Handler
-	databaseClient     *database.Client
+	databaseClient     *gorm.DB
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
 	exporter           *jaeger.Exporter
@@ -57,12 +56,8 @@ func (s *Server) Initialize() (err error) {
 
 	otel.SetTracerProvider(s.tracerProvider)
 
-	s.databaseClient, err = database.Open(dialect.Postgres, s.config.Postgres.String())
+	s.databaseClient, err = database.Dial(s.config.Postgres.String(), true)
 	if err != nil {
-		return err
-	}
-
-	if err := s.databaseClient.Schema.Create(context.Background()); err != nil {
 		return err
 	}
 
