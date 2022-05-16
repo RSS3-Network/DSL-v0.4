@@ -49,7 +49,10 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 	ctx, spanDatabase := tracer.Start(ctx, "postgres")
 
 	transfers := make([]model.Transfer, 0)
-	if err := h.DatabaseClient.Model((*model.Transfer)(nil)).Find(&transfers).Error; err != nil {
+	if err := h.DatabaseClient.
+		Model((*model.Transfer)(nil)).
+		Where("address_from = ? OR address_to = ?", request.Address, request.Address).
+		Find(&transfers).Error; err != nil {
 		return err
 	}
 
