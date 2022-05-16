@@ -4,6 +4,7 @@ import "github.com/shopspring/decimal"
 
 type Transfer struct {
 	TransactionHash     string          `gorm:"column:transaction_hash;primaryKey"`
+	Tags                []string        `gorm:"column:tags"`
 	TransactionLogIndex int             `gorm:"column:transaction_log_index;primaryKey"`
 	AddressFrom         string          `gorm:"column:address_from"`
 	AddressTo           string          `gorm:"column:address_to"`
