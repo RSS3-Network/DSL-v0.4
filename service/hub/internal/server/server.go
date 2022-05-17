@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -87,6 +88,8 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.httpServer.HTTPErrorHandler = s.httpHandler.ErrorFunc
+
+	s.httpServer.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
 
 	s.httpServer.GET("/addresses/:address/actions", s.httpHandler.GetActionListFunc)
 
