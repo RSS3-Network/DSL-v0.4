@@ -2,15 +2,15 @@ package server
 
 import (
 	"github.com/naturalselectionlabs/pregod/common/command"
-	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
+	"gorm.io/gorm"
 )
 
 var _ command.Interface = &Server{}
 
 type Server struct {
 	config         *config.Config
-	databaseClient *database.Client
+	databaseClient *gorm.DB
 }
 
 func (s *Server) Initialize() error {
