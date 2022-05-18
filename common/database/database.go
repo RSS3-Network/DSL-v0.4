@@ -6,12 +6,10 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	tables = []any{
-		&model.Transaction{},
-		&model.Transfer{},
-	}
-)
+var tables = []any{
+	&model.Transaction{},
+	&model.Transfer{},
+}
 
 func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})

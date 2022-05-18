@@ -29,6 +29,7 @@ func (p *Postgres) String() string {
 var _ fmt.Stringer = &RabbitMQ{}
 
 type RabbitMQ struct {
+	TLS      bool   `mapstructure:"tls"`
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
 	User     string `mapstructure:"user"`
@@ -36,18 +37,23 @@ type RabbitMQ struct {
 }
 
 func (r *RabbitMQ) String() string {
+	protocol := "amqp"
+	if r.TLS {
+		protocol = "amqps"
+	}
 	return fmt.Sprintf(
-		"amqp://%s:%s@%s:%d",
-		r.User, r.Password, r.Host, r.Port,
+		"%s://%s:%s@%s:%d",
+		protocol, r.User, r.Password, r.Host, r.Port,
 	)
 }
 
 var _ fmt.Stringer = &OpenTelemetry{}
 
 type OpenTelemetry struct {
-	Host string `mapstructure:"host"`
-	Port int    `mapstructure:"port"`
-	Path string `mapstructure:"path"`
+	Enabled bool   `mapstructure:"enabled"`
+	Host    string `mapstructure:"host"`
+	Port    int    `mapstructure:"port"`
+	Path    string `mapstructure:"path"`
 }
 
 func (o *OpenTelemetry) String() string {

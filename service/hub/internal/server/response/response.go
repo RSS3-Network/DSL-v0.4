@@ -24,10 +24,7 @@ func (f Feeds) Less(i, j int) bool {
 }
 
 func (f Feeds) Swap(i, j int) {
-	internalFeed := f[i]
-
-	f[i] = f[j]
-	f[j] = internalFeed
+	f[i], f[j] = f[j], f[i]
 }
 
 type Feed struct {

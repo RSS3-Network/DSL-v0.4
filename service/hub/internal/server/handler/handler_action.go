@@ -56,7 +56,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 
 	snapRabbitMQ.End()
 
-	ctx, spanDatabase := tracer.Start(ctx, "postgres")
+	_, spanDatabase := tracer.Start(ctx, "postgres")
 
 	transfers := make([]model.Transfer, 0)
 	if err := h.DatabaseClient.
