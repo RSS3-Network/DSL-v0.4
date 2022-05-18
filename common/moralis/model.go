@@ -38,14 +38,14 @@ type NativeBalance struct {
 }
 
 type TokenTransfer struct {
-	TransactionHash string    `json:"transaction_hash"`
-	Address         string    `json:"address"`
-	BlockTimestamp  time.Time `json:"block_timestamp"`
-	BlockNumber     string    `json:"block_number"`
-	BlockHash       string    `json:"block_hash"`
-	ToAddress       string    `json:"to_address"`
-	FromAddress     string    `json:"from_address"`
-	Value           string    `json:"value"`
+	TransactionHash string `json:"transaction_hash"`
+	Address         string `json:"address"`
+	BlockTimestamp  string `json:"block_timestamp"`
+	BlockNumber     string `json:"block_number"`
+	BlockHash       string `json:"block_hash"`
+	ToAddress       string `json:"to_address"`
+	FromAddress     string `json:"from_address"`
+	Value           string `json:"value"`
 }
 
 type NFTTransfer struct {

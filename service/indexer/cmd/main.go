@@ -16,6 +16,10 @@ var rootCommand = cobra.Command{
 	Version:       constant.Version,
 }
 
+func init() {
+	logrus.SetReportCaller(true)
+}
+
 func main() {
 	viper.SetConfigName("indexer")
 	viper.SetConfigType("yaml")

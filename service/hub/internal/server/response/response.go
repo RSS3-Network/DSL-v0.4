@@ -1,6 +1,8 @@
 package response
 
-import "github.com/shopspring/decimal"
+import (
+	"encoding/json"
+)
 
 type Response struct {
 	Total  int64 `json:"total"`
@@ -8,7 +10,7 @@ type Response struct {
 }
 
 type Feed struct {
-	Tags     []string `json:"tags"`
+	Tag      string   `json:"tag"`
 	Platform string   `json:"platform,omitempty"`
 	Network  string   `json:"network"`
 	Proof    string   `json:"proof"`
@@ -16,12 +18,8 @@ type Feed struct {
 }
 
 type Action struct {
-	Type          string          `json:"type"`
-	From          string          `json:"from"`
-	To            string          `json:"to"`
-	Token         string          `json:"token"`
-	TokenAddress  string          `json:"token_address"`
-	TokenStandard string          `json:"token_standard"`
-	TokenID       decimal.Decimal `json:"token_id"`
-	TokenValue    decimal.Decimal `json:"token_value"`
+	Type     string          `json:"type"`
+	From     string          `json:"from"`
+	To       string          `json:"to"`
+	Metadata json.RawMessage `json:"metadata"`
 }

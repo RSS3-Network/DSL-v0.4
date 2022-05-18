@@ -6,12 +6,18 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/google/go-querystring/query"
+	"github.com/sirupsen/logrus"
 )
 
 const (
-	Endpoint = "https://deep-index.moralis.io/api/v2/"
+	Scheme   = "https"
+	Endpoint = "deep-index.moralis.io"
+
+	MaxOffset = 1000
 )
 
 type Client struct {
@@ -58,10 +64,31 @@ func (c *Client) DoRequest(_ context.Context, request *http.Request) (*Response,
 	return response, httpResponse, err
 }
 
-func (c *Client) GetTransactions(ctx context.Context, address common.Address, option *interface{}) ([]Transaction, *Response, error) {
-	rawURL := fmt.Sprintf("%s%s", Endpoint, address)
+type GetTransactionsOption struct {
+	Chain     string `url:"chain,omitempty"`
+	Address   string `url:"address,omitempty"`
+	FromDate  string `url:"from_date,omitempty"`
+	ToDate    string `url:"to_date,omitempty"`
+	FromBlock string `url:"from_block,omitempty"`
+	ToBlock   string `url:"to_block,omitempty"`
+	Offset    int    `url:"offset,omitempty"`
+	Limit     int    `url:"limit,omitempty"`
+}
 
-	request, err := c.NewRequest(http.MethodGet, rawURL, nil)
+func (c *Client) GetTransactions(ctx context.Context, address common.Address, option *GetTransactionsOption) ([]Transaction, *Response, error) {
+	values, err := query.Values(option)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	requestURL := &url.URL{
+		Scheme:   Scheme,
+		Host:     Endpoint,
+		Path:     fmt.Sprintf("/api/v2/%s", address),
+		RawQuery: values.Encode(),
+	}
+
+	request, err := c.NewRequest(http.MethodGet, requestURL.String(), nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -80,10 +107,31 @@ func (c *Client) GetTransactions(ctx context.Context, address common.Address, op
 	return transactions, response, nil
 }
 
-func (c *Client) GetTokenTransfers(ctx context.Context, address common.Address, option *interface{}) ([]TokenTransfer, *Response, error) {
-	rawURL := fmt.Sprintf("%s%s/erc20/transfers", Endpoint, address)
+type GetTokenTransfersOption struct {
+	Chain     string `url:"chain,omitempty"`
+	Address   string `url:"address,omitempty"`
+	FromDate  string `url:"from_date,omitempty"`
+	ToDate    string `url:"to_date,omitempty"`
+	FromBlock string `url:"from_block,omitempty"`
+	ToBlock   string `url:"to_block,omitempty"`
+	Offset    int    `url:"offset,omitempty"`
+	Limit     int    `url:"limit,omitempty"`
+}
 
-	request, err := c.NewRequest(http.MethodGet, rawURL, nil)
+func (c *Client) GetTokenTransfers(ctx context.Context, address common.Address, option *GetTokenTransfersOption) ([]TokenTransfer, *Response, error) {
+	values, err := query.Values(option)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	requestURL := &url.URL{
+		Scheme:   Scheme,
+		Host:     Endpoint,
+		Path:     fmt.Sprintf("/api/v2/%s/erc20/transfers", address),
+		RawQuery: values.Encode(),
+	}
+
+	request, err := c.NewRequest(http.MethodGet, requestURL.String(), nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -102,10 +150,33 @@ func (c *Client) GetTokenTransfers(ctx context.Context, address common.Address, 
 	return tokenTransfers, response, nil
 }
 
-func (c *Client) GetNFTTransfers(ctx context.Context, address common.Address, option *interface{}) ([]NFTTransfer, *Response, error) {
-	rawURL := fmt.Sprintf("%s%s/nft/transfers", Endpoint, address)
+type GetNFTTransfersOption struct {
+	Chain     string `url:"chain,omitempty"`
+	Address   string `url:"address,omitempty"`
+	FromDate  string `url:"from_date,omitempty"`
+	ToDate    string `url:"to_date,omitempty"`
+	FromBlock string `url:"from_block,omitempty"`
+	ToBlock   string `url:"to_block,omitempty"`
+	Offset    int    `url:"offset,omitempty"`
+	Limit     int    `url:"limit,omitempty"`
+}
 
-	request, err := c.NewRequest(http.MethodGet, rawURL, nil)
+func (c *Client) GetNFTTransfers(ctx context.Context, address common.Address, option *GetNFTTransfersOption) ([]NFTTransfer, *Response, error) {
+	values, err := query.Values(option)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	requestURL := &url.URL{
+		Scheme:   Scheme,
+		Host:     Endpoint,
+		Path:     fmt.Sprintf("/api/v2/%s/nft/transfers", address),
+		RawQuery: values.Encode(),
+	}
+
+	logrus.Infoln(requestURL.String())
+
+	request, err := c.NewRequest(http.MethodGet, requestURL.String(), nil)
 	if err != nil {
 		return nil, nil, err
 	}
