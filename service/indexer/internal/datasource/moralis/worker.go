@@ -3,15 +3,15 @@ package moralis
 import (
 	"context"
 	"encoding/json"
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/moralis"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -37,6 +37,8 @@ func (d *Datasource) Networks() []string {
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
 	transferModels := make([]model.Transfer, 0)
 
+	nonNativeTransferMap := make(map[string]struct{})
+
 	switch message.Network {
 	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain:
 		tokenTransferMap := make(map[string][]moralis.TokenTransfer)
@@ -48,6 +50,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 		for _, tokenTransfer := range tokenTransfers {
 			tokenTransferMap[tokenTransfer.TransactionHash] = append(tokenTransferMap[tokenTransfer.TransactionHash], tokenTransfer)
+			nonNativeTransferMap[tokenTransfer.TransactionHash] = struct{}{}
 		}
 
 		for _, tokenTransfers := range tokenTransferMap {
@@ -65,7 +68,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 				transferModels = append(transferModels, model.Transfer{
 					TransactionHash:     tokenTransfer.TransactionHash,
 					Timestamp:           timestamp,
-					Tags:                []string{"transfer", "token"},
 					TransactionLogIndex: i,
 					AddressFrom:         tokenTransfer.FromAddress,
 					AddressTo:           tokenTransfer.ToAddress,
@@ -96,7 +98,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			transferModels = append(transferModels, model.Transfer{
 				TransactionHash:     nftTransfer.TransactionHash,
 				Timestamp:           timestamp,
-				Tags:                []string{"transfer", "nft"},
 				TransactionLogIndex: nftTransfer.LogIndex,
 				AddressFrom:         nftTransfer.FromAddress,
 				AddressTo:           nftTransfer.ToAddress,
@@ -105,12 +106,79 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 				Source:              d.Name(),
 				SourceData:          sourceData,
 			})
+
+			nonNativeTransferMap[nftTransfer.TransactionHash] = struct{}{}
 		}
 
-		logrus.Infoln(nftTransfers)
+		transactions, err := d.getTransactions(ctx, message)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, transaction := range transactions {
+			if _, exist := nonNativeTransferMap[transaction.Hash]; exist {
+				continue
+			}
+
+			transactionLogIndex, err := strconv.Atoi(transaction.TransactionIndex)
+			if err != nil {
+				return nil, err
+			}
+
+			timestamp, err := time.Parse(time.RFC3339, transaction.BlockTimestamp)
+			if err != nil {
+				return nil, err
+			}
+
+			sourceData, err := json.Marshal(transaction)
+			if err != nil {
+				return nil, err
+			}
+
+			internalTransfer := model.Transfer{
+				TransactionHash:     transaction.Hash,
+				Timestamp:           timestamp,
+				TransactionLogIndex: transactionLogIndex,
+				AddressFrom:         transaction.FromAddress,
+				AddressTo:           transaction.ToAddress,
+				Network:             message.Network,
+				Source:              d.Name(),
+				SourceData:          sourceData,
+			}
+
+			transferModels = append(transferModels, internalTransfer)
+		}
 	}
 
 	return transferModels, nil
+}
+
+func (d *Datasource) getTransactions(ctx context.Context, message *protocol.Message) ([]moralis.Transaction, error) {
+	address := common.HexToAddress(message.Address)
+
+	transactions, response, err := d.moralisClient.GetTransactions(ctx, address, &moralis.GetTransactionsOption{
+		Chain: protocol.NetworkToID(message.Network),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for int64(len(transactions)) < response.Total && len(transactions) <= moralis.MaxOffset {
+		var internalTransactions []moralis.Transaction
+
+		internalTransactions, response, err = d.moralisClient.GetTransactions(ctx, address, &moralis.GetTransactionsOption{
+			Chain:  protocol.NetworkToID(message.Network),
+			Offset: len(transactions),
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		transactions = append(transactions, internalTransactions...)
+	}
+
+	return transactions, nil
 }
 
 func (d *Datasource) getTokenTransfers(ctx context.Context, message *protocol.Message) ([]moralis.TokenTransfer, error) {

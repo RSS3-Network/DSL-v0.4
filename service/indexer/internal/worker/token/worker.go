@@ -61,13 +61,15 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				return nil, err
 			}
 
+			tokenValue := decimal.NewFromInt(1)
+
 			metadataModel.Token = &metadata.Token{
 				TokenAddress:  nftTransfer.TokenAddress,
 				TokenStandard: strings.ToLower(nftTransfer.ContractType),
-				TokenID:       tokenID,
-				TokenValue:    decimal.NewFromInt(1), // TODO ERC1155
+				TokenID:       &tokenID,
+				TokenValue:    &tokenValue, // TODO ERC1155
 			}
-		} else {
+		} else if _, exist = sourceDataMap["address"]; exist {
 			// Token transfer
 			tokenTransfer := moralisx.TokenTransfer{}
 			if err := json.Unmarshal(transfer.SourceData, &tokenTransfer); err != nil {
@@ -81,8 +83,24 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 
 			metadataModel.Token = &metadata.Token{
 				TokenAddress:  tokenTransfer.Address,
-				TokenStandard: "erc20", // TODO Native
-				TokenValue:    tokenValue,
+				TokenStandard: "erc20",
+				TokenValue:    &tokenValue,
+			}
+		} else {
+			// Native transfer
+			nativeTransfer := moralisx.Transaction{}
+			if err := json.Unmarshal(transfer.SourceData, &nativeTransfer); err != nil {
+				return nil, err
+			}
+
+			tokenValue, err := decimal.NewFromString(nativeTransfer.Value)
+			if err != nil {
+				return nil, err
+			}
+
+			metadataModel.Token = &metadata.Token{
+				TokenStandard: "native",
+				TokenValue:    &tokenValue,
 			}
 		}
 

@@ -10,7 +10,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/go-querystring/query"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -173,8 +172,6 @@ func (c *Client) GetNFTTransfers(ctx context.Context, address common.Address, op
 		Path:     fmt.Sprintf("/api/v2/%s/nft/transfers", address),
 		RawQuery: values.Encode(),
 	}
-
-	logrus.Infoln(requestURL.String())
 
 	request, err := c.NewRequest(http.MethodGet, requestURL.String(), nil)
 	if err != nil {

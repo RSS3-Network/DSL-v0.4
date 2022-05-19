@@ -21,10 +21,10 @@ type Metadata struct {
 }
 
 type Token struct {
-	TokenAddress  string          `json:"token_address"`
-	TokenStandard string          `json:"token_standard"`
-	TokenID       decimal.Decimal `json:"token_id,omitempty"`
-	TokenValue    decimal.Decimal `json:"token_value"`
+	TokenAddress  string           `json:"token_address,omitempty"`
+	TokenStandard string           `json:"token_standard"`
+	TokenID       *decimal.Decimal `json:"token_id,omitempty"`
+	TokenValue    *decimal.Decimal `json:"token_value"`
 }
 
 type Swap struct {
