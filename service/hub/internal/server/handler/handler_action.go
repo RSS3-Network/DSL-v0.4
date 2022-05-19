@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -66,6 +67,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		return err
 	}
 
+	// Hash map is unordered
 	transferMap := make(map[string][]model.Transfer)
 	for _, transfer := range transfers {
 		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
@@ -79,8 +81,9 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		firstTransfer := transfers[0]
 
 		feed := response.Feed{
-			Network: firstTransfer.Network,
-			Proof:   firstTransfer.TransactionHash,
+			Timestamp: firstTransfer.Timestamp,
+			Network:   firstTransfer.Network,
+			Proof:     firstTransfer.TransactionHash,
 		}
 
 		for _, transfer := range transfers {
@@ -105,6 +108,8 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 
 		feeds = append(feeds, feed)
 	}
+
+	sort.Sort(response.Feeds(feeds))
 
 	return c.JSON(http.StatusOK, &response.Response{
 		Total:  int64(len(feeds)),
