@@ -42,7 +42,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				return nil, err
 			}
 
-			if strings.ToLower(transfer.AddressFrom) == strings.ToLower(message.Address) {
+			if strings.EqualFold(transfer.AddressFrom, message.Address) {
 				transfer.Type = "swap_out"
 			} else {
 				transfer.Type = "swap_in"

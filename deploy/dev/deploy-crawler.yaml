@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pregod2-crawler
+  namespace: pregod
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: pregod2-crawler
+  template:
+    metadata:
+      labels:
+        app: pregod2-crawler
+    spec:
+      containers:
+        - image: $IMAGE_TAG_RELEASE
+          imagePullPolicy: Always
+          name: pregod2
+          envFrom:
+            - secretRef:
+                name: pregod2
+          command:
+            - crawler
+          resources:
+            requests:
+              memory: "200Mi"
+              cpu: "100m"
+            limits:
+              memory: "500Mi"
+              cpu: "500m"

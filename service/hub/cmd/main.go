@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server"
@@ -22,6 +24,10 @@ func main() {
 	viper.AddConfigPath("/etc/pregod/")
 	viper.AddConfigPath("$HOME/.pregod/")
 	viper.AddConfigPath("./deploy/config/")
+	// `opentelemetry.host` -> `CONFIG_ENV_OPENTELEMETRY_HOST`
+	viper.SetEnvPrefix("CONFIG_ENV")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
 		logrus.Fatalln(err)

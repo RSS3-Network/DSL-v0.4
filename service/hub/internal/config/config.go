@@ -1,6 +1,8 @@
 package config
 
-import "github.com/naturalselectionlabs/pregod/common/config"
+import (
+	configx "github.com/naturalselectionlabs/pregod/common/config"
+)
 
 type Config struct {
 	HTTP          *configx.HTTP          `mapstructure:"http"`

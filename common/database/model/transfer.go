@@ -15,7 +15,7 @@ type Transfer struct {
 	TransactionLogIndex int            `gorm:"column:transaction_log_index;primaryKey"`
 	AddressFrom         string         `gorm:"column:address_from"`
 	AddressTo           string         `gorm:"column:address_to"`
-	//Attachments         json.RawMessage `gorm:"column:attachments;type:jsonb;default:'[]'"`
+	// Attachments         json.RawMessage `gorm:"column:attachments;type:jsonb;default:'[]'"`
 	Metadata   json.RawMessage `gorm:"column:metadata;type:jsonb;default:'{}'"`
 	Network    string          `gorm:"column:network;primaryKey"`
 	Source     string          `gorm:"column:source"`

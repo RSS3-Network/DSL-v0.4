@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pregod2-indexer
+  namespace: pregod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pregod2-indexer
+  template:
+    metadata:
+      labels:
+        app: pregod2-indexer
+    spec:
+      containers:
+        - image: $IMAGE_TAG_RELEASE
+          imagePullPolicy: Always
+          name: pregod2
+          envFrom:
+            - secretRef:
+                name: pregod2
+          command:
+            - indexer
+          resources:
+            requests:
+              memory: "200Mi"
+              cpu: "100m"
+            limits:
+              memory: "500Mi"
+              cpu: "500m"

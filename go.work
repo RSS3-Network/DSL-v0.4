@@ -1,8 +1,0 @@
-go 1.18
-
-use (
-	./common
-	./service/crawler
-	./service/hub
-	./service/indexer
-)

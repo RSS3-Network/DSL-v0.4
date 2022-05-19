@@ -1,0 +1,51 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: pregod-hub
+  namespace: pregod
+spec:
+  entryPoints:
+  - web
+  routes:
+  - kind: Rule
+    match: Host(`pregod2.rss3.dev`)
+    services:
+    - name: pregod2-hub-api
+      port: 80
+    middlewares:
+      - name: pregod-hub-ratelimit
+      - name: pregod-hub-cors
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: pregod-hub-ratelimit
+  namespace: pregod
+spec:
+  rateLimit:
+    period: 1m
+    average: 600
+    sourceCriterion:
+      ipStrategy:
+        depth: 2
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: pregod-hub-cors
+  namespace: pregod
+spec:
+  headers:
+    # https://doc.traefik.io/traefik/middlewares/http/headers/#accesscontrolallowcredentials
+    accessControlAllowMethods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "DELETE"
+      - "OPTIONS"
+    accessControlAllowOriginList:
+      - "*"
+    accessControlAllowHeaders:
+      - "*"
+    accessControlMaxAge: 100
+    addVaryHeader: true
