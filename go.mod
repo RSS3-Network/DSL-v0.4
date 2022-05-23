@@ -14,6 +14,7 @@ require (
 	github.com/spf13/viper v1.11.0
 	go.opentelemetry.io/otel v1.7.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.7.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.7.0
 	go.opentelemetry.io/otel/sdk v1.7.0
 	go.uber.org/zap v1.21.0
 	gorm.io/driver/postgres v1.3.5

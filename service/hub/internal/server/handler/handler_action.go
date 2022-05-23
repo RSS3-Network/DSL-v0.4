@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/response"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
 )
 
 type GetActionListRequest struct {
@@ -19,17 +20,18 @@ type GetActionListRequest struct {
 }
 
 func (h *Handler) GetActionListFunc(c echo.Context) error {
-	tracer := h.TracerProvider.Tracer("handler_get_action_list")
+	tracer := otel.Tracer("handler_get_action_list")
 
-	ctx, spanHTTPHandler := tracer.Start(c.Request().Context(), "http")
-	defer spanHTTPHandler.End()
+	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
+
+	defer httpSnap.End()
 
 	request := GetActionListRequest{}
 	if err := c.Bind(&request); err != nil {
 		return err
 	}
 
-	ctx, snapRabbitMQ := tracer.Start(ctx, "rabbitmq")
+	ctx, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")
 
 	networks := []string{
 		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
@@ -54,9 +56,9 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		}
 	}
 
-	snapRabbitMQ.End()
+	rabbitmqSnap.End()
 
-	_, spanDatabase := tracer.Start(ctx, "postgres")
+	ctx, postgresSnap := tracer.Start(ctx, "postgres")
 
 	transfers := make([]model.Transfer, 0)
 	if err := h.DatabaseClient.
@@ -73,7 +75,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
 	}
 
-	spanDatabase.End()
+	postgresSnap.End()
 
 	feeds := make([]response.Feed, 0)
 

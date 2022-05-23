@@ -1,7 +1,7 @@
 VERSION=$(shell git rev-parse --short HEAD)
 
 initialize:
-	go work sync
+	go mod tidy
 
 .PHONY: build
 build:
@@ -11,7 +11,7 @@ build:
     	-o ./build/pregod_hub ./service/hub/cmd/main.go
 	go build \
     	-ldflags "-w -s -X github.com/naturalselectionlabs/pregod/common/constant.Version=$(VERSION)" \
-	-o ./build/pregod_indexer ./service/indexer/cmd/main.go
+		-o ./build/pregod_indexer ./service/indexer/cmd/main.go
 
 # fail coverage report under xx percent
 DIR_TEST = .test

@@ -8,6 +8,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
@@ -18,7 +19,6 @@ import (
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
@@ -34,27 +34,31 @@ type Server struct {
 	rabbitmqChannel    *rabbitmq.Channel
 	rabbitmqQueue      rabbitmq.Queue
 	databaseClient     *gorm.DB
-	exporter           *jaeger.Exporter
-	tracerProvider     *trace.TracerProvider
 	workers            []worker.Worker
 	datasources        []datasource.Datasource
 }
 
 func (s *Server) Initialize() (err error) {
-	s.exporter, err = jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(s.config.OpenTelemetry.String())))
-	if err != nil {
-		return err
+	var exporter trace.SpanExporter
+
+	if s.config.OpenTelemetry == nil {
+		if exporter, err = opentelemetry.DialWithPath(opentelemetry.DefaultPath); err != nil {
+			return err
+		}
+	} else {
+		if exporter, err = opentelemetry.DialWithURL(s.config.OpenTelemetry.String()); err != nil {
+			return err
+		}
 	}
 
-	s.tracerProvider = trace.NewTracerProvider(
-		trace.WithBatcher(s.exporter),
+	otel.SetTracerProvider(trace.NewTracerProvider(
+		trace.WithBatcher(exporter),
 		trace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceNameKey.String("pregod-indexer"),
+			semconv.ServiceVersionKey.String("v0.5.0"),
 		)),
-	)
-
-	otel.SetTracerProvider(s.tracerProvider)
+	))
 
 	s.databaseClient, err = database.Dial(s.config.Postgres.String(), true)
 	if err != nil {
