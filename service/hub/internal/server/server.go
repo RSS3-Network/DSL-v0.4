@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"net"
 	"strconv"
 
@@ -80,7 +81,12 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	if err := cache.Dial(*s.config.Redis); err != nil {
+		return err
+	}
+
 	s.httpServer = echo.New()
+
 	s.httpServer.HideBanner = true
 	s.httpServer.HidePort = true
 
