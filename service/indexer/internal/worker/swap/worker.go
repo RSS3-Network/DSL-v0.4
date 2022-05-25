@@ -3,6 +3,8 @@ package swap
 import (
 	"context"
 	"encoding/json"
+	"github.com/go-redis/redis/v8"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -34,8 +36,15 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 			continue
 		}
 
-		// TODO Refactor this demo
-		if strings.ToLower(transfer.AddressTo) == "0x42f0530351471dab7ec968476d19bd36af9ec52d" || strings.ToLower(transfer.AddressFrom) == "0x42f0530351471dab7ec968476d19bd36af9ec52d" {
+		var toPool model.Swap
+
+		toErr := cache.HGet(context.Background(), "swappools", transfer.AddressTo, &toPool)
+
+		var fromPool model.Swap
+
+		fromErr := cache.HGet(context.Background(), "swappools", transfer.AddressFrom, &fromPool)
+
+		if (toErr != nil || toErr == redis.Nil) || (fromErr != nil || fromErr == redis.Nil) {
 			var metadataModel metadata.Metadata
 
 			if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
@@ -43,14 +52,18 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 			}
 
 			if strings.EqualFold(transfer.AddressFrom, message.Address) {
-				transfer.Type = "swap_out"
-			} else {
 				transfer.Type = "swap_in"
-			}
+				metadataModel.Swap = &metadata.Swap{
+					Name: fromPool.Name,
+					Pool: transfer.AddressFrom,
+				}
 
-			metadataModel.Swap = &metadata.Swap{
-				Name: "UniSwap",
-				Pool: "DAI/USDT",
+			} else {
+				transfer.Type = "swap_out"
+				metadataModel.Swap = &metadata.Swap{
+					Name: toPool.Name,
+					Pool: transfer.AddressTo,
+				}
 			}
 
 			rawMetadata, err := json.Marshal(metadataModel)

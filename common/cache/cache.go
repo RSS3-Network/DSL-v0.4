@@ -75,6 +75,16 @@ func HSet(ctx context.Context, key string, field string, data interface{}) error
 	return nil
 }
 
+func HGet(ctx context.Context, key string, field string, data interface{}) error {
+
+	value, err := rdb.HGet(ctx, key, field).Result()
+	if err != nil || err == redis.Nil {
+		return err
+	}
+
+	return json.Unmarshal([]byte(value), &data)
+}
+
 func Exists(ctx context.Context, key string) (bool, error) {
 	exist, err := rdb.Exists(ctx, key).Result()
 
