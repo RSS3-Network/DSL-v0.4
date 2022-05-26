@@ -34,7 +34,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 	ctx, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")
 
 	networks := []string{
-		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
+		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkArweave,
 	}
 
 	for _, network := range networks {
@@ -63,7 +63,12 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 	transfers := make([]model.Transfer, 0)
 	if err := h.DatabaseClient.
 		Model((*model.Transfer)(nil)).
-		Where("address_from = ? OR address_to = ?", strings.ToLower(request.Address), strings.ToLower(request.Address)).
+		Where(
+			"LOWER(address_from) = ? OR LOWER(address_to) = ? OR (network = 'arweave' AND LOWER(metadata #>> '{mirror, contributor}') = ?)",
+			strings.ToLower(request.Address),
+			strings.ToLower(request.Address),
+			strings.ToLower(request.Address),
+		).
 		Order("timestamp DESC").
 		Find(&transfers).Error; err != nil {
 		return err

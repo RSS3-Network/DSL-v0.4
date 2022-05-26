@@ -6,6 +6,7 @@ const (
 	NetworkPolygon           = "polygon"
 	NetworkZkSync            = "zksync"
 	NetworkXDAI              = "xdai"
+	NetworkArweave           = "arweave"
 )
 
 func NetworkToID(networkName string) string {

@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/shopspring/decimal"
+	"go.opentelemetry.io/otel"
 )
 
 var _ worker.Worker = &service{}
@@ -29,6 +30,18 @@ func (s *service) Network() []string {
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transfers []model.Transfer) ([]model.Transfer, error) {
+	tracer := otel.Tracer("worker_token")
+
+	ctx, handlerSpan := tracer.Start(ctx, "handler")
+
+	defer handlerSpan.End()
+
+	ctx, databaseSpan := tracer.Start(ctx, "database")
+
+	// TODO
+
+	databaseSpan.End()
+
 	internalTransfers := make([]model.Transfer, 0)
 
 	for _, transfer := range transfers {

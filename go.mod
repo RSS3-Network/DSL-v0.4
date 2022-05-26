@@ -9,6 +9,7 @@ require (
 	github.com/lib/pq v1.10.6
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/shopspring/decimal v1.2.0
+	github.com/shurcooL/graphql v0.0.0-20220520033453-bdb1221e171e
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.11.0

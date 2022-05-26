@@ -16,8 +16,9 @@ func init() {
 }
 
 type Metadata struct {
-	Token *Token `json:"token,omitempty"`
-	Swap  *Swap  `json:"swap,omitempty"`
+	Token  *Token  `json:"token,omitempty"`
+	Swap   *Swap   `json:"swap,omitempty"`
+	Mirror *Mirror `json:"mirror,omitempty"`
 }
 
 type Token struct {
@@ -25,6 +26,14 @@ type Token struct {
 	TokenStandard string           `json:"token_standard"`
 	TokenID       *decimal.Decimal `json:"token_id,omitempty"`
 	TokenValue    *decimal.Decimal `json:"token_value"`
+}
+
+type Mirror struct {
+	ContentType           string          `json:"content_type"`
+	Contributor           string          `json:"contributor"`
+	ContentDigest         string          `json:"content_digest"`
+	OriginalContentDigest string          `json:"original_content_digest,omitempty"`
+	Content               json.RawMessage `json:"content"`
 }
 
 type Swap struct {
