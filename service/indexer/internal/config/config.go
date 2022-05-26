@@ -9,4 +9,5 @@ type Config struct {
 	Postgres      *configx.Postgres      `mapstructure:"postgres"`
 	OpenTelemetry *configx.OpenTelemetry `mapstructure:"opentelemetry"`
 	Moralis       *configx.Moralis       `mapstructure:"moralis"`
+	Redis         *configx.Redis         `mapstructure:"redis"`
 }

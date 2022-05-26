@@ -9,6 +9,7 @@ import (
 var tables = []any{
 	&model.Transaction{},
 	&model.Transfer{},
+	&model.Swap{},
 }
 
 func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {

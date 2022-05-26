@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -36,6 +38,7 @@ type Server struct {
 	rabbitmqChannel    *rabbitmq.Channel
 	rabbitmqQueue      rabbitmq.Queue
 	databaseClient     *gorm.DB
+	redisClient        *redis.Client
 	datasources        []datasource.Datasource
 	workers            []worker.Worker
 }
@@ -64,6 +67,10 @@ func (s *Server) Initialize() (err error) {
 
 	s.databaseClient, err = database.Dial(s.config.Postgres.String(), true)
 	if err != nil {
+		return err
+	}
+
+	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
 		return err
 	}
 
@@ -100,7 +107,13 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		token.New(), swap.New(), mirror.New(),
+		token.New(), swap.New(s.databaseClient), mirror.New(),
+	}
+
+	for _, internalWorker := range s.workers {
+		if err := internalWorker.Initialize(context.Background()); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -181,7 +194,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	for _, internalWorker := range s.workers {
 		supportedNetwork := false
 
-		for _, network := range internalWorker.Network() {
+		for _, network := range internalWorker.Networks() {
 			if network == message.Network {
 				supportedNetwork = true
 

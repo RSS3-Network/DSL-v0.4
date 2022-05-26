@@ -66,3 +66,10 @@ func (o *OpenTelemetry) String() string {
 type Moralis struct {
 	Key string `mapstructure:"key"`
 }
+
+type Redis struct {
+	Addr       string `mapstructure:"addr"`
+	Password   string `mapstructure:"password"`
+	DB         int    `mapstructure:"db"`
+	TLSEnabled bool   `mapstructure:"tls"`
+}

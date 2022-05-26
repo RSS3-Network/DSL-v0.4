@@ -4,9 +4,11 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
@@ -29,6 +31,7 @@ type Server struct {
 	httpServer         *echo.Echo
 	httpHandler        *handler.Handler
 	databaseClient     *gorm.DB
+	redisClient        *redis.Client
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
 	logger             *zap.Logger
@@ -80,7 +83,12 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
+		return err
+	}
+
 	s.httpServer = echo.New()
+
 	s.httpServer.HideBanner = true
 	s.httpServer.HidePort = true
 

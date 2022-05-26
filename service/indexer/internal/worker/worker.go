@@ -9,6 +9,7 @@ import (
 
 type Worker interface {
 	Name() string
-	Network() []string
+	Networks() []string
+	Initialize(ctx context.Context) error
 	Handle(ctx context.Context, message *protocol.Message, transfers []model.Transfer) ([]model.Transfer, error)
 }

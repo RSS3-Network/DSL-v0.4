@@ -2,7 +2,10 @@ package swap
 
 import (
 	"context"
+	"embed"
+	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -10,20 +13,77 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-var _ worker.Worker = &service{}
+var (
+	_ worker.Worker = (*service)(nil)
 
-type service struct{}
+	//go:embed asset/*
+	asseFS embed.FS
+)
+
+type service struct {
+	databaseClient *gorm.DB
+}
 
 func (s *service) Name() string {
 	return "swap"
 }
 
-func (s *service) Network() []string {
+func (s *service) Networks() []string {
 	return []string{
 		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 	}
+}
+
+func (s *service) Initialize(ctx context.Context) error {
+	file, err := asseFS.Open("asset/swap.csv")
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		_ = file.Close()
+	}()
+
+	reader := csv.NewReader(file)
+
+	records, err := reader.ReadAll()
+	if err != nil {
+		return err
+	}
+
+	swapModels := make([]model.Swap, 0)
+
+	for i, record := range records {
+		if i == 0 {
+			continue
+		}
+
+		swapModels = append(swapModels, model.Swap{
+			ContractAddress: record[0],
+			Name:            record[1],
+			Source:          record[2],
+		})
+	}
+
+	if len(swapModels) == 0 {
+		return nil
+	}
+
+	if err := s.databaseClient.
+		Model((*model.Swap)(nil)).
+		Clauses(clause.OnConflict{
+			DoNothing: true,
+		}).
+		Create(swapModels).
+		Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transfers []model.Transfer) ([]model.Transfer, error) {
@@ -34,39 +94,65 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 			continue
 		}
 
-		// TODO Refactor this demo
-		if strings.ToLower(transfer.AddressTo) == "0x42f0530351471dab7ec968476d19bd36af9ec52d" || strings.ToLower(transfer.AddressFrom) == "0x42f0530351471dab7ec968476d19bd36af9ec52d" {
-			var metadataModel metadata.Metadata
+		var swapModel model.Swap
 
-			if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-				return nil, err
-			}
-
-			if strings.EqualFold(transfer.AddressFrom, message.Address) {
-				transfer.Type = "swap_out"
-			} else {
-				transfer.Type = "swap_in"
-			}
-
-			metadataModel.Swap = &metadata.Swap{
-				Name: "UniSwap",
-				Pool: "DAI/USDT",
-			}
-
-			rawMetadata, err := json.Marshal(metadataModel)
-			if err != nil {
-				return nil, err
-			}
-
-			transfer.Metadata = rawMetadata
-
-			internalTransfers = append(internalTransfers, transfer)
+		if err := s.databaseClient.
+			Model((*model.Swap)(nil)).
+			Where(map[string]interface{}{
+				"contract_address": transfer.AddressFrom,
+			}).
+			First(&swapModel).
+			Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
 		}
+
+		if swapModel.ContractAddress == "" {
+			if err := s.databaseClient.
+				Model((*model.Swap)(nil)).
+				Where(map[string]interface{}{
+					"contract_address": transfer.AddressTo,
+				}).
+				First(&swapModel).
+				Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, err
+			}
+		}
+
+		if swapModel.ContractAddress == "" {
+			continue
+		}
+
+		var metadataModel metadata.Metadata
+		if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
+			return nil, err
+		}
+
+		if strings.EqualFold(transfer.AddressFrom, message.Address) {
+			transfer.Type = "swap_in"
+		} else {
+			transfer.Type = "swap_out"
+		}
+
+		metadataModel.Swap = &metadata.Swap{
+			Name: swapModel.Source,
+			Pool: swapModel.Name,
+		}
+
+		rawMetadata, err := json.Marshal(metadataModel)
+		if err != nil {
+			return nil, err
+		}
+
+		transfer.Metadata = rawMetadata
+
+		internalTransfers = append(internalTransfers, transfer)
 	}
 
 	return internalTransfers, nil
 }
 
-func New() worker.Worker {
-	return &service{}
+func New(databaseClient *gorm.DB) worker.Worker {
+	return &service{
+		databaseClient: databaseClient,
+	}
 }

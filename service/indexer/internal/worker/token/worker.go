@@ -23,10 +23,14 @@ func (s *service) Name() string {
 	return "token"
 }
 
-func (s *service) Network() []string {
+func (s *service) Networks() []string {
 	return []string{
 		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 	}
+}
+
+func (s *service) Initialize(ctx context.Context) error {
+	return nil
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transfers []model.Transfer) ([]model.Transfer, error) {

@@ -21,3 +21,9 @@ opentelemetry:
   host: 127.0.0.1
   port: 14268
   path: /api/traces
+
+redis:
+  tls: false
+  addr: 127.0.0.1:6379
+  db: 0
+  password: ''
