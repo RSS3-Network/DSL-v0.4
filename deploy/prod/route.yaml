@@ -8,7 +8,7 @@ spec:
   - web
   routes:
   - kind: Rule
-    match: Host(`test-pregod2.rss3.dev`)
+    match: Host(`pregod2.rss3.dev`)
     services:
     - name: pregod2-hub-api
       port: 80

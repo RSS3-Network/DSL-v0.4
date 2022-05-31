@@ -40,7 +40,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 
 	defer handlerSpan.End()
 
-	ctx, databaseSpan := tracer.Start(ctx, "database")
+	ctx, databaseSpan := tracer.Start(ctx, "database") //nolint:ineffassign,staticcheck
 
 	// TODO
 
