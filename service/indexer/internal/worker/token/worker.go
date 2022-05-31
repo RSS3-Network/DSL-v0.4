@@ -5,9 +5,10 @@ import (
 	"embed"
 	"encoding/csv"
 	"encoding/json"
+	"strings"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
