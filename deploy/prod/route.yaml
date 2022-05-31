@@ -1,7 +1,7 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: pregod-hub
+  name: pregod2-hub
   namespace: pregod
 spec:
   entryPoints:
@@ -19,7 +19,7 @@ spec:
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  name: pregod-hub-ratelimit
+  name: pregod2-hub-ratelimit
   namespace: pregod
 spec:
   rateLimit:
@@ -32,7 +32,7 @@ spec:
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  name: pregod-hub-cors
+  name: pregod2-hub-cors
   namespace: pregod
 spec:
   headers:
