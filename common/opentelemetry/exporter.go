@@ -32,5 +32,5 @@ func DialWithPath(path string) (exporter trace.SpanExporter, err error) {
 		stdouttrace.WithoutTimestamps(),
 	)
 
-	return exporter, nil
+	return exporter, err
 }

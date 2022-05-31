@@ -58,7 +58,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 
 	rabbitmqSnap.End()
 
-	ctx, postgresSnap := tracer.Start(ctx, "postgres")
+	ctx, postgresSnap := tracer.Start(ctx, "postgres") //nolint:ineffassign,staticcheck
 
 	transfers := make([]model.Transfer, 0)
 	if err := h.DatabaseClient.
