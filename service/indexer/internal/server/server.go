@@ -107,7 +107,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		token.New(), swap.New(s.databaseClient), mirror.New(),
+		token.New(s.databaseClient), swap.New(s.databaseClient), mirror.New(),
 	}
 
 	for _, internalWorker := range s.workers {

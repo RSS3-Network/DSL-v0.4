@@ -10,6 +10,7 @@ var tables = []any{
 	&model.Transaction{},
 	&model.Transfer{},
 	&model.Swap{},
+	&model.ExchangeWallet{},
 }
 
 func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {

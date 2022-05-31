@@ -2,7 +2,11 @@ package token
 
 import (
 	"context"
+	"embed"
+	"encoding/csv"
 	"encoding/json"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -15,9 +19,16 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-var _ worker.Worker = &service{}
+var (
+	_ worker.Worker = (*service)(nil)
 
-type service struct{}
+	//go:embed asset/*
+	asseFS embed.FS
+)
+
+type service struct {
+	databaseClient *gorm.DB
+}
 
 func (s *service) Name() string {
 	return "token"
@@ -30,6 +41,56 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) error {
+	dir := "asset/cex_wallet"
+	files, err := asseFS.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, path := range files {
+		file, err := asseFS.Open(dir + "/" + path.Name())
+		if err != nil {
+			return err
+		}
+
+		reader := csv.NewReader(file)
+
+		records, err := reader.ReadAll()
+		if err != nil {
+			return err
+		}
+
+		// file.Close()
+
+		wallentModels := make([]model.ExchangeWallet, 0)
+
+		for i, record := range records {
+			if i == 0 {
+				continue
+			}
+
+			wallentModels = append(wallentModels, model.ExchangeWallet{
+				WalletAddress: record[0],
+				Name:          record[1],
+				Source:        record[2],
+			})
+		}
+
+		if len(wallentModels) == 0 {
+			return nil
+		}
+
+		if err := s.databaseClient.
+			Model((*model.ExchangeWallet)(nil)).
+			Clauses(clause.OnConflict{
+				DoNothing: true,
+			}).
+			Create(wallentModels).
+			Error; err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -133,6 +194,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 	return internalTransfers, nil
 }
 
-func New() worker.Worker {
-	return &service{}
+func New(databaseClient *gorm.DB) worker.Worker {
+	return &service{
+		databaseClient: databaseClient,
+	}
 }
