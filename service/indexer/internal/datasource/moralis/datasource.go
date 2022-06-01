@@ -98,7 +98,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			transferModels = append(transferModels, model.Transfer{
 				TransactionHash:     nftTransfer.TransactionHash,
 				Timestamp:           timestamp,
-				TransactionLogIndex: nftTransfer.LogIndex,
+				TransactionLogIndex: int(nftTransfer.LogIndex.BigInt().Int64()),
 				AddressFrom:         nftTransfer.FromAddress,
 				AddressTo:           nftTransfer.ToAddress,
 				Network:             message.Network,

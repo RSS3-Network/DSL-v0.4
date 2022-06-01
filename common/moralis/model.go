@@ -2,6 +2,7 @@ package moralis
 
 import (
 	"encoding/json"
+	"github.com/shopspring/decimal"
 )
 
 type Response struct {
@@ -48,17 +49,17 @@ type TokenTransfer struct {
 }
 
 type NFTTransfer struct {
-	TokenAddress     string `json:"token_address"`
-	TokenId          string `json:"token_id"`
-	FromAddress      string `json:"from_address"`
-	ToAddress        string `json:"to_address"`
-	Amount           string `json:"amount"`
-	ContractType     string `json:"contract_type"`
-	BlockNumber      string `json:"block_number"`
-	BlockTimestamp   string `json:"block_timestamp"`
-	BlockHash        string `json:"block_hash"`
-	TransactionHash  string `json:"transaction_hash"`
-	TransactionType  string `json:"transaction_type"`
-	TransactionIndex int    `json:"transaction_index"`
-	LogIndex         int    `json:"log_index"`
+	TokenAddress     string          `json:"token_address"`
+	TokenId          string          `json:"token_id"`
+	FromAddress      string          `json:"from_address"`
+	ToAddress        string          `json:"to_address"`
+	Amount           string          `json:"amount"`
+	ContractType     string          `json:"contract_type"`
+	BlockNumber      string          `json:"block_number"`
+	BlockTimestamp   string          `json:"block_timestamp"`
+	BlockHash        string          `json:"block_hash"`
+	TransactionHash  string          `json:"transaction_hash"`
+	TransactionType  string          `json:"transaction_type"`
+	TransactionIndex decimal.Decimal `json:"transaction_index"`
+	LogIndex         decimal.Decimal `json:"log_index"`
 }
