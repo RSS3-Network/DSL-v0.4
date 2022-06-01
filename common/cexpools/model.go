@@ -1,4 +1,4 @@
-package thegraph
+package cexpools
 
 type Info struct {
 	Network          string `json:"network"`
