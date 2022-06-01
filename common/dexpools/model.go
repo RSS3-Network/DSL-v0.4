@@ -1,4 +1,4 @@
-package cexpools
+package dexpools
 
 type Info struct {
 	Network          string `json:"network"`

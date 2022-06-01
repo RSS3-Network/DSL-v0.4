@@ -1,4 +1,4 @@
-package cexpools
+package dexpools
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strings"
 
-	graphqlx "github.com/naturalselectionlabs/pregod/common/cexpools/graphql"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/dexpools/graphql"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/shurcooL/graphql"
 )

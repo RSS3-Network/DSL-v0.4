@@ -1,18 +1,18 @@
-package cexpools_test
+package dexpools_test
 
 import (
 	"context"
-	"github.com/naturalselectionlabs/pregod/common/cexpools"
+	"github.com/naturalselectionlabs/pregod/common/dexpools"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"testing"
 )
 
 var (
-	client *cexpools.Client
+	client *dexpools.Client
 )
 
 func init() {
-	client = cexpools.NewClient()
+	client = dexpools.NewClient()
 }
 
 // this test might take a while to run (>1 minutes)

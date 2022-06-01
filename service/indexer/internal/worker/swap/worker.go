@@ -2,14 +2,13 @@ package swap
 
 import (
 	"context"
-	"embed"
-	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/dexpools"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -17,15 +16,11 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-var (
-	_ worker.Worker = (*service)(nil)
-
-	//go:embed asset/*
-	asseFS embed.FS
-)
+var _ worker.Worker = &service{}
 
 type service struct {
 	databaseClient *gorm.DB
+	poolClient     *dexpools.Client
 }
 
 func (s *service) Name() string {
@@ -38,49 +33,34 @@ func (s *service) Networks() []string {
 	}
 }
 
+// Initialize TODO: convert into a cron job
 func (s *service) Initialize(ctx context.Context) error {
-	file, err := asseFS.Open("asset/swap.csv")
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		_ = file.Close()
-	}()
-
-	reader := csv.NewReader(file)
-
-	records, err := reader.ReadAll()
-	if err != nil {
-		return err
-	}
-
-	swapModels := make([]model.Swap, 0)
-
-	for i, record := range records {
-		if i == 0 {
-			continue
+	for _, dex := range protocol.SwapPools {
+		result, err := s.poolClient.GetSwapPools(context.Background(), dex)
+		if err != nil {
+			return err
 		}
 
-		swapModels = append(swapModels, model.Swap{
-			ContractAddress: record[0],
-			Name:            record[1],
-			Source:          record[2],
-		})
-	}
+		pools := make([]model.Swap, len(result))
 
-	if len(swapModels) == 0 {
-		return nil
-	}
+		for i, pair := range result {
+			pools[i] = model.Swap{
+				Source:          dex.Name,
+				Network:         dex.Network,
+				ContractAddress: string(pair.ID),
+				Protocol:        dex.Protocol,
+			}
+		}
 
-	if err := s.databaseClient.
-		Model((*model.Swap)(nil)).
-		Clauses(clause.OnConflict{
-			DoNothing: true,
-		}).
-		Create(swapModels).
-		Error; err != nil {
-		return err
+		if err := s.databaseClient.
+			Model((*model.Swap)(nil)).
+			Clauses(clause.OnConflict{
+				DoNothing: true,
+			}).
+			Create(&pools).
+			Error; err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -134,8 +114,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 		}
 
 		metadataModel.Swap = &metadata.Swap{
-			Name: swapModel.Source,
-			Pool: swapModel.Name,
+			Name:    swapModel.Source,
+			Network: swapModel.Network,
 		}
 
 		rawMetadata, err := json.Marshal(metadataModel)
@@ -158,5 +138,6 @@ func (s *service) Jobs() []worker.Job {
 func New(databaseClient *gorm.DB) worker.Worker {
 	return &service{
 		databaseClient: databaseClient,
+		poolClient:     dexpools.NewClient(),
 	}
 }
