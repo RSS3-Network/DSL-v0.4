@@ -226,6 +226,8 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 			logrus.Errorln(err)
 			return err
 		}
+
+		transfers = internalTransfers
 	}
 
 	return nil
