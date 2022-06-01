@@ -26,6 +26,12 @@ type Token struct {
 	TokenStandard string           `json:"token_standard"`
 	TokenID       *decimal.Decimal `json:"token_id,omitempty"`
 	TokenValue    *decimal.Decimal `json:"token_value"`
+
+	Logo     string           `json:"logo"`
+	Decimals uint8            `json:"decimals"`
+	Name     string           `json:"name"`
+	Symbol   string           `json:"symbol"`
+	Supply   *decimal.Decimal `json:"suuply"`
 }
 
 type Mirror struct {

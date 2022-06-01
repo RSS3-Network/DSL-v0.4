@@ -47,6 +47,10 @@ jobs:
         ports:
           - "5672:5672"
           - "15672:15672"
+      redis:
+        image: redis:alpine
+        ports:
+          - "6379:6379"
     steps:
       - name: Check out code into Go module directory
         uses: actions/checkout@v3
@@ -64,4 +68,4 @@ jobs:
           CONFIG_ENV_RABBITMQ_HOST: rabbitmq
         run: |
           go install github.com/wadey/gocovmerge@latest
-          make test # should be `make coverage_fail`
+          make coverage_fail

@@ -10,4 +10,5 @@ type Config struct {
 	OpenTelemetry *configx.OpenTelemetry `mapstructure:"opentelemetry"`
 	Moralis       *configx.Moralis       `mapstructure:"moralis"`
 	Redis         *configx.Redis         `mapstructure:"redis"`
+	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
 }
