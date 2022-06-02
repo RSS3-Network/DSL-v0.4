@@ -16,8 +16,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
+	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
@@ -106,11 +108,11 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.datasources = []datasource.Datasource{
-		moralis.New(s.config.Moralis.Key), arweave.New(),
+		moralis.New(s.config.Moralis.Key), arweave.New(), poap.New(),
 	}
 
 	s.workers = []worker.Worker{
-		token.New(s.databaseClient), swap.New(s.databaseClient), mirror.New(),
+		token.New(s.databaseClient), swap.New(s.databaseClient), mirror.New(), poapworker.New(),
 	}
 
 	for _, internalWorker := range s.workers {
@@ -174,7 +176,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 		internalTransfers, err := internalDatasource.Handle(ctx, message)
 		if err != nil {
-			logrus.Errorln(err)
+			logrus.Errorln(internalDatasource.Name(), err)
 
 			return err
 		}
@@ -211,7 +213,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 		internalTransfers, err := internalWorker.Handle(context.Background(), message, transfers)
 		if err != nil {
-			logrus.Errorln(err)
+			logrus.Errorln(internalWorker.Name(), err)
 
 			return err
 		}
