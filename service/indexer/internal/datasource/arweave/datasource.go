@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/arweave"
-	"github.com/naturalselectionlabs/pregod/common/arweave/graphql"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"

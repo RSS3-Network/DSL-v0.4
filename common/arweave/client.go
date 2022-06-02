@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/naturalselectionlabs/pregod/common/arweave/graphql"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
 	"github.com/shurcooL/graphql"
 )
 
@@ -27,7 +27,7 @@ func (c *Client) GetInfo(_ context.Context) (*Info, *http.Response, error) {
 	requestURL := &url.URL{
 		Scheme: EndpointScheme,
 		Host:   EndpointHost,
-		Path:   fmt.Sprintf("/info"),
+		Path:   "/info",
 	}
 
 	response, err := c.httpClient.Get(requestURL.String())

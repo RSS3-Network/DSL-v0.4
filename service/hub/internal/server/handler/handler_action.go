@@ -24,10 +24,10 @@ type GetActionListRequest struct {
 	ExculdeTags []string `query:"exclude_tags"`
 	ItemSources []string `query:"item_sources"`
 	Networks    []string `query:"networks"`
-	Update      bool     `query:"update"`
 }
 
-// GetActionListFunc
+// GetActionListFunc HTTP handler for action API
+// parse query parameters, query and assemble data
 func (h *Handler) GetActionListFunc(c echo.Context) error {
 	tracer := otel.Tracer("GetActionListFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
@@ -44,6 +44,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 	}
 
 	go func() {
+		// create a rabbitmq job to index the latest user data
 		_, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")
 
 		defer rabbitmqSnap.End()
@@ -87,11 +88,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 	for transactionHash, transfers := range transferMap {
 		feed := m.Feed{
 			TransactionHash: transactionHash,
-			Actions:         []model.Transfer{},
-		}
-
-		for _, transfer := range transfers {
-			feed.Actions = append(feed.Actions, transfer)
+			Actions:         transfers,
 		}
 
 		result = append(result, feed)
@@ -99,10 +96,12 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &Response{
 		Total:  total,
+		Cursor: result[len(result)-1].TransactionHash,
 		Result: result,
 	})
 }
 
+// getActionListDatabase get transfer data from database
 func (h *Handler) getActionListDatabase(c context.Context, request GetActionListRequest) ([]model.Transfer, int64, error) {
 	tracer := otel.Tracer("getActionListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")

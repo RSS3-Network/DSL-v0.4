@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/naturalselectionlabs/pregod/common/config"
+	configx "github.com/naturalselectionlabs/pregod/common/config"
 )
 
 func Dial(config *configx.Redis) (*redis.Client, error) {
