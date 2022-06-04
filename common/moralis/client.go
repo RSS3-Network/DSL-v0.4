@@ -16,7 +16,8 @@ const (
 	Scheme   = "https"
 	Endpoint = "deep-index.moralis.io"
 
-	MaxOffset = 1000
+	MaxOffset   = 1000
+	NFTMaxLimit = 500
 )
 
 type Client struct {
@@ -158,6 +159,7 @@ type GetNFTTransfersOption struct {
 	ToBlock   string `url:"to_block,omitempty"`
 	Offset    int    `url:"offset,omitempty"`
 	Limit     int    `url:"limit,omitempty"`
+	Cursor    string `url:"cursor,omitempty"`
 }
 
 func (c *Client) GetNFTTransfers(ctx context.Context, address common.Address, option *GetNFTTransfersOption) ([]NFTTransfer, *Response, error) {
@@ -190,6 +192,38 @@ func (c *Client) GetNFTTransfers(ctx context.Context, address common.Address, op
 	}
 
 	return nftTransfers, response, nil
+}
+
+func (c *Client) GetNFTs(ctx context.Context, address common.Address, option *GetNFTTransfersOption) ([]NFT, *Response, error) {
+	values, err := query.Values(option)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	requestURL := &url.URL{
+		Scheme:   Scheme,
+		Host:     Endpoint,
+		Path:     fmt.Sprintf("/api/v2/%s", address),
+		RawQuery: values.Encode(),
+	}
+
+	request, err := c.NewRequest(http.MethodGet, requestURL.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	response, _, err := c.DoRequest(ctx, request)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	nftList := make([]NFT, 0)
+
+	if err := json.Unmarshal(response.Result, &nftList); err != nil {
+		return nil, nil, err
+	}
+
+	return nftList, response, nil
 }
 
 func NewClient(key string) *Client {

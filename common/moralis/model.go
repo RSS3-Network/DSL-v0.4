@@ -64,3 +64,18 @@ type NFTTransfer struct {
 	TransactionIndex decimal.Decimal `json:"transaction_index"`
 	LogIndex         decimal.Decimal `json:"log_index"`
 }
+
+type NFT struct {
+	TokenAddress      string `json:"token_address"`
+	TokenId           int    `json:"token_id"`
+	Amount            string `json:"amount"`
+	Owner             string `json:"owner_of"`
+	TokenHash         string `json:"token_hash"`
+	BlockNumberMinted string `json:"block_number_minted"`
+	BlockNumber       string `json:"block_number"`
+	ContractType      string `json:"contract_type"`
+	Name              string `json:"name"`
+	Symbol            string `json:"symbol"`
+	TokenURI          string `json:"token_uri"`
+	Metadata          string `json:"metadata"`
+}
