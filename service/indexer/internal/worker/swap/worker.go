@@ -114,8 +114,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 		}
 
 		metadataModel.Swap = &metadata.Swap{
-			Name:    swapModel.Source,
-			Network: swapModel.Network,
+			Name:     swapModel.Source,
+			Network:  swapModel.Network,
+			Protocol: swapModel.Protocol,
 		}
 
 		rawMetadata, err := json.Marshal(metadataModel)

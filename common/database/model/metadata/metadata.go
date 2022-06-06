@@ -44,8 +44,9 @@ type Mirror struct {
 }
 
 type Swap struct {
-	Name    string `json:"name"`
-	Network string `json:"network"`
+	Name     string `json:"name"`
+	Network  string `json:"network"`
+	Protocol string `json:"protocol"`
 }
 
 type POAP struct {
