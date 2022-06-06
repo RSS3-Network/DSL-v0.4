@@ -5,16 +5,17 @@ import (
 	"time"
 
 	"github.com/lib/pq"
+	"github.com/shopspring/decimal"
 )
 
 type Transfer struct {
-	TransactionHash     string         `gorm:"column:transaction_hash;primaryKey"`
-	Timestamp           time.Time      `gorm:"column:timestamp"`
-	Type                string         `gorm:"column:type"`
-	Tags                pq.StringArray `gorm:"column:tags;type:text[]"`
-	TransactionLogIndex int            `gorm:"column:transaction_log_index;primaryKey"`
-	AddressFrom         string         `gorm:"column:address_from"`
-	AddressTo           string         `gorm:"column:address_to"`
+	TransactionHash     string          `gorm:"column:transaction_hash;primaryKey"`
+	Timestamp           time.Time       `gorm:"column:timestamp"`
+	Type                string          `gorm:"column:type"`
+	Tags                pq.StringArray  `gorm:"column:tags;type:text[]"`
+	TransactionLogIndex decimal.Decimal `gorm:"column:transaction_log_index;primaryKey"`
+	AddressFrom         string          `gorm:"column:address_from"`
+	AddressTo           string          `gorm:"column:address_to"`
 	// Attachments         json.RawMessage `gorm:"column:attachments;type:jsonb;default:'[]'"`
 	Metadata   json.RawMessage `gorm:"column:metadata;type:jsonb;default:'{}'"`
 	Network    string          `gorm:"column:network;primaryKey"`

@@ -97,6 +97,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 	return internalTransfers, nil
 }
 
+func (s *service) Jobs() []worker.Job {
+	return nil
+}
+
 func New() worker.Worker {
 	return &service{
 		arweaveClient: arweave.NewClient(),

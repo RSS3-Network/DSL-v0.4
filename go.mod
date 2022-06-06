@@ -10,6 +10,7 @@ require (
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/lib/pq v1.10.6
 	github.com/rabbitmq/amqp091-go v1.3.4
+	github.com/robfig/cron/v3 v3.0.0
 	github.com/shopspring/decimal v1.2.0
 	github.com/shurcooL/graphql v0.0.0-20220520033453-bdb1221e171e
 	github.com/sirupsen/logrus v1.8.1

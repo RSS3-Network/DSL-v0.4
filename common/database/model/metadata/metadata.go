@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"encoding/json"
-
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 )
@@ -19,6 +18,7 @@ type Metadata struct {
 	Token  *Token  `json:"token,omitempty"`
 	Swap   *Swap   `json:"swap,omitempty"`
 	Mirror *Mirror `json:"mirror,omitempty"`
+	POAP   *POAP   `json:"poap,omitempty"`
 }
 
 type Token struct {
@@ -45,4 +45,21 @@ type Mirror struct {
 type Swap struct {
 	Name string `json:"name"`
 	Pool string `json:"pool"`
+}
+
+type POAP struct {
+	ID          int    `json:"id"`
+	FancyID     string `json:"fancy_id"`
+	Name        string `json:"name"`
+	EventURL    string `json:"event_url"`
+	ImageURL    string `json:"image_url"`
+	Country     string `json:"country"`
+	City        string `json:"city"`
+	Description string `json:"description"`
+	Year        int    `json:"year"`
+	StartDate   string `json:"start_date"`
+	EndDate     string `json:"end_date"`
+	ExpiryDate  string `json:"expiry_date"`
+	Supply      int    `json:"supply"`
+	TokenID     string `json:"tokenId"`
 }

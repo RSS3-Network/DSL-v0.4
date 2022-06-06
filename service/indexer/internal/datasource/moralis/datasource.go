@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/moralis"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/shopspring/decimal"
 )
 
 const (
@@ -68,7 +69,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 				transferModels = append(transferModels, model.Transfer{
 					TransactionHash:     tokenTransfer.TransactionHash,
 					Timestamp:           timestamp,
-					TransactionLogIndex: i,
+					TransactionLogIndex: decimal.NewFromInt(int64(i)),
 					AddressFrom:         tokenTransfer.FromAddress,
 					AddressTo:           tokenTransfer.ToAddress,
 					Network:             message.Network,
@@ -98,7 +99,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			transferModels = append(transferModels, model.Transfer{
 				TransactionHash:     nftTransfer.TransactionHash,
 				Timestamp:           timestamp,
-				TransactionLogIndex: int(nftTransfer.LogIndex.BigInt().Int64()),
+				TransactionLogIndex: nftTransfer.LogIndex,
 				AddressFrom:         nftTransfer.FromAddress,
 				AddressTo:           nftTransfer.ToAddress,
 				Network:             message.Network,
@@ -138,7 +139,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			internalTransfer := model.Transfer{
 				TransactionHash:     transaction.Hash,
 				Timestamp:           timestamp,
-				TransactionLogIndex: transactionLogIndex,
+				TransactionLogIndex: decimal.NewFromInt(int64(transactionLogIndex)),
 				AddressFrom:         transaction.FromAddress,
 				AddressTo:           transaction.ToAddress,
 				Network:             message.Network,
