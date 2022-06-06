@@ -61,7 +61,7 @@ func (s *service) Initialize(ctx context.Context) error {
 			return err
 		}
 
-		// file.Close()
+		file.Close()
 
 		wallentModels := make([]model.ExchangeWallet, 0)
 
@@ -74,6 +74,7 @@ func (s *service) Initialize(ctx context.Context) error {
 				WalletAddress: record[0],
 				Name:          record[1],
 				Source:        record[2],
+				Network:       record[3],
 			})
 		}
 

@@ -12,12 +12,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap/job"
 )
 
-var (
-	_ worker.Worker = (*service)(nil)
-)
+var _ worker.Worker = (*service)(nil)
 
-type service struct {
-}
+type service struct{}
 
 func (s *service) Name() string {
 	return "poap"
