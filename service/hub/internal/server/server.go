@@ -49,7 +49,7 @@ func (s *Server) Initialize() (err error) {
 		if exporter, err = opentelemetry.DialWithPath(opentelemetry.DefaultPath); err != nil {
 			return err
 		}
-	} else {
+	} else if s.config.OpenTelemetry.Enabled {
 		if exporter, err = opentelemetry.DialWithURL(s.config.OpenTelemetry.String()); err != nil {
 			return err
 		}
