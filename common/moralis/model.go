@@ -2,6 +2,7 @@ package moralis
 
 import (
 	"encoding/json"
+
 	"github.com/shopspring/decimal"
 )
 
