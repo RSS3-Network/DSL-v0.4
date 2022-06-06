@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
@@ -44,6 +45,7 @@ type Server struct {
 	redisClient        *redis.Client
 	datasources        []datasource.Datasource
 	workers            []worker.Worker
+	employer           *shedlock.Employer
 }
 
 func (s *Server) Initialize() (err error) {
@@ -115,9 +117,21 @@ func (s *Server) Initialize() (err error) {
 		token.New(s.databaseClient), swap.New(s.databaseClient), mirror.New(), poapworker.New(),
 	}
 
+	s.employer = shedlock.New(s.redisClient)
+
 	for _, internalWorker := range s.workers {
 		if err := internalWorker.Initialize(context.Background()); err != nil {
 			return err
+		}
+
+		if internalWorker.Jobs() == nil {
+			continue
+		}
+
+		for _, job := range internalWorker.Jobs() {
+			if err := s.employer.AddJob(job.Name(), job.Spec(), job); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -128,6 +142,10 @@ func (s *Server) Run() error {
 	if err := s.Initialize(); err != nil {
 		return err
 	}
+
+	s.employer.Start()
+
+	defer s.employer.Stop()
 
 	deliveryCh, err := s.rabbitmqChannel.Consume(s.rabbitmqQueue.Name, "", false, false, false, false, nil)
 	if err != nil {

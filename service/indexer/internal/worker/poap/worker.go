@@ -9,6 +9,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/poap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap/job"
 )
 
 var (
@@ -75,6 +76,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 	}
 
 	return internalTransfers, nil
+}
+
+func (s *service) Jobs() []worker.Job {
+	return []worker.Job{
+		&job.Example{},
+	}
 }
 
 func New() worker.Worker {

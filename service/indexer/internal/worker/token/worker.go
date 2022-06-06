@@ -7,9 +7,6 @@ import (
 	"encoding/json"
 	"strings"
 
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
-
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	moralisx "github.com/naturalselectionlabs/pregod/common/moralis"
@@ -19,6 +16,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var (
@@ -218,6 +217,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 	}
 
 	return internalTransfers, nil
+}
+
+func (s *service) Jobs() []worker.Job {
+	return nil
 }
 
 func New(databaseClient *gorm.DB) worker.Worker {

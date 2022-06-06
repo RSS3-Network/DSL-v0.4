@@ -151,6 +151,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 	return internalTransfers, nil
 }
 
+func (s *service) Jobs() []worker.Job {
+	return nil
+}
+
 func New(databaseClient *gorm.DB) worker.Worker {
 	return &service{
 		databaseClient: databaseClient,
