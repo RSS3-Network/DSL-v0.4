@@ -3,20 +3,18 @@ package coinmarketcap
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/cache"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/contract"
 )
 
 const (
-	Prefix   = "https://pro-api.coinmarketcap.com"
-	TokenABI = `[{"constant":true,"inputs":[],"name":"name","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"spender","type":"address"},{"name":"tokens","type":"uint256"}],"name":"approve","outputs":[{"name":"success","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"totalSupply","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"tokens","type":"uint256"}],"name":"transferFrom","outputs":[{"name":"success","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[{"name":"tokenOwner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"tokens","type":"uint256"}],"name":"transfer","outputs":[{"name":"success","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[{"name":"tokenOwner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"remaining","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"from","type":"address"},{"indexed":true,"name":"to","type":"address"},{"indexed":false,"name":"tokens","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"tokenOwner","type":"address"},{"indexed":true,"name":"spender","type":"address"},{"indexed":false,"name":"tokens","type":"uint256"}],"name":"Approval","type":"event"}]`
+	Prefix = "https://pro-api.coinmarketcap.com"
 )
 
 var (
@@ -107,17 +105,13 @@ func getDecimals(ctx context.Context, network, addressHex string) (uint8, error)
 	if err != nil {
 		return 0, err
 	}
-	address := common.HexToAddress(addressHex)
-	parsed, err := abi.JSON(strings.NewReader(TokenABI))
+
+	contractCaller, err := contract.NewERC20(common.HexToAddress(addressHex), client)
 	if err != nil {
 		return 0, err
 	}
 
-	contract := bind.NewBoundContract(address, parsed, client, client, client)
-
-	out := uint8(0)
-	err = contract.Call(&bind.CallOpts{}, &out, "decimals")
-	return out, err
+	return contractCaller.Decimals(&bind.CallOpts{})
 }
 
 func CachedGetCoinInfo(ctx context.Context, network, address string) (*CoinInfo, error) {
