@@ -20,6 +20,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -73,6 +74,8 @@ func (s *Server) Initialize() (err error) {
 	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
 		return err
 	}
+
+	coinmarketcap.Init(s.config.CoinMarketCap.APIKey)
 
 	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
 	if err != nil {

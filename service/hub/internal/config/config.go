@@ -10,4 +10,5 @@ type Config struct {
 	OpenTelemetry *configx.OpenTelemetry `mapstructure:"opentelemetry"`
 	Postgres      *configx.Postgres      `mapstructure:"postgres"`
 	Redis         *configx.Redis         `mapstructure:"redis"`
+	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
 }

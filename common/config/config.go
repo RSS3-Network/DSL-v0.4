@@ -73,3 +73,7 @@ type Redis struct {
 	DB         int    `mapstructure:"db"`
 	TLSEnabled bool   `mapstructure:"tls"`
 }
+
+type CoinMarketCap struct {
+	APIKey string `mapstructure:"apikey"`
+}
