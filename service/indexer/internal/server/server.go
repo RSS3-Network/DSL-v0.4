@@ -129,7 +129,7 @@ func (s *Server) Initialize() (err error) {
 		}
 
 		for _, job := range internalWorker.Jobs() {
-			if err := s.employer.AddJob(job.Name(), job.Spec(), job); err != nil {
+			if err := s.employer.AddJob(job.Name(), job.Spec(), job.Timeout(), job); err != nil {
 				return err
 			}
 		}

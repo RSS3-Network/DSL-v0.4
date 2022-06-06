@@ -2,6 +2,7 @@ package shedlock
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/robfig/cron/v3"
@@ -12,9 +13,9 @@ type Employer struct {
 	crontab     *cron.Cron
 }
 
-func (e *Employer) AddFunc(name, spec string, cmd func()) error {
+func (e *Employer) AddFunc(name, spec string, timeout time.Duration, cmd func()) error {
 	_, err := e.crontab.AddFunc(spec, func() {
-		if e.DoLock(name) {
+		if e.DoLock(name, timeout) {
 			defer func() {
 				_ = e.UnLock(name)
 
@@ -26,9 +27,9 @@ func (e *Employer) AddFunc(name, spec string, cmd func()) error {
 	return err
 }
 
-func (e *Employer) AddJob(name, spec string, cmd cron.Job) error {
+func (e *Employer) AddJob(name, spec string, timeout time.Duration, cmd cron.Job) error {
 	_, err := e.crontab.AddFunc(spec, func() {
-		if e.DoLock(name) {
+		if e.DoLock(name, timeout) {
 			defer func() {
 				_ = e.UnLock(name)
 
@@ -40,12 +41,14 @@ func (e *Employer) AddJob(name, spec string, cmd cron.Job) error {
 	return err
 }
 
-func (e *Employer) DoLock(name string) bool {
-	return e.redisClient.SetNX(context.Background(), name, 0, 0).Val()
+func (e *Employer) DoLock(name string, timeout time.Duration) bool {
+	return e.redisClient.SetNX(context.Background(), name, 0, timeout).Val()
 }
 
 func (e *Employer) UnLock(name string) bool {
-	return e.redisClient.Del(context.Background(), name).Err() == nil
+	// TODO Need to consider the minimum preemption time of the lock
+
+	return true
 }
 
 func (e *Employer) Start() {

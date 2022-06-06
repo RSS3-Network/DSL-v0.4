@@ -1,6 +1,8 @@
 package job
 
 import (
+	"time"
+
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/sirupsen/logrus"
 )
@@ -15,6 +17,10 @@ func (e *Example) Name() string {
 
 func (e *Example) Spec() string {
 	return "* * * * *"
+}
+
+func (e *Example) Timeout() time.Duration {
+	return time.Second * 10
 }
 
 func (e *Example) Run() {
