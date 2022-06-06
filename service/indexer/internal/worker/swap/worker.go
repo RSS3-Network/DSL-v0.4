@@ -8,19 +8,16 @@ import (
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/dexpools"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 var _ worker.Worker = &service{}
 
 type service struct {
 	databaseClient *gorm.DB
-	poolClient     *dexpools.Client
 }
 
 func (s *service) Name() string {
@@ -33,36 +30,7 @@ func (s *service) Networks() []string {
 	}
 }
 
-// Initialize TODO: convert into a cron job
 func (s *service) Initialize(ctx context.Context) error {
-	for _, dex := range protocol.SwapPools {
-		result, err := s.poolClient.GetSwapPools(context.Background(), dex)
-		if err != nil {
-			return err
-		}
-
-		pools := make([]model.Swap, len(result))
-
-		for i, pair := range result {
-			pools[i] = model.Swap{
-				Source:          dex.Name,
-				Network:         dex.Network,
-				ContractAddress: string(pair.ID),
-				Protocol:        dex.Protocol,
-			}
-		}
-
-		if err := s.databaseClient.
-			Model((*model.Swap)(nil)).
-			Clauses(clause.OnConflict{
-				DoNothing: true,
-			}).
-			Create(&pools).
-			Error; err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -74,10 +42,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 			continue
 		}
 
-		var swapModel model.Swap
+		var swapModel model.SwapPool
 
 		if err := s.databaseClient.
-			Model((*model.Swap)(nil)).
+			Model((*model.SwapPool)(nil)).
 			Where(map[string]interface{}{
 				"contract_address": transfer.AddressFrom,
 			}).
@@ -88,7 +56,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 
 		if swapModel.ContractAddress == "" {
 			if err := s.databaseClient.
-				Model((*model.Swap)(nil)).
+				Model((*model.SwapPool)(nil)).
 				Where(map[string]interface{}{
 					"contract_address": transfer.AddressTo,
 				}).
@@ -113,9 +81,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 			transfer.Type = "swap_out"
 		}
 
-		metadataModel.Swap = &metadata.Swap{
+		metadataModel.Swap = &metadata.SwapPool{
 			Name:     swapModel.Source,
 			Network:  swapModel.Network,
+			Token0:   swapModel.Token0,
+			Token1:   swapModel.Token1,
 			Protocol: swapModel.Protocol,
 		}
 
@@ -133,12 +103,15 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 }
 
 func (s *service) Jobs() []worker.Job {
-	return nil
+	return []worker.Job{
+		&Job{
+			databaseClient: s.databaseClient,
+		},
+	}
 }
 
 func New(databaseClient *gorm.DB) worker.Worker {
 	return &service{
 		databaseClient: databaseClient,
-		poolClient:     dexpools.NewClient(),
 	}
 }

@@ -16,10 +16,10 @@ func init() {
 }
 
 type Metadata struct {
-	Token  *Token  `json:"token,omitempty"`
-	Swap   *Swap   `json:"swap,omitempty"`
-	Mirror *Mirror `json:"mirror,omitempty"`
-	POAP   *POAP   `json:"poap,omitempty"`
+	Token  *Token    `json:"token,omitempty"`
+	Swap   *SwapPool `json:"swap,omitempty"`
+	Mirror *Mirror   `json:"mirror,omitempty"`
+	POAP   *POAP     `json:"poap,omitempty"`
 }
 
 type Token struct {
@@ -43,8 +43,10 @@ type Mirror struct {
 	Content               json.RawMessage `json:"content"`
 }
 
-type Swap struct {
+type SwapPool struct {
 	Name     string `json:"name"`
+	Token0   string `json:"token0"`
+	Token1   string `json:"token1"`
 	Network  string `json:"network"`
 	Protocol string `json:"protocol"`
 }
