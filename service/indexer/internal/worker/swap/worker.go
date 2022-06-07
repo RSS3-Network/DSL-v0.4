@@ -31,6 +31,12 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) error {
+	job := &Job{
+		databaseClient: s.databaseClient,
+	}
+
+	job.Run()
+
 	return nil
 }
 
