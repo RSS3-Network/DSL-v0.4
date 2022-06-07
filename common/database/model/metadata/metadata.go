@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
+
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 )
