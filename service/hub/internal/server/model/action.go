@@ -6,5 +6,6 @@ import (
 
 type Feed struct {
 	TransactionHash string           `json:"transaction_hash"`
+	Network         string           `json:"network"`
 	Actions         []model.Transfer `json:"actions"`
 }
