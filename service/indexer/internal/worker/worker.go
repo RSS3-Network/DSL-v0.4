@@ -12,4 +12,5 @@ type Worker interface {
 	Networks() []string
 	Initialize(ctx context.Context) error
 	Handle(ctx context.Context, message *protocol.Message, transfers []model.Transfer) ([]model.Transfer, error)
+	Jobs() []Job
 }

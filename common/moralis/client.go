@@ -70,7 +70,7 @@ type GetTransactionsOption struct {
 	ToDate    string `url:"to_date,omitempty"`
 	FromBlock string `url:"from_block,omitempty"`
 	ToBlock   string `url:"to_block,omitempty"`
-	Offset    int    `url:"offset,omitempty"`
+	Cursor    string `url:"cursor,omitempty"`
 	Limit     int    `url:"limit,omitempty"`
 }
 
@@ -113,7 +113,7 @@ type GetTokenTransfersOption struct {
 	ToDate    string `url:"to_date,omitempty"`
 	FromBlock string `url:"from_block,omitempty"`
 	ToBlock   string `url:"to_block,omitempty"`
-	Offset    int    `url:"offset,omitempty"`
+	Cursor    string `url:"cursor,omitempty"`
 	Limit     int    `url:"limit,omitempty"`
 }
 
@@ -156,7 +156,7 @@ type GetNFTTransfersOption struct {
 	ToDate    string `url:"to_date,omitempty"`
 	FromBlock string `url:"from_block,omitempty"`
 	ToBlock   string `url:"to_block,omitempty"`
-	Offset    int    `url:"offset,omitempty"`
+	Cursor    string `url:"cursor,omitempty"`
 	Limit     int    `url:"limit,omitempty"`
 }
 

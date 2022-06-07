@@ -12,12 +12,15 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
+	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
@@ -42,6 +45,7 @@ type Server struct {
 	redisClient        *redis.Client
 	datasources        []datasource.Datasource
 	workers            []worker.Worker
+	employer           *shedlock.Employer
 }
 
 func (s *Server) Initialize() (err error) {
@@ -51,7 +55,7 @@ func (s *Server) Initialize() (err error) {
 		if exporter, err = opentelemetry.DialWithPath(opentelemetry.DefaultPath); err != nil {
 			return err
 		}
-	} else {
+	} else if s.config.OpenTelemetry.Enabled {
 		if exporter, err = opentelemetry.DialWithURL(s.config.OpenTelemetry.String()); err != nil {
 			return err
 		}
@@ -106,16 +110,28 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.datasources = []datasource.Datasource{
-		moralis.New(s.config.Moralis.Key), arweave.New(),
+		moralis.New(s.config.Moralis.Key), arweave.New(), poap.New(),
 	}
 
 	s.workers = []worker.Worker{
-		token.New(s.databaseClient), swap.New(s.databaseClient), mirror.New(),
+		token.New(s.databaseClient), swap.New(s.databaseClient), mirror.New(), poapworker.New(),
 	}
+
+	s.employer = shedlock.New(s.redisClient)
 
 	for _, internalWorker := range s.workers {
 		if err := internalWorker.Initialize(context.Background()); err != nil {
 			return err
+		}
+
+		if internalWorker.Jobs() == nil {
+			continue
+		}
+
+		for _, job := range internalWorker.Jobs() {
+			if err := s.employer.AddJob(job.Name(), job.Spec(), job.Timeout(), job); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -126,6 +142,10 @@ func (s *Server) Run() error {
 	if err := s.Initialize(); err != nil {
 		return err
 	}
+
+	s.employer.Start()
+
+	defer s.employer.Stop()
 
 	deliveryCh, err := s.rabbitmqChannel.Consume(s.rabbitmqQueue.Name, "", false, false, false, false, nil)
 	if err != nil {
@@ -174,7 +194,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 		internalTransfers, err := internalDatasource.Handle(ctx, message)
 		if err != nil {
-			logrus.Errorln(err)
+			logrus.Errorln(internalDatasource.Name(), err)
 
 			return err
 		}
@@ -211,7 +231,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 		internalTransfers, err := internalWorker.Handle(context.Background(), message, transfers)
 		if err != nil {
-			logrus.Errorln(err)
+			logrus.Errorln(internalWorker.Name(), err)
 
 			return err
 		}

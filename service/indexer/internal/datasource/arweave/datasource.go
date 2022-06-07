@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/shopspring/decimal"
 	"github.com/shurcooL/graphql"
 )
 
@@ -79,7 +80,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		internalTransfers = append(internalTransfers, model.Transfer{
 			TransactionHash:     edge.Node.ID.(string),
 			Timestamp:           time.Unix(int64(edge.Node.Block.Timestamp), 0),
-			TransactionLogIndex: 0,
+			TransactionLogIndex: decimal.Zero,
 			AddressFrom:         string(edge.Node.Owner.Address),
 			AddressTo:           "",
 			Metadata:            metadata.Default,

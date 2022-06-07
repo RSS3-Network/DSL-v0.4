@@ -88,6 +88,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 	for transactionHash, transfers := range transferMap {
 		feed := m.Feed{
 			TransactionHash: transactionHash,
+			Network:         transfers[0].Network,
 			Actions:         transfers,
 		}
 

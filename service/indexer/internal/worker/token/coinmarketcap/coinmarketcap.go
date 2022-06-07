@@ -2,6 +2,7 @@ package coinmarketcap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/contract"
+	"github.com/shopspring/decimal"
 )
 
 const (
@@ -19,7 +21,7 @@ const (
 
 var (
 	client      = resty.New()
-	NetWork2RPC = map[string]string{
+	Network2RPC = map[string]string{
 		"ethereum":            "https://eth.rss3.dev",
 		"binance_smart_chain": "https://bsc-dataseed.binance.org/",
 		"polygon":             "https://polygon-mainnet.infura.io/v3/56ff3a0f0ad14ec19dc933038c69bfbe",
@@ -36,6 +38,14 @@ var (
 		"near":      "https://rpc.ankr.com/near",
 		"nervos":    "https://rpc.ankr.com/nervos_gw",
 		"syscoin":   "https://rpc.ankr.com/syscoin",
+	}
+	Network2Token = map[string]struct {
+		Symbol  string
+		Address string
+	}{
+		"ethereum":            {"ETH", ""},
+		"binance_smart_chain": {"BNB", "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"},   // BNB address (on BSC)
+		"polygon":             {"MATIC", "0x0000000000000000000000000000000000001010"}, // MATIC address (on polygon)
 	}
 )
 
@@ -55,6 +65,8 @@ type CoinInfo struct {
 	Description                   string
 	Decimals                      uint8    // TODO: cannot get from coinmarketcap
 	SelfReportedCirculatingSupply *float64 `json:"self_reported_circulating_supply"`
+
+	Supply *decimal.Decimal
 }
 
 type CoinInfos struct {
@@ -65,6 +77,19 @@ func (i *CoinInfos) List() []*CoinInfo {
 	result := []*CoinInfo{}
 	for _, v := range i.Data {
 		result = append(result, v)
+	}
+	return result
+}
+
+// Not the same as the documentation
+type CoinInfosBySymbol struct {
+	Data map[string][]*CoinInfo
+}
+
+func (i *CoinInfosBySymbol) List() []*CoinInfo {
+	result := []*CoinInfo{}
+	for _, v := range i.Data {
+		result = append(result, v...)
 	}
 	return result
 }
@@ -92,13 +117,20 @@ func getCoinInfo(ctx context.Context, network, address string) (*CoinInfo, error
 	}
 	info.Decimals = decimals
 
+	// set supply default value
+	var supply decimal.Decimal
+	if info.SelfReportedCirculatingSupply != nil {
+		supply = decimal.NewFromFloat(*info.SelfReportedCirculatingSupply)
+	}
+	info.Supply = &supply
+
 	return info, nil
 }
 
 func getDecimals(ctx context.Context, network, addressHex string) (uint8, error) {
-	rpcUrl := NetWork2RPC[network]
+	rpcUrl := Network2RPC[network]
 	if rpcUrl == "" {
-		rpcUrl = NetWork2RPC["ethereum"]
+		rpcUrl = Network2RPC["ethereum"]
 	}
 
 	client, err := ethclient.DialContext(ctx, rpcUrl)
@@ -126,6 +158,73 @@ func CachedGetCoinInfo(ctx context.Context, network, address string) (*CoinInfo,
 
 	if !exists {
 		result, err = getCoinInfo(ctx, network, address)
+		if err != nil {
+			return nil, err
+		}
+		if err = cache.SetMsgPack(ctx, key, result, ttl); err != nil {
+			return nil, err
+		}
+	}
+
+	return result, nil
+}
+
+// for token native transfer
+func getCoinInfoByNetwork(ctx context.Context, network string) (*CoinInfo, error) {
+	token, exists := Network2Token[network]
+	if !exists {
+		return nil, errors.New("symbol for the network not exists")
+	}
+
+	path := "/v2/cryptocurrency/info"
+
+	result := CoinInfosBySymbol{}
+	resp, err := client.R().SetResult(&result).SetQueryParams(map[string]string{
+		"symbol": token.Symbol,
+	}).Get(Prefix + path)
+	if err != nil {
+		return nil, err
+	}
+	if resp.IsError() {
+		return nil, fmt.Errorf("bad resp code: %v", resp.StatusCode())
+	}
+	info := result.List()[0]
+
+	// get decimals
+	switch {
+	case token.Symbol == "ETH":
+		info.Decimals = 18
+	default:
+		decimals, err := getDecimals(ctx, network, token.Address)
+		if err != nil {
+			return nil, err
+		}
+		info.Decimals = decimals
+	}
+
+	// set supply default value
+	var supply decimal.Decimal
+	if info.SelfReportedCirculatingSupply != nil {
+		supply = decimal.NewFromFloat(*info.SelfReportedCirculatingSupply)
+	}
+	info.Supply = &supply
+
+	return info, nil
+}
+
+// for token native transfer
+func CachedGetCoinInfoByNetwork(ctx context.Context, network string) (*CoinInfo, error) {
+	key := fmt.Sprintf("getcoininfobynetwork.network.%s", network)
+	ttl := time.Hour
+
+	result := &CoinInfo{}
+	exists, err := cache.GetMsgPack(ctx, key, result)
+	if err != nil {
+		return nil, err
+	}
+
+	if !exists {
+		result, err = getCoinInfoByNetwork(ctx, network)
 		if err != nil {
 			return nil, err
 		}
