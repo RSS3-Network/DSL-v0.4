@@ -169,7 +169,7 @@ func (d *Datasource) getTransactions(ctx context.Context, message *protocol.Mess
 
 		internalTransactions, response, err = d.moralisClient.GetTransactions(ctx, address, &moralis.GetTransactionsOption{
 			Chain:  protocol.NetworkToID(message.Network),
-			Offset: len(transactions),
+			Cursor: response.Cursor,
 		})
 
 		if err != nil {
@@ -197,7 +197,7 @@ func (d *Datasource) getTokenTransfers(ctx context.Context, message *protocol.Me
 
 		internalTokenTransfers, response, err = d.moralisClient.GetTokenTransfers(ctx, address, &moralis.GetTokenTransfersOption{
 			Chain:  protocol.NetworkToID(message.Network),
-			Offset: len(tokenTransfers),
+			Cursor: response.Cursor,
 		})
 
 		if err != nil {
@@ -225,7 +225,7 @@ func (d *Datasource) getNFTTransfers(ctx context.Context, message *protocol.Mess
 
 		internalNFTTransfers, response, err = d.moralisClient.GetNFTTransfers(ctx, address, &moralis.GetNFTTransfersOption{
 			Chain:  protocol.NetworkToID(message.Network),
-			Offset: len(nftTransfers),
+			Cursor: response.Cursor,
 		})
 
 		if err != nil {
