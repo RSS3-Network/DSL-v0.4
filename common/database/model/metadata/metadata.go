@@ -16,9 +16,10 @@ func init() {
 }
 
 type Metadata struct {
-	Token  *Token  `json:"token,omitempty"`
-	Swap   *Swap   `json:"swap,omitempty"`
-	Mirror *Mirror `json:"mirror,omitempty"`
+	Token   *Token   `json:"token,omitempty"`
+	Swap    *Swap    `json:"swap,omitempty"`
+	Mirror  *Mirror  `json:"mirror,omitempty"`
+	Gitcoin *Gitcoin `json:"gitcoin"`
 }
 
 type Token struct {
@@ -45,4 +46,10 @@ type Mirror struct {
 type Swap struct {
 	Name string `json:"name"`
 	Pool string `json:"pool"`
+}
+
+type Gitcoin struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Logo        string `json:"logo"`
 }
