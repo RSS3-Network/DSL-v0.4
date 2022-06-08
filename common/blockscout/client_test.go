@@ -8,7 +8,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/blockscout"
 )
 
-var client = blockscout.New()
+var client = blockscout.New(blockscout.NetworkXDAI)
 
 func TestGetTransactionList(t *testing.T) {
 	transactions, _, err := client.GetTransactionList(
