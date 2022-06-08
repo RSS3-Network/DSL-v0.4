@@ -95,6 +95,7 @@ func (i *CoinInfosBySymbol) List() []*CoinInfo {
 }
 
 // https://coinmarketcap.com/api/documentation/v1/#operation/getV2CryptocurrencyInfo
+// Will get a empty result when resp code is not OK
 func getCoinInfo(ctx context.Context, network, address string) (*CoinInfo, error) {
 	path := "/v2/cryptocurrency/info"
 
@@ -105,8 +106,11 @@ func getCoinInfo(ctx context.Context, network, address string) (*CoinInfo, error
 	if err != nil {
 		return nil, err
 	}
-	if resp.IsError() {
-		return nil, fmt.Errorf("bad resp code: %v", resp.StatusCode())
+	if resp.IsError() { // skip this one and return a empty result
+		info := new(CoinInfo)
+		info.Supply = new(decimal.Decimal)
+		return info, nil
+		// return nil, fmt.Errorf("bad resp code: %v", resp.StatusCode())
 	}
 	info := result.List()[0]
 
