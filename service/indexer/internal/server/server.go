@@ -19,6 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/poap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
 	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
@@ -111,7 +112,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.datasources = []datasource.Datasource{
-		moralis.New(s.config.Moralis.Key), arweave.New(), poap.New(), blockscout.New(),
+		moralis.New(s.config.Moralis.Key), arweave.New(), poap.New(), blockscout.New(), zksync.New(),
 	}
 
 	s.workers = []worker.Worker{
