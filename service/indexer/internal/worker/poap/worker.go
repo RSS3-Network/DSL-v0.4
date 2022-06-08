@@ -4,20 +4,29 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/naturalselectionlabs/pregod/common/blockscout"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/poap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	blockscoutdatasource "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap/job"
+)
+
+const (
+	Name = "poap"
+
+	ContractAddress = "0x22c1f6050e56d2876009903609a2cc3fef83b415"
 )
 
 var _ worker.Worker = (*service)(nil)
 
-type service struct{}
+type service struct {
+	poapClient *poap.Client
+}
 
 func (s *service) Name() string {
-	return "poap"
+	return Name
 }
 
 func (s *service) Networks() []string {
@@ -34,7 +43,16 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 	internalTransfers := make([]model.Transfer, 0)
 
 	for _, transfer := range transfers {
-		if transfer.Source != s.Name() {
+		if transfer.Source != blockscoutdatasource.Name {
+			continue
+		}
+
+		dataSource := blockscout.Transaction{}
+		if err := json.Unmarshal(transfer.SourceData, &dataSource); err != nil {
+			return nil, err
+		}
+
+		if dataSource.ContractAddress != ContractAddress {
 			continue
 		}
 
@@ -44,22 +62,21 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 			return nil, err
 		}
 
-		action := poap.Action{}
-
-		if err := json.Unmarshal(transfer.SourceData, &action); err != nil {
+		token, err := s.poapClient.GetToken(ctx, dataSource.TokenID.BigInt().Int64())
+		if err != nil {
 			return nil, err
 		}
 
 		metadataModel.POAP = &metadata.POAP{
-			ID:          action.Event.ID,
-			Name:        action.Event.Name,
-			ImageURL:    action.Event.ImageURL,
-			Description: action.Event.Description,
-			Year:        action.Event.Year,
-			StartDate:   action.Event.StartDate,
-			EndDate:     action.Event.EndDate,
-			ExpiryDate:  action.Event.ExpiryDate,
-			Supply:      action.Event.Supply,
+			ID:          token.Event.ID,
+			Name:        token.Event.Name,
+			ImageURL:    token.Event.ImageURL,
+			Description: token.Event.Description,
+			Year:        token.Event.Year,
+			StartDate:   token.Event.StartDate,
+			EndDate:     token.Event.EndDate,
+			ExpiryDate:  token.Event.ExpiryDate,
+			TokenID:     token.TokenID,
 		}
 
 		rawMetadata, err := json.Marshal(metadataModel)
@@ -76,11 +93,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 }
 
 func (s *service) Jobs() []worker.Job {
-	return []worker.Job{
-		&job.Example{},
-	}
+	return nil
 }
 
 func New() worker.Worker {
-	return &service{}
+	return &service{
+		poapClient: poap.New(),
+	}
 }

@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -18,7 +17,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
@@ -112,7 +110,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.datasources = []datasource.Datasource{
-		moralis.New(s.config.Moralis.Key), arweave.New(), poap.New(), blockscout.New(), zksync.New(),
+		moralis.New(s.config.Moralis.Key), arweave.New(), blockscout.New(), zksync.New(),
 	}
 
 	s.workers = []worker.Worker{

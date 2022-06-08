@@ -14,6 +14,10 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const (
+	Name = "blockscout"
+)
+
 var _ datasource.Datasource = (*Datasource)(nil)
 
 type Datasource struct {
@@ -21,7 +25,7 @@ type Datasource struct {
 }
 
 func (d *Datasource) Name() string {
-	return "blocksout"
+	return Name
 }
 
 func (d *Datasource) Networks() []string {
