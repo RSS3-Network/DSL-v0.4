@@ -2,8 +2,6 @@ package swap
 
 import (
 	"context"
-	"embed"
-	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"strings"
@@ -14,15 +12,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
-var (
-	_ worker.Worker = (*service)(nil)
-
-	//go:embed asset/*
-	asseFS embed.FS
-)
+var _ worker.Worker = &service{}
 
 type service struct {
 	databaseClient *gorm.DB
@@ -39,49 +31,11 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) error {
-	file, err := asseFS.Open("asset/swap.csv")
-	if err != nil {
-		return err
+	job := &Job{
+		databaseClient: s.databaseClient,
 	}
 
-	defer func() {
-		_ = file.Close()
-	}()
-
-	reader := csv.NewReader(file)
-
-	records, err := reader.ReadAll()
-	if err != nil {
-		return err
-	}
-
-	swapModels := make([]model.Swap, 0)
-
-	for i, record := range records {
-		if i == 0 {
-			continue
-		}
-
-		swapModels = append(swapModels, model.Swap{
-			ContractAddress: record[0],
-			Name:            record[1],
-			Source:          record[2],
-		})
-	}
-
-	if len(swapModels) == 0 {
-		return nil
-	}
-
-	if err := s.databaseClient.
-		Model((*model.Swap)(nil)).
-		Clauses(clause.OnConflict{
-			DoNothing: true,
-		}).
-		Create(swapModels).
-		Error; err != nil {
-		return err
-	}
+	job.Run()
 
 	return nil
 }
@@ -94,10 +48,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 			continue
 		}
 
-		var swapModel model.Swap
+		var swapModel model.SwapPool
 
 		if err := s.databaseClient.
-			Model((*model.Swap)(nil)).
+			Model((*model.SwapPool)(nil)).
 			Where(map[string]interface{}{
 				"contract_address": transfer.AddressFrom,
 			}).
@@ -108,7 +62,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 
 		if swapModel.ContractAddress == "" {
 			if err := s.databaseClient.
-				Model((*model.Swap)(nil)).
+				Model((*model.SwapPool)(nil)).
 				Where(map[string]interface{}{
 					"contract_address": transfer.AddressTo,
 				}).
@@ -133,9 +87,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 			transfer.Type = "swap_out"
 		}
 
-		metadataModel.Swap = &metadata.Swap{
-			Name: swapModel.Source,
-			Pool: swapModel.Name,
+		metadataModel.Swap = &metadata.SwapPool{
+			Name:     swapModel.Source,
+			Network:  swapModel.Network,
+			Token0:   swapModel.Token0,
+			Token1:   swapModel.Token1,
+			Protocol: swapModel.Protocol,
 		}
 
 		rawMetadata, err := json.Marshal(metadataModel)
@@ -152,7 +109,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 }
 
 func (s *service) Jobs() []worker.Job {
-	return nil
+	return []worker.Job{
+		&Job{
+			databaseClient: s.databaseClient,
+		},
+	}
 }
 
 func New(databaseClient *gorm.DB) worker.Worker {
