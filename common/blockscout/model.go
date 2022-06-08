@@ -29,6 +29,7 @@ type Transaction struct {
 	Nonce             string          `json:"nonce"`
 	TimeStamp         decimal.Decimal `json:"timeStamp"`
 	To                string          `json:"to"`
+	TokenID           decimal.Decimal `json:"tokenID,omitempty"`
 	TokenDecimal      string          `json:"tokenDecimal,omitempty"`
 	TokenName         string          `json:"tokenName,omitempty"`
 	TokenSymbol       string          `json:"tokenSymbol,omitempty"`

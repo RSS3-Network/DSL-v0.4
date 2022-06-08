@@ -61,6 +61,5 @@ type POAP struct {
 	StartDate   string `json:"start_date"`
 	EndDate     string `json:"end_date"`
 	ExpiryDate  string `json:"expiry_date"`
-	Supply      int    `json:"supply"`
-	TokenID     string `json:"tokenId"`
+	TokenID     string `json:"token_id"`
 }
