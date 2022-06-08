@@ -2,9 +2,10 @@ package dexpools_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/naturalselectionlabs/pregod/common/dexpools"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"testing"
 )
 
 var (
