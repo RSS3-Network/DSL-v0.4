@@ -2,6 +2,7 @@ package protocol
 
 const (
 	NetworkEthereum          = "ethereum"
+	NetworkEthereumClassic   = "ethereum_classic"
 	NetworkBinanceSmartChain = "binance_smart_chain"
 	NetworkPolygon           = "polygon"
 	NetworkZkSync            = "zksync"
