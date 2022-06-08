@@ -97,6 +97,10 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		result = append(result, feed)
 	}
 
+	if len(result) == 0 {
+		return c.JSON(http.StatusOK, &Response{})
+	}
+
 	sort.Sort(m.Feeds(result))
 
 	return c.JSON(http.StatusOK, &Response{
