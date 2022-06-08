@@ -128,15 +128,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 			return nil, err
 		}
 
-		coinInfo, err := coinmarketcap.CachedGetCoinInfo(ctx, message.Network, message.Address)
-		var supply decimal.Decimal
-		if err != nil {
-			return nil, err
-		}
-		if coinInfo.SelfReportedCirculatingSupply != nil {
-			supply = decimal.NewFromFloat(*coinInfo.SelfReportedCirculatingSupply)
-		}
-
 		if _, exist := sourceDataMap["contract_type"]; exist {
 			// NFT transfer
 			nftTransfer := moralisx.NFTTransfer{}
@@ -156,11 +147,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				TokenStandard: strings.ToLower(nftTransfer.ContractType),
 				TokenID:       &tokenID,
 				TokenValue:    &tokenValue, // TODO ERC1155
-				Logo:          coinInfo.Logo,
-				Name:          coinInfo.Name,
-				Symbol:        coinInfo.Symbol,
-				Decimals:      coinInfo.Decimals,
-				Supply:        &supply,
 			}
 		} else if _, exist = sourceDataMap["address"]; exist {
 			// Token transfer
@@ -174,6 +160,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				return nil, err
 			}
 
+			// get info from coinmarketcap
+			coinInfo, err := coinmarketcap.CachedGetCoinInfo(ctx, message.Network, sourceDataMap["address"].(string))
+			if err != nil {
+				return nil, err
+			}
+
 			metadataModel.Token = &metadata.Token{
 				TokenAddress:  tokenTransfer.Address,
 				TokenStandard: "erc20",
@@ -182,7 +174,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				Name:          coinInfo.Name,
 				Symbol:        coinInfo.Symbol,
 				Decimals:      coinInfo.Decimals,
-				Supply:        &supply,
+				Supply:        coinInfo.Supply,
 			}
 		} else {
 			// Native transfer
@@ -196,6 +188,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				return nil, err
 			}
 
+			// get info from coinmarketcap
+			coinInfo, err := coinmarketcap.CachedGetCoinInfoByNetwork(ctx, message.Network)
+			if err != nil {
+				return nil, err
+			}
+
 			metadataModel.Token = &metadata.Token{
 				TokenStandard: "native",
 				TokenValue:    &tokenValue,
@@ -203,7 +201,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				Name:          coinInfo.Name,
 				Symbol:        coinInfo.Symbol,
 				Decimals:      coinInfo.Decimals,
-				Supply:        &supply,
+				Supply:        coinInfo.Supply,
 			}
 		}
 
@@ -213,6 +211,16 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 		}
 
 		transfer.Metadata = rawMetadata
+
+		// action type
+		switch {
+		case sourceDataMap["from_address"] != message.Address: // TO == self
+			transfer.Type = "receive"
+		case sourceDataMap["to_address"] != message.Address: // FROM == self
+			transfer.Type = "send"
+		default: // FROM == TO == self
+			transfer.Type = "cancel"
+		}
 
 		internalTransfers = append(internalTransfers, transfer)
 	}

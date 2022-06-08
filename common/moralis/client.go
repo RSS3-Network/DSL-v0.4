@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/go-querystring/query"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -57,6 +58,9 @@ func (c *Client) DoRequest(_ context.Context, request *http.Request) (*Response,
 	response := &Response{}
 
 	if err := json.NewDecoder(httpResponse.Body).Decode(&response); err != nil {
+		var p []byte
+		httpResponse.Body.Read(p) // nolint:errcheck
+		logrus.Errorf("moralis decode error: %v %s", httpResponse.StatusCode, string(p))
 		return nil, httpResponse, err
 	}
 
@@ -70,7 +74,7 @@ type GetTransactionsOption struct {
 	ToDate    string `url:"to_date,omitempty"`
 	FromBlock string `url:"from_block,omitempty"`
 	ToBlock   string `url:"to_block,omitempty"`
-	Offset    int    `url:"offset,omitempty"`
+	Cursor    string `url:"cursor,omitempty"`
 	Limit     int    `url:"limit,omitempty"`
 }
 
@@ -113,7 +117,7 @@ type GetTokenTransfersOption struct {
 	ToDate    string `url:"to_date,omitempty"`
 	FromBlock string `url:"from_block,omitempty"`
 	ToBlock   string `url:"to_block,omitempty"`
-	Offset    int    `url:"offset,omitempty"`
+	Cursor    string `url:"cursor,omitempty"`
 	Limit     int    `url:"limit,omitempty"`
 }
 
@@ -156,7 +160,7 @@ type GetNFTTransfersOption struct {
 	ToDate    string `url:"to_date,omitempty"`
 	FromBlock string `url:"from_block,omitempty"`
 	ToBlock   string `url:"to_block,omitempty"`
-	Offset    int    `url:"offset,omitempty"`
+	Cursor    string `url:"cursor,omitempty"`
 	Limit     int    `url:"limit,omitempty"`
 }
 
