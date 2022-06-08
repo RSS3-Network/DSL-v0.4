@@ -3,6 +3,7 @@ package moralis
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 
 const (
 	Source = "moralis"
+
+	MaxPage = 5
 )
 
 var _ datasource.Datasource = &Datasource{}
@@ -69,7 +72,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 				transferModels = append(transferModels, model.Transfer{
 					TransactionHash:     tokenTransfer.TransactionHash,
 					Timestamp:           timestamp,
-					TransactionLogIndex: decimal.NewFromInt(int64(i)),
+					TransactionLogIndex: decimal.NewFromInt(int64(-i)),
 					AddressFrom:         tokenTransfer.FromAddress,
 					AddressTo:           tokenTransfer.ToAddress,
 					Network:             message.Network,
@@ -80,12 +83,23 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			}
 		}
 
+		// Moralis may return duplicate data
+		nftTransferMap := map[string]struct{}{}
+
 		nftTransfers, err := d.getNFTTransfers(ctx, message)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, nftTransfer := range nftTransfers {
+			transferID := fmt.Sprintf("%s-%s", nftTransfer.TransactionHash, nftTransfer.LogIndex)
+
+			if _, exist := nftTransferMap[transferID]; exist {
+				continue
+			} else {
+				nftTransferMap[transferID] = struct{}{}
+			}
+
 			timestamp, err := time.Parse(time.RFC3339, nftTransfer.BlockTimestamp)
 			if err != nil {
 				return nil, err
@@ -164,7 +178,7 @@ func (d *Datasource) getTransactions(ctx context.Context, message *protocol.Mess
 		return nil, err
 	}
 
-	for int64(len(transactions)) < response.Total && len(transactions) <= moralis.MaxOffset {
+	for i := 1; int64(len(transactions)) < response.Total && i < MaxPage; i++ {
 		var internalTransactions []moralis.Transaction
 
 		internalTransactions, response, err = d.moralisClient.GetTransactions(ctx, address, &moralis.GetTransactionsOption{
@@ -192,7 +206,7 @@ func (d *Datasource) getTokenTransfers(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 
-	for int64(len(tokenTransfers)) < response.Total && len(tokenTransfers) <= moralis.MaxOffset {
+	for i := 1; int64(len(tokenTransfers)) < response.Total && i < MaxPage; i++ {
 		var internalTokenTransfers []moralis.TokenTransfer
 
 		internalTokenTransfers, response, err = d.moralisClient.GetTokenTransfers(ctx, address, &moralis.GetTokenTransfersOption{
@@ -220,7 +234,7 @@ func (d *Datasource) getNFTTransfers(ctx context.Context, message *protocol.Mess
 		return nil, err
 	}
 
-	for int64(len(nftTransfers)) < response.Total && len(nftTransfers) <= moralis.MaxOffset {
+	for i := 1; int64(len(nftTransfers)) < response.Total && i < MaxPage; i++ {
 		var internalNFTTransfers []moralis.NFTTransfer
 
 		internalNFTTransfers, response, err = d.moralisClient.GetNFTTransfers(ctx, address, &moralis.GetNFTTransfersOption{

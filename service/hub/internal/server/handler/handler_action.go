@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -88,12 +89,15 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 	for transactionHash, transfers := range transferMap {
 		feed := m.Feed{
 			TransactionHash: transactionHash,
+			Timestamp:       transfers[0].Timestamp,
 			Network:         transfers[0].Network,
 			Actions:         transfers,
 		}
 
 		result = append(result, feed)
 	}
+
+	sort.Sort(m.Feeds(result))
 
 	return c.JSON(http.StatusOK, &Response{
 		Total:  total,
