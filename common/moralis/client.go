@@ -104,6 +104,8 @@ func (c *Client) GetTransactions(ctx context.Context, address common.Address, op
 	transactions := make([]Transaction, 0)
 
 	if err := json.Unmarshal(response.Result, &transactions); err != nil {
+		p, _ := response.Result.MarshalJSON()
+		logrus.Error(string(p))
 		return nil, nil, err
 	}
 
@@ -147,6 +149,8 @@ func (c *Client) GetTokenTransfers(ctx context.Context, address common.Address, 
 	tokenTransfers := make([]TokenTransfer, 0)
 
 	if err := json.Unmarshal(response.Result, &tokenTransfers); err != nil {
+		p, _ := response.Result.MarshalJSON()
+		logrus.Error(string(p))
 		return nil, nil, err
 	}
 
@@ -190,6 +194,8 @@ func (c *Client) GetNFTTransfers(ctx context.Context, address common.Address, op
 	nftTransfers := make([]NFTTransfer, 0)
 
 	if err := json.Unmarshal(response.Result, &nftTransfers); err != nil {
+		p, _ := response.Result.MarshalJSON()
+		logrus.Error(string(p))
 		return nil, nil, err
 	}
 
