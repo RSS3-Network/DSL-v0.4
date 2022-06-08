@@ -50,6 +50,8 @@ type Swap struct {
 }
 
 type Gitcoin struct {
+	Id          int    `json:"id"`
+	Slug        string `json:"slug"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Logo        string `json:"logo"`
