@@ -42,7 +42,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			100,
 			zksync.DirectionOlder,
 		)
-
 		if err != nil {
 			return nil, err
 		}

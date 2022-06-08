@@ -68,6 +68,9 @@ func (c *Client) GetAddressTransactions(ctx context.Context, address common.Addr
 	}
 
 	httpRequest, err := http.NewRequest(http.MethodGet, requestURL.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	response, _, err := c.DoRequest(ctx, httpRequest)
 	if err != nil {
@@ -91,6 +94,9 @@ func (c *Client) GetTransactionData(ctx context.Context, transactionHash common.
 	}
 
 	httpRequest, err := http.NewRequest(http.MethodGet, requestURL.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	response, _, err := c.DoRequest(ctx, httpRequest)
 	if err != nil {
