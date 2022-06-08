@@ -54,6 +54,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 			Model((*model.SwapPool)(nil)).
 			Where(map[string]interface{}{
 				"contract_address": transfer.AddressFrom,
+				"network":          transfer.Network,
 			}).
 			First(&swapModel).
 			Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -65,6 +66,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				Model((*model.SwapPool)(nil)).
 				Where(map[string]interface{}{
 					"contract_address": transfer.AddressTo,
+					"network":          transfer.Network,
 				}).
 				First(&swapModel).
 				Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {

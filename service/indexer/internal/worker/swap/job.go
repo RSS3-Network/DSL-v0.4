@@ -12,6 +12,8 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+
+	lop "github.com/samber/lo/parallel"
 )
 
 var _ worker.Job = (*Job)(nil)
@@ -34,33 +36,36 @@ func (j *Job) Timeout() time.Duration {
 
 func (j *Job) Run() {
 	poolClient := dexpools.NewClient()
-	for _, dex := range protocol.SwapPools {
+
+	lop.ForEach(protocol.SwapPools, func(dex protocol.SwapPool, i int) {
 		result, err := poolClient.GetSwapPools(context.Background(), dex)
 		if err != nil {
-			logrus.Errorln(err)
-		}
+			logrus.Errorln(dex.Name, err)
+		} else {
+			pools := make([]model.SwapPool, 0)
 
-		pools := make([]model.SwapPool, 0)
+			for _, pair := range result {
+				pools = append(pools, model.SwapPool{
+					Source:          dex.Name,
+					Network:         dex.Network,
+					ContractAddress: string(pair.ID),
+					Protocol:        dex.Protocol,
+					Token0:          string(pair.Token0.Symbol),
+					Token1:          string(pair.Token1.Symbol),
+				})
+			}
 
-		for _, pair := range result {
-			pools = append(pools, model.SwapPool{
-				Source:          dex.Name,
-				Network:         dex.Network,
-				ContractAddress: string(pair.ID),
-				Protocol:        dex.Protocol,
-				Token0:          string(pair.Token0.Symbol),
-				Token1:          string(pair.Token1.Symbol),
-			})
+			if len(pools) > 0 {
+				if err := j.databaseClient.
+					Model((*model.SwapPool)(nil)).
+					Clauses(clause.OnConflict{
+						DoNothing: true,
+					}).
+					Create(pools).
+					Error; err != nil {
+					logrus.Errorln(err)
+				}
+			}
 		}
-
-		if err := j.databaseClient.
-			Model((*model.SwapPool)(nil)).
-			Clauses(clause.OnConflict{
-				DoNothing: true,
-			}).
-			Create(pools).
-			Error; err != nil {
-			logrus.Errorln(err)
-		}
-	}
+	})
 }
