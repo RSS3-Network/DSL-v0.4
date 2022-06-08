@@ -43,7 +43,7 @@ func Test_CachedGetCoinInfo(t *testing.T) {
 
 	// cache exists
 	info = &coinmarketcap.CoinInfo{}
-	exists, err := cache.GetMsgPack(ctx, "getcoininfo.address."+rss3Address, info)
+	exists, err := cache.GetMsgPack(ctx, "getcoininfo.address.v2."+rss3Address, info)
 	assert.Nil(t, err)
 	assert.True(t, exists)
 	info, err = coinmarketcap.CachedGetCoinInfo(ctx, "ethereum", rss3Address)
