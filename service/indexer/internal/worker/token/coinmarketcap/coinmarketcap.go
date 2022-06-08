@@ -12,7 +12,6 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/contract"
-	"github.com/shopspring/decimal"
 )
 
 const (
@@ -57,16 +56,13 @@ func Init(apikey string) {
 }
 
 type CoinInfo struct {
-	Logo                          string
-	Name                          string
-	Slug                          string
-	Symbol                        string
-	Category                      string
-	Description                   string
-	Decimals                      uint8    // TODO: cannot get from coinmarketcap
-	SelfReportedCirculatingSupply *float64 `json:"self_reported_circulating_supply"`
-
-	Supply *decimal.Decimal
+	Logo        string
+	Name        string
+	Slug        string
+	Symbol      string
+	Category    string
+	Description string
+	Decimals    uint8
 }
 
 type CoinInfos struct {
@@ -107,9 +103,7 @@ func getCoinInfo(ctx context.Context, network, address string) (*CoinInfo, error
 		return nil, err
 	}
 	if resp.IsError() { // skip this one and return a empty result
-		info := new(CoinInfo)
-		info.Supply = new(decimal.Decimal)
-		return info, nil
+		return new(CoinInfo), nil
 		// return nil, fmt.Errorf("bad resp code: %v", resp.StatusCode())
 	}
 	info := result.List()[0]
@@ -120,13 +114,6 @@ func getCoinInfo(ctx context.Context, network, address string) (*CoinInfo, error
 		return nil, err
 	}
 	info.Decimals = decimals
-
-	// set supply default value
-	var supply decimal.Decimal
-	if info.SelfReportedCirculatingSupply != nil {
-		supply = decimal.NewFromFloat(*info.SelfReportedCirculatingSupply)
-	}
-	info.Supply = &supply
 
 	return info, nil
 }
@@ -205,13 +192,6 @@ func getCoinInfoByNetwork(ctx context.Context, network string) (*CoinInfo, error
 		}
 		info.Decimals = decimals
 	}
-
-	// set supply default value
-	var supply decimal.Decimal
-	if info.SelfReportedCirculatingSupply != nil {
-		supply = decimal.NewFromFloat(*info.SelfReportedCirculatingSupply)
-	}
-	info.Supply = &supply
 
 	return info, nil
 }

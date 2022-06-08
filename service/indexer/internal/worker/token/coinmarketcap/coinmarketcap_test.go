@@ -40,7 +40,6 @@ func Test_CachedGetCoinInfo(t *testing.T) {
 	assert.EqualValues(t, "RSS3", info.Symbol)
 	assert.EqualValues(t, 18, info.Decimals)
 	assert.EqualValues(t, "token", info.Category)
-	assert.EqualValues(t, 112722403.98, *info.SelfReportedCirculatingSupply)
 
 	// cache exists
 	info = &coinmarketcap.CoinInfo{}
@@ -49,7 +48,6 @@ func Test_CachedGetCoinInfo(t *testing.T) {
 	assert.True(t, exists)
 	info, err = coinmarketcap.CachedGetCoinInfo(ctx, "ethereum", rss3Address)
 	assert.Nil(t, err)
-	assert.EqualValues(t, 112722403.98, *info.SelfReportedCirculatingSupply)
 	assert.EqualValues(t, "https://s2.coinmarketcap.com/static/img/coins/64x64/17917.png", info.Logo)
 
 	// cache exists (wrong apikey)
@@ -68,7 +66,6 @@ func Test_CachedGetCoinInfo(t *testing.T) {
 	assert.EqualValues(t, 18, info.Decimals)
 	assert.EqualValues(t, "ETH", info.Symbol)
 	assert.EqualValues(t, "coin", info.Category)
-	assert.Nil(t, info.SelfReportedCirculatingSupply)
 }
 
 func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
@@ -86,7 +83,6 @@ func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
 	assert.EqualValues(t, "ETH", info.Symbol)
 	assert.EqualValues(t, 18, info.Decimals)
 	assert.EqualValues(t, "coin", info.Category)
-	assert.True(t, info.Supply.IsZero())
 
 	// cache exists
 	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "ethereum")
@@ -95,7 +91,6 @@ func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
 	assert.EqualValues(t, "ETH", info.Symbol)
 	assert.EqualValues(t, 18, info.Decimals)
 	assert.EqualValues(t, "coin", info.Category)
-	assert.True(t, info.Supply.IsZero())
 
 
 	// BSC
@@ -106,8 +101,6 @@ func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
 	assert.EqualValues(t, 18, info.Decimals)
 	assert.EqualValues(t, "BNB", info.Symbol)
 	assert.EqualValues(t, "coin", info.Category)
-	assert.Nil(t, info.SelfReportedCirculatingSupply)
-	assert.True(t, info.Supply.IsZero())
 
 	// polygon
 	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "polygon")
@@ -117,6 +110,4 @@ func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
 	assert.EqualValues(t, 18, info.Decimals)
 	assert.EqualValues(t, "MATIC", info.Symbol)
 	assert.EqualValues(t, "coin", info.Category)
-	assert.Nil(t, info.SelfReportedCirculatingSupply)
-	assert.True(t, info.Supply.IsZero())
 }
