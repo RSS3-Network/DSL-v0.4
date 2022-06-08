@@ -174,7 +174,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				Name:          coinInfo.Name,
 				Symbol:        coinInfo.Symbol,
 				Decimals:      coinInfo.Decimals,
-				Supply:        coinInfo.Supply,
 			}
 		} else {
 			// Native transfer
@@ -201,7 +200,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				Name:          coinInfo.Name,
 				Symbol:        coinInfo.Symbol,
 				Decimals:      coinInfo.Decimals,
-				Supply:        coinInfo.Supply,
 			}
 		}
 
