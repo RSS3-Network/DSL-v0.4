@@ -21,6 +21,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/nft"
 	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
@@ -115,7 +116,11 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		token.New(s.databaseClient), swap.New(s.databaseClient), mirror.New(), poapworker.New(),
+		token.New(s.databaseClient),
+		swap.New(s.databaseClient),
+		mirror.New(),
+		poapworker.New(),
+		nft.New(),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
@@ -229,6 +234,8 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		if !supportedNetwork {
 			continue
 		}
+
+		logrus.Infof("handle...")
 
 		internalTransfers, err := internalWorker.Handle(context.Background(), message, transfers)
 		if err != nil {

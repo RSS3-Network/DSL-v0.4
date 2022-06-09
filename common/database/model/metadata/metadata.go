@@ -20,6 +20,7 @@ type Metadata struct {
 	Swap   *SwapPool `json:"swap,omitempty"`
 	Mirror *Mirror   `json:"mirror,omitempty"`
 	POAP   *POAP     `json:"poap,omitempty"`
+	NFT    NFT       `json:"nft,omitempty"`
 }
 
 type Token struct {
@@ -33,6 +34,19 @@ type Token struct {
 	Name     string `json:"name"`
 	Symbol   string `json:"symbol"`
 }
+
+type NFT json.RawMessage
+
+// {
+// 	TokenAddress  string           `json:"token_address,omitempty"`
+// 	TokenStandard string           `json:"token_standard"`
+// 	TokenID       *decimal.Decimal `json:"token_id,omitempty"`
+// 	TokenValue    *decimal.Decimal `json:"token_value"`
+
+// 	Name   string `json:"name"`
+// 	Symbol string `json:"symbol"`
+// 	URI    string `json:"uri"`
+// }
 
 type Mirror struct {
 	ContentType           string          `json:"content_type"`

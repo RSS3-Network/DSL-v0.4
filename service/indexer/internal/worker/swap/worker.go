@@ -31,11 +31,11 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) error {
-	job := &Job{
-		databaseClient: s.databaseClient,
-	}
+	// job := &Job{
+	// 	databaseClient: s.databaseClient,
+	// }
 
-	job.Run()
+	// job.Run()
 
 	return nil
 }

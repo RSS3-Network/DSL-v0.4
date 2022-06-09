@@ -29,3 +29,6 @@ redis:
 
 coinmarketcap:
   apikey: ""
+
+infura:
+  project_id: ""

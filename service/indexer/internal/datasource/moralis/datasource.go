@@ -38,6 +38,7 @@ func (d *Datasource) Networks() []string {
 	}
 }
 
+// TODO: I think it can be abstracted here, abstract into a simple chain structure
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
 	transferModels := make([]model.Transfer, 0)
 
@@ -196,6 +197,7 @@ func (d *Datasource) getTransactions(ctx context.Context, message *protocol.Mess
 	return transactions, nil
 }
 
+// TODO: I think HexToAddress can be abstracted to reduce conversion time
 func (d *Datasource) getTokenTransfers(ctx context.Context, message *protocol.Message) ([]moralis.TokenTransfer, error) {
 	address := common.HexToAddress(message.Address)
 
@@ -251,6 +253,34 @@ func (d *Datasource) getNFTTransfers(ctx context.Context, message *protocol.Mess
 
 	return nftTransfers, nil
 }
+
+// func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) ([]moralis.NFT, error) {
+// 	address := common.HexToAddress(message.Address)
+
+// 	nfts, response, err := d.moralisClient.GetNFTs(ctx, address, &moralis.GetNFTTransfersOption{
+// 		Chain: protocol.NetworkToID(message.Network),
+// 	})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	for int64(len(nfts)) < response.Total && len(nfts) <= moralis.NFTMaxLimit {
+// 		var internalNFTs []moralis.NFT
+
+// 		internalNFTs, response, err = d.moralisClient.GetNFTs(ctx, address, &moralis.GetNFTTransfersOption{
+// 			Chain:  protocol.NetworkToID(message.Network),
+// 			Offset: len(nfts),
+// 		})
+
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		nfts = append(nfts, internalNFTs...)
+// 	}
+
+// 	return nfts, nil
+// }
 
 func New(key string) datasource.Datasource {
 	moralisClient := moralis.NewClient(key)
