@@ -40,16 +40,14 @@ func Test_CachedGetCoinInfo(t *testing.T) {
 	assert.EqualValues(t, "RSS3", info.Symbol)
 	assert.EqualValues(t, 18, info.Decimals)
 	assert.EqualValues(t, "token", info.Category)
-	assert.EqualValues(t, 112722403.98, *info.SelfReportedCirculatingSupply)
 
 	// cache exists
 	info = &coinmarketcap.CoinInfo{}
-	exists, err := cache.GetMsgPack(ctx, "getcoininfo.address."+rss3Address, info)
+	exists, err := cache.GetMsgPack(ctx, "getcoininfo.address.v2."+rss3Address, info)
 	assert.Nil(t, err)
 	assert.True(t, exists)
 	info, err = coinmarketcap.CachedGetCoinInfo(ctx, "ethereum", rss3Address)
 	assert.Nil(t, err)
-	assert.EqualValues(t, 112722403.98, *info.SelfReportedCirculatingSupply)
 	assert.EqualValues(t, "https://s2.coinmarketcap.com/static/img/coins/64x64/17917.png", info.Logo)
 
 	// cache exists (wrong apikey)
@@ -58,7 +56,7 @@ func Test_CachedGetCoinInfo(t *testing.T) {
 	assert.Nil(t, err)
 	assert.EqualValues(t, "RSS3", info.Name)
 
-	// ETH BNB address
+	// ETH address (on BSC)
 	coinmarketcap.Init("11f16fe7-7036-42c7-8155-1524d74b05eb")
 	ethBNBAddress := "0x2170ed0880ac9a755fd29b2688956bd959f933f8"
 	info, err = coinmarketcap.CachedGetCoinInfo(ctx, "binance_smart_chain", ethBNBAddress)
@@ -68,5 +66,48 @@ func Test_CachedGetCoinInfo(t *testing.T) {
 	assert.EqualValues(t, 18, info.Decimals)
 	assert.EqualValues(t, "ETH", info.Symbol)
 	assert.EqualValues(t, "coin", info.Category)
-	assert.Nil(t, info.SelfReportedCirculatingSupply)
+}
+
+func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
+	setup()
+	defer teardown()
+
+	ctx := context.Background()
+
+	// no cache
+	cache.Clear(context.Background())
+	info, err := coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "ethereum")
+	assert.Nil(t, err)
+	assert.EqualValues(t, "Ethereum", info.Name)
+	assert.EqualValues(t, "ethereum", info.Slug)
+	assert.EqualValues(t, "ETH", info.Symbol)
+	assert.EqualValues(t, 18, info.Decimals)
+	assert.EqualValues(t, "coin", info.Category)
+
+	// cache exists
+	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "ethereum")
+	assert.EqualValues(t, "Ethereum", info.Name)
+	assert.EqualValues(t, "ethereum", info.Slug)
+	assert.EqualValues(t, "ETH", info.Symbol)
+	assert.EqualValues(t, 18, info.Decimals)
+	assert.EqualValues(t, "coin", info.Category)
+
+
+	// BSC
+	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "binance_smart_chain")
+	assert.Nil(t, err)
+	assert.EqualValues(t, "BNB", info.Name)
+	assert.EqualValues(t, "bnb", info.Slug)
+	assert.EqualValues(t, 18, info.Decimals)
+	assert.EqualValues(t, "BNB", info.Symbol)
+	assert.EqualValues(t, "coin", info.Category)
+
+	// polygon
+	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "polygon")
+	assert.Nil(t, err)
+	assert.EqualValues(t, "Polygon", info.Name)
+	assert.EqualValues(t, "polygon", info.Slug)
+	assert.EqualValues(t, 18, info.Decimals)
+	assert.EqualValues(t, "MATIC", info.Symbol)
+	assert.EqualValues(t, "coin", info.Category)
 }
