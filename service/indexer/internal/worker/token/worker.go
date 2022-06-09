@@ -13,6 +13,7 @@ import (
 	moralisx "github.com/naturalselectionlabs/pregod/common/moralis"
 	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
@@ -32,6 +33,7 @@ var (
 
 type service struct {
 	databaseClient *gorm.DB
+	zksyncClient   *zksync.Client
 }
 
 func (s *service) Name() string {
@@ -40,7 +42,7 @@ func (s *service) Name() string {
 
 func (s *service) Networks() []string {
 	return []string{
-		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
+		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkZkSync,
 	}
 }
 
@@ -111,6 +113,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 	// TODO
 
 	databaseSpan.End()
+
+	// ZkSync
+	if message.Network == protocol.NetworkZkSync {
+		return s.handleZkSync(ctx, message, transfers)
+	}
 
 	internalTransfers := make([]model.Transfer, 0)
 
@@ -239,6 +246,66 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 	return internalTransfers, nil
 }
 
+// TODO: only support `Transfer` now
+// https://docs.zksync.io/apiv02-docs/#transactions-api-v0.2-transactions-txhash-data
+func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transfers []model.Transfer) ([]model.Transfer, error) {
+	internalTransfers := make([]model.Transfer, 0)
+
+	for _, transfer := range transfers {
+		data := zksync.GetTransactionData{}
+		if err := json.Unmarshal(transfer.SourceData, &data); err != nil {
+			logrus.Error(err)
+			return nil, err
+		}
+
+		tokenInfo, _, err := s.zksyncClient.GetToken(ctx, uint(data.Transaction.Operation.Token))
+		if err != nil {
+			logrus.Error(err)
+		}
+
+		var metadataModel metadata.Metadata
+
+		// e.g. NFT-387049
+		if strings.HasPrefix(tokenInfo.Symbol, "NFT") {
+			nftTokenInfo, _, err := s.zksyncClient.GetNFTToken(ctx, uint(data.Transaction.Operation.Token))
+			if err != nil {
+				logrus.Error(err)
+			}
+			tokenID := decimal.NewFromInt(nftTokenInfo.ID)
+			metadataModel.Token = &metadata.Token{
+				TokenAddress:  nftTokenInfo.Address,
+				TokenStandard: "erc721",
+				TokenID:       &tokenID,
+				Symbol:        nftTokenInfo.Symbol,
+			}
+		} else { // token
+			amount, err := decimal.NewFromString(data.Transaction.Operation.Amount)
+			if err != nil {
+				logrus.Error(err)
+			}
+			tokenID := decimal.NewFromInt(tokenInfo.ID)
+			metadataModel.Token = &metadata.Token{
+				TokenAddress:  tokenInfo.Address,
+				TokenStandard: "erc20",
+				TokenID:       &tokenID,
+				TokenValue:    &amount,
+				Decimals:      tokenInfo.Decimals,
+				Symbol:        tokenInfo.Symbol,
+			}
+		}
+
+		rawMetadata, err := json.Marshal(metadataModel)
+		if err != nil {
+			return nil, err
+		}
+
+		transfer.Metadata = rawMetadata
+		internalTransfers = append(internalTransfers, transfer)
+
+	}
+	return internalTransfers, nil
+}
+
 func (s *service) Jobs() []worker.Job {
 	return nil
 }
@@ -246,5 +313,6 @@ func (s *service) Jobs() []worker.Job {
 func New(databaseClient *gorm.DB) worker.Worker {
 	return &service{
 		databaseClient: databaseClient,
+		zksyncClient:   zksync.New(),
 	}
 }

@@ -86,6 +86,7 @@ func (c *Client) GetAddressTransactions(ctx context.Context, address common.Addr
 	return &transactionList, response, nil
 }
 
+// https://docs.zksync.io/apiv02-docs/#transactions-api-v0.2-transactions-txhash-data
 func (c *Client) GetTransactionData(ctx context.Context, transactionHash common.Hash) (*GetTransactionData, *Response, error) {
 	requestURL := &url.URL{
 		Scheme: Scheme,
@@ -110,6 +111,62 @@ func (c *Client) GetTransactionData(ctx context.Context, transactionHash common.
 	}
 
 	return &transactionData, response, nil
+}
+
+// https://docs.zksync.io/apiv02-docs/#tokens-api-v0.2-tokens-tokenlike
+// TODO: save to database
+func (c *Client) GetToken(ctx context.Context, tokenID uint) (*GetTokenInfo, *Response, error) {
+	requestURL := &url.URL{
+		Scheme: Scheme,
+		Host:   Endpoint,
+		Path:   fmt.Sprintf("/api/v0.2/tokens/%v", tokenID),
+	}
+
+	httpRequest, err := http.NewRequest(http.MethodGet, requestURL.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	response, _, err := c.DoRequest(ctx, httpRequest)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	tokenInfo := GetTokenInfo{}
+
+	if err := json.Unmarshal(response.Result, &tokenInfo); err != nil {
+		return nil, nil, err
+	}
+
+	return &tokenInfo, response, nil
+}
+
+// https://docs.zksync.io/apiv02-docs/#tokens-api-v0.2-tokens-nft-id
+// TODO: save to database
+func (c *Client) GetNFTToken(ctx context.Context, tokenID uint) (*GetNFTTokenInfo, *Response, error) {
+	requestURL := &url.URL{
+		Scheme: Scheme,
+		Host:   Endpoint,
+		Path:   fmt.Sprintf("/api/v0.2/tokens/nft/%v", tokenID),
+	}
+
+	httpRequest, err := http.NewRequest(http.MethodGet, requestURL.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	response, _, err := c.DoRequest(ctx, httpRequest)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	tokenInfo := GetNFTTokenInfo{}
+
+	if err := json.Unmarshal(response.Result, &tokenInfo); err != nil {
+		return nil, nil, err
+	}
+
+	return &tokenInfo, response, nil
 }
 
 func New() *Client {

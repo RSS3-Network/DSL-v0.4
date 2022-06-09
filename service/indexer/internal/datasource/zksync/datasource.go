@@ -55,6 +55,11 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			if err != nil {
 				return nil, err
 			}
+			// TODO: only support `Transfer` now
+			// https://docs.zksync.io/apiv02-docs/#transactions-api-v0.2-transactions-txhash-data
+			if transactionData.Transaction.Operation.Type != "Transfer" {
+				continue
+			}
 
 			sourceData, err := json.Marshal(transactionData)
 			if err != nil {
