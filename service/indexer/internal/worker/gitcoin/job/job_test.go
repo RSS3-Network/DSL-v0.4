@@ -5,7 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"gorm.io/gorm"
 )
 
 func TestGitcoinProjectJob_Name(t *testing.T) {
@@ -79,7 +81,7 @@ func TestGitcoinProjectJob_Run(t *testing.T) {
 
 func TestGitcoinProjectJob_requestGitcoinGrantApi(t *testing.T) {
 	type args struct {
-		id int64
+		id int
 	}
 	tests := []struct {
 		name    string
@@ -101,6 +103,30 @@ func TestGitcoinProjectJob_requestGitcoinGrantApi(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GitcoinProjectJob.requestGitcoinGrantApi() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestGitcoinProjectJob_SetCache(t *testing.T) {
+	type fields struct {
+		DatabaseClient         *gorm.DB
+		RedisClient            *redis.Client
+		GitcoinProjectCacheKey string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			job := &GitcoinProjectJob{
+				DatabaseClient:         tt.fields.DatabaseClient,
+				RedisClient:            tt.fields.RedisClient,
+				GitcoinProjectCacheKey: tt.fields.GitcoinProjectCacheKey,
+			}
+			job.SetCache()
 		})
 	}
 }

@@ -120,7 +120,7 @@ func (s *Server) Initialize() (err error) {
 		swap.New(s.databaseClient),
 		mirror.New(),
 		poapworker.New(),
-		gitcoin.New(s.databaseClient),
+		gitcoin.New(s.databaseClient, s.redisClient),
 	}
 
 	s.employer = shedlock.New(s.redisClient)

@@ -1,21 +1,26 @@
 package job
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-var (
-	_ worker.Job = (*GitcoinProjectJob)(nil)
-)
+var _ worker.Job = (*GitcoinProjectJob)(nil)
 
 type GitcoinProjectJob struct {
-	DatabaseClient *gorm.DB
+	DatabaseClient         *gorm.DB
+	RedisClient            *redis.Client
+	GitcoinProjectCacheKey string
 }
 
 func (job *GitcoinProjectJob) Name() string {
@@ -23,37 +28,92 @@ func (job *GitcoinProjectJob) Name() string {
 }
 
 func (job *GitcoinProjectJob) Spec() string {
-	return "* * * * *"
+	return "*/10 * * * *" // 10 min
 }
 
 func (job *GitcoinProjectJob) Timeout() time.Duration {
-	return time.Minute * 1
+	return time.Minute * 5
 }
 
 func (job *GitcoinProjectJob) Run() {
-	// query lastest gitcoin grant id
-	
+	logrus.Info("[gitcoin job] run")
+
+	// query lastest gitcoin project id
+	lastestProject := &model.GitcoinProject{}
+
+	if err := job.DatabaseClient.
+		Model(&model.GitcoinProject{}).
+		Order("id DESC").
+		First(&lastestProject).Error; err != nil {
+		logrus.Errorf("[gitcoin job] get lastest grant, db error: %v", err)
+		return
+	}
 
 	// requeset api
+	newProject, err := job.requestGitcoinGrantApi(lastestProject.Id + 1)
+	if err != nil || newProject == nil {
+		return
+	}
 
 	// set db
+	if err := job.DatabaseClient.
+		Model(&model.GitcoinProject{}).
+		Clauses(clause.OnConflict{
+			DoNothing: true,
+		}).
+		Create(newProject).Error; err != nil {
+		logrus.Errorf("[gitcoin job] create lastest grant, db error: %v", err)
+		return
+	}
+
+	go job.SetCache()
 }
 
-func (job *GitcoinProjectJob) requestGitcoinGrantApi(id int64) (*model.GitcoinProject, error) {
+func (job *GitcoinProjectJob) SetCache() {
+	projectList := []*model.GitcoinProject{}
+	if err := job.DatabaseClient.
+		Model(&model.GitcoinProject{}).
+		Order("id DESC").
+		Find(&projectList).Error; err != nil {
+		logrus.Errorf("[gitcoin job] get gitcoin grants, db error: %v", err)
+		return
+	}
+
+	for _, project := range projectList {
+		projectByte, _ := json.Marshal(project)
+
+		// set redis
+		if err := job.RedisClient.HSet(
+			context.Background(),
+			job.GitcoinProjectCacheKey,
+			project.AdminAddress,
+			string(projectByte)).Err(); err != nil {
+			logrus.Errorf("[gitcoin job] set redis error: %v", err)
+			continue
+		}
+	}
+}
+
+func (job *GitcoinProjectJob) requestGitcoinGrantApi(id int) (*model.GitcoinProject, error) {
 	var (
-		gitcoinProject = &model.GitcoinProject{}
-		url            = fmt.Sprintf("https://gitcoin.co/grants/v1/api/grant/%v", id)
-		client         = resty.New()
+		url      = fmt.Sprintf("https://gitcoin.co/grants/v1/api/grant/%v", id)
+		client   = resty.New()
+		response = struct {
+			Status int                  `json:"status"`
+			Grants model.GitcoinProject `json:"grants"`
+		}{}
 	)
 
-	response, err := client.R().SetResult(&gitcoinProject).Get(url)
+	resp, err := client.R().SetResult(&response).Get(url)
 	if err != nil {
+		logrus.Errorf("[gitcoin job] requestGitcoinGrantApi http get error: %v", err)
 		return nil, err
 	}
 
-	if response.IsError() {
-		return nil, fmt.Errorf("response code: %v", response.StatusCode)
+	if resp.IsError() {
+		logrus.Errorf("[gitcoin job] requestGitcoinGrantApi http response error, code: %v", resp.StatusCode())
+		return nil, fmt.Errorf("grantApi response code: %v", resp.StatusCode())
 	}
 
-	return gitcoinProject, nil
+	return &response.Grants, nil
 }

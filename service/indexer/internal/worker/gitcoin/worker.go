@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/go-redis/redis/v8"
+	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -13,17 +15,19 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	_ worker.Worker = (*service)(nil)
-)
+var _ worker.Worker = (*service)(nil)
 
 type service struct {
-	databaseClient *gorm.DB
+	databaseClient         *gorm.DB
+	redisClient            *redis.Client
+	gitcoinProjectCacheKey string
 }
 
-func New(databaseClient *gorm.DB) worker.Worker {
+func New(databaseClient *gorm.DB, redisClient *redis.Client) worker.Worker {
 	return &service{
-		databaseClient: databaseClient,
+		databaseClient:         databaseClient,
+		redisClient:            redisClient,
+		gitcoinProjectCacheKey: "gitcoin_project",
 	}
 }
 
@@ -46,24 +50,27 @@ func (s *service) Initialize(ctx context.Context) error {
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transfers []model.Transfer) ([]model.Transfer, error) {
 	tracer := otel.Tracer("worker_gitcoin")
 
-	ctx, handlerSpan := tracer.Start(ctx, "handler")
+	_, handlerSpan := tracer.Start(ctx, "handler")
 
 	defer handlerSpan.End()
-
-	// get gitcoin project list
-	gitcoinProjectMap := make(map[string]model.GitcoinProject, 0)
-	// todo
 
 	gitcoinTransfers := make([]model.Transfer, 0)
 
 	for _, transfer := range transfers {
-		project, exist := gitcoinProjectMap[transfer.AddressTo]
-		if !exist {
+		projectStr, err := s.redisClient.HGet(ctx, s.gitcoinProjectCacheKey, transfer.AddressTo).Result()
+		if err != nil || len(projectStr) == 0 {
+			continue
+		}
+
+		project := &model.GitcoinProject{}
+		if err := json.Unmarshal([]byte(projectStr), &project); err != nil {
 			continue
 		}
 
 		// action type
 		transfer.Type = "donate"
+		transfer.Tags = pq.StringArray{"Donation"}
+		transfer.Source = "Gitcoin Contribution"
 
 		// format metadata
 		var metadataModel metadata.Metadata
@@ -96,7 +103,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 func (s *service) Jobs() []worker.Job {
 	return []worker.Job{
 		&job.GitcoinProjectJob{
-			DatabaseClient: s.databaseClient,
+			DatabaseClient:         s.databaseClient,
+			RedisClient:            s.redisClient,
+			GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
 		},
 	}
 }
