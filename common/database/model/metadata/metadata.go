@@ -29,11 +29,10 @@ type Token struct {
 	TokenID       *decimal.Decimal `json:"token_id,omitempty"`
 	TokenValue    *decimal.Decimal `json:"token_value"`
 
-	Logo     string           `json:"logo"`
-	Decimals uint8            `json:"decimals"`
-	Name     string           `json:"name"`
-	Symbol   string           `json:"symbol"`
-	Supply   *decimal.Decimal `json:"suuply"`
+	Logo     string `json:"logo"`
+	Decimals uint8  `json:"decimals"`
+	Name     string `json:"name"`
+	Symbol   string `json:"symbol"`
 }
 
 type Mirror struct {
@@ -44,9 +43,12 @@ type Mirror struct {
 	Content               json.RawMessage `json:"content"`
 }
 
-type Swap struct {
-	Name string `json:"name"`
-	Pool string `json:"pool"`
+type SwapPool struct {
+	Name     string `json:"name"`
+	Token0   string `json:"token0"`
+	Token1   string `json:"token1"`
+	Network  string `json:"network"`
+	Protocol string `json:"protocol"`
 }
 
 type Gitcoin struct {
@@ -70,6 +72,5 @@ type POAP struct {
 	StartDate   string `json:"start_date"`
 	EndDate     string `json:"end_date"`
 	ExpiryDate  string `json:"expiry_date"`
-	Supply      int    `json:"supply"`
-	TokenID     string `json:"tokenId"`
+	TokenID     string `json:"token_id"`
 }

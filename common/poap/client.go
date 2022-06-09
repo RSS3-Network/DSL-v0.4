@@ -1,6 +1,7 @@
 package poap
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -31,6 +32,25 @@ func (c *Client) GetActions(address string) ([]Action, error) {
 	}
 
 	return actions, nil
+}
+
+func (c *Client) GetToken(ctx context.Context, id int64) (*Token, error) {
+	response, err := c.httpClient.Get(fmt.Sprintf("%s/token/%d", Endpoint, id))
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		_ = response.Body.Close()
+	}()
+
+	token := Token{}
+
+	if err := json.NewDecoder(response.Body).Decode(&token); err != nil {
+		return nil, err
+	}
+
+	return &token, nil
 }
 
 func New() *Client {

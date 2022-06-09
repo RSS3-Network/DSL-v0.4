@@ -10,7 +10,7 @@ import (
 
 type Transfer struct {
 	TransactionHash     string          `gorm:"column:transaction_hash;primaryKey" json:"-"`
-	Timestamp           time.Time       `gorm:"column:timestamp" json:"timestamp"`
+	Timestamp           time.Time       `gorm:"column:timestamp" json:"-"`
 	Type                string          `gorm:"column:type" json:"type"`
 	Tags                pq.StringArray  `gorm:"column:tags;type:text[]" json:"-"`
 	TransactionLogIndex decimal.Decimal `gorm:"column:transaction_log_index;primaryKey" json:"transaction_log_index"`
