@@ -7,14 +7,17 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	moralisx "github.com/naturalselectionlabs/pregod/common/moralis"
+	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
 	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -140,6 +143,15 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				return nil, err
 			}
 
+			nftMetadata, err := nft.GetMetadata(
+				message.Network,
+				common.HexToAddress(nftTransfer.TokenAddress),
+				tokenID.BigInt(),
+			)
+			if err != nil { // print err but no return
+				logrus.Errorf("%s: %v", message.Network, err)
+			}
+
 			tokenValue := decimal.NewFromInt(1)
 
 			metadataModel.Token = &metadata.Token{
@@ -147,6 +159,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				TokenStandard: strings.ToLower(nftTransfer.ContractType),
 				TokenID:       &tokenID,
 				TokenValue:    &tokenValue, // TODO ERC1155
+				NFTMetadata:   nftMetadata,
 			}
 		} else if _, exist = sourceDataMap["address"]; exist {
 			// Token transfer
