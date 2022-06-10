@@ -26,12 +26,14 @@ type Token struct {
 	TokenAddress  string           `json:"token_address,omitempty"`
 	TokenStandard string           `json:"token_standard"`
 	TokenID       *decimal.Decimal `json:"token_id,omitempty"`
-	TokenValue    *decimal.Decimal `json:"token_value"`
+	TokenValue    *decimal.Decimal `json:"token_value,omitempty"`
 
-	Logo     string `json:"logo"`
-	Decimals uint8  `json:"decimals"`
-	Name     string `json:"name"`
-	Symbol   string `json:"symbol"`
+	Logo     string `json:"logo,omitempty"`
+	Decimals uint8  `json:"decimals,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Symbol   string `json:"symbol,omitempty"`
+
+	NFTMetadata json.RawMessage `json:"nft_metadata,omitempty"`
 }
 
 type Mirror struct {

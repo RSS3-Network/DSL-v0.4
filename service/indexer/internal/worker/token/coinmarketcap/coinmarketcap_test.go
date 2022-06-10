@@ -4,24 +4,19 @@ import (
 	"context"
 	"testing"
 
-	"github.com/naturalselectionlabs/pregod/common/cache"
-	configx "github.com/naturalselectionlabs/pregod/common/config"
+	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
 	"github.com/stretchr/testify/assert"
 )
 
 func setup() {
-	cache.Dial(&configx.Redis{
-		Addr: "127.0.0.1:6379",
-		DB:   0,
-	})
+	database.Dial("postgres://postgres:password@127.0.0.1:5432/pregod2", true)
 	coinmarketcap.Init("11f16fe7-7036-42c7-8155-1524d74b05eb")
 }
 
 func teardown() {
 	coinmarketcap.Init("")
-	cache.Clear(context.Background())
-	cache.Close()
 }
 
 func Test_CachedGetCoinInfo(t *testing.T) {
@@ -32,7 +27,6 @@ func Test_CachedGetCoinInfo(t *testing.T) {
 	rss3Address := "0xc98d64da73a6616c42117b582e832812e7b8d57f"
 
 	// no cache
-	cache.Clear(context.Background())
 	info, err := coinmarketcap.CachedGetCoinInfo(ctx, "ethereum", rss3Address)
 	assert.Nil(t, err)
 	assert.EqualValues(t, "RSS3", info.Name)
@@ -42,10 +36,7 @@ func Test_CachedGetCoinInfo(t *testing.T) {
 	assert.EqualValues(t, "token", info.Category)
 
 	// cache exists
-	info = &coinmarketcap.CoinInfo{}
-	exists, err := cache.GetMsgPack(ctx, "getcoininfo.address.v2."+rss3Address, info)
-	assert.Nil(t, err)
-	assert.True(t, exists)
+	info = &model.CoinMarketCapCoinInfo{}
 	info, err = coinmarketcap.CachedGetCoinInfo(ctx, "ethereum", rss3Address)
 	assert.Nil(t, err)
 	assert.EqualValues(t, "https://s2.coinmarketcap.com/static/img/coins/64x64/17917.png", info.Logo)
@@ -75,7 +66,6 @@ func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	// no cache
-	cache.Clear(context.Background())
 	info, err := coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "ethereum")
 	assert.Nil(t, err)
 	assert.EqualValues(t, "Ethereum", info.Name)

@@ -12,19 +12,25 @@ var tables = []any{
 	&model.SwapPool{},
 	&model.ExchangeWallet{},
 	&model.Token{},
+	&model.GetTokenInfo{},
+	&model.GetNFTTokenInfo{},
+	&model.CoinMarketCapCoinInfo{},
 }
 
+var Client *gorm.DB
+
 func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {
-	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	var err error
+	Client, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 
 	if autoMigrate {
-		if err := database.AutoMigrate(tables...); err != nil {
+		if err := Client.AutoMigrate(tables...); err != nil {
 			return nil, err
 		}
 	}
 
-	return database, nil
+	return Client, nil
 }

@@ -9,6 +9,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/go-querystring/query"
+	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -86,6 +91,7 @@ func (c *Client) GetAddressTransactions(ctx context.Context, address common.Addr
 	return &transactionList, response, nil
 }
 
+// https://docs.zksync.io/apiv02-docs/#transactions-api-v0.2-transactions-txhash-data
 func (c *Client) GetTransactionData(ctx context.Context, transactionHash common.Hash) (*GetTransactionData, *Response, error) {
 	requestURL := &url.URL{
 		Scheme: Scheme,
@@ -110,6 +116,96 @@ func (c *Client) GetTransactionData(ctx context.Context, transactionHash common.
 	}
 
 	return &transactionData, response, nil
+}
+
+// https://docs.zksync.io/apiv02-docs/#tokens-api-v0.2-tokens-tokenlike
+func (c *Client) GetToken(ctx context.Context, tokenID uint) (*model.GetTokenInfo, *Response, error) {
+	tokenInfo := model.GetTokenInfo{}
+
+	// first try to get from db
+	if err := database.Client.Where(
+		"id = ?", tokenID,
+	).First(&tokenInfo).Error; err != nil && err != gorm.ErrRecordNotFound {
+		logrus.Error(err)
+		return nil, nil, err
+	} else if err == nil { // exists
+		return &tokenInfo, nil, nil
+	} // else not found, continue
+
+	requestURL := &url.URL{
+		Scheme: Scheme,
+		Host:   Endpoint,
+		Path:   fmt.Sprintf("/api/v0.2/tokens/%v", tokenID),
+	}
+
+	httpRequest, err := http.NewRequest(http.MethodGet, requestURL.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	response, _, err := c.DoRequest(ctx, httpRequest)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := json.Unmarshal(response.Result, &tokenInfo); err != nil {
+		return nil, nil, err
+	}
+
+	// save
+	if err := database.Client.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&tokenInfo).Error; err != nil {
+		logrus.Error(err)
+		return nil, nil, err
+	}
+
+	return &tokenInfo, response, nil
+}
+
+// https://docs.zksync.io/apiv02-docs/#tokens-api-v0.2-tokens-nft-id
+func (c *Client) GetNFTToken(ctx context.Context, tokenID uint) (*model.GetNFTTokenInfo, *Response, error) {
+	tokenInfo := model.GetNFTTokenInfo{}
+
+	// first try to get from db
+	if err := database.Client.Where(
+		"id = ?", tokenID,
+	).First(&tokenInfo).Error; err != nil && err != gorm.ErrRecordNotFound {
+		logrus.Error(err)
+		return nil, nil, err
+	} else if err == nil { // exists
+		return &tokenInfo, nil, nil
+	} // else not found, continue
+
+	requestURL := &url.URL{
+		Scheme: Scheme,
+		Host:   Endpoint,
+		Path:   fmt.Sprintf("/api/v0.2/tokens/nft/%v", tokenID),
+	}
+
+	httpRequest, err := http.NewRequest(http.MethodGet, requestURL.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	response, _, err := c.DoRequest(ctx, httpRequest)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := json.Unmarshal(response.Result, &tokenInfo); err != nil {
+		return nil, nil, err
+	}
+
+	// save
+	if err := database.Client.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&tokenInfo).Error; err != nil {
+		logrus.Error(err)
+		return nil, nil, err
+	}
+
+	return &tokenInfo, response, nil
 }
 
 func New() *Client {
