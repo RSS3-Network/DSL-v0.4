@@ -6,7 +6,6 @@ import (
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/dexpools"
-	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -37,7 +36,7 @@ func (j *Job) Timeout() time.Duration {
 func (j *Job) Run() {
 	poolClient := dexpools.NewClient()
 
-	lop.ForEach(protocol.SwapPools, func(dex protocol.SwapPool, i int) {
+	lop.ForEach(dexpools.SwapPools, func(dex dexpools.SwapPool, i int) {
 		result, err := poolClient.GetSwapPools(context.Background(), dex)
 		if err != nil {
 			logrus.Errorln(dex.Name, err)
