@@ -159,13 +159,16 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				logrus.Errorf("%s: %v", message.Network, err)
 			}
 
-			tokenValue := decimal.NewFromInt(1)
+			tokenValue, err := decimal.NewFromString(nftTransfer.Amount)
+			if err != nil {
+				logrus.Error(err)
+			}
 
 			metadataModel.Token = &metadata.Token{
 				TokenAddress:  nftTransfer.TokenAddress,
 				TokenStandard: strings.ToLower(nftTransfer.ContractType),
 				TokenID:       &tokenID,
-				TokenValue:    &tokenValue, // TODO ERC1155
+				TokenValue:    &tokenValue,
 				NFTMetadata:   nftMetadata,
 			}
 		} else if _, exist = sourceDataMap["address"]; exist {
@@ -265,25 +268,28 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 
 		var metadataModel metadata.Metadata
 
+		amount, err := decimal.NewFromString(data.Transaction.Operation.Amount)
+		if err != nil {
+			logrus.Error(err)
+		}
+
 		// e.g. NFT-387049
 		if strings.HasPrefix(tokenInfo.Symbol, "NFT") {
 			nftTokenInfo, _, err := s.zksyncClient.GetNFTToken(ctx, uint(data.Transaction.Operation.Token))
 			if err != nil {
 				logrus.Error(err)
 			}
-			tokenID := decimal.NewFromInt(nftTokenInfo.ID)
+			tokenID := decimal.NewFromInt(*nftTokenInfo.ID)
 			metadataModel.Token = &metadata.Token{
 				TokenAddress:  nftTokenInfo.Address,
 				TokenStandard: "erc721",
 				TokenID:       &tokenID,
+				TokenValue:    &amount,
 				Symbol:        nftTokenInfo.Symbol,
+				NFTMetadata:   nftTokenInfo.Bytes(),
 			}
 		} else { // token
-			amount, err := decimal.NewFromString(data.Transaction.Operation.Amount)
-			if err != nil {
-				logrus.Error(err)
-			}
-			tokenID := decimal.NewFromInt(tokenInfo.ID)
+			tokenID := decimal.NewFromInt(*tokenInfo.ID)
 			metadataModel.Token = &metadata.Token{
 				TokenAddress:  tokenInfo.Address,
 				TokenStandard: "erc20",

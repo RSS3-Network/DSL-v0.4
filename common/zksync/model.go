@@ -86,25 +86,3 @@ type GetAccountTransactionListItemOperation struct {
 	ID              int    `json:"id"`
 	TransactionHash string `json:"txHash"`
 }
-
-// https://docs.zksync.io/apiv02-docs/#tokens-api-v0.2-tokens-tokenlike
-type GetTokenInfo struct {
-	ID             int64  `json:"id"`
-	Address        string `json:"address"`
-	Symbol         string `json:"symbol"`
-	Decimals       uint8  `json:"decimals"`
-	EnabledForFees bool   `json:"enabledForFees"`
-}
-
-// https://docs.zksync.io/apiv02-docs/#tokens-api-v0.2-tokens-nft-id
-type GetNFTTokenInfo struct {
-	ID               int64  `json:"id"`
-	ContentHash      string `json:"contentHash"`
-	CreatorID        int64  `json:"creatorId"`
-	CreatorAddress   string `json:"creatorAddress"`
-	SerialID         int    `json:"serialId"`
-	Address          string `json:"address"`
-	Symbol           string `json:"symbol"`
-	CurrentFactory   string `json:"currentFactory"`
-	WithdrawnFactory string `json:"withdrawnFactory"`
-}

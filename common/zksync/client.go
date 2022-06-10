@@ -9,6 +9,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/go-querystring/query"
+	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -114,8 +119,19 @@ func (c *Client) GetTransactionData(ctx context.Context, transactionHash common.
 }
 
 // https://docs.zksync.io/apiv02-docs/#tokens-api-v0.2-tokens-tokenlike
-// TODO: save to database
-func (c *Client) GetToken(ctx context.Context, tokenID uint) (*GetTokenInfo, *Response, error) {
+func (c *Client) GetToken(ctx context.Context, tokenID uint) (*model.GetTokenInfo, *Response, error) {
+	tokenInfo := model.GetTokenInfo{}
+
+	// first try to get from db
+	if err := database.Client.Where(
+		"id = ?", tokenID,
+	).First(&tokenInfo).Error; err != nil && err != gorm.ErrRecordNotFound {
+		logrus.Error(err)
+		return nil, nil, err
+	} else if err == nil { // exists
+		return &tokenInfo, nil, nil
+	} // else not found, continue
+
 	requestURL := &url.URL{
 		Scheme: Scheme,
 		Host:   Endpoint,
@@ -132,9 +148,15 @@ func (c *Client) GetToken(ctx context.Context, tokenID uint) (*GetTokenInfo, *Re
 		return nil, nil, err
 	}
 
-	tokenInfo := GetTokenInfo{}
-
 	if err := json.Unmarshal(response.Result, &tokenInfo); err != nil {
+		return nil, nil, err
+	}
+
+	// save
+	if err := database.Client.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&tokenInfo).Error; err != nil {
+		logrus.Error(err)
 		return nil, nil, err
 	}
 
@@ -142,8 +164,19 @@ func (c *Client) GetToken(ctx context.Context, tokenID uint) (*GetTokenInfo, *Re
 }
 
 // https://docs.zksync.io/apiv02-docs/#tokens-api-v0.2-tokens-nft-id
-// TODO: save to database
-func (c *Client) GetNFTToken(ctx context.Context, tokenID uint) (*GetNFTTokenInfo, *Response, error) {
+func (c *Client) GetNFTToken(ctx context.Context, tokenID uint) (*model.GetNFTTokenInfo, *Response, error) {
+	tokenInfo := model.GetNFTTokenInfo{}
+
+	// first try to get from db
+	if err := database.Client.Where(
+		"id = ?", tokenID,
+	).First(&tokenInfo).Error; err != nil && err != gorm.ErrRecordNotFound {
+		logrus.Error(err)
+		return nil, nil, err
+	} else if err == nil { // exists
+		return &tokenInfo, nil, nil
+	} // else not found, continue
+
 	requestURL := &url.URL{
 		Scheme: Scheme,
 		Host:   Endpoint,
@@ -160,9 +193,15 @@ func (c *Client) GetNFTToken(ctx context.Context, tokenID uint) (*GetNFTTokenInf
 		return nil, nil, err
 	}
 
-	tokenInfo := GetNFTTokenInfo{}
-
 	if err := json.Unmarshal(response.Result, &tokenInfo); err != nil {
+		return nil, nil, err
+	}
+
+	// save
+	if err := database.Client.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&tokenInfo).Error; err != nil {
+		logrus.Error(err)
 		return nil, nil, err
 	}
 
