@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/lens"
+
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -114,7 +116,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.datasources = []datasource.Datasource{
-		moralis.New(s.config.Moralis.Key), arweave.New(), blockscout.New(), zksync.New(),
+		moralis.New(s.config.Moralis.Key), arweave.New(), blockscout.New(), zksync.New(), lens.New(),
 	}
 
 	s.workers = []worker.Worker{

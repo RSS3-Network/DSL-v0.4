@@ -20,6 +20,7 @@ type Metadata struct {
 	Swap   *SwapPool `json:"swap,omitempty"`
 	Mirror *Mirror   `json:"mirror,omitempty"`
 	POAP   *POAP     `json:"poap,omitempty"`
+	Lens   *Lens     `json:"lens,omitempty"`
 }
 
 type Token struct {
@@ -66,4 +67,10 @@ type POAP struct {
 	EndDate     string `json:"end_date"`
 	ExpiryDate  string `json:"expiry_date"`
 	TokenID     string `json:"token_id"`
+}
+
+type Lens struct {
+	Type    string          `json:"type"`
+	Content string          `json:"content"`
+	Media   json.RawMessage `json:"media"`
 }
