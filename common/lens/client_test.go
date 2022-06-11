@@ -8,6 +8,9 @@ import (
 
 var (
 	client *lens.Client
+
+	address = "0x3a5bd1e37b099ae3386d13947b6a90d97675e5e3"
+	profile = "0x0d"
 )
 
 func init() {
@@ -16,7 +19,7 @@ func init() {
 
 func TestGetProfiles(t *testing.T) {
 
-	result, err := client.GetProfiles(context.Background(), "0x3a5bd1e37b099ae3386d13947b6a90d97675e5e3")
+	result, err := client.GetProfiles(context.Background(), address)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,7 +28,16 @@ func TestGetProfiles(t *testing.T) {
 }
 
 func TestGetPublications(t *testing.T) {
-	result, err := client.GetPublications(context.Background(), "0x0d")
+	result, err := client.GetPublications(context.Background(), profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(result)
+}
+
+func TestGetPublicationsByAddress(t *testing.T) {
+	result, err := client.GetPublicationsByAddress(context.Background(), address)
 	if err != nil {
 		t.Fatal(err)
 	}

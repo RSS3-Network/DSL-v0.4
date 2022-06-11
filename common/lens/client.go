@@ -101,6 +101,25 @@ func (c *Client) GetPublications(ctx context.Context, profile string) ([]graphql
 	return result, nil
 }
 
+func (c *Client) GetPublicationsByAddress(ctx context.Context, address string) ([]graphqlx.Publication, error) {
+	profiles, err := c.GetProfiles(ctx, address)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]graphqlx.Publication, 0)
+
+	for _, profile := range profiles {
+		publications, err := c.GetPublications(ctx, profile)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, publications...)
+	}
+
+	return result, nil
+}
+
 func NewClient() *Client {
 	endpointURL := url.URL{
 		Scheme: EndpointScheme,
