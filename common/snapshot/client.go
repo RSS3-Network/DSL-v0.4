@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 
+	graphqlx "github.com/naturalselectionlabs/pregod/common/snapshot/graphql"
 	"github.com/shurcooL/graphql"
 )
 
@@ -33,34 +35,38 @@ type GetMultipleSpacesVariable struct {
 	OrderDirection Description
 }
 
-func (c *Client) GetMultipleSpaces(ctx context.Context, variable GetMultipleSpacesVariable) error {
+func (c *Client) GetMultipleSpaces(ctx context.Context, variable GetMultipleSpacesVariable) ([]graphqlx.Space, error) {
+	var query struct {
+		Spaces []graphqlx.Space `graphql:"spaces(first: $first, skip: $skip, orderBy: $orderBy, orderDirection: $orderDirection)"`
+	}
+
 	variableMap := map[string]interface{}{}
 
 	if variable.First > 0 {
 		variableMap["first"] = variable.First
 	} else {
-		return fmt.Errorf("variable 'First' must be greater than 0")
+		return nil, fmt.Errorf("variable 'First' must be greater than 0")
 	}
 
 	if variable.Skip >= 0 {
 		variableMap["first"] = variable.First
 	} else {
-		return fmt.Errorf("variable 'Skip' must be greater than 0")
+		return nil, fmt.Errorf("variable 'Skip' must be greater than 0")
 	}
 
 	if variable.OrderBy != "" {
 		variableMap["first"] = variable.First
 	} else {
-		return fmt.Errorf("variable 'OrderBy' must not be nil")
+		return nil, fmt.Errorf("variable 'OrderBy' must not be nil")
 	}
 
 	variableMap["OrderDirection"] = variable.OrderDirection
 
 	if err := c.graphqlClient.Query(ctx, query, variableMap); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return query.Spaces, nil
 }
 
 type GetMultipleProposalsVariable struct {
@@ -72,8 +78,8 @@ type GetMultipleProposalsVariable struct {
 	orderDirection Description
 }
 
-func (c *Client) GetMultipleProposals(name string) {
-
+func (c *Client) GetMultipleProposals(name string, variable GetMultipleProposalsVariable) error {
+	return nil
 }
 
 type GetMultipleVotesVariable struct {
@@ -84,6 +90,22 @@ type GetMultipleVotesVariable struct {
 	orderDirection  Description
 }
 
-func (c *Client) GetMultipleVotes() {
+func (c *Client) GetMultipleVotes(variable GetMultipleVotesVariable) error {
+	return nil
+}
 
+func NewClient() *Client {
+	client := &Client{
+		httpClient: http.DefaultClient,
+	}
+
+	endpointURL := url.URL{
+		Scheme: EndpointScheme,
+		Host:   EndpointHost,
+		Path:   EndpointPath,
+	}
+
+	client.graphqlClient = graphql.NewClient(endpointURL.String(), client.httpClient)
+
+	return client
 }

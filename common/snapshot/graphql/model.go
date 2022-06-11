@@ -1,34 +1,37 @@
 package graphqlx
 
-import "github.com/shopspring/decimal"
+import (
+	"github.com/shopspring/decimal"
+	"github.com/shurcooL/graphql"
+)
 
 // Space
 
 type SpaceStrategieParam struct {
-	Symbol   string          `json:"symbol"`
-	Address  string          `json:"address"`
+	Symbol   graphql.String  `json:"symbol"`
+	Address  graphql.String  `json:"address"`
 	Decimals decimal.Decimal `json:"decimals"`
 }
 
 type SpaceStrategie struct {
-	Name   string              `json:"name"`
+	Name   graphql.String      `json:"name"`
 	Params SpaceStrategieParam `json:"params"`
 }
 
 type SpaceFilter struct {
 	MinScore    decimal.Decimal `json:"minScore"`
-	OnlyMembers bool            `json:"onlyMembers"`
+	OnlyMembers graphql.Boolean `json:"onlyMembers"`
 }
 
 type Space struct {
-	Id         string           `json:"id"`
-	Name       string           `json:"name"`
-	About      string           `json:"about"`
-	Network    string           `json:"network"`
-	Symbol     string           `json:"symbol"`
-	Members    []string         `json:"members"`
+	Id         graphql.String   `json:"id"`
+	Name       graphql.String   `json:"name"`
+	About      graphql.String   `json:"about"`
+	Network    graphql.String   `json:"network"`
+	Symbol     graphql.String   `json:"symbol"`
+	Members    []graphql.String `json:"members"`
 	Strategies []SpaceStrategie `json:"strategies"`
-	Admins     []string         `json:"admins"`
+	Admins     []graphql.String `json:"admins"`
 	Filters    []SpaceFilter    `json:"filters"`
 	// plugins
 }
@@ -36,38 +39,38 @@ type Space struct {
 // Proposal
 
 type ProposalSpace struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id   graphql.String `json:"id"`
+	Name graphql.String `json:"name"`
 }
 
 type Proposal struct {
-	Id       string          `json:"id"`
-	Title    string          `json:"title"`
-	Body     string          `json:"body"`
-	Choices  []string        `json:"choices"`
-	Start    decimal.Decimal `json:"start"`
-	End      decimal.Decimal `json:"end"`
-	Snapshot string          `json:"snapshot"`
-	State    string          `json:"state"`
-	Author   string          `json:"author"`
-	Space    ProposalSpace   `json:"space"`
+	Id       graphql.String   `json:"id"`
+	Title    graphql.String   `json:"title"`
+	Body     graphql.String   `json:"body"`
+	Choices  []graphql.String `json:"choices"`
+	Start    graphql.Int      `json:"start"`
+	End      graphql.Int      `json:"end"`
+	Snapshot graphql.String   `json:"snapshot"`
+	State    graphql.String   `json:"state"`
+	Author   graphql.String   `json:"author"`
+	Space    ProposalSpace    `json:"space"`
 }
 
 // Vote
 
 type VoteProposal struct {
-	Id string `json:"id"`
+	Id graphql.String `json:"id"`
 }
 
 type VoteSpace struct {
-	Id string `json:"id"`
+	Id graphql.String `json:"id"`
 }
 
 type Vote struct {
-	Id       string          `json:"id"`
-	Voter    string          `json:"voter"`
-	Created  decimal.Decimal `json:"created"`
-	Proposal VoteProposal    `json:"proposal"`
-	Choice   decimal.Decimal `json:"choice"`
-	Space    VoteSpace       `json:"space"`
+	Id       graphql.String `json:"id"`
+	Voter    graphql.String `json:"voter"`
+	Created  graphql.Int    `json:"created"`
+	Proposal VoteProposal   `json:"proposal"`
+	Choice   graphql.Int    `json:"choice"`
+	Space    VoteSpace      `json:"space"`
 }
