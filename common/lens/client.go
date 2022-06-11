@@ -13,6 +13,8 @@ const (
 	EndpointScheme = "https"
 	EndpointHost   = "api.lens.dev"
 	EndpointPath   = "/graphql"
+	// EndpointLimit : the maximum number of items that can be returned in a single query
+	EndpointLimit = 25
 )
 
 type Client struct {
@@ -57,52 +59,91 @@ func (c *Client) GetProfiles(ctx context.Context, address string) ([]string, err
 	return result, nil
 }
 
-// types for GetPublications
+// types for GetPublications and GetPublicationCount
 type (
 	PublicationTypes         string
 	PublicationsQueryRequest struct {
 		ProfileId        graphql.String     `json:"profileId"`
 		PublicationTypes []PublicationTypes `json:"publicationTypes"`
+		Cursor           graphql.String     `json:"cursor"`
 	}
 )
 
-func (c *Client) GetPublications(ctx context.Context, profile string) ([]graphqlx.Publication, error) {
+func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graphqlx.Publication, error) {
 	var query struct {
 		Publications struct {
 			Items []struct {
 				Post    graphqlx.Publication `graphql:"... on Post"`
 				Comment graphqlx.Publication `graphql:"... on Comment"`
-			} `graphql:"items"`
+			}
+			PageInfo graphqlx.PageInfo
 		} `graphql:"publications(request: $request)"`
-
-		// `graphql:"publications(request: { profileId: \"0x0d\", publicationTypes: [POST,COMMENT] })"`
 	}
 
 	variable := PublicationsQueryRequest{
-		ProfileId:        graphql.String(profile),
+		ProfileId:        options.Profile,
 		PublicationTypes: []PublicationTypes{"POST", "COMMENT"},
+		Cursor:           options.Cursor,
 	}
 
-	variableMap := map[string]interface{}{
-		"request": variable,
-	}
-	if err := c.graphqlClient.Query(ctx, &query, variableMap); err != nil {
+	if err := c.GetPublicationPageInfo(ctx, options); err != nil {
 		return nil, err
 	}
 
-	result := make([]graphqlx.Publication, len(query.Publications.Items))
+	result := make([]graphqlx.Publication, 0)
 
-	for i, item := range query.Publications.Items {
-		// both item.Post and item.Comment contain the same data
-		// here we only want to append one of them
-		result[i] = item.Post
+	if options.TotalCount > 0 {
+		for i := 0; i < int(options.TotalCount); i += EndpointLimit {
+			variable.Cursor = options.Cursor
+			variableMap := map[string]interface{}{
+				"request": variable,
+			}
+			if err := c.graphqlClient.Query(ctx, &query, variableMap); err != nil {
+				return nil, err
+			}
+
+			for _, item := range query.Publications.Items {
+				// both item.Post and item.Comment contain the same data
+				// here we only want to append one of them
+				result = append(result, item.Post)
+			}
+			if query.Publications.PageInfo.Next != "" {
+				options.Cursor = query.Publications.PageInfo.Next
+			}
+		}
 	}
 
 	return result, nil
 }
 
-func (c *Client) GetPublicationsByAddress(ctx context.Context, address string) ([]graphqlx.Publication, error) {
-	profiles, err := c.GetProfiles(ctx, address)
+func (c *Client) GetPublicationPageInfo(ctx context.Context, options *Options) error {
+	var query struct {
+		Publications struct {
+			PageInfo graphqlx.PageInfo
+		} `graphql:"publications(request: $request)"`
+	}
+
+	variable := PublicationsQueryRequest{
+		ProfileId:        options.Profile,
+		PublicationTypes: []PublicationTypes{"POST", "COMMENT"},
+		Cursor:           graphql.String("{}"),
+	}
+
+	variableMap := map[string]interface{}{
+		"request": variable,
+	}
+
+	if err := c.graphqlClient.Query(ctx, &query, variableMap); err != nil {
+		return err
+	}
+
+	options.TotalCount = query.Publications.PageInfo.TotalCount
+
+	return nil
+}
+
+func (c *Client) GetAllPublicationsByAddress(ctx context.Context, options *Options) ([]graphqlx.Publication, error) {
+	profiles, err := c.GetProfiles(ctx, string(options.Address))
 	if err != nil {
 		return nil, err
 	}
@@ -110,11 +151,14 @@ func (c *Client) GetPublicationsByAddress(ctx context.Context, address string) (
 	result := make([]graphqlx.Publication, 0)
 
 	for _, profile := range profiles {
-		publications, err := c.GetPublications(ctx, profile)
+		options.Profile = graphql.String(profile)
+		publications, err := c.GetPublications(ctx, options)
 		if err != nil {
 			return nil, err
 		}
+
 		result = append(result, publications...)
+
 	}
 
 	return result, nil

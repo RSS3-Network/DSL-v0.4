@@ -25,3 +25,8 @@ type Media struct {
 		MimeType graphql.String `json:"mimeType"`
 	} `graphql:"original"`
 }
+
+type PageInfo struct {
+	Next       graphql.String
+	TotalCount graphql.Int
+}

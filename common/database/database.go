@@ -15,6 +15,7 @@ var tables = []any{
 	&model.GetTokenInfo{},
 	&model.GetNFTTokenInfo{},
 	&model.CoinMarketCapCoinInfo{},
+	&model.LensCursor{},
 }
 
 var Client *gorm.DB

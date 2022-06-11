@@ -67,4 +67,6 @@ func (j *Job) Run() {
 			}
 		}
 	})
+
+	logrus.Infoln("Job: Swap Pools finished")
 }

@@ -116,7 +116,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.datasources = []datasource.Datasource{
-		moralis.New(s.config.Moralis.Key), arweave.New(), blockscout.New(), zksync.New(), lens.New(),
+		moralis.New(s.config.Moralis.Key), arweave.New(), blockscout.New(), zksync.New(), lens.New(s.databaseClient),
 	}
 
 	s.workers = []worker.Worker{

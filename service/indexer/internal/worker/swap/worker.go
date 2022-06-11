@@ -31,11 +31,22 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) error {
-	job := &Job{
-		databaseClient: s.databaseClient,
+	var count int64
+
+	if err := s.databaseClient.
+		Model((*model.SwapPool)(nil)).
+		Count(&count).
+		Error; err != nil {
+		return err
 	}
 
-	job.Run()
+	if count == 0 {
+		job := &Job{
+			databaseClient: s.databaseClient,
+		}
+
+		job.Run()
+	}
 
 	return nil
 }
