@@ -11,16 +11,18 @@ import (
 )
 
 const (
-	EndpointScheme = "https"
-	EndpointHost   = "hub.snapshot.org"
+	// EndpointScheme = "https"
+	// EndpointHost   = "hub.snapshot.org"
+	EndpointScheme = "http"
+	EndpointHost   = "127.0.0.1:8080"
 	EndpointPath   = "/graphql"
 )
 
-type Description string
+type OrderDirection graphql.String
 
 const (
-	DescriptionAsc  Description = "asc"
-	DescriptionDesc Description = "desc"
+	OrderDirectionAsc  OrderDirection = "asc"
+	OrderDirectionDesc OrderDirection = "desc"
 )
 
 type Client struct {
@@ -29,10 +31,10 @@ type Client struct {
 }
 
 type GetMultipleSpacesVariable struct {
-	First          graphql.Int
-	Skip           graphql.Int
-	OrderBy        graphql.String
-	OrderDirection Description
+	First          graphql.Int    `json:"first"`
+	Skip           graphql.Int    `json:"skip"`
+	OrderBy        graphql.String `json:"orderBy"`
+	OrderDirection OrderDirection `json:"orderDirection"`
 }
 
 func (c *Client) GetMultipleSpaces(ctx context.Context, variable GetMultipleSpacesVariable) ([]graphqlx.Space, error) {
@@ -49,18 +51,18 @@ func (c *Client) GetMultipleSpaces(ctx context.Context, variable GetMultipleSpac
 	}
 
 	if variable.Skip >= 0 {
-		variableMap["first"] = variable.First
+		variableMap["skip"] = variable.Skip
 	} else {
 		return nil, fmt.Errorf("variable 'Skip' must be greater than 0")
 	}
 
 	if variable.OrderBy != "" {
-		variableMap["first"] = variable.First
+		variableMap["orderBy"] = variable.OrderBy
 	} else {
 		return nil, fmt.Errorf("variable 'OrderBy' must not be nil")
 	}
 
-	variableMap["OrderDirection"] = variable.OrderDirection
+	variableMap["orderDirection"] = variable.OrderDirection
 
 	if err := c.graphqlClient.Query(ctx, query, variableMap); err != nil {
 		return nil, err
@@ -75,7 +77,7 @@ type GetMultipleProposalsVariable struct {
 	WhereSpaceIn   []graphql.String
 	WhereState     graphql.String
 	orderBy        graphql.String
-	orderDirection Description
+	orderDirection OrderDirection
 }
 
 func (c *Client) GetMultipleProposals(name string, variable GetMultipleProposalsVariable) error {
@@ -87,7 +89,7 @@ type GetMultipleVotesVariable struct {
 	Skip            graphql.Int
 	WhereProposalIn []graphql.String
 	orderBy         graphql.String
-	orderDirection  Description
+	orderDirection  OrderDirection
 }
 
 func (c *Client) GetMultipleVotes(variable GetMultipleVotesVariable) error {

@@ -1,16 +1,17 @@
 package graphqlx
 
 import (
-	"github.com/shopspring/decimal"
 	"github.com/shurcooL/graphql"
 )
 
-// Space
+// // Space
+type SpaceConnection struct {
+}
 
 type SpaceStrategieParam struct {
-	Symbol   graphql.String  `json:"symbol"`
-	Address  graphql.String  `json:"address"`
-	Decimals decimal.Decimal `json:"decimals"`
+	Symbol   graphql.String `json:"symbol"`
+	Address  graphql.String `json:"address"`
+	Decimals graphql.Int    `json:"decimals"`
 }
 
 type SpaceStrategie struct {
@@ -19,7 +20,7 @@ type SpaceStrategie struct {
 }
 
 type SpaceFilter struct {
-	MinScore    decimal.Decimal `json:"minScore"`
+	MinScore    graphql.Int     `json:"minScore"`
 	OnlyMembers graphql.Boolean `json:"onlyMembers"`
 }
 

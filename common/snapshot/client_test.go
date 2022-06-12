@@ -22,7 +22,7 @@ func TestGetMultipleSpaces(t *testing.T) {
 		First:          graphql.Int(20),
 		Skip:           graphql.Int(0),
 		OrderBy:        graphql.String("created"),
-		OrderDirection: snapshot.DescriptionAsc,
+		OrderDirection: snapshot.OrderDirectionAsc,
 	}
 
 	spaces, err := client.GetMultipleSpaces(context.Background(), variable)
