@@ -1,22 +1,25 @@
 package graphqlx
 
 import (
+	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
 	"github.com/shurcooL/graphql"
 )
 
-// // Space
-type SpaceConnection struct {
+type GetSpacesVariable struct {
+	Owners []graphql.String     `json:"owners"`
+	Tags   []graphqlx.TagFilter `json:"tags"`
+	Block  graphqlx.BlockFilter `json:"block"`
 }
 
 type SpaceStrategieParam struct {
-	Symbol   graphql.String `json:"symbol"`
-	Address  graphql.String `json:"address"`
-	Decimals graphql.Int    `json:"decimals"`
+	Symbol  graphql.String `json:"symbol"`
+	Address graphql.String `json:"address"`
+	//Decimals graphql.Int    `json:"decimals"`
 }
 
 type SpaceStrategie struct {
-	Name   graphql.String      `json:"name"`
-	Params SpaceStrategieParam `json:"params"`
+	Name graphql.String `json:"name"`
+	//Params SpaceStrategieParam `json:"params"`
 }
 
 type SpaceFilter struct {
@@ -33,7 +36,7 @@ type Space struct {
 	Members    []graphql.String `json:"members"`
 	Strategies []SpaceStrategie `json:"strategies"`
 	Admins     []graphql.String `json:"admins"`
-	Filters    []SpaceFilter    `json:"filters"`
+	//Filters []SpaceFilter    `json:"filters"`
 	// plugins
 }
 
