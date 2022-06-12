@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
-	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	m "github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
@@ -22,7 +21,6 @@ type GetActionListRequest struct {
 	Cursor      string   `query:"cursor"`
 	Types       []string `query:"types"`
 	Tags        []string `query:"tags"`
-	ExculdeTags []string `query:"exclude_tags"`
 	ItemSources []string `query:"item_sources"`
 	Networks    []string `query:"networks"`
 }
@@ -138,11 +136,7 @@ func (h *Handler) getActionListDatabase(c context.Context, request GetActionList
 	}
 
 	if len(request.Tags) > 0 {
-		sql = sql.Where("tags && ?", pq.StringArray(request.Tags))
-	}
-
-	if len(request.ExculdeTags) > 0 {
-		sql = sql.Where("tags && ? = FALSE", pq.StringArray(request.ExculdeTags))
+		sql = sql.Where("tag IN ?", request.Tags)
 	}
 
 	if len(request.ItemSources) > 0 {
