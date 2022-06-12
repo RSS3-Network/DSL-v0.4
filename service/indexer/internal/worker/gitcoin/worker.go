@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin/job"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 )
@@ -64,19 +65,21 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 
 		project := &model.GitcoinProject{}
 		if err := json.Unmarshal([]byte(projectStr), &project); err != nil {
+			logrus.Errorf("[gitcoin handle] json unmarshal project error: %v", err)
 			continue
 		}
 
-		// action type
 		transfer.Type = "donate"
-		transfer.Tags = pq.StringArray{"Donation"}
-		transfer.Source = "Gitcoin Contribution"
+		transfer.Tag = "donation"
+		transfer.Source = "gitcoin"
+		transfer.RelatedUrls = append(transfer.RelatedUrls, utils.GetTxHashURL(transfer.Network, transfer.TransactionHash))
 
 		// format metadata
 		var metadataModel metadata.Metadata
 
 		if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-			return nil, err
+			logrus.Error("[gitcoin handle] json unmarshal transfer metadata error: %v", err)
+			continue
 		}
 
 		metadataModel.Gitcoin = &metadata.Gitcoin{
@@ -89,7 +92,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 
 		metadata, err := json.Marshal(metadataModel)
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		transfer.Metadata = metadata

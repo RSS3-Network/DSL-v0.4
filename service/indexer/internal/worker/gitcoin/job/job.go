@@ -49,21 +49,23 @@ func (job *GitcoinProjectJob) Run() {
 		return
 	}
 
-	// requeset api
-	newProject, err := job.requestGitcoinGrantApi(lastestProject.Id + 1)
-	if err != nil || newProject == nil {
-		return
-	}
+	for i := 1; i <= 10; i++ {
+		// requeset api
+		newProject, err := job.requestGitcoinGrantApi(lastestProject.Id + 1)
+		if err != nil || newProject == nil {
+			continue
+		}
 
-	// set db
-	if err := job.DatabaseClient.
-		Model(&model.GitcoinProject{}).
-		Clauses(clause.OnConflict{
-			DoNothing: true,
-		}).
-		Create(newProject).Error; err != nil {
-		logrus.Errorf("[gitcoin job] create lastest grant, db error: %v", err)
-		return
+		// set db
+		if err := job.DatabaseClient.
+			Model(&model.GitcoinProject{}).
+			Clauses(clause.OnConflict{
+				DoNothing: true,
+			}).
+			Create(newProject).Error; err != nil {
+			logrus.Errorf("[gitcoin job] create lastest grant, db error: %v", err)
+			continue
+		}
 	}
 
 	go job.SetCache()
