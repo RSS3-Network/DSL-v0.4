@@ -4,14 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-resty/resty/v2"
-	"github.com/naturalselectionlabs/pregod/common/cache"
+	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/contract"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -55,22 +58,12 @@ func Init(apikey string) {
 	})
 }
 
-type CoinInfo struct {
-	Logo        string
-	Name        string
-	Slug        string
-	Symbol      string
-	Category    string
-	Description string
-	Decimals    uint8
-}
-
 type CoinInfos struct {
-	Data map[string]*CoinInfo
+	Data map[string]*model.CoinMarketCapCoinInfo
 }
 
-func (i *CoinInfos) List() []*CoinInfo {
-	result := []*CoinInfo{}
+func (i *CoinInfos) List() []*model.CoinMarketCapCoinInfo {
+	result := []*model.CoinMarketCapCoinInfo{}
 	for _, v := range i.Data {
 		result = append(result, v)
 	}
@@ -79,11 +72,11 @@ func (i *CoinInfos) List() []*CoinInfo {
 
 // Not the same as the documentation
 type CoinInfosBySymbol struct {
-	Data map[string][]*CoinInfo
+	Data map[string][]*model.CoinMarketCapCoinInfo
 }
 
-func (i *CoinInfosBySymbol) List() []*CoinInfo {
-	result := []*CoinInfo{}
+func (i *CoinInfosBySymbol) List() []*model.CoinMarketCapCoinInfo {
+	result := []*model.CoinMarketCapCoinInfo{}
 	for _, v := range i.Data {
 		result = append(result, v...)
 	}
@@ -92,7 +85,7 @@ func (i *CoinInfosBySymbol) List() []*CoinInfo {
 
 // https://coinmarketcap.com/api/documentation/v1/#operation/getV2CryptocurrencyInfo
 // Will get a empty result when resp code is not OK
-func getCoinInfo(ctx context.Context, network, address string) (*CoinInfo, error) {
+func getCoinInfo(ctx context.Context, network, address string) (*model.CoinMarketCapCoinInfo, error) {
 	path := "/v2/cryptocurrency/info"
 
 	result := CoinInfos{}
@@ -103,7 +96,7 @@ func getCoinInfo(ctx context.Context, network, address string) (*CoinInfo, error
 		return nil, err
 	}
 	if resp.IsError() { // skip this one and return a empty result
-		return new(CoinInfo), nil
+		return new(model.CoinMarketCapCoinInfo), nil
 		// return nil, fmt.Errorf("bad resp code: %v", resp.StatusCode())
 	}
 	info := result.List()[0]
@@ -114,6 +107,9 @@ func getCoinInfo(ctx context.Context, network, address string) (*CoinInfo, error
 		return nil, err
 	}
 	info.Decimals = decimals
+
+	// addresses
+	info.FillFields()
 
 	return info, nil
 }
@@ -137,31 +133,38 @@ func getDecimals(ctx context.Context, network, addressHex string) (uint8, error)
 	return contractCaller.Decimals(&bind.CallOpts{})
 }
 
-func CachedGetCoinInfo(ctx context.Context, network, address string) (*CoinInfo, error) {
-	key := fmt.Sprintf("getcoininfo.address.v2.%s", address)
-	ttl := time.Hour
+func CachedGetCoinInfo(ctx context.Context, network, address string) (*model.CoinMarketCapCoinInfo, error) {
+	result := &model.CoinMarketCapCoinInfo{}
 
-	result := &CoinInfo{}
-	exists, err := cache.GetMsgPack(ctx, key, result)
+	// get
+	if err := database.Client.Where("? = ANY(addresses)", address).First(result).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
+			logrus.Error(err)
+			return nil, err
+		}
+	} else {
+		return result, nil
+	}
+
+	result, err := getCoinInfo(ctx, network, address)
 	if err != nil {
+		logrus.Error(err)
 		return nil, err
 	}
 
-	if !exists {
-		result, err = getCoinInfo(ctx, network, address)
-		if err != nil {
-			return nil, err
-		}
-		if err = cache.SetMsgPack(ctx, key, result, ttl); err != nil {
-			return nil, err
-		}
+	// save
+	if err := database.Client.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(result).Error; err != nil {
+		logrus.Error(err)
+		return nil, err
 	}
 
 	return result, nil
 }
 
 // for token native transfer
-func getCoinInfoByNetwork(ctx context.Context, network string) (*CoinInfo, error) {
+func getCoinInfoByNetwork(ctx context.Context, network string) (*model.CoinMarketCapCoinInfo, error) {
 	token, exists := Network2Token[network]
 	if !exists {
 		return nil, errors.New("symbol for the network not exists")
@@ -193,28 +196,41 @@ func getCoinInfoByNetwork(ctx context.Context, network string) (*CoinInfo, error
 		info.Decimals = decimals
 	}
 
+	// addresses
+	info.FillFields()
+
 	return info, nil
 }
 
 // for token native transfer
-func CachedGetCoinInfoByNetwork(ctx context.Context, network string) (*CoinInfo, error) {
-	key := fmt.Sprintf("getcoininfobynetwork.network.v2.%s", network)
-	ttl := time.Hour
+func CachedGetCoinInfoByNetwork(ctx context.Context, network string) (*model.CoinMarketCapCoinInfo, error) {
+	token, exists := Network2Token[network]
+	if !exists {
+		return nil, errors.New("symbol for the network not exists")
+	}
 
-	result := &CoinInfo{}
-	exists, err := cache.GetMsgPack(ctx, key, result)
+	result := &model.CoinMarketCapCoinInfo{}
+
+	if err := database.Client.Where("symbol = ?", token.Symbol).First(result).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return nil, err
+		}
+	} else {
+		return result, nil
+	}
+
+	result, err := getCoinInfoByNetwork(ctx, network)
 	if err != nil {
+		logrus.Error(err)
 		return nil, err
 	}
 
-	if !exists {
-		result, err = getCoinInfoByNetwork(ctx, network)
-		if err != nil {
-			return nil, err
-		}
-		if err = cache.SetMsgPack(ctx, key, result, ttl); err != nil {
-			return nil, err
-		}
+	// save
+	if err := database.Client.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(result).Error; err != nil {
+		logrus.Error(err)
+		return nil, err
 	}
 
 	return result, nil

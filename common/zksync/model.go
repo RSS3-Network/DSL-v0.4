@@ -32,6 +32,8 @@ type GetTransactionDataTransaction struct {
 	BatchID         int                         `json:"batchId"`
 }
 
+// https://docs.zksync.io/apiv02-docs/#transactions-api-v0.2-transactions-txhash-data
+// only support `Transfer` now
 type GetTransactionDataOperation struct {
 	Type       string                               `json:"type"`
 	To         string                               `json:"to"`

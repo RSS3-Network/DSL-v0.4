@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/shedlock"
@@ -71,6 +72,8 @@ func (s *Server) Initialize() (err error) {
 			semconv.ServiceVersionKey.String("v0.5.0"),
 		)),
 	))
+
+	nft.Initialize(s.config.Infura.ProjectID)
 
 	s.databaseClient, err = database.Dial(s.config.Postgres.String(), true)
 	if err != nil {

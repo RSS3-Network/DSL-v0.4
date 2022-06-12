@@ -78,7 +78,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 		var metadataModel metadata.Metadata
 
 		if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-			logrus.Error("[gitcoin handle] json unmarshal transfer metadata error: %v", err)
+			logrus.Errorf("[gitcoin handle] json unmarshal transfer metadata error: %v", err)
 			continue
 		}
 
