@@ -16,10 +16,11 @@ func init() {
 }
 
 type Metadata struct {
-	Token  *Token    `json:"token,omitempty"`
-	Swap   *SwapPool `json:"swap,omitempty"`
-	Mirror *Mirror   `json:"mirror,omitempty"`
-	POAP   *POAP     `json:"poap,omitempty"`
+	Token   *Token    `json:"token,omitempty"`
+	Swap    *SwapPool `json:"swap,omitempty"`
+	Mirror  *Mirror   `json:"mirror,omitempty"`
+	POAP    *POAP     `json:"poap,omitempty"`
+	Gitcoin *Gitcoin  `json:"gitcoin"`
 }
 
 type Token struct {
@@ -50,6 +51,14 @@ type SwapPool struct {
 	Token1   string `json:"token1"`
 	Network  string `json:"network"`
 	Protocol string `json:"protocol"`
+}
+
+type Gitcoin struct {
+	Id          int    `json:"id"`
+	Slug        string `json:"slug"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Logo        string `json:"logo"`
 }
 
 type POAP struct {
