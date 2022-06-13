@@ -9,7 +9,7 @@ apply_one() {
 
 apply() {
         for filename in $@; do
-                apply_one $filename
+                # apply_one $filename
         done
 
         # rollout status / annotation
@@ -18,7 +18,7 @@ apply() {
                 if [ $yaml_kind == "Deployment" ]; then
                         ns=$(yq '.metadata.namespace' $filename)
                         name=$(yq '.metadata.name' $filename)
-                        kubectl -n $ns rollout status -w deploy.apps/$name
+                        # kubectl -n $ns rollout status -w deploy.apps/$name
                 fi
         done
 }
