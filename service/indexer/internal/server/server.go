@@ -9,7 +9,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
-	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -17,15 +16,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
-	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
@@ -34,7 +26,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 var _ command.Interface = &Server{}
@@ -115,15 +106,16 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.datasources = []datasource.Datasource{
-		moralis.New(s.config.Moralis.Key), arweave.New(), blockscout.New(), zksync.New(),
+		arweave.New(),
+		//moralis.New(s.config.Moralis.Key), arweave.New(), blockscout.New(), zksync.New(),
 	}
 
 	s.workers = []worker.Worker{
-		token.New(s.databaseClient),
-		swap.New(s.databaseClient),
+		//token.New(s.databaseClient),
+		//swap.New(s.databaseClient),
 		mirror.New(),
-		poapworker.New(),
-		gitcoin.New(s.databaseClient, s.redisClient),
+		//poapworker.New(),
+		//gitcoin.New(s.databaseClient, s.redisClient),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
@@ -180,87 +172,9 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) handle(ctx context.Context, message *protocol.Message) (err error) {
-	logrus.Infoln(message.Address, message.Network)
+	logrus.Debug(message.Address, message.Network)
 
-	// TODO Query the latest time of existing data, which is used to avoid data being reworked
-
-	transfers := make([]model.Transfer, 0)
-
-	for _, internalDatasource := range s.datasources {
-		supportedNetwork := false
-
-		for _, network := range internalDatasource.Networks() {
-			if network == message.Network {
-				supportedNetwork = true
-
-				break
-			}
-		}
-
-		if !supportedNetwork {
-			continue
-		}
-
-		internalTransfers, err := internalDatasource.Handle(ctx, message)
-		if err != nil {
-			logrus.Errorln(internalDatasource.Name(), err)
-
-			return err
-		}
-
-		transfers = append(transfers, internalTransfers...)
-	}
-
-	if len(transfers) == 0 {
-		return nil
-	}
-
-	if err := s.databaseClient.
-		Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).
-		Create(transfers).Error; err != nil {
-		return err
-	}
-
-	for _, internalWorker := range s.workers {
-		supportedNetwork := false
-
-		for _, network := range internalWorker.Networks() {
-			if network == message.Network {
-				supportedNetwork = true
-
-				break
-			}
-		}
-
-		if !supportedNetwork {
-			continue
-		}
-
-		internalTransfers, err := internalWorker.Handle(context.Background(), message, transfers)
-		if err != nil {
-			logrus.Errorln(internalWorker.Name(), err)
-
-			return err
-		}
-
-		if len(internalTransfers) == 0 {
-			continue
-		}
-
-		if err := s.databaseClient.
-			Clauses(clause.OnConflict{
-				DoUpdates: clause.AssignmentColumns([]string{"metadata"}),
-				UpdateAll: true,
-			}).
-			Create(internalTransfers).Error; err != nil {
-			logrus.Errorln(err)
-			return err
-		}
-
-		transfers = internalTransfers
-	}
+	// TODO
 
 	return nil
 }

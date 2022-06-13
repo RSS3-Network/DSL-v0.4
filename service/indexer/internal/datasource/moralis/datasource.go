@@ -2,18 +2,13 @@ package moralis
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/moralis"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
-	"github.com/shopspring/decimal"
 )
 
 const (
@@ -38,195 +33,89 @@ func (d *Datasource) Networks() []string {
 	}
 }
 
-func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
-	transferModels := make([]model.Transfer, 0)
-
-	nonNativeTransferMap := make(map[string]struct{})
-
+func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
 	switch message.Network {
 	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain:
-		tokenTransferMap := make(map[string][]moralis.TokenTransfer)
-
-		tokenTransfers, err := d.getTokenTransfers(ctx, message)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, tokenTransfer := range tokenTransfers {
-			tokenTransferMap[tokenTransfer.TransactionHash] = append(tokenTransferMap[tokenTransfer.TransactionHash], tokenTransfer)
-			nonNativeTransferMap[tokenTransfer.TransactionHash] = struct{}{}
-		}
-
-		for _, tokenTransfers := range tokenTransferMap {
-			for i, tokenTransfer := range tokenTransfers {
-				timestamp, err := time.Parse(time.RFC3339, tokenTransfer.BlockTimestamp)
-				if err != nil {
-					return nil, err
-				}
-
-				sourceData, err := json.Marshal(tokenTransfer)
-				if err != nil {
-					return nil, err
-				}
-
-				transferModels = append(transferModels, model.Transfer{
-					TransactionHash:     tokenTransfer.TransactionHash,
-					Timestamp:           timestamp,
-					TransactionLogIndex: decimal.NewFromInt(int64(-i)),
-					AddressFrom:         tokenTransfer.FromAddress,
-					AddressTo:           tokenTransfer.ToAddress,
-					Network:             message.Network,
-					Metadata:            metadata.Default,
-					Source:              d.Name(),
-					SourceData:          sourceData,
-				})
-			}
-		}
-
-		// Moralis may return duplicate data
-		nftTransferMap := map[string]struct{}{}
-
-		nftTransfers, err := d.getNFTTransfers(ctx, message)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, nftTransfer := range nftTransfers {
-			transferID := fmt.Sprintf("%s-%s", nftTransfer.TransactionHash, nftTransfer.LogIndex)
-
-			if _, exist := nftTransferMap[transferID]; exist {
-				continue
-			} else {
-				nftTransferMap[transferID] = struct{}{}
-			}
-
-			timestamp, err := time.Parse(time.RFC3339, nftTransfer.BlockTimestamp)
-			if err != nil {
-				return nil, err
-			}
-
-			sourceData, err := json.Marshal(nftTransfer)
-			if err != nil {
-				return nil, err
-			}
-
-			transferModels = append(transferModels, model.Transfer{
-				TransactionHash:     nftTransfer.TransactionHash,
-				Timestamp:           timestamp,
-				TransactionLogIndex: nftTransfer.LogIndex,
-				AddressFrom:         nftTransfer.FromAddress,
-				AddressTo:           nftTransfer.ToAddress,
-				Network:             message.Network,
-				Metadata:            metadata.Default,
-				Source:              d.Name(),
-				SourceData:          sourceData,
-			})
-
-			nonNativeTransferMap[nftTransfer.TransactionHash] = struct{}{}
-		}
-
-		transactions, err := d.getTransactions(ctx, message)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, transaction := range transactions {
-			if _, exist := nonNativeTransferMap[transaction.Hash]; exist {
-				continue
-			}
-
-			transactionLogIndex, err := strconv.Atoi(transaction.TransactionIndex)
-			if err != nil {
-				return nil, err
-			}
-
-			timestamp, err := time.Parse(time.RFC3339, transaction.BlockTimestamp)
-			if err != nil {
-				return nil, err
-			}
-
-			sourceData, err := json.Marshal(transaction)
-			if err != nil {
-				return nil, err
-			}
-
-			internalTransfer := model.Transfer{
-				TransactionHash:     transaction.Hash,
-				Timestamp:           timestamp,
-				TransactionLogIndex: decimal.NewFromInt(int64(transactionLogIndex)),
-				AddressFrom:         transaction.FromAddress,
-				AddressTo:           transaction.ToAddress,
-				Network:             message.Network,
-				Source:              d.Name(),
-				SourceData:          sourceData,
-			}
-
-			transferModels = append(transferModels, internalTransfer)
-		}
+		return d.handleEthereum(ctx, message)
+	default:
+		return []model.Transaction{}, nil
 	}
-
-	return transferModels, nil
 }
 
-func (d *Datasource) getTransactions(ctx context.Context, message *protocol.Message) ([]moralis.Transaction, error) {
-	address := common.HexToAddress(message.Address)
+func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	transactionMap := make(map[string]model.Transaction)
 
-	transactions, response, err := d.moralisClient.GetTransactions(ctx, address, &moralis.GetTransactionsOption{
-		Chain: protocol.NetworkToID(message.Network),
-	})
+	// Get transactions for this address
+	internalTransactions, err := d.handleEthereumTransactions(ctx, message)
 	if err != nil {
 		return nil, err
 	}
 
-	for i := 1; int64(len(transactions)) < response.Total && i < MaxPage; i++ {
-		var internalTransactions []moralis.Transaction
+	// Cache to map to optimize transfers processing performance
+	for _, internalTransaction := range internalTransactions {
+		transactionMap[internalTransaction.Hash] = internalTransaction
+	}
 
-		internalTransactions, response, err = d.moralisClient.GetTransactions(ctx, address, &moralis.GetTransactionsOption{
-			Chain:  protocol.NetworkToID(message.Network),
-			Cursor: response.Cursor,
-		})
+	// Get token transfer for this address
+	internalTokenTransfers, err := d.handleEthereumTokenTransfers(ctx, message)
+	if err != nil {
+		return nil, err
+	}
 
-		if err != nil {
-			return nil, err
+	// Put token transfers into map
+	for _, tokenTransfer := range internalTokenTransfers {
+		transaction, exist := transactionMap[tokenTransfer.TransactionHash]
+		if !exist {
+			continue
 		}
 
-		transactions = append(transactions, internalTransactions...)
+		transaction.Transfers = append(transaction.Transfers, tokenTransfer)
+
+		transactionMap[tokenTransfer.TransactionHash] = transaction
+	}
+
+	// Get nft transfer for this address
+	internalNFTTransfers, err := d.handleEthereumTokenTransfers(ctx, message)
+	if err != nil {
+		return nil, err
+	}
+
+	// Put nft transfers into map
+	for _, nftTransfer := range internalNFTTransfers {
+		transaction, exist := transactionMap[nftTransfer.TransactionHash]
+		if !exist {
+			continue
+		}
+
+		transaction.Transfers = append(transaction.Transfers, nftTransfer)
+
+		transactionMap[nftTransfer.TransactionHash] = transaction
+	}
+
+	// Lay the map flat
+	transactions := make([]model.Transaction, 0)
+
+	for _, transaction := range transactionMap {
+		transactions = append(transactions, transaction)
 	}
 
 	return transactions, nil
 }
 
-func (d *Datasource) getTokenTransfers(ctx context.Context, message *protocol.Message) ([]moralis.TokenTransfer, error) {
-	address := common.HexToAddress(message.Address)
-
-	tokenTransfers, response, err := d.moralisClient.GetTokenTransfers(ctx, address, &moralis.GetTokenTransfersOption{
-		Chain: protocol.NetworkToID(message.Network),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for i := 1; int64(len(tokenTransfers)) < response.Total && i < MaxPage; i++ {
-		var internalTokenTransfers []moralis.TokenTransfer
-
-		internalTokenTransfers, response, err = d.moralisClient.GetTokenTransfers(ctx, address, &moralis.GetTokenTransfersOption{
-			Chain:  protocol.NetworkToID(message.Network),
-			Cursor: response.Cursor,
-		})
-
-		if err != nil {
-			return nil, err
-		}
-
-		tokenTransfers = append(tokenTransfers, internalTokenTransfers...)
-	}
-
-	return tokenTransfers, nil
+func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	// TODO
+	return nil, nil
 }
 
-func (d *Datasource) getNFTTransfers(ctx context.Context, message *protocol.Message) ([]moralis.NFTTransfer, error) {
+func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
+	// TODO
+	return nil, nil
+}
+
+func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
 	address := common.HexToAddress(message.Address)
 
+	// Get nft transfers from Moralis
 	nftTransfers, response, err := d.moralisClient.GetNFTTransfers(ctx, address, &moralis.GetNFTTransfersOption{
 		Chain: protocol.NetworkToID(message.Network),
 	})
@@ -234,6 +123,7 @@ func (d *Datasource) getNFTTransfers(ctx context.Context, message *protocol.Mess
 		return nil, err
 	}
 
+	// Iterate through the next page of data
 	for i := 1; int64(len(nftTransfers)) < response.Total && i < MaxPage; i++ {
 		var internalNFTTransfers []moralis.NFTTransfer
 
@@ -249,7 +139,21 @@ func (d *Datasource) getNFTTransfers(ctx context.Context, message *protocol.Mess
 		nftTransfers = append(nftTransfers, internalNFTTransfers...)
 	}
 
-	return nftTransfers, nil
+	transfers := make([]model.Transfer, 0)
+
+	for _, nftTransfer := range nftTransfers {
+		timestamp, err := time.Parse(time.RFC3339, nftTransfer.BlockTimestamp)
+		if err != nil {
+			return nil, err
+		}
+
+		transfers = append(transfers, model.Transfer{
+			// TODO
+			Timestamp: timestamp,
+		})
+	}
+
+	return transfers, nil
 }
 
 func New(key string) datasource.Datasource {

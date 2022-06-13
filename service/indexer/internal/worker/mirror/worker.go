@@ -33,68 +33,85 @@ func (s *service) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transfers []model.Transfer) ([]model.Transfer, error) {
-	internalTransfers := make([]model.Transfer, 0)
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	internalTransactionMap := make(map[string]model.Transaction)
 
-	for _, transfer := range transfers {
-		transactionEdge := graphqlx.TransactionEdge{}
-
-		if err := json.Unmarshal(transfer.SourceData, &transactionEdge); err != nil {
-			return nil, err
+	for _, transaction := range transactions {
+		if value, exist := internalTransactionMap[transaction.Hash]; exist {
+			transaction = value
+		} else {
+			internalTransactionMap[transaction.Hash] = transaction
 		}
 
-		if transactionEdge.Node.Owner.Address != arweave.AddressMirror {
-			continue
-		}
+		for _, transfer := range transaction.Transfers {
+			transactionEdge := graphqlx.TransactionEdge{}
 
-		var metadataModel metadata.Metadata
-
-		if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-			return nil, err
-		}
-
-		mirrorMetadata := metadata.Mirror{}
-
-		for _, tag := range transactionEdge.Node.Tags {
-			switch tag.Name {
-			case "Content-Type":
-				mirrorMetadata.ContentType = string(tag.Value)
-			case "Contributor":
-				mirrorMetadata.Contributor = string(tag.Value)
-			case "Content-Digest":
-				mirrorMetadata.ContentDigest = string(tag.Value)
-			case "Original-Content-Digest":
-				mirrorMetadata.OriginalContentDigest = string(tag.Value)
+			if err := json.Unmarshal(transfer.SourceData, &transactionEdge); err != nil {
+				return nil, err
 			}
+
+			if transactionEdge.Node.Owner.Address != arweave.AddressMirror {
+				continue
+			}
+
+			var metadataModel metadata.Metadata
+
+			if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
+				return nil, err
+			}
+
+			mirrorMetadata := metadata.Mirror{}
+
+			for _, tag := range transactionEdge.Node.Tags {
+				switch tag.Name {
+				case "Content-Type":
+					mirrorMetadata.ContentType = string(tag.Value)
+				case "Contributor":
+					mirrorMetadata.Contributor = string(tag.Value)
+				case "Content-Digest":
+					mirrorMetadata.ContentDigest = string(tag.Value)
+				case "Original-Content-Digest":
+					mirrorMetadata.OriginalContentDigest = string(tag.Value)
+				}
+			}
+
+			reader, err := s.arweaveClient.GetFile(ctx, transactionEdge.Node.ID.(string))
+			if err != nil {
+				return nil, err
+			}
+
+			data, err := io.ReadAll(reader)
+			if err != nil {
+				return nil, err
+			}
+
+			_ = reader.Close()
+
+			mirrorMetadata.Content = data
+
+			metadataModel.Mirror = &mirrorMetadata
+
+			rawMetadata, err := json.Marshal(metadataModel)
+			if err != nil {
+				return nil, err
+			}
+
+			transfer.Metadata = rawMetadata
+
+			transaction.Transfers = append(transaction.Transfers, transfer)
+
+			internalTransactionMap[transfer.TransactionHash] = transaction
 		}
 
-		reader, err := s.arweaveClient.GetFile(ctx, transactionEdge.Node.ID.(string))
-		if err != nil {
-			return nil, err
-		}
-
-		data, err := io.ReadAll(reader)
-		if err != nil {
-			return nil, err
-		}
-
-		_ = reader.Close()
-
-		mirrorMetadata.Content = data
-
-		metadataModel.Mirror = &mirrorMetadata
-
-		rawMetadata, err := json.Marshal(metadataModel)
-		if err != nil {
-			return nil, err
-		}
-
-		transfer.Metadata = rawMetadata
-
-		internalTransfers = append(internalTransfers, transfer)
 	}
 
-	return internalTransfers, nil
+	internalTransactions := make([]model.Transaction, 0)
+
+	for _, transaction := range internalTransactionMap {
+		internalTransactions = append(internalTransactions, transaction)
+	}
+
+	return internalTransactions, nil
 }
 
 func (s *service) Jobs() []worker.Job {

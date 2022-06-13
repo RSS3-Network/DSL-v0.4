@@ -40,71 +40,73 @@ func (s *service) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transfers []model.Transfer) ([]model.Transfer, error) {
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transfer, error) {
 	internalTransfers := make([]model.Transfer, 0)
 
-	for _, transfer := range transfers {
-		if transfer.Source != moralis.Source {
-			continue
-		}
+	for _, transaction := range transactions {
+		for _, transfer := range transaction.Transfers {
+			if transfer.Source != moralis.Source {
+				continue
+			}
 
-		var swapModel model.SwapPool
+			var swapModel model.SwapPool
 
-		if err := s.databaseClient.
-			Model((*model.SwapPool)(nil)).
-			Where(map[string]interface{}{
-				"contract_address": transfer.AddressFrom,
-				"network":          transfer.Network,
-			}).
-			First(&swapModel).
-			Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, err
-		}
-
-		if swapModel.ContractAddress == "" {
 			if err := s.databaseClient.
 				Model((*model.SwapPool)(nil)).
 				Where(map[string]interface{}{
-					"contract_address": transfer.AddressTo,
+					"contract_address": transfer.AddressFrom,
 					"network":          transfer.Network,
 				}).
 				First(&swapModel).
 				Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, err
 			}
+
+			if swapModel.ContractAddress == "" {
+				if err := s.databaseClient.
+					Model((*model.SwapPool)(nil)).
+					Where(map[string]interface{}{
+						"contract_address": transfer.AddressTo,
+						"network":          transfer.Network,
+					}).
+					First(&swapModel).
+					Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+					return nil, err
+				}
+			}
+
+			if swapModel.ContractAddress == "" {
+				continue
+			}
+
+			var metadataModel metadata.Metadata
+			if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
+				return nil, err
+			}
+
+			if strings.EqualFold(transfer.AddressFrom, message.Address) {
+				transfer.Type = "swap_in"
+			} else {
+				transfer.Type = "swap_out"
+			}
+
+			metadataModel.Swap = &metadata.SwapPool{
+				Name:     swapModel.Source,
+				Network:  swapModel.Network,
+				Token0:   swapModel.Token0,
+				Token1:   swapModel.Token1,
+				Protocol: swapModel.Protocol,
+			}
+
+			rawMetadata, err := json.Marshal(metadataModel)
+			if err != nil {
+				return nil, err
+			}
+
+			transfer.Metadata = rawMetadata
+
+			internalTransfers = append(internalTransfers, transfer)
 		}
-
-		if swapModel.ContractAddress == "" {
-			continue
-		}
-
-		var metadataModel metadata.Metadata
-		if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-			return nil, err
-		}
-
-		if strings.EqualFold(transfer.AddressFrom, message.Address) {
-			transfer.Type = "swap_in"
-		} else {
-			transfer.Type = "swap_out"
-		}
-
-		metadataModel.Swap = &metadata.SwapPool{
-			Name:     swapModel.Source,
-			Network:  swapModel.Network,
-			Token0:   swapModel.Token0,
-			Token1:   swapModel.Token1,
-			Protocol: swapModel.Protocol,
-		}
-
-		rawMetadata, err := json.Marshal(metadataModel)
-		if err != nil {
-			return nil, err
-		}
-
-		transfer.Metadata = rawMetadata
-
-		internalTransfers = append(internalTransfers, transfer)
 	}
 
 	return internalTransfers, nil
