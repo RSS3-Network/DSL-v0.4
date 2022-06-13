@@ -77,3 +77,7 @@ type Redis struct {
 type CoinMarketCap struct {
 	APIKey string `mapstructure:"apikey"`
 }
+
+type Infura struct {
+	ProjectID string `mapstructure:"projectid"`
+}

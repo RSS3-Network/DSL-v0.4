@@ -16,22 +16,25 @@ func init() {
 }
 
 type Metadata struct {
-	Token  *Token    `json:"token,omitempty"`
-	Swap   *SwapPool `json:"swap,omitempty"`
-	Mirror *Mirror   `json:"mirror,omitempty"`
-	POAP   *POAP     `json:"poap,omitempty"`
+	Token   *Token    `json:"token,omitempty"`
+	Swap    *SwapPool `json:"swap,omitempty"`
+	Mirror  *Mirror   `json:"mirror,omitempty"`
+	POAP    *POAP     `json:"poap,omitempty"`
+	Gitcoin *Gitcoin  `json:"gitcoin"`
 }
 
 type Token struct {
 	TokenAddress  string           `json:"token_address,omitempty"`
 	TokenStandard string           `json:"token_standard"`
 	TokenID       *decimal.Decimal `json:"token_id,omitempty"`
-	TokenValue    *decimal.Decimal `json:"token_value"`
+	TokenValue    *decimal.Decimal `json:"token_value,omitempty"`
 
-	Logo     string `json:"logo"`
-	Decimals uint8  `json:"decimals"`
-	Name     string `json:"name"`
-	Symbol   string `json:"symbol"`
+	Logo     string `json:"logo,omitempty"`
+	Decimals uint8  `json:"decimals,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Symbol   string `json:"symbol,omitempty"`
+
+	NFTMetadata json.RawMessage `json:"nft_metadata,omitempty"`
 }
 
 type Mirror struct {
@@ -48,6 +51,14 @@ type SwapPool struct {
 	Token1   string `json:"token1"`
 	Network  string `json:"network"`
 	Protocol string `json:"protocol"`
+}
+
+type Gitcoin struct {
+	Id          int    `json:"id"`
+	Slug        string `json:"slug"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Logo        string `json:"logo"`
 }
 
 type POAP struct {

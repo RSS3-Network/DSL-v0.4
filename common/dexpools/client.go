@@ -9,7 +9,6 @@ import (
 
 	"github.com/hasura/go-graphql-client"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/dexpools/graphql"
-	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
 type Client struct {
@@ -18,7 +17,7 @@ type Client struct {
 }
 
 // GetSwapPools returns all pools from a DEX
-func (c *Client) GetSwapPools(ctx context.Context, swap protocol.SwapPool) ([]graphqlx.Pair, error) {
+func (c *Client) GetSwapPools(ctx context.Context, swap SwapPool) ([]graphqlx.Pair, error) {
 	// set the default limit to 6000
 	if swap.Limit == 0 {
 		swap.Limit = 6000
@@ -69,7 +68,7 @@ func (c *Client) GetSwapPools(ctx context.Context, swap protocol.SwapPool) ([]gr
 	} else {
 		c.graphqlClient = graphql.NewClient(swap.Endpoint, c.httpClient)
 		switch swap.Protocol {
-		case protocol.UniSwapV2:
+		case UniSwapV2:
 			// nolint:gocritic // cannot dynamically create a new struct with different graphql tags
 			if swap.OrderByVolumeUSD {
 				var query struct {
@@ -85,7 +84,7 @@ func (c *Client) GetSwapPools(ctx context.Context, swap protocol.SwapPool) ([]gr
 				return c.GetGraphQLResult(ctx, &query, swap.Limit)
 			}
 
-		case protocol.UniSwapV3:
+		case UniSwapV3:
 			// nolint:gocritic // cannot dynamically create a new struct with different graphql tags
 			if swap.OrderByVolumeUSD {
 				var query struct {

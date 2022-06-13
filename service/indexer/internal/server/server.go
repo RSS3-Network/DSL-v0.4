@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/shedlock"
@@ -20,6 +21,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
 	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
@@ -71,6 +73,8 @@ func (s *Server) Initialize() (err error) {
 		)),
 	))
 
+	nft.Initialize(s.config.Infura.ProjectID)
+
 	s.databaseClient, err = database.Dial(s.config.Postgres.String(), true)
 	if err != nil {
 		return err
@@ -115,7 +119,11 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		token.New(s.databaseClient), swap.New(s.databaseClient), mirror.New(), poapworker.New(),
+		token.New(s.databaseClient),
+		swap.New(s.databaseClient),
+		mirror.New(),
+		poapworker.New(),
+		gitcoin.New(s.databaseClient, s.redisClient),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
