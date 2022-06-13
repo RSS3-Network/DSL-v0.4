@@ -1,8 +1,10 @@
 package graphqlx
 
 import (
+	"encoding/json"
+
+	"github.com/hasura/go-graphql-client"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
-	"github.com/shurcooL/graphql"
 )
 
 type GetSpacesVariable struct {
@@ -12,18 +14,18 @@ type GetSpacesVariable struct {
 }
 
 type SpaceStrategieParam struct {
-	Symbol  graphql.String `json:"symbol"`
-	Address graphql.String `json:"address"`
-	//Decimals graphql.Int    `json:"decimals"`
+	Symbol   graphql.String `json:"symbol"`
+	Address  graphql.String `json:"address"`
+	Decimals graphql.Int    `json:"decimals"`
 }
 
 type SpaceStrategie struct {
-	Name graphql.String `json:"name"`
-	//Params SpaceStrategieParam `json:"params"`
+	Name   graphql.String  `json:"name"`
+	Params json.RawMessage `json:"params"`
 }
 
 type SpaceFilter struct {
-	MinScore    graphql.Int     `json:"minScore"`
+	MinScore    graphql.Float   `json:"minScore"`
 	OnlyMembers graphql.Boolean `json:"onlyMembers"`
 }
 
@@ -36,8 +38,8 @@ type Space struct {
 	Members    []graphql.String `json:"members"`
 	Strategies []SpaceStrategie `json:"strategies"`
 	Admins     []graphql.String `json:"admins"`
-	//Filters []SpaceFilter    `json:"filters"`
-	// plugins
+	Filters    SpaceFilter      `json:"filters"`
+	Plugins    json.RawMessage  `json:"plugins"`
 }
 
 // Proposal
@@ -60,6 +62,11 @@ type Proposal struct {
 	Space    ProposalSpace    `json:"space"`
 }
 
+type ProposalWhere struct {
+	Space_in []graphql.String `json:"space_in"` // param: ["ens.eth"]
+	State    graphql.String   `json:"state"`    // param: "active" or "closed"
+}
+
 // Vote
 
 type VoteProposal struct {
@@ -77,4 +84,8 @@ type Vote struct {
 	Proposal VoteProposal   `json:"proposal"`
 	Choice   graphql.Int    `json:"choice"`
 	Space    VoteSpace      `json:"space"`
+}
+
+type VoteWhere struct {
+	Proposal graphql.String `json:"proposal"`
 }

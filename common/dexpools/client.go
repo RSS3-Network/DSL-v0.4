@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/hasura/go-graphql-client"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/dexpools/graphql"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/shurcooL/graphql"
 )
 
 type Client struct {

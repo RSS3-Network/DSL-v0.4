@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/arweave"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -13,7 +14,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/shopspring/decimal"
-	"github.com/shurcooL/graphql"
 )
 
 const (

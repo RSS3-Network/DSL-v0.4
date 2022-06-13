@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/arweave"
-	"github.com/naturalselectionlabs/pregod/common/arweave/graphql"
-	"github.com/shurcooL/graphql"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
 )
 
 var (
