@@ -128,7 +128,11 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			return nil, err
 		}
 
-		internalTransactions = append(internalTransactions, nextInternalTransactions...)
+		for _, nextInternalTransaction := range nextInternalTransactions {
+			// TODO Filter data time
+
+			internalTransactions = append(internalTransactions, nextInternalTransaction)
+		}
 	}
 
 	transactions := make([]model.Transaction, 0)

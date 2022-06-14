@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
@@ -188,6 +190,29 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	for _, datasource := range s.datasources {
 		for _, network := range datasource.Networks() {
 			if network == message.Network {
+				// Get the time of the latest data for this address and network
+				var timestamp time.Time
+
+				if err := s.databaseClient.
+					Model((*model.Transaction)(nil)).
+					Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp").
+					Where(map[string]interface{}{
+						"address_from": message.Address,
+						"network":      message.Network,
+					}).
+					Or(map[string]interface{}{
+						"address_to": message.Address,
+						"network":    message.Network,
+					}).
+					Order("timestamp DESC").
+					Limit(1).
+					Pluck("timestamp", &timestamp).
+					Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+					return err
+				}
+
+				message.Timestamp = timestamp
+
 				internalTransactions, err := datasource.Handle(ctx, message)
 				if err != nil {
 					return err
