@@ -235,9 +235,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 
 		// action type
 		switch {
-		case sourceDataMap["from_address"] != message.Address: // TO == self
+		case !strings.EqualFold(sourceDataMap["from_address"].(string), message.Address): // TO == self
 			transfer.Type = "receive"
-		case sourceDataMap["to_address"] != message.Address: // FROM == self
+		case !strings.EqualFold(sourceDataMap["to_address"].(string), message.Address): // FROM == self
 			transfer.Type = "send"
 		default: // FROM == TO == self
 			transfer.Type = "cancel"
@@ -306,6 +306,17 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 		}
 
 		transfer.Metadata = rawMetadata
+
+		// action type
+		switch {
+		case !strings.EqualFold(data.Transaction.Operation.From, message.Address): // TO == self
+			transfer.Type = "receive"
+		case !strings.EqualFold(data.Transaction.Operation.To, message.Address): // FROM == self
+			transfer.Type = "send"
+		default: // FROM == TO == self
+			transfer.Type = "cancel"
+		}
+
 		internalTransfers = append(internalTransfers, transfer)
 
 	}
