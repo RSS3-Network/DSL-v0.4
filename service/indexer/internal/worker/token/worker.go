@@ -112,7 +112,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	databaseSpan.End()
 
 	switch message.Network {
-	case protocol.NetworkEthereum:
+	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain:
 		return s.handleEthereum(ctx, message, transactions)
 	case protocol.NetworkZkSync:
 		return s.handleZkSync(ctx, message, transactions)
@@ -233,15 +233,19 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 			transfer.Metadata = rawMetadata
 
-			// action type
-			switch {
-			case sourceDataMap["from_address"] != message.Address: // TO == self
-				transfer.Type = "receive"
-			case sourceDataMap["to_address"] != message.Address: // FROM == self
-				transfer.Type = "send"
-			default: // FROM == TO == self
-				transfer.Type = "cancel"
+			transfer.Type = "transfer"
+
+			// Copy the transaction to map
+			value, exist := internalTransactionMap[transaction.Hash]
+			if !exist {
+				value = transaction
+
+				// Ignore transfers data that will not be updated
+				value.Transfers = make([]model.Transfer, 0)
 			}
+
+			value.Transfers = append(value.Transfers, transfer)
+			internalTransactionMap[transaction.Hash] = value
 		}
 	}
 
@@ -311,6 +315,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 			}
 
 			transfer.Metadata = rawMetadata
+			transfer.Type = "transfer"
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
