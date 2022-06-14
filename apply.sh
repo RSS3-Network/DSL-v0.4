@@ -15,7 +15,7 @@ apply() {
         # rollout status / annotation
         for filename in $@; do
                 yaml_kind=$(yq '.kind' $filename)
-                if [ $yaml_kind == "Deployment" ]; then
+                if [ "$yaml_kind" = "Deployment" ]; then
                         ns=$(yq '.metadata.namespace' $filename)
                         name=$(yq '.metadata.name' $filename)
                         kubectl -n $ns rollout status -w deploy.apps/$name

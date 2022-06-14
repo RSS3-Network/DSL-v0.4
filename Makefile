@@ -16,7 +16,7 @@ build:
 # fail coverage report under xx percent
 DIR_TEST = .test
 FILE_COVERAGE = $(DIR_TEST)/coverage.txt
-COVERAGE_FAIL_UNDER ?= 40
+COVERAGE_FAIL_UNDER ?= 45
 
 TEST_FLAGS := \
 	-race -failfast -p=1 \
@@ -31,6 +31,8 @@ test: $(DIR_TEST)
 		go test $(TEST_FLAGS) -coverprofile="$$coverfile" -coverpkg=./... "$$package" || exit 1; \
 		done
 	gocovmerge $(DIR_TEST)/*.cover > $(FILE_COVERAGE)
+	# remove auto generate code
+	sed -i '/\/worker\/token\/contract\/erc20\.go/d' $(FILE_COVERAGE)
 
 # Open up a browser to view coverage report
 coverage: test
