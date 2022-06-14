@@ -20,7 +20,7 @@ type Metadata struct {
 	Swap    *SwapPool `json:"swap,omitempty"`
 	Mirror  *Mirror   `json:"mirror,omitempty"`
 	POAP    *POAP     `json:"poap,omitempty"`
-	Gitcoin *Gitcoin  `json:"gitcoin"`
+	Gitcoin *Gitcoin  `json:"gitcoin,omitempty"`
 }
 
 type Token struct {
