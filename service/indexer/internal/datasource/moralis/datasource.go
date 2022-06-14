@@ -129,9 +129,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 		}
 
 		for _, nextInternalTransaction := range nextInternalTransactions {
-			// TODO Filter data time
-
-			internalTransactions = append(internalTransactions, nextInternalTransaction)
+			internalTransactions = append(internalTransactions, nextInternalTransaction) // nolint:gosimple // TODO Filter data time
 		}
 	}
 
