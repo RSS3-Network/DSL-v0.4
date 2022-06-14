@@ -125,15 +125,15 @@ func Test_service_Handle(t *testing.T) {
 		gitcoinProjectCacheKey string
 	}
 	type args struct {
-		ctx       context.Context
-		message   *protocol.Message
-		transfers []model.Transfer
+		ctx          context.Context
+		message      *protocol.Message
+		transactions []model.Transaction
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
-		want    []model.Transfer
+		want    []model.Transaction
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -145,7 +145,7 @@ func Test_service_Handle(t *testing.T) {
 				redisClient:            tt.fields.redisClient,
 				gitcoinProjectCacheKey: tt.fields.gitcoinProjectCacheKey,
 			}
-			got, err := s.Handle(tt.args.ctx, tt.args.message, tt.args.transfers)
+			got, err := s.Handle(tt.args.ctx, tt.args.message, tt.args.transactions)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("service.Handle() error = %v, wantErr %v", err, tt.wantErr)
 				return
