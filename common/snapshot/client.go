@@ -85,7 +85,7 @@ type GetMultipleProposalsVariable struct {
 
 func (c *Client) GetMultipleProposals(ctx context.Context, variable GetMultipleProposalsVariable) ([]graphqlx.Proposal, error) {
 	var query struct {
-		Proposals []graphqlx.Proposal `graphql:"proposals(first: $first, skip: $skip, where:$where orderBy: $orderBy, orderDirection: $orderDirection)"`
+		Proposals []graphqlx.Proposal `graphql:"proposals(first: $first, skip: $skip, where:$where, orderBy: $orderBy, orderDirection: $orderDirection)"`
 	}
 
 	variableMap := map[string]interface{}{}
@@ -134,7 +134,7 @@ type GetMultipleVotesVariable struct {
 
 func (c *Client) GetMultipleVotes(ctx context.Context, variable GetMultipleVotesVariable) ([]graphqlx.Vote, error) {
 	var query struct {
-		Votes []graphqlx.Vote `graphql:"vote(first: $first, skip: $skip, orderBy: $orderBy, orderDirection: $orderDirection)"`
+		Votes []graphqlx.Vote `graphql:"votes(first: $first, skip: $skip, where:$where, orderBy: $orderBy, orderDirection: $orderDirection)"`
 	}
 
 	variableMap := map[string]interface{}{}

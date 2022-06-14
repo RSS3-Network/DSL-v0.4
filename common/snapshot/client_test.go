@@ -58,18 +58,17 @@ func TestGetMultipleProposals(t *testing.T) {
 }
 
 func TestGetMultipleVotes(t *testing.T) {
-	variable := snapshot.GetMultipleProposalsVariable{
-		First:          graphql.Int(20),
+	variable := snapshot.GetMultipleVotesVariable{
+		First:          graphql.Int(1000),
 		Skip:           graphql.Int(0),
 		OrderBy:        graphql.String("created"),
 		OrderDirection: snapshot.OrderDirectionAsc,
-		Where: &graphqlx.ProposalWhere{
-			Space_in: []graphql.String{"ens.eth"},
-			State:    graphql.String("closed"),
+		Where: &graphqlx.VoteWhere{
+			Proposal: graphql.String("QmPvbwguLfcVryzBRrbY4Pb9bCtxURagdv1XjhtFLf3wHj"),
 		},
 	}
 
-	proposals, err := client.GetMultipleProposals(context.Background(), variable)
+	proposals, err := client.GetMultipleVotes(context.Background(), variable)
 	if err != nil {
 		t.Fatal(err)
 	}
