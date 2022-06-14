@@ -14,6 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	Name = "swap"
+)
+
 var _ worker.Worker = &service{}
 
 type service struct {
@@ -21,7 +25,7 @@ type service struct {
 }
 
 func (s *service) Name() string {
-	return "swap"
+	return Name
 }
 
 func (s *service) Networks() []string {
@@ -40,11 +44,12 @@ func (s *service) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transfer, error) {
-	internalTransfers := make([]model.Transfer, 0)
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
 		for _, transfer := range transaction.Transfers {
+			// TODO ZkSync support
 			if transfer.Source != moralis.Source {
 				continue
 			}
@@ -105,11 +110,27 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			transfer.Metadata = rawMetadata
 
-			internalTransfers = append(internalTransfers, transfer)
+			// Copy the transaction to map
+			value, exist := internalTransactionMap[transaction.Hash]
+			if !exist {
+				value = transaction
+
+				// Ignore transfers data that will not be updated
+				value.Transfers = make([]model.Transfer, 0)
+			}
+
+			value.Transfers = append(value.Transfers, transfer)
+			internalTransactionMap[transaction.Hash] = value
 		}
 	}
 
-	return internalTransfers, nil
+	internalTransactions := make([]model.Transaction, 0)
+
+	for _, transaction := range internalTransactionMap {
+		internalTransactions = append(internalTransactions, transaction)
+	}
+
+	return internalTransactions, nil
 }
 
 func (s *service) Jobs() []worker.Job {

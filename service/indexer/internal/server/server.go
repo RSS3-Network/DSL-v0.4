@@ -9,6 +9,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -16,8 +17,15 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
+	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
@@ -26,6 +34,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var _ command.Interface = &Server{}
@@ -106,16 +115,15 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.datasources = []datasource.Datasource{
-		arweave.New(),
-		//moralis.New(s.config.Moralis.Key), arweave.New(), blockscout.New(), zksync.New(),
+		moralis.New(s.config.Moralis.Key), arweave.New(), blockscout.New(), zksync.New(),
 	}
 
 	s.workers = []worker.Worker{
-		//token.New(s.databaseClient),
-		//swap.New(s.databaseClient),
+		token.New(s.databaseClient),
+		swap.New(s.databaseClient),
 		mirror.New(),
-		//poapworker.New(),
-		//gitcoin.New(s.databaseClient, s.redisClient),
+		poapworker.New(),
+		gitcoin.New(s.databaseClient, s.redisClient),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
@@ -172,9 +180,74 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) handle(ctx context.Context, message *protocol.Message) (err error) {
-	logrus.Debug(message.Address, message.Network)
+	logrus.Info(message.Address, message.Network)
 
-	// TODO
+	// Get data from datasources
+	var transactions []model.Transaction
+
+	for _, datasource := range s.datasources {
+		for _, network := range datasource.Networks() {
+			if network == message.Network {
+				internalTransactions, err := datasource.Handle(ctx, message)
+				if err != nil {
+					return err
+				}
+
+				transactions = append(transactions, internalTransactions...)
+			}
+		}
+	}
+
+	if err := s.upsertTransactions(ctx, transactions); err != nil {
+		return err
+	}
+
+	// Using workers to clean data
+	for _, worker := range s.workers {
+		for _, network := range worker.Networks() {
+			if network == message.Network {
+				internalTransactions, err := worker.Handle(ctx, message, transactions)
+				if err != nil {
+					return err
+				}
+
+				if err := s.upsertTransactions(ctx, internalTransactions); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Transaction) error {
+	if len(transactions) == 0 {
+		return nil
+	}
+
+	if err := s.databaseClient.
+		Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).
+		Create(transactions).Error; err != nil {
+		return err
+	}
+
+	for _, transaction := range transactions {
+		if len(transaction.Transfers) == 0 {
+			return nil
+		}
+
+		if err := s.databaseClient.
+			Clauses(clause.OnConflict{
+				UpdateAll: true,
+				DoUpdates: clause.AssignmentColumns([]string{"metadata"}),
+			}).
+			Create(transaction.Transfers).Error; err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

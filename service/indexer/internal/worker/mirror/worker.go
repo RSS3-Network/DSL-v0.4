@@ -37,12 +37,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
-		if value, exist := internalTransactionMap[transaction.Hash]; exist {
-			transaction = value
-		} else {
-			internalTransactionMap[transaction.Hash] = transaction
-		}
-
 		for _, transfer := range transaction.Transfers {
 			transactionEdge := graphqlx.TransactionEdge{}
 
@@ -50,6 +44,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
+			// It may be a transaction for another dApp or a normal transfer
 			if transactionEdge.Node.Owner.Address != arweave.AddressMirror {
 				continue
 			}
@@ -75,19 +70,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				}
 			}
 
-			reader, err := s.arweaveClient.GetFile(ctx, transactionEdge.Node.ID.(string))
-			if err != nil {
+			var err error
+
+			// Get the article text content
+			if mirrorMetadata.Content, err = s.getContent(ctx, transactionEdge.Node.ID.(string)); err != nil {
 				return nil, err
 			}
-
-			data, err := io.ReadAll(reader)
-			if err != nil {
-				return nil, err
-			}
-
-			_ = reader.Close()
-
-			mirrorMetadata.Content = data
 
 			metadataModel.Mirror = &mirrorMetadata
 
@@ -98,11 +86,18 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			transfer.Metadata = rawMetadata
 
-			transaction.Transfers = append(transaction.Transfers, transfer)
+			// Copy the transaction to map
+			value, exist := internalTransactionMap[transaction.Hash]
+			if !exist {
+				value = transaction
 
-			internalTransactionMap[transfer.TransactionHash] = transaction
+				// Ignore transfers data that will not be updated
+				value.Transfers = make([]model.Transfer, 0)
+			}
+
+			value.Transfers = append(value.Transfers, transfer)
+			internalTransactionMap[transaction.Hash] = value
 		}
-
 	}
 
 	internalTransactions := make([]model.Transaction, 0)
@@ -116,6 +111,22 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 func (s *service) Jobs() []worker.Job {
 	return nil
+}
+
+func (s *service) getContent(ctx context.Context, transactionHash string) (json.RawMessage, error) {
+	reader, err := s.arweaveClient.GetFile(ctx, transactionHash)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = reader.Close()
+
+	return data, nil
 }
 
 func New() worker.Worker {

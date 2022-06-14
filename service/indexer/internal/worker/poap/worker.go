@@ -9,7 +9,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/poap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	blockscoutdatasource "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 )
 
@@ -39,15 +38,11 @@ func (s *service) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transfer, error) {
-	internalTransfers := make([]model.Transfer, 0)
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
 		for _, transfer := range transaction.Transfers {
-			if transfer.Source != blockscoutdatasource.Name {
-				continue
-			}
-
 			dataSource := blockscout.Transaction{}
 			if err := json.Unmarshal(transfer.SourceData, &dataSource); err != nil {
 				return nil, err
@@ -55,6 +50,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			if dataSource.ContractAddress != ContractAddress {
 				continue
+			}
+
+			value, exist := internalTransactionMap[transaction.Hash]
+			if !exist {
+				internalTransactionMap[transaction.Hash] = transaction
 			}
 
 			var metadataModel metadata.Metadata
@@ -87,8 +87,16 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			transfer.Metadata = rawMetadata
 
-			internalTransfers = append(internalTransfers, transfer)
+			value.Transfers = append(value.Transfers, transfer)
+
+			internalTransactionMap[value.Hash] = value
 		}
+	}
+
+	internalTransfers := make([]model.Transaction, 0)
+
+	for _, internalTransaction := range internalTransactionMap {
+		internalTransfers = append(internalTransfers, internalTransaction)
 	}
 
 	return internalTransfers, nil

@@ -34,36 +34,38 @@ func (d *Datasource) Networks() []string {
 }
 
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
-	internalTransferMap := make(map[string]model.Transaction)
+	internalTransactionMap := make(map[string]model.Transaction)
 
+	// Get transactions
 	internalTransactions, err := d.handleTransactions(ctx, message)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, internalTransaction := range internalTransactions {
-		internalTransferMap[internalTransaction.Hash] = internalTransaction
+		internalTransactionMap[internalTransaction.Hash] = internalTransaction
 	}
 
+	// Get token transfers
 	internalTokenTransfers, err := d.handleTokenTransfers(ctx, message)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, internalTokenTransfer := range internalTokenTransfers {
-		value, exist := internalTransferMap[internalTokenTransfer.TransactionHash]
+		value, exist := internalTransactionMap[internalTokenTransfer.TransactionHash]
 		if !exist {
 			continue
 		}
 
 		value.Transfers = append(value.Transfers, internalTokenTransfer)
 
-		internalTransferMap[internalTokenTransfer.TransactionHash] = value
+		internalTransactionMap[internalTokenTransfer.TransactionHash] = value
 	}
 
 	transactions := make([]model.Transaction, 0)
 
-	for _, internalTransaction := range internalTransferMap {
+	for _, internalTransaction := range internalTransactionMap {
 		transactions = append(transactions, internalTransaction)
 	}
 

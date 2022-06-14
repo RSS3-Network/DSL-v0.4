@@ -14,7 +14,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/zksync"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
 	"github.com/shopspring/decimal"
@@ -101,7 +100,7 @@ func (s *service) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transfer, error) {
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	tracer := otel.Tracer("worker_token")
 
 	ctx, handlerSpan := tracer.Start(ctx, "handler")
@@ -110,23 +109,23 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	ctx, databaseSpan := tracer.Start(ctx, "database") //nolint:ineffassign,staticcheck
 
-	// TODO
-
 	databaseSpan.End()
 
-	// ZkSync
-	if message.Network == protocol.NetworkZkSync {
+	switch message.Network {
+	case protocol.NetworkEthereum:
+		return s.handleEthereum(ctx, message, transactions)
+	case protocol.NetworkZkSync:
 		return s.handleZkSync(ctx, message, transactions)
 	}
 
-	internalTransfers := make([]model.Transfer, 0)
+	return []model.Transaction{}, nil
+}
+
+func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
 		for _, transfer := range transaction.Transfers {
-			if transfer.Source != moralis.Source {
-				continue
-			}
-
 			sourceDataMap := make(map[string]interface{})
 
 			if err := json.Unmarshal(transfer.SourceData, &sourceDataMap); err != nil {
@@ -243,24 +242,28 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			default: // FROM == TO == self
 				transfer.Type = "cancel"
 			}
-
-			internalTransfers = append(internalTransfers, transfer)
 		}
 	}
 
-	return internalTransfers, nil
+	internalTransactions := make([]model.Transaction, 0)
+
+	for _, internalTransaction := range internalTransactionMap {
+		internalTransactions = append(internalTransactions, internalTransaction)
+	}
+
+	return internalTransactions, nil
 }
 
-// TODO: only support `Transfer` now
-// https://docs.zksync.io/apiv02-docs/#transactions-api-v0.2-transactions-txhash-data
-func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transfer, error) {
-	internalTransfers := make([]model.Transfer, 0)
+func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
 		for _, transfer := range transaction.Transfers {
 			data := zksync.GetTransactionData{}
+
 			if err := json.Unmarshal(transfer.SourceData, &data); err != nil {
 				logrus.Error(err)
+
 				return nil, err
 			}
 
@@ -270,7 +273,6 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 			}
 
 			var metadataModel metadata.Metadata
-
 			amount, err := decimal.NewFromString(data.Transaction.Operation.Amount)
 			if err != nil {
 				logrus.Error(err)
@@ -309,12 +311,28 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 			}
 
 			transfer.Metadata = rawMetadata
-			internalTransfers = append(internalTransfers, transfer)
 
+			// Copy the transaction to map
+			value, exist := internalTransactionMap[transaction.Hash]
+			if !exist {
+				value = transaction
+
+				// Ignore transfers data that will not be updated
+				value.Transfers = make([]model.Transfer, 0)
+			}
+
+			value.Transfers = append(value.Transfers, transfer)
+			internalTransactionMap[transaction.Hash] = value
 		}
 	}
 
-	return internalTransfers, nil
+	internalTransactions := make([]model.Transaction, 0)
+
+	for _, internalTransaction := range internalTransactionMap {
+		internalTransactions = append(internalTransactions, internalTransaction)
+	}
+
+	return internalTransactions, nil
 }
 
 func (s *service) Jobs() []worker.Job {

@@ -78,7 +78,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 	}
 
 	// Get nft transfer for this address
-	internalNFTTransfers, err := d.handleEthereumTokenTransfers(ctx, message)
+	internalNFTTransfers, err := d.handleEthereumNFTTransfers(ctx, message)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +263,8 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 		internalNFTTransfers = append(internalNFTTransfers, nextInternalNFTTransfers...)
 	}
 
-	transfers := make([]model.Transfer, 0)
+	// Moralis may return duplicate transfers data
+	internalTransfersMap := make(map[string]map[int64]model.Transfer)
 
 	for _, internalNFTTransfer := range internalNFTTransfers {
 		timestamp, err := time.Parse(time.RFC3339, internalNFTTransfer.BlockTimestamp)
@@ -276,18 +277,36 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 			return nil, err
 		}
 
-		transfers = append(transfers, model.Transfer{
-			TransactionHash:     internalNFTTransfer.TransactionHash,
-			Timestamp:           timestamp,
-			TransactionLogIndex: internalNFTTransfer.LogIndex,
-			AddressFrom:         internalNFTTransfer.FromAddress,
-			AddressTo:           internalNFTTransfer.ToAddress,
-			Metadata:            metadata.Default,
-			Network:             message.Network,
-			Source:              d.Name(),
-			SourceData:          sourceData,
-			RelatedUrls:         nil, // TODO
-		})
+		// Data deduplication
+		value, exist := internalTransfersMap[internalNFTTransfer.BlockHash]
+		if exist {
+			if _, exist := value[internalNFTTransfer.LogIndex.IntPart()]; exist {
+				continue
+			}
+		}
+
+		internalTransfersMap[internalNFTTransfer.BlockHash] = map[int64]model.Transfer{
+			internalNFTTransfer.LogIndex.IntPart(): {
+				TransactionHash:     internalNFTTransfer.TransactionHash,
+				Timestamp:           timestamp,
+				TransactionLogIndex: internalNFTTransfer.LogIndex,
+				AddressFrom:         internalNFTTransfer.FromAddress,
+				AddressTo:           internalNFTTransfer.ToAddress,
+				Metadata:            metadata.Default,
+				Network:             message.Network,
+				Source:              d.Name(),
+				SourceData:          sourceData,
+				RelatedUrls:         nil, // TODO
+			},
+		}
+	}
+
+	transfers := make([]model.Transfer, 0)
+
+	for _, internalTransfers := range internalTransfersMap {
+		for _, internalTransfer := range internalTransfers {
+			transfers = append(transfers, internalTransfer)
+		}
 	}
 
 	return transfers, nil
