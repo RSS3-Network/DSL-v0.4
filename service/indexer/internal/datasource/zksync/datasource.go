@@ -3,6 +3,7 @@ package zksync
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -15,12 +16,19 @@ import (
 
 var _ datasource.Datasource = (*Datasource)(nil)
 
+const (
+	Name  = "zksync"
+	Limit = 100
+
+	OperationTypeTransfer = "Transfer"
+)
+
 type Datasource struct {
 	zksyncClient *zksync.Client
 }
 
 func (d *Datasource) Name() string {
-	return "zksync"
+	return Name
 }
 
 func (d *Datasource) Networks() []string {
@@ -29,35 +37,32 @@ func (d *Datasource) Networks() []string {
 	}
 }
 
-func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
-	internalTransfers := make([]model.Transfer, 0)
+func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	transactions := make([]model.Transaction, 0)
+
+	address := common.HexToAddress(message.Address)
 
 	from := zksync.FromLatest
 
 	for {
-		transactionList, _, err := d.zksyncClient.GetAddressTransactions(
-			ctx,
-			common.HexToAddress(message.Address),
-			from,
-			100,
-			zksync.DirectionOlder,
-		)
+		internalTransactions, _, err := d.zksyncClient.GetAddressTransactions(ctx, address, from, Limit, zksync.DirectionOlder)
 		if err != nil {
 			return nil, err
 		}
 
-		if len(transactionList.List) == 0 {
+		if len(internalTransactions.List) == 0 {
 			break
 		}
 
-		for _, item := range transactionList.List {
-			transactionData, _, err := d.zksyncClient.GetTransactionData(ctx, common.HexToHash(item.TransactionHash))
+		for _, internalTransaction := range internalTransactions.List {
+			transactionData, _, err := d.zksyncClient.GetTransactionData(ctx, common.HexToHash(internalTransaction.TransactionHash))
 			if err != nil {
 				return nil, err
 			}
-			// TODO: only support `Transfer` now
+
+			// TODO only support `Transfer` now
 			// https://docs.zksync.io/apiv02-docs/#transactions-api-v0.2-transactions-txhash-data
-			if transactionData.Transaction.Operation.Type != "Transfer" {
+			if transactionData.Transaction.Operation.Type != OperationTypeTransfer {
 				continue
 			}
 
@@ -66,29 +71,43 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 				return nil, err
 			}
 
-			internalTransfers = append(internalTransfers, model.Transfer{
-				TransactionHash:     item.TransactionHash,
-				Timestamp:           item.CreatedAt,
-				TransactionLogIndex: decimal.Zero,
-				AddressFrom:         transactionData.Transaction.Operation.From,
-				AddressTo:           transactionData.Transaction.Operation.To,
-				Metadata:            metadata.Default,
-				Network:             message.Network,
-				Source:              d.Name(),
-				SourceData:          sourceData,
+			transactions = append(transactions, model.Transaction{
+				BlockNumber: decimal.Decimal{},
+				Timestamp:   time.Time{},
+				Hash:        internalTransaction.TransactionHash,
+				AddressFrom: transactionData.Transaction.Operation.From,
+				AddressTo:   transactionData.Transaction.Operation.To,
+				Network:     message.Network,
+				Source:      d.Name(),
+				SourceData:  sourceData,
+				Transfers: []model.Transfer{
+					// This is a virtual transfer
+					{
+						TransactionHash:     internalTransaction.TransactionHash,
+						Timestamp:           internalTransaction.CreatedAt,
+						TransactionLogIndex: protocol.LogIndexVirtual,
+						AddressFrom:         transactionData.Transaction.Operation.From,
+						AddressTo:           transactionData.Transaction.Operation.To,
+						Metadata:            metadata.Default,
+						Network:             message.Network,
+						Source:              d.Name(),
+						SourceData:          sourceData,
+					},
+				},
 			})
+
 		}
 
-		if transactionList.Pagination.Count >= len(internalTransfers) {
+		// If the condition is met, then all data has been obtained
+		if internalTransactions.Pagination.Count >= len(transactions) {
 			break
 		}
 
-		latestTransactionHash := transactionList.List[len(transactionList.List)-1].TransactionHash
-
-		from = latestTransactionHash
+		// Get the hash of the last transaction in the array, used for paging
+		from = internalTransactions.List[len(internalTransactions.List)-1].TransactionHash
 	}
 
-	return internalTransfers, nil
+	return transactions, nil
 }
 
 func New() datasource.Datasource {

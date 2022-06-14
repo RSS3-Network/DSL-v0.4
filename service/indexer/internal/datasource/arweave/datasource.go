@@ -36,16 +36,63 @@ func (d *Datasource) Networks() []string {
 	}
 }
 
-func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
-	internalTransfers := make([]model.Transfer, 0)
-
+func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
 	address := common.NewMixedcaseAddress(common.HexToAddress(message.Address))
+
+	transactions := make([]model.Transaction, 0)
 
 	var query struct {
 		TransactionConnection graphqlx.TransactionConnection `graphql:"transactions(owners: $owners, tags: $tags)"`
 	}
 
-	variable := arweave.GetTransactionsVariable{
+	variable := d.buildGetTransactionsVariable(ctx, address.Address().String())
+
+	if err := d.arweaveClient.GetTransactions(ctx, &query, variable); err != nil {
+		return nil, err
+	}
+
+	for _, edge := range query.TransactionConnection.Edges {
+		sourceData, err := json.Marshal(edge)
+		if err != nil {
+			return nil, err
+		}
+
+		timestamp := time.Unix(int64(edge.Node.Block.Timestamp), 0)
+
+		// Mirror's transactions don't have a recipient address
+		addressTo := ""
+
+		transactions = append(transactions, model.Transaction{
+			BlockNumber: decimal.NewFromInt32(int32(edge.Node.Block.Height)),
+			Timestamp:   timestamp,
+			Hash:        edge.Node.ID.(string),
+			AddressFrom: string(edge.Node.Owner.Address),
+			AddressTo:   addressTo,
+			Network:     message.Network,
+			Source:      d.Name(),
+			SourceData:  sourceData,
+			Transfers: []model.Transfer{
+				// This is a virtual transfer
+				{
+					TransactionHash:     edge.Node.ID.(string),
+					Timestamp:           timestamp,
+					TransactionLogIndex: protocol.LogIndexVirtual,
+					AddressFrom:         string(edge.Node.Owner.Address),
+					AddressTo:           addressTo,
+					Metadata:            metadata.Default,
+					Network:             protocol.NetworkArweave,
+					Source:              Source,
+					SourceData:          sourceData,
+				},
+			},
+		})
+	}
+
+	return transactions, nil
+}
+
+func (d *Datasource) buildGetTransactionsVariable(ctx context.Context, address string) arweave.GetTransactionsVariable {
+	return arweave.GetTransactionsVariable{
 		Owners: []graphql.String{
 			arweave.AddressMirror,
 		},
@@ -60,37 +107,12 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			{
 				Name: "Contributor",
 				Values: []graphql.String{
-					graphql.String(address.Address().String()),
+					graphql.String(address),
 				},
 				TagOperator: graphqlx.TagOperatorEQ,
 			},
 		},
 	}
-
-	if err := d.arweaveClient.GetTransactions(ctx, &query, variable); err != nil {
-		return nil, err
-	}
-
-	for _, edge := range query.TransactionConnection.Edges {
-		sourceData, err := json.Marshal(edge)
-		if err != nil {
-			return nil, err
-		}
-
-		internalTransfers = append(internalTransfers, model.Transfer{
-			TransactionHash:     edge.Node.ID.(string),
-			Timestamp:           time.Unix(int64(edge.Node.Block.Timestamp), 0),
-			TransactionLogIndex: decimal.Zero,
-			AddressFrom:         string(edge.Node.Owner.Address),
-			AddressTo:           "",
-			Metadata:            metadata.Default,
-			Network:             protocol.NetworkArweave,
-			Source:              Source,
-			SourceData:          sourceData,
-		})
-	}
-
-	return internalTransfers, nil
 }
 
 func New() datasource.Datasource {
