@@ -59,6 +59,10 @@ func (e *Employer) Stop() {
 	e.crontab.Stop()
 }
 
+func (e *Employer) Renewal(ctx context.Context, name string, duration time.Duration) error {
+	return e.redisClient.SetNX(ctx, name, 0, duration).Err()
+}
+
 func New(redisClient *redis.Client) *Employer {
 	return &Employer{
 		redisClient: redisClient,

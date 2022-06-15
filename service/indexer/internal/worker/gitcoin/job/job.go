@@ -35,7 +35,7 @@ func (job *GitcoinProjectJob) Timeout() time.Duration {
 	return time.Minute * 5
 }
 
-func (job *GitcoinProjectJob) Run() {
+func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 	logrus.Info("[gitcoin job] run")
 
 	// query lastest gitcoin project id
@@ -46,7 +46,7 @@ func (job *GitcoinProjectJob) Run() {
 		Order("id DESC").
 		First(&lastestProject).Error; err != nil {
 		logrus.Errorf("[gitcoin job] get lastest grant, db error: %v", err)
-		return
+		return err
 	}
 
 	for i := 1; i <= 10; i++ {
@@ -69,6 +69,8 @@ func (job *GitcoinProjectJob) Run() {
 	}
 
 	go job.SetCache()
+
+	return nil
 }
 
 func (job *GitcoinProjectJob) SetCache() {
