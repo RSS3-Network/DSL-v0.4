@@ -144,6 +144,48 @@ func (c *Client) GetTokenTransactionList(ctx context.Context, address common.Add
 	return transactions, response, nil
 }
 
+type GetTransactionInfoOption struct {
+	Module          string `url:"module"`
+	Action          string `url:"action"`
+	TransactionHash string `url:"txhash"`
+}
+
+func (c *Client) GetTransactionInfo(ctx context.Context, transactionHash string, option *GetTransactionInfoOption) (*TransactionInfo, *Response, error) {
+	option.Module = "account"
+	option.TransactionHash = transactionHash
+	option.Action = "gettxinfo"
+
+	values, err := query.Values(option)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	requestURL := &url.URL{
+		Scheme:   Scheme,
+		Host:     Endpoint,
+		Path:     fmt.Sprintf("/%s/mainnet/api", c.network),
+		RawQuery: values.Encode(),
+	}
+
+	request, err := http.NewRequest(http.MethodGet, requestURL.String(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	response, _, err := c.DoRequest(ctx, request)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var transactionInfo TransactionInfo
+
+	if err := json.Unmarshal(response.Result, &transactionInfo); err != nil {
+		return nil, nil, err
+	}
+
+	return &transactionInfo, response, nil
+}
+
 func New(network string) *Client {
 	return &Client{
 		network:    network,

@@ -37,3 +37,26 @@ type Transaction struct {
 	TxReceiptStatus   decimal.Decimal `json:"txreceipt_status"`
 	Value             decimal.Decimal `json:"value"`
 }
+
+type TransactionInfo struct {
+	RevertReason  string               `json:"revertReason"`
+	BlockNumber   decimal.Decimal      `json:"blockNumber"`
+	Confirmations decimal.Decimal      `json:"confirmations"`
+	From          string               `json:"from"`
+	GasLimit      decimal.Decimal      `json:"gasLimit"`
+	GasPrice      decimal.Decimal      `json:"gasPrice"`
+	GasUsed       decimal.Decimal      `json:"gasUsed"`
+	Hash          string               `json:"hash"`
+	Input         string               `json:"input"`
+	Logs          []TransactionInfoLog `json:"logs"`
+	Success       bool                 `json:"success"`
+	TimeStamp     decimal.Decimal      `json:"timeStamp"`
+	To            string               `json:"to"`
+	Value         decimal.Decimal      `json:"value"`
+}
+
+type TransactionInfoLog struct {
+	Address string   `json:"address"`
+	Data    string   `json:"data"`
+	Topics  []string `json:"topics"`
+}

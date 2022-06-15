@@ -10,7 +10,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/poap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	blockscoutdatasource "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 )
 
@@ -40,55 +39,66 @@ func (s *service) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transfers []model.Transfer) ([]model.Transfer, error) {
-	internalTransfers := make([]model.Transfer, 0)
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	internalTransactionMap := make(map[string]model.Transaction)
 
-	for _, transfer := range transfers {
-		if transfer.Source != blockscoutdatasource.Name {
-			continue
+	for _, transaction := range transactions {
+		for _, transfer := range transaction.Transfers {
+			dataSource := blockscout.Transaction{}
+			if err := json.Unmarshal(transfer.SourceData, &dataSource); err != nil {
+				return nil, err
+			}
+
+			if dataSource.ContractAddress != ContractAddress {
+				continue
+			}
+
+			value, exist := internalTransactionMap[transaction.Hash]
+			if !exist {
+				internalTransactionMap[transaction.Hash] = transaction
+			}
+
+			var metadataModel metadata.Metadata
+
+			if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
+				return nil, err
+			}
+
+			token, err := s.poapClient.GetToken(ctx, dataSource.TokenID.BigInt().Int64())
+			if err != nil {
+				return nil, err
+			}
+
+			metadataModel.POAP = &metadata.POAP{
+				ID:          token.Event.ID,
+				Name:        token.Event.Name,
+				ImageURL:    token.Event.ImageURL,
+				Description: token.Event.Description,
+				Year:        token.Event.Year,
+				StartDate:   token.Event.StartDate,
+				EndDate:     token.Event.EndDate,
+				ExpiryDate:  token.Event.ExpiryDate,
+				TokenID:     token.TokenID,
+			}
+
+			rawMetadata, err := json.Marshal(metadataModel)
+			if err != nil {
+				return nil, err
+			}
+
+			transfer.Metadata = rawMetadata
+			transfer.Tags = append(transfer.Tags, constant.TransferTagPoap.String())
+
+			value.Transfers = append(value.Transfers, transfer)
+
+			internalTransactionMap[value.Hash] = value
 		}
+	}
 
-		dataSource := blockscout.Transaction{}
-		if err := json.Unmarshal(transfer.SourceData, &dataSource); err != nil {
-			return nil, err
-		}
+	internalTransfers := make([]model.Transaction, 0)
 
-		if dataSource.ContractAddress != ContractAddress {
-			continue
-		}
-
-		var metadataModel metadata.Metadata
-
-		if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-			return nil, err
-		}
-
-		token, err := s.poapClient.GetToken(ctx, dataSource.TokenID.BigInt().Int64())
-		if err != nil {
-			return nil, err
-		}
-
-		metadataModel.POAP = &metadata.POAP{
-			ID:          token.Event.ID,
-			Name:        token.Event.Name,
-			ImageURL:    token.Event.ImageURL,
-			Description: token.Event.Description,
-			Year:        token.Event.Year,
-			StartDate:   token.Event.StartDate,
-			EndDate:     token.Event.EndDate,
-			ExpiryDate:  token.Event.ExpiryDate,
-			TokenID:     token.TokenID,
-		}
-
-		rawMetadata, err := json.Marshal(metadataModel)
-		if err != nil {
-			return nil, err
-		}
-
-		transfer.Metadata = rawMetadata
-		transfer.Tags = append(transfer.Tags, constant.TransferTagPoap.String())
-
-		internalTransfers = append(internalTransfers, transfer)
+	for _, internalTransaction := range internalTransactionMap {
+		internalTransfers = append(internalTransfers, internalTransaction)
 	}
 
 	return internalTransfers, nil
