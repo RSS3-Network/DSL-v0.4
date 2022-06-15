@@ -6,6 +6,7 @@ import (
 
 	"github.com/naturalselectionlabs/pregod/common/shedlock"
 	"github.com/robfig/cron/v3"
+	"github.com/sirupsen/logrus"
 )
 
 type RenewalFunc func(ctx context.Context, duration time.Duration) error
@@ -26,7 +27,9 @@ type cronJob struct {
 }
 
 func (c *cronJob) Run() {
-	c.job.Run(c.renewal)
+	if err := c.job.Run(c.renewal); err != nil {
+		logrus.Errorf("job %s throws an error: %s", c.job.Name(), err)
+	}
 }
 
 func (c *cronJob) renewal(ctx context.Context, duration time.Duration) error {
