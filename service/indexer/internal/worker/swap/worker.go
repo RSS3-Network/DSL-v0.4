@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"gorm.io/gorm"
@@ -22,6 +24,7 @@ const (
 var _ worker.Worker = &service{}
 
 type service struct {
+	employer       *shedlock.Employer
 	databaseClient *gorm.DB
 }
 
@@ -40,9 +43,9 @@ func (s *service) Initialize(ctx context.Context) error {
 		databaseClient: s.databaseClient,
 	}
 
-	job.Run()
-
-	return nil
+	return job.Run(func(ctx context.Context, duration time.Duration) error {
+		return s.employer.Renewal(ctx, job.Name(), duration)
+	})
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
@@ -143,8 +146,9 @@ func (s *service) Jobs() []worker.Job {
 	}
 }
 
-func New(databaseClient *gorm.DB) worker.Worker {
+func New(employer *shedlock.Employer, databaseClient *gorm.DB) worker.Worker {
 	return &service{
+		employer:       employer,
 		databaseClient: databaseClient,
 	}
 }
