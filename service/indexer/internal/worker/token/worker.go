@@ -301,6 +301,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 					Symbol:        nftTokenInfo.Symbol,
 					NFTMetadata:   nftTokenInfo.Bytes(),
 				}
+				transfer.Tags = append(transfer.Tags, constant.TransferTagErc721.String())
 			} else { // token
 				tokenID := decimal.NewFromInt(*tokenInfo.ID)
 				metadataModel.Token = &metadata.Token{
@@ -311,6 +312,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 					Decimals:      tokenInfo.Decimals,
 					Symbol:        tokenInfo.Symbol,
 				}
+				transfer.Tags = append(transfer.Tags, constant.TransferTagErc20.String())
 			}
 
 			rawMetadata, err := json.Marshal(metadataModel)

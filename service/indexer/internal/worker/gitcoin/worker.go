@@ -73,7 +73,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			transfer.Type = "donate"
-			transfer.Source = "gitcoin"
 			transfer.Tags = append(transfer.Tags, constant.TransferTagGitcoin.String(), constant.TransferTagDonation.String())
 			transfer.RelatedUrls = append(transfer.RelatedUrls, utils.GetTxHashURL(transfer.Network, transfer.TransactionHash))
 
