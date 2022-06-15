@@ -12,7 +12,7 @@ type Transfer struct {
 	TransactionHash     string          `gorm:"column:transaction_hash;primaryKey" json:"-"`
 	Timestamp           time.Time       `gorm:"column:timestamp" json:"-"`
 	Type                string          `gorm:"column:type" json:"type"`
-	Tag                 string          `gorm:"column:tag" json:"tag"`
+	Tags                []string        `gorm:"column:tags;type:text[]" json:"tags"`
 	TransactionLogIndex decimal.Decimal `gorm:"column:transaction_log_index;primaryKey" json:"transaction_log_index"`
 	AddressFrom         string          `gorm:"column:address_from" json:"address_from"`
 	AddressTo           string          `gorm:"column:address_to" json:"address_to"`

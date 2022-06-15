@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -109,6 +110,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			transfer.Metadata = rawMetadata
+			transfer.Tags = append(transfer.Tags, constant.TransferTagSwap.String())
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
