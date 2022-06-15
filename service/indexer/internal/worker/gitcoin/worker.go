@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/naturalselectionlabs/pregod/common/constant"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -70,8 +72,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 		}
 
 		transfer.Type = "donate"
-		transfer.Tag = "donation"
 		transfer.Source = "gitcoin"
+		transfer.Tags = append(transfer.Tags, constant.TransferTagGitcoin.String(), constant.TransferTagDonation.String())
 		transfer.RelatedUrls = append(transfer.RelatedUrls, utils.GetTxHashURL(transfer.Network, transfer.TransactionHash))
 
 		// format metadata

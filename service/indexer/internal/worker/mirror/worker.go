@@ -7,6 +7,7 @@ import (
 
 	"github.com/naturalselectionlabs/pregod/common/arweave"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
+	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -90,6 +91,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 		}
 
 		transfer.Metadata = rawMetadata
+		transfer.Tags = append(transfer.Tags, constant.TransferTagMirror.String())
 
 		internalTransfers = append(internalTransfers, transfer)
 	}

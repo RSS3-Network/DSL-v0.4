@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	moralisx "github.com/naturalselectionlabs/pregod/common/moralis"
@@ -171,6 +172,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				TokenValue:    &tokenValue,
 				NFTMetadata:   nftMetadata,
 			}
+			transfer.Tags = append(transfer.Tags, constant.TransferTagNFT.String())
 		} else if _, exist = sourceDataMap["address"]; exist {
 			// Token transfer
 			tokenTransfer := moralisx.TokenTransfer{}
@@ -198,6 +200,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				Symbol:        coinInfo.Symbol,
 				Decimals:      coinInfo.Decimals,
 			}
+			transfer.Tags = append(transfer.Tags, constant.TransferTagErc20.String())
 		} else {
 			// Native transfer
 			nativeTransfer := moralisx.Transaction{}
@@ -224,6 +227,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 				Symbol:        coinInfo.Symbol,
 				Decimals:      coinInfo.Decimals,
 			}
+			transfer.Tags = append(transfer.Tags, constant.TransferTagEth.String())
 		}
 
 		rawMetadata, err := json.Marshal(metadataModel)

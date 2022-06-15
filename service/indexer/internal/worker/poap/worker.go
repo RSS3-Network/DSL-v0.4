@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/naturalselectionlabs/pregod/common/blockscout"
+	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/poap"
@@ -85,6 +86,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transfe
 		}
 
 		transfer.Metadata = rawMetadata
+		transfer.Tags = append(transfer.Tags, constant.TransferTagPoap.String())
 
 		internalTransfers = append(internalTransfers, transfer)
 	}
