@@ -11,6 +11,6 @@ type Worker interface {
 	Name() string
 	Networks() []string
 	Initialize(ctx context.Context) error
-	Handle(ctx context.Context, message *protocol.Message, transfers []model.Transfer) ([]model.Transfer, error)
+	Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error)
 	Jobs() []Job
 }
