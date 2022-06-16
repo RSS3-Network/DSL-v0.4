@@ -137,7 +137,7 @@ func (c *Client) GetGraphQLResult(ctx context.Context, queryFun GetQueryFun, lim
 		variableMap := map[string]interface{}{
 			"skip": graphql.NewInt(graphql.Int(i * 1000)),
 		}
-		//currQuery := query
+
 		query := queryFun()
 
 		firstQuery = false

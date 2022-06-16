@@ -13,7 +13,7 @@ type SnapshotSpace struct {
 }
 
 func (SnapshotSpace) TableName() string {
-	return "snapshot-space"
+	return "snapshot_space"
 }
 
 type SnapshotProposal struct {
@@ -25,18 +25,18 @@ type SnapshotProposal struct {
 }
 
 func (SnapshotProposal) TableName() string {
-	return "snapshot-proposal"
+	return "snapshot_proposal"
 }
 
 type SnapshotVote struct {
-	ID         string          `gorm:"column:id;primaryKey" json:"id"`
-	ProposalID string          `gorm:"column:proposal_id" json:"proposal_id"`
-	Metadata   json.RawMessage `gorm:"column:metadata;type:jsonb" json:"metadata"`
-	dateCreted time.Time       `gorm:"column:date_created;" json:"date_created"`
-	CreatedAt  time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index"`
-	UpdatedAt  time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index"`
+	ID          string          `gorm:"column:id;primaryKey" json:"id"`
+	ProposalID  string          `gorm:"column:proposal_id" json:"proposal_id"`
+	Metadata    json.RawMessage `gorm:"column:metadata;type:jsonb" json:"metadata"`
+	DateCreated time.Time       `gorm:"column:date_created;index:index_note_date_created" json:"date_created"`
+	CreatedAt   time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index"`
+	UpdatedAt   time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index"`
 }
 
 func (SnapshotVote) TableName() string {
-	return "snapshot-vote"
+	return "snapshot_vote"
 }

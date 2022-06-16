@@ -2,17 +2,18 @@ package job
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/snapshot"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
-	"strconv"
 )
 
 type (
-	PullInfoStatus int
+	PullInfoStatus int32
 )
 
 const (
@@ -21,8 +22,8 @@ const (
 )
 
 type StatusStroge struct {
-	pos    int32
-	status PullInfoStatus
+	Pos    int32          `json:"pos"`
+	Status PullInfoStatus `json:"status"`
 }
 
 type SnapshotJobBase struct {
@@ -61,47 +62,27 @@ func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (StatusS
 	tracerName := "get_" + statusKey
 	tracer := otel.Tracer(tracerName)
 	statusStroge := StatusStroge{
-		pos:    0,
-		status: PullInfoStatusNotLatest,
+		Pos:    0,
+		Status: PullInfoStatusNotLatest,
 	}
-
-	// If you can pull data from redis normally,
-	// you don't need to enter the database to get it.
 
 	_, handlerSpan := tracer.Start(ctx, "get_by_cache")
 	defer handlerSpan.End()
 
-	resultMap, err := job.RedisClient.HGetAll(ctx, statusKey).Result()
+	data, err := job.RedisClient.Get(ctx, statusKey).Result()
 	if err != nil {
-		logrus.Errorf("get %s from cache error:%+v", statusKey, err)
+		logrus.Warnf("get %s from cache error:%+v", statusKey, err)
+		return StatusStroge{}, nil
 	}
 
-	if len(resultMap) != 0 {
-		pos, ok := resultMap["pos"]
-		if ok {
-			currPos, err := strconv.ParseInt(pos, 10, 0)
-			if err != nil {
-				logrus.Warnf("parse [%s] pos [%s] error:%+v", statusKey, pos, err)
-			}
-			statusStroge.pos = int32(currPos)
-		}
-
-		status, ok := resultMap["status"]
-		if ok {
-			currStatus, err := strconv.Atoi(status)
-			if err != nil {
-				logrus.Warnf("parse [%s] status [%s] error:%+v", statusKey, pos, err)
-			} else {
-				statusStroge.status = PullInfoStatus(currStatus)
-			}
-		}
-		return statusStroge, nil
+	if err = json.Unmarshal([]byte(data), &statusStroge); err != nil {
+		return StatusStroge{}, fmt.Errorf("unmarshal %s from cache error:%+v", statusKey, err)
 	}
 
-	return StatusStroge{}, nil
+	return statusStroge, nil
 }
 
-func (job *SnapshotJobBase) SetCurrentStatus(ctx context.Context, filter StatusStroge) error {
+func (job *SnapshotJobBase) SetCurrentStatus(ctx context.Context, stroge StatusStroge) error {
 	if job.Name == "" {
 		return fmt.Errorf("job name is empty")
 	}
@@ -110,11 +91,16 @@ func (job *SnapshotJobBase) SetCurrentStatus(ctx context.Context, filter StatusS
 		return fmt.Errorf("redis client is nil")
 	}
 
-	// Hset
-	if filter.pos <= 0 {
+	if stroge.Pos <= 0 {
 		return fmt.Errorf("pos is less than 0")
 	}
 
-	job.RedisClient.HSet(ctx, job.Name+"_status", "pos", strconv.Itoa(int(filter.pos)))
+	data, err := json.Marshal(stroge)
+	if err != nil {
+		return fmt.Errorf("marshal %+v to json error:%+v", stroge, err)
+	}
+
+	job.RedisClient.Set(ctx, job.Name+"_status", data, 0)
+
 	return nil
 }

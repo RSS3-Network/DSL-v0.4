@@ -17,6 +17,7 @@ var tables = []any{
 	&model.CoinMarketCapCoinInfo{},
 	&model.SnapshotSpace{},
 	&model.SnapshotProposal{},
+	&model.SnapshotVote{},
 }
 
 var Client *gorm.DB
