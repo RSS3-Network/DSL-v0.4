@@ -2,9 +2,9 @@ package metadata
 
 import (
 	"encoding/json"
-
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
+	"math/big"
 )
 
 var Default json.RawMessage
@@ -16,11 +16,12 @@ func init() {
 }
 
 type Metadata struct {
-	Token   *Token    `json:"token,omitempty"`
-	Swap    *SwapPool `json:"swap,omitempty"`
-	Mirror  *Mirror   `json:"mirror,omitempty"`
-	POAP    *POAP     `json:"poap,omitempty"`
-	Gitcoin *Gitcoin  `json:"gitcoin,omitempty"`
+	Token     *Token     `json:"token,omitempty"`
+	Swap      *SwapPool  `json:"swap,omitempty"`
+	Mirror    *Mirror    `json:"mirror,omitempty"`
+	POAP      *POAP      `json:"poap,omitempty"`
+	Gitcoin   *Gitcoin   `json:"gitcoin,omitempty"`
+	CrossBell *CrossBell `json:"crossbell,omitempty"`
 }
 
 type Token struct {
@@ -75,4 +76,13 @@ type POAP struct {
 	EndDate     string `json:"end_date"`
 	ExpiryDate  string `json:"expiry_date"`
 	TokenID     string `json:"token_id"`
+}
+
+type CrossBell struct {
+	Event          string          `json:"event"`
+	ProfileID      *big.Int        `json:"profile_id"`
+	Handle         string          `json:"handle,omitempty"`
+	AddressCreator string          `json:"address_creator,omitempty"`
+	AddressOwner   string          `json:"address_owner,omitempty"`
+	Metadata       json.RawMessage `json:"metadata,omitempty"`
 }

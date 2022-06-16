@@ -14,16 +14,19 @@ import (
 const (
 	Scheme = "https"
 
-	Endpoint = "blockscout.com"
+	EndpointDefault   = "blockscout.com"
+	EndpointCrossbell = "scan.crossbell.io"
 
-	NetworkXDAI            = "xdai"
-	NetworkEthereum        = "eth"
-	NetworkEthereumClassic = "etc"
+	NetworkXDAI            = "/xdai/mainnet"
+	NetworkEthereum        = "/eth/mainnet"
+	NetworkEthereumClassic = "/etc/mainnet"
+	NetworkCrossbell       = "" // Root path
 )
 
 type Client struct {
 	network    string
 	httpClient *http.Client
+	endpoint   string
 }
 
 func (c *Client) DoRequest(_ context.Context, request *http.Request) (*Response, *http.Response, error) {
@@ -72,8 +75,8 @@ func (c *Client) GetTransactionList(ctx context.Context, address common.Address,
 
 	requestURL := &url.URL{
 		Scheme:   Scheme,
-		Host:     Endpoint,
-		Path:     "/xdai/mainnet/api",
+		Host:     c.endpoint,
+		Path:     fmt.Sprintf("%s/api", c.network),
 		RawQuery: values.Encode(),
 	}
 
@@ -120,8 +123,8 @@ func (c *Client) GetTokenTransactionList(ctx context.Context, address common.Add
 
 	requestURL := &url.URL{
 		Scheme:   Scheme,
-		Host:     Endpoint,
-		Path:     fmt.Sprintf("/%s/mainnet/api", c.network),
+		Host:     c.endpoint,
+		Path:     fmt.Sprintf("%s/api", c.network),
 		RawQuery: values.Encode(),
 	}
 
@@ -144,50 +147,9 @@ func (c *Client) GetTokenTransactionList(ctx context.Context, address common.Add
 	return transactions, response, nil
 }
 
-type GetTransactionInfoOption struct {
-	Module          string `url:"module"`
-	Action          string `url:"action"`
-	TransactionHash string `url:"txhash"`
-}
-
-func (c *Client) GetTransactionInfo(ctx context.Context, transactionHash string, option *GetTransactionInfoOption) (*TransactionInfo, *Response, error) {
-	option.Module = "account"
-	option.TransactionHash = transactionHash
-	option.Action = "gettxinfo"
-
-	values, err := query.Values(option)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	requestURL := &url.URL{
-		Scheme:   Scheme,
-		Host:     Endpoint,
-		Path:     fmt.Sprintf("/%s/mainnet/api", c.network),
-		RawQuery: values.Encode(),
-	}
-
-	request, err := http.NewRequest(http.MethodGet, requestURL.String(), nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	response, _, err := c.DoRequest(ctx, request)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var transactionInfo TransactionInfo
-
-	if err := json.Unmarshal(response.Result, &transactionInfo); err != nil {
-		return nil, nil, err
-	}
-
-	return &transactionInfo, response, nil
-}
-
-func New(network string) *Client {
+func New(endpoint, network string) *Client {
 	return &Client{
+		endpoint:   endpoint,
 		network:    network,
 		httpClient: http.DefaultClient,
 	}

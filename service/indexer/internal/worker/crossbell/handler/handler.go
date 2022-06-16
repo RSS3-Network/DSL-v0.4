@@ -1,0 +1,69 @@
+package handler
+
+import (
+	"context"
+	"errors"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
+)
+
+var (
+	AddressWeb3EntryProfileProxy = common.HexToAddress("0xa6f969045641Cf486a747A2688F3a5A6d43cd0D8")
+	AddressLinkListTokenProxy    = common.HexToAddress("0xFc8C75bD5c26F50798758f387B698f207a016b6A")
+
+	ErrorUnknownUnknownEvent    = errors.New("unknown event")
+	ErrorUnknownContractAddress = errors.New("unknown contract address")
+)
+
+type Interface interface {
+	Handle(ctx context.Context, transaction *model.Transaction, log *types.Log) (*model.Transfer, error)
+}
+
+var _ Interface = (*handler)(nil)
+
+type handler struct {
+	ethereumClient *ethclient.Client
+
+	profileHandler  Interface
+	linkListHandler Interface
+}
+
+func (h *handler) Handle(ctx context.Context, transaction *model.Transaction, log *types.Log) (*model.Transfer, error) {
+	switch common.HexToAddress(transaction.AddressTo) {
+	case AddressWeb3EntryProfileProxy:
+		return h.profileHandler.Handle(ctx, transaction, log)
+	case AddressLinkListTokenProxy:
+		return h.linkListHandler.Handle(ctx, transaction, log)
+	default:
+		return nil, ErrorUnknownContractAddress
+	}
+}
+
+func New(ethereumClient *ethclient.Client, abi abi.ABI) (Interface, error) {
+	profileContract, err := contract.NewERC721(AddressWeb3EntryProfileProxy, ethereumClient)
+	if err != nil {
+		return nil, err
+	}
+
+	linkListContract, err := contract.NewERC721(AddressLinkListTokenProxy, ethereumClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return &handler{
+		ethereumClient: ethereumClient,
+		profileHandler: &profile{
+			contract: profileContract,
+			abi:      abi,
+		},
+		linkListHandler: &linkList{
+			contract: linkListContract,
+			abi:      abi,
+		},
+	}, nil
+}
