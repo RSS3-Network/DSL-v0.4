@@ -122,7 +122,7 @@ func (s *Server) Initialize() (err error) {
 
 	s.workers = []worker.Worker{
 		token.New(s.databaseClient),
-		swap.New(s.databaseClient),
+		swap.New(s.employer, s.databaseClient),
 		mirror.New(),
 		poapworker.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
@@ -140,7 +140,7 @@ func (s *Server) Initialize() (err error) {
 		}
 
 		for _, job := range internalWorker.Jobs() {
-			if err := s.employer.AddJob(job.Name(), job.Spec(), job.Timeout(), job); err != nil {
+			if err := s.employer.AddJob(job.Name(), job.Spec(), job.Timeout(), worker.NewCronJob(s.employer, job)); err != nil {
 				return err
 			}
 		}

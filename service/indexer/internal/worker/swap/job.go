@@ -6,13 +6,11 @@ import (
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/dexpools"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-
-	lop "github.com/samber/lo/parallel"
 )
 
 var _ worker.Job = (*Job)(nil)
@@ -33,7 +31,7 @@ func (j *Job) Timeout() time.Duration {
 	return time.Minute * 5
 }
 
-func (j *Job) Run() {
+func (j *Job) Run(renewal worker.RenewalFunc) error {
 	poolClient := dexpools.NewClient()
 
 	lop.ForEach(dexpools.SwapPools, func(dex dexpools.SwapPool, i int) {
@@ -67,4 +65,6 @@ func (j *Job) Run() {
 			}
 		}
 	})
+
+	return nil
 }

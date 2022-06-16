@@ -1,6 +1,7 @@
 package job
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -74,7 +75,11 @@ func TestGitcoinProjectJob_Run(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			job := &GitcoinProjectJob{}
-			job.Run()
+			if err := job.Run(func(ctx context.Context, duration time.Duration) error {
+				return nil
+			}); err != nil {
+				t.Fatal(err)
+			}
 		})
 	}
 }

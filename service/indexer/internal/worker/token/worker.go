@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	moralisx "github.com/naturalselectionlabs/pregod/common/moralis"
@@ -171,6 +172,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					TokenValue:    &tokenValue,
 					NFTMetadata:   nftMetadata,
 				}
+				transfer.Tags = append(transfer.Tags, constant.TransferTagNFT.String())
 			} else if _, exist = sourceDataMap["address"]; exist {
 				// Token transfer
 				tokenTransfer := moralisx.TokenTransfer{}
@@ -198,6 +200,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					Symbol:        coinInfo.Symbol,
 					Decimals:      coinInfo.Decimals,
 				}
+				transfer.Tags = append(transfer.Tags, constant.TransferTagErc20.String())
 			} else {
 				// Native transfer
 				nativeTransfer := moralisx.Transaction{}
@@ -224,6 +227,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					Symbol:        coinInfo.Symbol,
 					Decimals:      coinInfo.Decimals,
 				}
+				transfer.Tags = append(transfer.Tags, constant.TransferTagEth.String())
 			}
 
 			rawMetadata, err := json.Marshal(metadataModel)
@@ -297,6 +301,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 					Symbol:        nftTokenInfo.Symbol,
 					NFTMetadata:   nftTokenInfo.Bytes(),
 				}
+				transfer.Tags = append(transfer.Tags, constant.TransferTagErc721.String())
 			} else { // token
 				tokenID := decimal.NewFromInt(*tokenInfo.ID)
 				metadataModel.Token = &metadata.Token{
@@ -307,6 +312,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 					Decimals:      tokenInfo.Decimals,
 					Symbol:        tokenInfo.Symbol,
 				}
+				transfer.Tags = append(transfer.Tags, constant.TransferTagErc20.String())
 			}
 
 			rawMetadata, err := json.Marshal(metadataModel)
