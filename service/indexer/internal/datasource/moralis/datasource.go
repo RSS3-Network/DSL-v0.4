@@ -172,7 +172,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 					Network:             message.Network,
 					Source:              d.Name(),
 					SourceData:          sourceData,
-					RelatedUrls:         nil, // TODO
+					RelatedUrls:         []string{GetTxHashURL(message.Network, internalTransaction.Hash)},
 				},
 			},
 		})
@@ -231,7 +231,7 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 			Network:             message.Network,
 			Source:              d.Name(),
 			SourceData:          sourceData,
-			RelatedUrls:         nil, // TODO
+			RelatedUrls:         []string{GetTxHashURL(message.Network, internalTokenTransfer.TransactionHash)},
 		})
 	}
 
@@ -298,7 +298,7 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 				Network:             message.Network,
 				Source:              d.Name(),
 				SourceData:          sourceData,
-				RelatedUrls:         nil, // TODO
+				RelatedUrls:         GetTxRelatedURLs(message.Network, internalNFTTransfer.TokenAddress, internalNFTTransfer.TokenId, &internalNFTTransfer.TransactionHash),
 			},
 		}
 	}
@@ -312,6 +312,61 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 	}
 
 	return transfers, nil
+}
+
+// Returns related urls based on the network and contract tx hash.
+func GetTxRelatedURLs(
+	network string,
+	contractAddress string,
+	tokenId string,
+	transactionHash *string,
+) []string {
+	var urls []string
+	if transactionHash != nil {
+		urls = append(urls, GetTxHashURL(network, *transactionHash))
+	}
+
+	switch network {
+	case protocol.NetworkEthereum:
+		urls = append(urls, "https://etherscan.io/nft/"+contractAddress+"/"+tokenId)
+		urls = append(urls, "https://opensea.io/assets/"+contractAddress+"/"+tokenId)
+	case protocol.NetworkPolygon:
+		urls = append(urls, "https://polygonscan.com/token/"+contractAddress)
+		urls = append(urls, "https://opensea.io/assets/matic/"+contractAddress+"/"+tokenId)
+	case protocol.NetworkBinanceSmartChain:
+		urls = append(urls, "https://bscscan.com/nft/"+contractAddress+"/"+tokenId)
+	case protocol.NetworkAvalanche:
+	case protocol.NetworkFantom:
+		urls = append(urls, "https://ftmscan.com/nft/"+contractAddress+"/"+tokenId)
+	}
+
+	return urls
+}
+
+// Returns related urls based on the network and contract tx hash.
+func GetTxHashURL(
+	network string,
+	transactionHash string,
+) string {
+	switch network {
+	case protocol.NetworkEthereum:
+		return "https://etherscan.io/tx/" + (transactionHash)
+
+	case protocol.NetworkPolygon:
+		return "https://polygonscan.com/tx/" + (transactionHash)
+
+	case protocol.NetworkBinanceSmartChain:
+		return "https://bscscan.com/tx/" + (transactionHash)
+
+	case protocol.NetworkAvalanche:
+		return "https://avascan.info/blockchain/c/tx/" + (transactionHash)
+	case protocol.NetworkFantom:
+		return "https://ftmscan.com/tx/" + (transactionHash)
+	case protocol.NetworkZkSync:
+		return "https://zkscan.io/explorer/transactions/" + (transactionHash)
+	default:
+		return ""
+	}
 }
 
 func New(key string) datasource.Datasource {
