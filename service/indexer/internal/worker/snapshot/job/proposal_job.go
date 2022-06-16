@@ -2,12 +2,10 @@ package job
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type SnapshotProposalJob struct {
-	DatabaseClient *gorm.DB
+	SnapshotJobBase
 }
 
 func (job *SnapshotProposalJob) Name() string {

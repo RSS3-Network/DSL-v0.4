@@ -1,11 +1,15 @@
 package model
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 type SnapshotSpace struct {
-	SerialID int             `gorm:"column:serial_id;" json:"serial_id" `
-	ID       string          `gorm:"column:id;primaryKey" json:"id"`
-	Metadata json.RawMessage `gorm:"column:metadata;type:jsonb" json:"metadata"`
+	ID        string          `gorm:"column:id;primaryKey" json:"id"`
+	Metadata  json.RawMessage `gorm:"column:metadata;type:jsonb" json:"metadata"`
+	CreatedAt time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index"`
+	UpdatedAt time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index"`
 }
 
 func (SnapshotSpace) TableName() string {
@@ -13,10 +17,11 @@ func (SnapshotSpace) TableName() string {
 }
 
 type SnapshotProposal struct {
-	SerialID int             `gorm:"column:serial_id;" json:"serial_id" `
-	ID       string          `gorm:"column:id;primaryKey" json:"id"`
-	SpaceID  string          `gorm:"column:space_id" json:"space_id"`
-	Metadata json.RawMessage `gorm:"column:metadata;type:jsonb" json:"metadata"`
+	ID        string          `gorm:"column:id;primaryKey" json:"id"`
+	SpaceID   string          `gorm:"column:space_id" json:"space_id"`
+	Metadata  json.RawMessage `gorm:"column:metadata;type:jsonb" json:"metadata"`
+	CreatedAt time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index"`
+	UpdatedAt time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index"`
 }
 
 func (SnapshotProposal) TableName() string {
@@ -24,10 +29,12 @@ func (SnapshotProposal) TableName() string {
 }
 
 type SnapshotVote struct {
-	SerialID   int             `gorm:"column:serial_id;" json:"serial_id" `
 	ID         string          `gorm:"column:id;primaryKey" json:"id"`
 	ProposalID string          `gorm:"column:proposal_id" json:"proposal_id"`
 	Metadata   json.RawMessage `gorm:"column:metadata;type:jsonb" json:"metadata"`
+	dateCreted time.Time       `gorm:"column:date_created;" json:"date_created"`
+	CreatedAt  time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index"`
+	UpdatedAt  time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index"`
 }
 
 func (SnapshotVote) TableName() string {

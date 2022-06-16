@@ -7,7 +7,6 @@ import (
 	"net/url"
 
 	"github.com/hasura/go-graphql-client"
-	jsoniter "github.com/json-iterator/go"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/snapshot/graphql"
 )
 
@@ -25,8 +24,6 @@ const (
 	OrderDirectionAsc  OrderDirection = "asc"
 	OrderDirectionDesc OrderDirection = "desc"
 )
-
-var jsoni = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Client struct {
 	snapShotGraphqlUrl url.URL
