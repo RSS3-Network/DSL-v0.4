@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/snapshot"
 	"github.com/sirupsen/logrus"

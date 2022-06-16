@@ -48,7 +48,22 @@ func TestSnapshotSpaceInnerJob(t *testing.T) {
 		},
 	}
 
-	if err := spaceJob.InnerJobRun(); err != nil {
+	if _, err := spaceJob.InnerJobRun(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestSnapshotProposalInnerJob(t *testing.T) {
+	proposalJob := job.SnapshotProposalJob{
+		SnapshotJobBase: job.SnapshotJobBase{
+			Name:           "snapshot_proposal_job",
+			DatabaseClient: databaseClient,
+			RedisClient:    redisClient,
+			SnapshotClient: snapshotClient,
+		},
+	}
+
+	if _, err := proposalJob.InnerJobRun(); err != nil {
 		t.Error(err)
 	}
 }
