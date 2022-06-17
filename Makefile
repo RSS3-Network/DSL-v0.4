@@ -33,6 +33,7 @@ test: $(DIR_TEST)
 	gocovmerge $(DIR_TEST)/*.cover > $(FILE_COVERAGE)
 	# remove auto generate code
 	sed -i '/\/worker\/token\/contract\/erc20\.go/d' $(FILE_COVERAGE)
+	sed -i '/indexer\/internal\/worker\/crossbell\/contract/d' $(FILE_COVERAGE)
 
 # Open up a browser to view coverage report
 coverage: test

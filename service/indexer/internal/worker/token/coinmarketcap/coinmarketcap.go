@@ -48,6 +48,7 @@ var (
 		"ethereum":            {"ETH", ""},
 		"binance_smart_chain": {"BNB", "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"},   // BNB address (on BSC)
 		"polygon":             {"MATIC", "0x0000000000000000000000000000000000001010"}, // MATIC address (on polygon)
+		"xdai":                {"xDAI", "0x9c58bacc331c9aa871afd802db6379a98e80cedb"},  // xDAI address (on xDAI)
 	}
 )
 
@@ -167,7 +168,7 @@ func CachedGetCoinInfo(ctx context.Context, network, address string) (*model.Coi
 func getCoinInfoByNetwork(ctx context.Context, network string) (*model.CoinMarketCapCoinInfo, error) {
 	token, exists := Network2Token[network]
 	if !exists {
-		return nil, errors.New("symbol for the network not exists")
+		return nil, errors.New(network + ": symbol for the network not exists")
 	}
 
 	path := "/v2/cryptocurrency/info"
@@ -206,7 +207,7 @@ func getCoinInfoByNetwork(ctx context.Context, network string) (*model.CoinMarke
 func CachedGetCoinInfoByNetwork(ctx context.Context, network string) (*model.CoinMarketCapCoinInfo, error) {
 	token, exists := Network2Token[network]
 	if !exists {
-		return nil, errors.New("symbol for the network not exists")
+		return nil, errors.New(network + ": symbol for the network not exists")
 	}
 
 	result := &model.CoinMarketCapCoinInfo{}

@@ -146,7 +146,8 @@ func (s *service) handleCrossbell_XDAI(ctx context.Context, message *protocol.Me
 					return nil, err
 				}
 
-				if sourceData.ContractAddress != "" {
+				switch {
+				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress != "":
 					nftMetadata, err := nft.GetMetadata(
 						message.Network,
 						common.HexToAddress(sourceData.ContractAddress),
@@ -163,7 +164,29 @@ func (s *service) handleCrossbell_XDAI(ctx context.Context, message *protocol.Me
 						TokenValue:    &sourceData.Value,
 						NFTMetadata:   nftMetadata,
 					}
-					transfer.Tags = append(transfer.Tags, constant.TransferTagNFT.String())
+					transfer.Tags = append(transfer.Tags, constant.TransferTagErc721.String())
+				case message.Network == protocol.NetworkXDAI && sourceData.ContractAddress != "":
+					var coinInfo *model.CoinMarketCapCoinInfo
+					var err error
+					// if sourceData.ContractAddress != "" {
+					// 	coinInfo, err = coinmarketcap.CachedGetCoinInfo(ctx, message.Network, sourceData.ContractAddress)
+					// } else {
+					coinInfo, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, message.Network)
+					// }
+					if err != nil {
+						logrus.Error(err)
+					} else {
+						metadataModel.Token = &metadata.Token{
+							TokenAddress:  sourceData.ContractAddress,
+							TokenStandard: "erc20",
+							TokenValue:    &sourceData.Value,
+							Logo:          coinInfo.Logo,
+							Name:          coinInfo.Name,
+							Symbol:        coinInfo.Symbol,
+							Decimals:      coinInfo.Decimals,
+						}
+						transfer.Tags = append(transfer.Tags, constant.TransferTagErc20.String())
+					}
 				}
 
 				rawMetadata, err := json.Marshal(metadataModel)
@@ -247,7 +270,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					TokenValue:    &tokenValue,
 					NFTMetadata:   nftMetadata,
 				}
-				transfer.Tags = append(transfer.Tags, constant.TransferTagNFT.String())
+				transfer.Tags = append(transfer.Tags, constant.TransferTagErc721.String())
 			} else if _, exist = sourceDataMap["address"]; exist {
 				// Token transfer
 				tokenTransfer := moralisx.TokenTransfer{}
@@ -378,11 +401,9 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				}
 				transfer.Tags = append(transfer.Tags, constant.TransferTagErc721.String())
 			} else { // token
-				tokenID := decimal.NewFromInt(*tokenInfo.ID)
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  tokenInfo.Address,
 					TokenStandard: "erc20",
-					TokenID:       &tokenID,
 					TokenValue:    &amount,
 					Decimals:      tokenInfo.Decimals,
 					Symbol:        tokenInfo.Symbol,
