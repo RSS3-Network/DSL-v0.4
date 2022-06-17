@@ -28,10 +28,8 @@ const (
 	ABINameWeb3EntryProfile = "contract/event.abi"
 )
 
-var (
-	//go:embed contract/event.abi
-	ContractABIFileSystem embed.FS
-)
+//go:embed contract/event.abi
+var ContractABIFileSystem embed.FS
 
 var _ worker.Worker = (*Worker)(nil)
 
