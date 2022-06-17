@@ -29,7 +29,7 @@ func (d *Datasource) Name() string {
 
 func (d *Datasource) Networks() []string {
 	return []string{
-		protocol.NetworkEthereumClassic, protocol.NetworkXDAI,
+		protocol.NetworkEthereumClassic, protocol.NetworkXDAI, protocol.NetworkCrossbell,
 	}
 }
 
@@ -155,9 +155,10 @@ func (d *Datasource) handleTokenTransfers(ctx context.Context, message *protocol
 func New() datasource.Datasource {
 	return &Datasource{
 		blockscoutClientMap: map[string]*blockscout.Client{
-			protocol.NetworkEthereum:        blockscout.New(blockscout.NetworkEthereum),
-			protocol.NetworkEthereumClassic: blockscout.New(blockscout.NetworkEthereumClassic),
-			protocol.NetworkXDAI:            blockscout.New(blockscout.NetworkXDAI),
+			protocol.NetworkEthereum:        blockscout.New(blockscout.EndpointDefault, blockscout.NetworkEthereum),
+			protocol.NetworkEthereumClassic: blockscout.New(blockscout.EndpointDefault, blockscout.NetworkEthereumClassic),
+			protocol.NetworkXDAI:            blockscout.New(blockscout.EndpointDefault, blockscout.NetworkXDAI),
+			protocol.NetworkCrossbell:       blockscout.New(blockscout.EndpointCrossbell, blockscout.NetworkCrossbell),
 		},
 	}
 }

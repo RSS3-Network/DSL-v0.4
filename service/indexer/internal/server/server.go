@@ -23,6 +23,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
 	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
@@ -126,6 +127,7 @@ func (s *Server) Initialize() (err error) {
 		mirror.New(),
 		poapworker.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
+		crossbell.New(),
 	}
 
 	s.employer = shedlock.New(s.redisClient)

@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"math/big"
 
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
@@ -16,11 +17,12 @@ func init() {
 }
 
 type Metadata struct {
-	Token   *Token    `json:"token,omitempty"`
-	Swap    *SwapPool `json:"swap,omitempty"`
-	Mirror  *Mirror   `json:"mirror,omitempty"`
-	POAP    *POAP     `json:"poap,omitempty"`
-	Gitcoin *Gitcoin  `json:"gitcoin,omitempty"`
+	Token     *Token     `json:"token,omitempty"`
+	Swap      *SwapPool  `json:"swap,omitempty"`
+	Mirror    *Mirror    `json:"mirror,omitempty"`
+	POAP      *POAP      `json:"poap,omitempty"`
+	Gitcoin   *Gitcoin   `json:"gitcoin,omitempty"`
+	Crossbell *Crossbell `json:"crossbell,omitempty"`
 }
 
 type Token struct {
@@ -75,4 +77,20 @@ type POAP struct {
 	EndDate     string `json:"end_date"`
 	ExpiryDate  string `json:"expiry_date"`
 	TokenID     string `json:"token_id"`
+}
+
+type Crossbell struct {
+	TokenID       *big.Int        `json:"token_id,omitempty"`
+	TokenIDFrom   *big.Int        `json:"token_id_from,omitempty"`
+	TokenIDTo     *big.Int        `json:"token_id_to,omitempty"`
+	LinkListID    *big.Int        `json:"linklist_id,omitempty"`
+	ProfileID     *big.Int        `json:"profile_id,omitempty"`
+	ProfileIDFrom *big.Int        `json:"profile_id_from,omitempty"`
+	ProfileIDTo   *big.Int        `json:"profile_id_to,omitempty"`
+	LinkType      string          `json:"link_type,omitempty"`
+	URI           string          `json:"uri,omitempty"`
+	Handle        string          `json:"handle,omitempty"`
+	Metadata      json.RawMessage `json:"metadata,omitempty"`
+	MetadataFrom  json.RawMessage `json:"metadata_from,omitempty"`
+	MetadataTo    json.RawMessage `json:"metadata_to,omitempty"`
 }
