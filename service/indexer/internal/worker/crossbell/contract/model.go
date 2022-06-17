@@ -4,7 +4,7 @@ import (
 	"math/big"
 )
 
-type ProfileCreatedData struct {
+type ProfileCreated struct {
 	Handle    string
 	Timestamp *big.Int
 }
@@ -37,6 +37,6 @@ type UnlinkProfile struct {
 	LinkType [32]byte
 }
 
-type SetProfileUriData struct {
+type SetProfileUri struct {
 	NewUri string
 }

@@ -34,8 +34,12 @@ func TestName(t *testing.T) {
 	}
 
 	for _, transaction := range transactions {
+		t.Log(transaction)
+
 		for _, transfer := range transaction.Transfers {
-			t.Log(string(transfer.Metadata))
+			t.Log(transfer)
+
+			t.Log(transfer.Type, string(transfer.Metadata))
 		}
 	}
 }

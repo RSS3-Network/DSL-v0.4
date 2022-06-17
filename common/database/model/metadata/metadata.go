@@ -2,9 +2,10 @@ package metadata
 
 import (
 	"encoding/json"
+	"math/big"
+
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
-	"math/big"
 )
 
 var Default json.RawMessage
@@ -21,7 +22,7 @@ type Metadata struct {
 	Mirror    *Mirror    `json:"mirror,omitempty"`
 	POAP      *POAP      `json:"poap,omitempty"`
 	Gitcoin   *Gitcoin   `json:"gitcoin,omitempty"`
-	CrossBell *CrossBell `json:"crossbell,omitempty"`
+	Crossbell *Crossbell `json:"crossbell,omitempty"`
 }
 
 type Token struct {
@@ -78,11 +79,18 @@ type POAP struct {
 	TokenID     string `json:"token_id"`
 }
 
-type CrossBell struct {
-	Event          string          `json:"event"`
-	ProfileID      *big.Int        `json:"profile_id"`
-	Handle         string          `json:"handle,omitempty"`
-	AddressCreator string          `json:"address_creator,omitempty"`
-	AddressOwner   string          `json:"address_owner,omitempty"`
-	Metadata       json.RawMessage `json:"metadata,omitempty"`
+type Crossbell struct {
+	TokenID       *big.Int        `json:"token_id,omitempty"`
+	TokenIDFrom   *big.Int        `json:"token_id_from,omitempty"`
+	TokenIDTo     *big.Int        `json:"token_id_to,omitempty"`
+	LinkListID    *big.Int        `json:"linklist_id,omitempty"`
+	ProfileID     *big.Int        `json:"profile_id,omitempty"`
+	ProfileIDFrom *big.Int        `json:"profile_id_from,omitempty"`
+	ProfileIDTo   *big.Int        `json:"profile_id_to,omitempty"`
+	LinkType      string          `json:"link_type,omitempty"`
+	URI           string          `json:"uri,omitempty"`
+	Handle        string          `json:"handle,omitempty"`
+	Metadata      json.RawMessage `json:"metadata,omitempty"`
+	MetadataFrom  json.RawMessage `json:"metadata_from,omitempty"`
+	MetadataTo    json.RawMessage `json:"metadata_to,omitempty"`
 }

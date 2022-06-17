@@ -3,14 +3,19 @@ package crossbell
 import (
 	"context"
 	"embed"
+	"encoding/json"
+	"errors"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/handler"
+	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 )
 
 //go:generate abigen --abi ./contract/erc721.abi --pkg contract --type ERC721 --out ./contract/erc721.go
@@ -18,8 +23,7 @@ import (
 const (
 	Name = "crossbell"
 
-	Endpoint     = "https://rpc.crossbell.io"
-	EndpointIPFS = "https://ipfs.io"
+	Endpoint = "https://rpc.crossbell.io"
 
 	ABINameWeb3EntryProfile = "contract/event.abi"
 )
@@ -74,21 +78,59 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 	for _, transaction := range transactions {
 		addressTo := common.HexToAddress(transaction.AddressTo)
 
-		if addressTo != handler.AddressLinkListTokenProxy && addressTo != handler.AddressWeb3EntryProfileProxy {
+		// Processing of transactions for contracts Profile and LinkList only
+		if addressTo != handler.AddressProfileProxy && addressTo != handler.AddressLinkListTokenProxy {
 			continue
 		}
 
+		// Retain the action model of the transfer type
+		transferMap := make(map[decimal.Decimal]model.Transfer)
+
+		for _, transfer := range transaction.Transfers {
+			transferMap[transfer.TransactionLogIndex] = transfer
+		}
+
+		// Empty transfer data to avoid data duplication
 		transaction.Transfers = make([]model.Transfer, 0)
 
+		// Get the raw data directly via Ethereum RPC node
 		receipt, err := w.ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
 		if err != nil {
 			return nil, err
 		}
 
 		for _, log := range receipt.Logs {
-			internalTransfer, err := w.handler.Handle(ctx, &transaction, log)
+			logIndex := decimal.NewFromInt(int64(log.Index))
+
+			transfer, exist := transferMap[logIndex]
+			if !exist {
+				sourceData, err := json.Marshal(log)
+				if err != nil {
+					return nil, err
+				}
+
+				// Virtual transfer
+				transfer = model.Transfer{
+					TransactionHash:     transaction.Hash,
+					Timestamp:           transaction.Timestamp,
+					TransactionLogIndex: logIndex,
+					AddressFrom:         transaction.AddressFrom,
+					Metadata:            metadata.Default,
+					Network:             message.Network,
+					Source:              protocol.SourceOrigin,
+					SourceData:          sourceData,
+				}
+			}
+
+			internalTransfer, err := w.handler.Handle(ctx, transaction, transfer)
 			if err != nil {
-				return nil, err
+				if errors.Is(err, handler.ErrorUnknownUnknownEvent) {
+					continue
+				}
+
+				logrus.Error(err)
+
+				continue
 			}
 
 			transaction.Transfers = append(transaction.Transfers, *internalTransfer)

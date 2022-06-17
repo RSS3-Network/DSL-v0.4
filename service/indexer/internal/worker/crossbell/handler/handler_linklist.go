@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
 )
@@ -16,6 +15,6 @@ type linkList struct {
 	abi      abi.ABI
 }
 
-func (l *linkList) Handle(ctx context.Context, transaction *model.Transaction, log *types.Log) (*model.Transfer, error) {
-	return nil, nil
+func (l *linkList) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+	return nil, ErrorUnknownUnknownEvent
 }
