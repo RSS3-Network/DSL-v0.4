@@ -23,8 +23,6 @@ type SnapshotSpaceJob struct {
 
 var traceSpaceJob = "space_job"
 
-const LimitOnce = 1000
-
 func (job *SnapshotSpaceJob) Name() string {
 	return "snapshot_space_job"
 }
@@ -88,9 +86,9 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 	}
 
 	// get space info from url
-	skip := statusStroge.Pos + LimitOnce
+	skip := statusStroge.Pos + job.Limit
 	variable := snapshot.GetMultipleSpacesVariable{
-		First:          LimitOnce,
+		First:          graphql.Int(job.Limit),
 		Skip:           graphql.Int(skip),
 		OrderBy:        "created",
 		OrderDirection: snapshot.OrderDirectionAsc,
@@ -105,7 +103,7 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 	// nolint:gocritic // dont' want change nan things
 	if len(spaces) == 0 {
 		statusStroge.Status = PullInfoStatusLatest
-	} else if len(spaces) < LimitOnce {
+	} else if len(spaces) < int(job.Limit) {
 		setInDb = true
 		statusStroge.Pos = statusStroge.Pos + int32(len(spaces))
 		statusStroge.Status = PullInfoStatusLatest

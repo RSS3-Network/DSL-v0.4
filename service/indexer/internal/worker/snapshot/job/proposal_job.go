@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"time"
 
 	"github.com/hasura/go-graphql-client"
@@ -33,7 +34,7 @@ func (job *SnapshotProposalJob) Timeout() time.Duration {
 	return time.Minute
 }
 
-func (job *SnapshotProposalJob) Run() {
+func (job *SnapshotProposalJob) Run(renewal worker.RenewalFunc) error {
 	// nolint:ineffassign // just an initialization
 	sleepTime := time.Second
 
@@ -80,9 +81,9 @@ func (job *SnapshotProposalJob) InnerJobRun() (PullInfoStatus, error) {
 	}
 
 	// get proposal info from url
-	skip := statusStroge.Pos + LimitOnce
+	skip := statusStroge.Pos + job.Limit
 	variable := snapshot.GetMultipleProposalsVariable{
-		First:          LimitOnce,
+		First:          graphql.Int(job.Limit),
 		Skip:           graphql.Int(skip),
 		OrderBy:        "created",
 		OrderDirection: snapshot.OrderDirectionAsc,
@@ -97,7 +98,7 @@ func (job *SnapshotProposalJob) InnerJobRun() (PullInfoStatus, error) {
 	// nolint:gocritic // dont' want change nan things
 	if len(proposals) == 0 {
 		statusStroge.Status = PullInfoStatusLatest
-	} else if len(proposals) < LimitOnce {
+	} else if len(proposals) < int(job.Limit) {
 		setInDb = true
 		statusStroge.Pos = statusStroge.Pos + int32(len(proposals))
 		statusStroge.Status = PullInfoStatusLatest

@@ -39,31 +39,70 @@ func init() {
 }
 
 func TestSnapshotSpaceInnerJob(t *testing.T) {
-	spaceJob := job.SnapshotSpaceJob{
-		SnapshotJobBase: job.SnapshotJobBase{
-			Name:           "snapshot_space_job",
-			DatabaseClient: databaseClient,
-			RedisClient:    redisClient,
-			SnapshotClient: snapshotClient,
-		},
-	}
+	count := 0
 
-	if _, err := spaceJob.InnerJobRun(); err != nil {
-		t.Error(err)
+	for {
+		if count > 2 {
+			break
+		}
+
+		spaceJob := job.SnapshotSpaceJob{
+			SnapshotJobBase: job.SnapshotJobBase{
+				Name:           "snapshot_space_job",
+				DatabaseClient: databaseClient,
+				RedisClient:    redisClient,
+				SnapshotClient: snapshotClient,
+				Limit:          100,
+			},
+		}
+
+		if _, err := spaceJob.InnerJobRun(); err != nil {
+			panic(err)
+		}
 	}
 }
 
 func TestSnapshotProposalInnerJob(t *testing.T) {
-	proposalJob := job.SnapshotProposalJob{
-		SnapshotJobBase: job.SnapshotJobBase{
-			Name:           "snapshot_proposal_job",
-			DatabaseClient: databaseClient,
-			RedisClient:    redisClient,
-			SnapshotClient: snapshotClient,
-		},
-	}
+	count := 0
 
-	if _, err := proposalJob.InnerJobRun(); err != nil {
-		t.Error(err)
+	for {
+		if count > 2 {
+			break
+		}
+
+		proposalJob := job.SnapshotProposalJob{
+			SnapshotJobBase: job.SnapshotJobBase{
+				Name:           "snapshot_proposal_job",
+				DatabaseClient: databaseClient,
+				RedisClient:    redisClient,
+				SnapshotClient: snapshotClient,
+			},
+		}
+
+		if _, err := proposalJob.InnerJobRun(); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func TestSnapshotVoteInnerJob(t *testing.T) {
+	count := 0
+
+	for {
+		if count > 2 {
+			break
+		}
+		voteJob := job.SnapshotVoteJob{
+			SnapshotJobBase: job.SnapshotJobBase{
+				Name:           "snapshot_proposal_job",
+				DatabaseClient: databaseClient,
+				RedisClient:    redisClient,
+				SnapshotClient: snapshotClient,
+			},
+		}
+
+		if _, err := voteJob.InnerJobRun(); err != nil {
+			t.Error(err)
+		}
 	}
 }

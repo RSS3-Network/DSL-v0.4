@@ -30,6 +30,8 @@ type SnapshotJobBase struct {
 	DatabaseClient *gorm.DB
 	RedisClient    *redis.Client
 	SnapshotClient *snapshot.Client
+
+	Limit int32
 }
 
 func (job *SnapshotJobBase) Check() error {
