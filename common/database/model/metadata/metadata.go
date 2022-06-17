@@ -16,11 +16,12 @@ func init() {
 }
 
 type Metadata struct {
-	Token   *Token    `json:"token,omitempty"`
-	Swap    *SwapPool `json:"swap,omitempty"`
-	Mirror  *Mirror   `json:"mirror,omitempty"`
-	POAP    *POAP     `json:"poap,omitempty"`
-	Gitcoin *Gitcoin  `json:"gitcoin,omitempty"`
+	Token    *Token    `json:"token,omitempty"`
+	Swap     *SwapPool `json:"swap,omitempty"`
+	Mirror   *Mirror   `json:"mirror,omitempty"`
+	POAP     *POAP     `json:"poap,omitempty"`
+	Gitcoin  *Gitcoin  `json:"gitcoin,omitempty"`
+	SnapShot *SnapShot `json:"snapshot,omitempty"`
 }
 
 type Token struct {
@@ -75,4 +76,10 @@ type POAP struct {
 	EndDate     string `json:"end_date"`
 	ExpiryDate  string `json:"expiry_date"`
 	TokenID     string `json:"token_id"`
+}
+
+type SnapShot struct {
+	Proposal string `json:"proposal"`
+	Space    string `json:"space"`
+	Choice   int    `json:"choice"`
 }

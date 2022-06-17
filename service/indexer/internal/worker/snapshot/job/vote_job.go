@@ -2,7 +2,6 @@ package job
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -151,17 +150,12 @@ func (job *SnapshotVoteJob) setVoteInDB(ctx context.Context, graphqlVotes []grap
 	votes := []model.SnapshotVote{}
 
 	for _, graphqlVote := range graphqlVotes {
-		metadata, err := json.Marshal(graphqlVote)
-		if err != nil {
-			logrus.Warnf("[snapshot vote job] marshal vote metadata, error: %v", err)
-			continue
-		}
-
 		vote := model.SnapshotVote{
 			ID:          string(graphqlVote.Id),
 			Voter:       string(graphqlVote.Voter),
+			Choice:      int(graphqlVote.Choice),
 			ProposalID:  string(graphqlVote.Proposal.Id),
-			Metadata:    metadata,
+			SpaceID:     string(graphqlVote.Space.Id),
 			DateCreated: time.Unix(int64(graphqlVote.Created), 0),
 		}
 

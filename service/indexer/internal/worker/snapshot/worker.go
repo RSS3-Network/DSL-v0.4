@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 )
@@ -100,11 +101,45 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		spaceIDs = append(spaceIDs, space.ID)
 	}
 
-	proposalMap := s.getSnapshotProposals(ctx, proposalIDs)
+	proposalMap, err := s.getSnapshotProposals(ctx, proposalIDs)
+	if err != nil {
+		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot proposals: %w", err)
+	}
 
-	spaceMap := s.getSnapshotSpaces(ctx, spaceIDs, snapshotNetworkNum)
+	spaceMap, err := s.getSnapshotSpaces(ctx, spaceIDs, snapshotNetworkNum)
+	if err != nil {
+		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot spaces: %w", err)
+	}
 
 	for _, vote := range votes {
+		var metadataModel metadata.Metadata
+
+		proposal, ok := proposalMap[vote.ProposalID]
+		if !ok {
+			logrus.Warnf("[snapshot worker] failed to get proposal:%v", vote.ProposalID)
+			proposal = model.SnapshotProposal{}
+		}
+
+		space, ok := spaceMap[vote.SpaceID]
+		if !ok {
+			logrus.Warnf("[snapshot worker] failed to get space:%v", vote.SpaceID)
+			space = model.SnapshotSpace{}
+		}
+
+		var snapShotMetadata = metadata.SnapShot{
+			Proposal: string(proposal.Metadata),
+			Space:    string(space.Metadata),
+			Choice:   vote.Choice,
+		}
+
+		metadataModel.SnapShot = &snapShotMetadata
+
+		rawMetadata, err := json.Marshal(metadataModel)
+		if err != nil {
+			logrus.Warnf("[snapshot worker] failed to marshal metadata:%v", err)
+			continue
+		}
+
 		transactions = append(transactions, model.Transaction{
 			Hash:        vote.ID,
 			Timestamp:   vote.DateCreated,
@@ -116,7 +151,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 					Timestamp:           vote.DateCreated,
 					TransactionLogIndex: protocol.LogIndexVirtual,
 					AddressFrom:         message.Address,
-					Metadata:            json.RawMessage{},
+					Metadata:            rawMetadata,
 					Network:             message.Network,
 				},
 			},

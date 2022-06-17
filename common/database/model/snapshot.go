@@ -32,6 +32,7 @@ func (SnapshotProposal) TableName() string {
 type SnapshotVote struct {
 	ID          string    `gorm:"column:id;primaryKey" json:"id"`
 	Voter       string    `gorm:"column:voter" json:"voter"`
+	Choice      int       `gorm:"column:choice" json:"choice"`
 	ProposalID  string    `gorm:"column:proposal_id" json:"proposal_id"`
 	SpaceID     string    `gorm:"column:space_id" json:"space_id"`
 	DateCreated time.Time `gorm:"column:date_created;index:index_note_date_created" json:"date_created"`

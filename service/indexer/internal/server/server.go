@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -126,6 +127,7 @@ func (s *Server) Initialize() (err error) {
 		mirror.New(),
 		poapworker.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
+		snapshot.New(s.databaseClient, s.redisClient),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
