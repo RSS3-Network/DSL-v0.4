@@ -159,6 +159,7 @@ func (job *SnapshotVoteJob) setVoteInDB(ctx context.Context, graphqlVotes []grap
 
 		vote := model.SnapshotVote{
 			ID:          string(graphqlVote.Id),
+			Voter:       string(graphqlVote.Voter),
 			ProposalID:  string(graphqlVote.Proposal.Id),
 			Metadata:    metadata,
 			DateCreated: time.Unix(int64(graphqlVote.Created), 0),
