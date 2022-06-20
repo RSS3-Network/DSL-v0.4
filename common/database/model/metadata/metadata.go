@@ -100,5 +100,5 @@ type Lens struct {
 	Type    string          `json:"type"`
 	Content string          `json:"content"`
 	Media   json.RawMessage `json:"media"`
-	Target  json.RawMessage `json:"target"`
+	Target  json.RawMessage `json:"target,omitempty"`
 }
