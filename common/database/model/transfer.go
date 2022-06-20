@@ -19,6 +19,7 @@ type Transfer struct {
 	Metadata            json.RawMessage `gorm:"column:metadata;type:jsonb;default:'{}'" json:"metadata"`
 	Network             string          `gorm:"column:network;primaryKey" json:"-"`
 	Source              string          `gorm:"column:source" json:"-"`
+	Platform            string          `gorm:"column:platform" json:"-"`
 	SourceData          json.RawMessage `gorm:"column:source_data;type:jsonb" json:"-"`
 	RelatedUrls         pq.StringArray  `gorm:"column:related_urls;type:text[]" json:"related_urls"`
 	CreatedAt           time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index" json:"-"`

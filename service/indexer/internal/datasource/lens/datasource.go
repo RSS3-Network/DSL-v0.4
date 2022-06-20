@@ -108,7 +108,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			Source:      d.Name(),
 			SourceData:  sourceData,
 			Transfers: []model.Transfer{
-				// This is a virtual transfer
 				{
 					Type:            Source,
 					TransactionHash: string(publication.ID),
@@ -117,6 +116,8 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 					AddressTo:       "",
 					Metadata:        rawMetadata,
 					Network:         protocol.NetworkPolygon,
+					Platform:        string(publication.Platform),
+					RelatedUrls:     []string{string(publication.RelatedURL)},
 					Source:          d.Name(),
 					SourceData:      sourceData,
 				},
