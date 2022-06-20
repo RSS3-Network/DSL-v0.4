@@ -3,6 +3,7 @@ package gitcoin
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 
 	"github.com/naturalselectionlabs/pregod/common/constant"
 
@@ -74,7 +75,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			transfer.Type = "donate"
 			transfer.Tags = append(transfer.Tags, constant.TransferTagGitcoin.String(), constant.TransferTagDonation.String())
-			transfer.RelatedUrls = append(transfer.RelatedUrls, utils.GetTxHashURL(transfer.Network, transfer.TransactionHash))
+			transfer.RelatedUrls = append(transfer.RelatedUrls, utils.GetTxHashURL(transfer.Network, transfer.TransactionHash), "https://gitcoin.co/grants"+strconv.Itoa(project.Id)+"/"+project.Slug)
 
 			// format metadata
 			var metadataModel metadata.Metadata
