@@ -73,7 +73,7 @@ func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graph
 	var query struct {
 		Publications struct {
 			Items []struct {
-				Post    graphqlx.Publication `graphql:"... on Post"`
+				Post    graphqlx.Post        `graphql:"... on Post"`
 				Comment graphqlx.Publication `graphql:"... on Comment"`
 			}
 			PageInfo graphqlx.PageInfo
@@ -105,7 +105,7 @@ func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graph
 			for _, item := range query.Publications.Items {
 				// both item.Post and item.Comment contain the same data
 				// here we only want to append one of them
-				result = append(result, item.Post)
+				result = append(result, item.Comment)
 			}
 			if query.Publications.PageInfo.Next != "" {
 				options.Cursor = query.Publications.PageInfo.Next

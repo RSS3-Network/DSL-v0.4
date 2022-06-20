@@ -94,6 +94,24 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			Media:   media,
 		}
 
+		if publication.Type == "Comment" {
+			var target json.RawMessage
+
+			switch publication.CommentOn.Post.Type {
+			case "Post":
+				target, err = json.Marshal(publication.CommentOn.Post)
+				if err != nil {
+					return nil, err
+				}
+			case "Comment":
+				target, err = json.Marshal(publication.CommentOn.Comment)
+				if err != nil {
+					return nil, err
+				}
+			}
+			metadataModel.Lens.Target = target
+		}
+
 		rawMetadata, err := json.Marshal(metadataModel)
 		if err != nil {
 			return nil, err
