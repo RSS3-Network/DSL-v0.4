@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	NetworkEthereum = "ethereum"
-	NetworkPolygon  = "polygon"
-	NetworkBinance  = "binance"
+	NetworkEthereum  = "ethereum"
+	NetworkPolygon   = "polygon"
+	NetworkBinance   = "binance"
+	NetworkCrossbell = "crossbell"
 
 	MaxSize = 1024 * 8
 )
@@ -43,6 +44,8 @@ func GetMetadata(network string, contractAddress common.Address, tokenID *big.In
 		ethereumEndpoint = fmt.Sprintf("https://polygon-mainnet.infura.io/v3/%s", ProjectID)
 	case NetworkBinance:
 		ethereumEndpoint = "https://bsc-dataseed.binance.org"
+	case NetworkCrossbell:
+		ethereumEndpoint = "https://rpc.crossbell.io"
 	default:
 		return nil, errors.New("network not support")
 	}

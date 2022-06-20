@@ -11,7 +11,10 @@ import (
 )
 
 func setup() {
-	database.Dial("postgres://postgres:password@127.0.0.1:5432/pregod2", true)
+	db, _ := database.Dial("postgres://postgres:password@127.0.0.1:5432/pregod2", true)
+	db.Delete(model.GetNFTTokenInfo{})
+	db.Delete(model.GetTokenInfo{})
+	db.Delete(model.CoinMarketCapCoinInfo{})
 	coinmarketcap.Init("11f16fe7-7036-42c7-8155-1524d74b05eb")
 }
 

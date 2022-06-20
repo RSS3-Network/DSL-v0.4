@@ -38,8 +38,8 @@ func (d *Datasource) Networks() []string {
 	}
 }
 
-func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
-	internalTransfers := make([]model.Transfer, 0)
+func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	transactions := make([]model.Transaction, 0)
 
 	// read the last cursor value from the database
 	var lensCursor model.LensCursor
@@ -72,7 +72,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 	// returns when no results are found
 	if len(result) == 0 {
-		return internalTransfers, nil
+		return transactions, nil
 	}
 
 	for _, publication := range result {
@@ -99,16 +99,28 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			return nil, err
 		}
 
-		internalTransfers = append(internalTransfers, model.Transfer{
-			Type:            Source,
-			TransactionHash: string(publication.ID),
-			Timestamp:       publication.CreatedAt,
-			AddressFrom:     message.Address,
-			AddressTo:       "",
-			Metadata:        rawMetadata,
-			Network:         protocol.NetworkPolygon,
-			Source:          Source,
-			SourceData:      sourceData,
+		transactions = append(transactions, model.Transaction{
+			Timestamp:   publication.CreatedAt,
+			Hash:        string(publication.ID),
+			AddressFrom: message.Address,
+			AddressTo:   "",
+			Network:     message.Network,
+			Source:      d.Name(),
+			SourceData:  sourceData,
+			Transfers: []model.Transfer{
+				// This is a virtual transfer
+				{
+					Type:            Source,
+					TransactionHash: string(publication.ID),
+					Timestamp:       publication.CreatedAt,
+					AddressFrom:     message.Address,
+					AddressTo:       "",
+					Metadata:        rawMetadata,
+					Network:         protocol.NetworkPolygon,
+					Source:          d.Name(),
+					SourceData:      sourceData,
+				},
+			},
 		})
 	}
 
@@ -124,7 +136,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		return nil, err
 	}
 
-	return internalTransfers, nil
+	return transactions, nil
 }
 
 func New(databaseClient *gorm.DB) datasource.Datasource {

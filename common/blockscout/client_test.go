@@ -8,7 +8,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/blockscout"
 )
 
-var client = blockscout.New(blockscout.NetworkXDAI)
+var client = blockscout.New(blockscout.EndpointCrossbell, blockscout.NetworkCrossbell)
 
 func TestGetTransactionList(t *testing.T) {
 	transactions, _, err := client.GetTransactionList(
@@ -26,16 +26,16 @@ func TestGetTransactionList(t *testing.T) {
 }
 
 func TestGetTokenTransactionList(t *testing.T) {
-	transactions, _, err := client.GetTokenTransactionList(
+	transactions, _, err := client.GetTransactionList(
 		context.Background(),
 		common.HexToAddress("0x000000A52a03835517E9d193B3c27626e1Bc96b1"),
-		&blockscout.GetTokenTransactionListOption{},
+		&blockscout.GetTransactionListOption{},
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for _, transaction := range transactions {
-		t.Log(transaction)
+		t.Log(transaction.From, transaction.To)
 	}
 }

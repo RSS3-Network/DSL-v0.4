@@ -12,6 +12,7 @@ const (
 	NetworkOptimism          = "optimism"
 	NetworkFantom            = "fantom"
 	NetworkAvalanche         = "avalanche"
+	NetworkCrossbell         = "crossbell"
 )
 
 func NetworkToID(networkName string) string {

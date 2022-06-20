@@ -10,5 +10,5 @@ import (
 type Datasource interface {
 	Name() string
 	Networks() []string
-	Handle(ctx context.Context, message *protocol.Message) ([]model.Transfer, error)
+	Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error)
 }

@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"time"
 
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/lens"
 
@@ -23,6 +25,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
 	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
@@ -120,7 +125,12 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		token.New(s.databaseClient), swap.New(s.databaseClient), mirror.New(), poapworker.New(),
+		token.New(s.databaseClient),
+		swap.New(s.employer, s.databaseClient),
+		mirror.New(),
+		poapworker.New(),
+		gitcoin.New(s.databaseClient, s.redisClient),
+		crossbell.New(),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
@@ -135,7 +145,7 @@ func (s *Server) Initialize() (err error) {
 		}
 
 		for _, job := range internalWorker.Jobs() {
-			if err := s.employer.AddJob(job.Name(), job.Spec(), job.Timeout(), job); err != nil {
+			if err := s.employer.AddJob(job.Name(), job.Spec(), job.Timeout(), worker.NewCronJob(s.employer, job)); err != nil {
 				return err
 			}
 		}
@@ -177,38 +187,72 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) handle(ctx context.Context, message *protocol.Message) (err error) {
-	logrus.Infoln(message.Address, message.Network)
+	logrus.Info(message.Address, message.Network)
 
-	// TODO Query the latest time of existing data, which is used to avoid data being reworked
+	// Get data from datasources
+	var transactions []model.Transaction
 
-	transfers := make([]model.Transfer, 0)
-
-	for _, internalDatasource := range s.datasources {
-		supportedNetwork := false
-
-		for _, network := range internalDatasource.Networks() {
+	for _, datasource := range s.datasources {
+		for _, network := range datasource.Networks() {
 			if network == message.Network {
-				supportedNetwork = true
+				// Get the time of the latest data for this address and network
+				var timestamp time.Time
 
-				break
+				if err := s.databaseClient.
+					Model((*model.Transaction)(nil)).
+					Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp").
+					Where(map[string]interface{}{
+						"address_from": message.Address,
+						"network":      message.Network,
+					}).
+					Or(map[string]interface{}{
+						"address_to": message.Address,
+						"network":    message.Network,
+					}).
+					Order("timestamp DESC").
+					Limit(1).
+					Pluck("timestamp", &timestamp).
+					Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+					return err
+				}
+
+				message.Timestamp = timestamp
+
+				internalTransactions, err := datasource.Handle(ctx, message)
+				if err != nil {
+					return err
+				}
+
+				transactions = append(transactions, internalTransactions...)
 			}
 		}
-
-		if !supportedNetwork {
-			continue
-		}
-
-		internalTransfers, err := internalDatasource.Handle(ctx, message)
-		if err != nil {
-			logrus.Errorln(internalDatasource.Name(), err)
-
-			return err
-		}
-
-		transfers = append(transfers, internalTransfers...)
 	}
 
-	if len(transfers) == 0 {
+	if err := s.upsertTransactions(ctx, transactions); err != nil {
+		return err
+	}
+
+	// Using workers to clean data
+	for _, worker := range s.workers {
+		for _, network := range worker.Networks() {
+			if network == message.Network {
+				internalTransactions, err := worker.Handle(ctx, message, transactions)
+				if err != nil {
+					return err
+				}
+
+				if err := s.upsertTransactions(ctx, internalTransactions); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Transaction) error {
+	if len(transactions) == 0 {
 		return nil
 	}
 
@@ -216,47 +260,23 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).
-		Create(transfers).Error; err != nil {
+		Create(transactions).Error; err != nil {
 		return err
 	}
 
-	for _, internalWorker := range s.workers {
-		supportedNetwork := false
-
-		for _, network := range internalWorker.Networks() {
-			if network == message.Network {
-				supportedNetwork = true
-
-				break
-			}
-		}
-
-		if !supportedNetwork {
-			continue
-		}
-
-		internalTransfers, err := internalWorker.Handle(context.Background(), message, transfers)
-		if err != nil {
-			logrus.Errorln(internalWorker.Name(), err)
-
-			return err
-		}
-
-		if len(internalTransfers) == 0 {
-			continue
+	for _, transaction := range transactions {
+		if len(transaction.Transfers) == 0 {
+			return nil
 		}
 
 		if err := s.databaseClient.
 			Clauses(clause.OnConflict{
-				DoUpdates: clause.AssignmentColumns([]string{"metadata"}),
 				UpdateAll: true,
+				DoUpdates: clause.AssignmentColumns([]string{"metadata"}),
 			}).
-			Create(internalTransfers).Error; err != nil {
-			logrus.Errorln(err)
+			Create(transaction.Transfers).Error; err != nil {
 			return err
 		}
-
-		transfers = internalTransfers
 	}
 
 	return nil

@@ -11,7 +11,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
-	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -30,79 +30,159 @@ func (d *Datasource) Name() string {
 
 func (d *Datasource) Networks() []string {
 	return []string{
-		protocol.NetworkEthereumClassic, protocol.NetworkXDAI,
+		protocol.NetworkEthereumClassic, protocol.NetworkXDAI, protocol.NetworkCrossbell,
 	}
 }
 
-func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
-	internalTransfers := make([]model.Transfer, 0)
+func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	internalTransactionMap := make(map[string]model.Transaction)
 
-	blockscoutClient := d.blockscoutClientMap[message.Network]
-
-	tokenTransactions, _, err := blockscoutClient.GetTokenTransactionList(ctx, common.HexToAddress(message.Address), &blockscout.GetTokenTransactionListOption{})
+	// Get transactions
+	internalTransactions, err := d.handleTransactions(ctx, message)
 	if err != nil {
 		return nil, err
 	}
 
-	tokenTransactionMap := map[string]struct{}{}
-	for _, transaction := range tokenTransactions {
-		tokenTransactionMap[transaction.Hash] = struct{}{}
-
-		sourceData, err := json.Marshal(transaction)
-		if err != nil {
-			return nil, err
-		}
-
-		internalTransfers = append(internalTransfers, model.Transfer{
-			TransactionHash:     transaction.Hash,
-			Timestamp:           time.Unix(transaction.TimeStamp.BigInt().Int64(), 0),
-			TransactionLogIndex: transaction.LogIndex,
-			AddressFrom:         transaction.From,
-			AddressTo:           transaction.To,
-			Metadata:            metadata.Default,
-			Network:             message.Network,
-			Source:              d.Name(),
-			SourceData:          sourceData,
-		})
+	for _, internalTransaction := range internalTransactions {
+		internalTransactionMap[internalTransaction.Hash] = internalTransaction
 	}
 
-	transactions, _, err := blockscoutClient.GetTransactionList(ctx, common.HexToAddress(message.Address), &blockscout.GetTransactionListOption{})
+	// Get token transfers
+	internalTokenTransfers, err := d.handleTokenTransfers(ctx, message)
 	if err != nil {
-		return nil, err
+		logrus.Error(err)
+		// return nil, err
 	}
 
-	for _, transaction := range transactions {
-		if _, exist := tokenTransactionMap[transaction.Hash]; exist {
+	for _, internalTokenTransfer := range internalTokenTransfers {
+		value, exist := internalTransactionMap[internalTokenTransfer.TransactionHash]
+		if !exist {
 			continue
 		}
 
-		sourceData, err := json.Marshal(transaction)
+		value.Transfers = append(value.Transfers, internalTokenTransfer)
+
+		internalTransactionMap[internalTokenTransfer.TransactionHash] = value
+	}
+
+	transactions := make([]model.Transaction, 0)
+
+	for _, internalTransaction := range internalTransactionMap {
+		transactions = append(transactions, internalTransaction)
+	}
+
+	return transactions, nil
+}
+
+func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	transactions := make([]model.Transaction, 0)
+
+	// Use a different Client for different networks
+	blockscoutClient := d.blockscoutClientMap[message.Network]
+
+	internalTransactions, _, err := blockscoutClient.GetTransactionList(ctx, common.HexToAddress(message.Address), &blockscout.GetTransactionListOption{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, internalTransaction := range internalTransactions {
+		sourceData, err := json.Marshal(internalTransaction)
 		if err != nil {
 			return nil, err
 		}
 
-		internalTransfers = append(internalTransfers, model.Transfer{
-			TransactionHash:     transaction.Hash,
-			Timestamp:           time.Unix(transaction.TimeStamp.BigInt().Int64(), 0),
-			TransactionLogIndex: decimal.Zero,
-			AddressFrom:         transaction.From,
-			AddressTo:           transaction.To,
-			Metadata:            metadata.Default,
-			Network:             message.Network,
-			Source:              d.Name(),
-			SourceData:          sourceData,
+		timestamp := time.Unix(internalTransaction.TimeStamp.BigInt().Int64(), 0)
+
+		transactions = append(transactions, model.Transaction{
+			Hash:        internalTransaction.Hash,
+			Timestamp:   timestamp,
+			AddressFrom: internalTransaction.From,
+			AddressTo:   internalTransaction.To,
+			Network:     message.Network,
+			Source:      d.Name(),
+			SourceData:  sourceData,
+			Transfers: []model.Transfer{
+				// This is a virtual transfer
+				{
+					TransactionHash:     internalTransaction.Hash,
+					Timestamp:           timestamp,
+					TransactionLogIndex: protocol.LogIndexVirtual,
+					AddressFrom:         internalTransaction.From,
+					AddressTo:           internalTransaction.To,
+					Metadata:            metadata.Default,
+					Network:             message.Network,
+					Source:              d.Name(),
+					SourceData:          sourceData,
+					RelatedUrls:         GetTxRelatedURLs(message.Network, internalTransaction.Hash),
+				},
+			},
 		})
 	}
 
-	return internalTransfers, nil
+	return transactions, nil
+}
+
+func (d *Datasource) handleTokenTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
+	transfers := make([]model.Transfer, 0)
+
+	// Use a different Client for different networks
+	blockscoutClient := d.blockscoutClientMap[message.Network]
+
+	internalTokenTransfers, _, err := blockscoutClient.GetTokenTransactionList(ctx, common.HexToAddress(message.Address), &blockscout.GetTokenTransactionListOption{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, internalTokenTransfer := range internalTokenTransfers {
+		sourceData, err := json.Marshal(internalTokenTransfer)
+		if err != nil {
+			return nil, err
+		}
+
+		transfers = append(transfers, model.Transfer{
+			TransactionHash:     internalTokenTransfer.Hash,
+			Timestamp:           time.Unix(internalTokenTransfer.TimeStamp.BigInt().Int64(), 0),
+			TransactionLogIndex: internalTokenTransfer.LogIndex,
+			AddressFrom:         internalTokenTransfer.From,
+			AddressTo:           internalTokenTransfer.To,
+			Network:             message.Network,
+			Source:              d.Name(),
+			SourceData:          sourceData,
+			RelatedUrls:         GetTxRelatedURLs(message.Network, internalTokenTransfer.Hash),
+		})
+	}
+
+	return transfers, nil
+}
+
+// Returns related urls based on the network and contract tx hash.
+func GetTxRelatedURLs(
+	network string,
+	transactionHash string,
+) []string {
+	var urls []string
+
+	switch network {
+	case protocol.NetworkCrossbell:
+		urls = append(urls, "https://scan.crossbell.io/tx/"+transactionHash)
+	case protocol.NetworkXDAI:
+		urls = append(urls, "https://blockscout.com/xdai/mainnet/tx/"+transactionHash)
+	case protocol.NetworkEthereum:
+		urls = append(urls, "https://blockscout.com/eth/mainnet/tx/"+transactionHash)
+	case protocol.NetworkEthereumClassic:
+		urls = append(urls, "https://blockscout.com/etc/mainnet/tx/"+transactionHash)
+	}
+
+	return urls
 }
 
 func New() datasource.Datasource {
 	return &Datasource{
 		blockscoutClientMap: map[string]*blockscout.Client{
-			protocol.NetworkEthereum:        blockscout.New(blockscout.NetworkEthereum),
-			protocol.NetworkEthereumClassic: blockscout.New(blockscout.NetworkEthereumClassic),
-			protocol.NetworkXDAI:            blockscout.New(blockscout.NetworkXDAI),
+			protocol.NetworkEthereum:        blockscout.New(blockscout.EndpointDefault, blockscout.NetworkEthereum),
+			protocol.NetworkEthereumClassic: blockscout.New(blockscout.EndpointDefault, blockscout.NetworkEthereumClassic),
+			protocol.NetworkXDAI:            blockscout.New(blockscout.EndpointDefault, blockscout.NetworkXDAI),
+			protocol.NetworkCrossbell:       blockscout.New(blockscout.EndpointCrossbell, blockscout.NetworkCrossbell),
 		},
 	}
 }
