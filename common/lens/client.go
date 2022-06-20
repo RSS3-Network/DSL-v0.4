@@ -111,7 +111,7 @@ func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graph
 					Metadata:   item.Post.Metadata,
 				}
 				// assign the right target to the publication
-				if err := AssignTarget(&item, &publication); err != nil {
+				if err := assignTarget(&item, &publication); err != nil {
 					return nil, err
 				}
 
@@ -126,7 +126,7 @@ func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graph
 	return result, nil
 }
 
-func AssignTarget(item *graphqlx.Item, publication *graphqlx.Publication) error {
+func assignTarget(item *graphqlx.Item, publication *graphqlx.Publication) error {
 	var target json.RawMessage
 	var err error
 
