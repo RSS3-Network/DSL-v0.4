@@ -32,3 +32,6 @@ coinmarketcap:
 
 infura:
   projectid: ""
+
+gateway:
+  endpoint: ""
