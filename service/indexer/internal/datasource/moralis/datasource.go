@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/moralis"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/shopspring/decimal"
 )
@@ -298,7 +299,7 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 				Network:             message.Network,
 				Source:              d.Name(),
 				SourceData:          sourceData,
-				RelatedUrls:         GetTxRelatedURLs(message.Network, internalNFTTransfer.TokenAddress, internalNFTTransfer.TokenId, &internalNFTTransfer.TransactionHash),
+				RelatedUrls:         []string{utils.GetTxHashURL(message.Network, internalNFTTransfer.TransactionHash)},
 			},
 		}
 	}
