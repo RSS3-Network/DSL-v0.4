@@ -2,6 +2,7 @@ package lens
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 
@@ -16,6 +17,8 @@ const (
 	// EndpointLimit : the maximum number of items that can be returned in a single query
 	EndpointLimit = 25
 )
+
+var PublicationType = []PublicationTypes{"POST", "COMMENT", "MIRROR"}
 
 type Client struct {
 	graphqlClient *graphql.Client
@@ -72,17 +75,14 @@ type (
 func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graphqlx.Publication, error) {
 	var query struct {
 		Publications struct {
-			Items []struct {
-				Post    graphqlx.Post        `graphql:"... on Post"`
-				Comment graphqlx.Publication `graphql:"... on Comment"`
-			}
+			Items    []graphqlx.Item
 			PageInfo graphqlx.PageInfo
 		} `graphql:"publications(request: $request)"`
 	}
 
 	variable := PublicationsQueryRequest{
 		ProfileId:        options.Profile,
-		PublicationTypes: []PublicationTypes{"POST", "COMMENT"},
+		PublicationTypes: PublicationType,
 		Cursor:           options.Cursor,
 	}
 
@@ -103,9 +103,19 @@ func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graph
 			}
 
 			for _, item := range query.Publications.Items {
-				// both item.Post and item.Comment contain the same data
-				// here we only want to append one of them
-				result = append(result, item.Comment)
+				publication := graphqlx.Publication{
+					Type:       item.Post.Type,
+					ID:         item.Post.ID,
+					RelatedURL: item.Post.RelatedURL,
+					Platform:   item.Post.Platform,
+					Metadata:   item.Post.Metadata,
+				}
+				// assign the right target to the publication
+				if err := AssignTarget(&item, &publication); err != nil {
+					return nil, err
+				}
+
+				result = append(result, publication)
 			}
 			if query.Publications.PageInfo.Next != "" {
 				options.Cursor = query.Publications.PageInfo.Next
@@ -114,6 +124,45 @@ func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graph
 	}
 
 	return result, nil
+}
+
+func AssignTarget(item *graphqlx.Item, publication *graphqlx.Publication) error {
+	var target json.RawMessage
+	var err error
+
+	// a target can either be a Post or a Comment
+	switch publication.Type {
+	case "Comment":
+		if item.Comment.CommentOn.Post.Type == "Post" {
+			target, err = json.Marshal(item.Comment.CommentOn.Post)
+			if err != nil {
+				return err
+			}
+		} else {
+			target, err = json.Marshal(item.Comment.CommentOn.Comment)
+			if err != nil {
+				return err
+			}
+		}
+
+	case "Mirror":
+		if item.Mirror.MirrorOf.Post.Type == "Post" {
+			target, err = json.Marshal(item.Mirror.MirrorOf.Post)
+			if err != nil {
+				return err
+			}
+		} else {
+			{
+				target, err = json.Marshal(item.Mirror.MirrorOf.Comment)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	publication.Target = target
+	return nil
 }
 
 func (c *Client) GetPublicationPageInfo(ctx context.Context, options *Options) error {
@@ -125,7 +174,7 @@ func (c *Client) GetPublicationPageInfo(ctx context.Context, options *Options) e
 
 	variable := PublicationsQueryRequest{
 		ProfileId:        options.Profile,
-		PublicationTypes: []PublicationTypes{"POST", "COMMENT"},
+		PublicationTypes: PublicationType,
 		Cursor:           graphql.String("{}"),
 	}
 
