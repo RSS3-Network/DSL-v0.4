@@ -5,21 +5,11 @@ postgres:
   password: password
   database: pregod2
 
-rabbitmq:
-  tls: false
-  host: 127.0.0.1
-  port: 5672
-  user: guest
-  password: guest
-
 opentelemetry:
   enabled: false
   host: 127.0.0.1
   port: 14268
   path: /api/traces
-
-moralis:
-  key:
 
 redis:
   tls: false
@@ -27,8 +17,5 @@ redis:
   db: 0
   password: ''
 
-coinmarketcap:
-  apikey: ""
-
-infura:
-  projectid: ""
+gateway:
+  ethendpoint: ""

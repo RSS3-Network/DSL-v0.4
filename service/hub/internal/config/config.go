@@ -11,5 +11,4 @@ type Config struct {
 	Postgres      *configx.Postgres      `mapstructure:"postgres"`
 	Redis         *configx.Redis         `mapstructure:"redis"`
 	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
-	Gateway       *configx.Gateway       `mapstructure:"gateway"`
 }
