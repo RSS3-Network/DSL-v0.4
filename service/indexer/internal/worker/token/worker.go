@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/blockscout"
 	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -42,7 +43,12 @@ func (s *service) Name() string {
 
 func (s *service) Networks() []string {
 	return []string{
-		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkZkSync,
+		protocol.NetworkEthereum,
+		protocol.NetworkPolygon,
+		protocol.NetworkBinanceSmartChain,
+		protocol.NetworkZkSync,
+		protocol.NetworkCrossbell,
+		protocol.NetworkXDAI,
 	}
 }
 
@@ -117,9 +123,101 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		return s.handleEthereum(ctx, message, transactions)
 	case protocol.NetworkZkSync:
 		return s.handleZkSync(ctx, message, transactions)
+	case protocol.NetworkCrossbell, protocol.NetworkXDAI:
+		return s.handleCrossbell_XDAI(ctx, message, transactions)
 	}
 
 	return []model.Transaction{}, nil
+}
+
+// handle crossbell / XDAI NFT (link list / profile)
+func (s *service) handleCrossbell_XDAI(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	internalTransactionMap := make(map[string]model.Transaction)
+
+	for _, transaction := range transactions {
+		for _, transfer := range transaction.Transfers {
+			if transfer.Source == "blockscout" {
+				sourceData := blockscout.Transaction{}
+				metadataModel := metadata.Metadata{}
+				if err := json.Unmarshal(transfer.SourceData, &sourceData); err != nil {
+					return nil, err
+				}
+				if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
+					return nil, err
+				}
+
+				switch {
+				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress != "":
+					nftMetadata, err := nft.GetMetadata(
+						message.Network,
+						common.HexToAddress(sourceData.ContractAddress),
+						sourceData.TokenID.BigInt(),
+					)
+					if err != nil { // print err but no return
+						logrus.Errorf("%s: %v", message.Network, err)
+					}
+
+					metadataModel.Token = &metadata.Token{
+						TokenAddress:  sourceData.ContractAddress,
+						TokenStandard: "erc721",
+						TokenID:       &sourceData.TokenID,
+						TokenValue:    &sourceData.Value,
+						NFTMetadata:   nftMetadata,
+					}
+					transfer.Tags = append(transfer.Tags, constant.TransferTagErc721.String())
+				case message.Network == protocol.NetworkXDAI && sourceData.ContractAddress != "":
+					var coinInfo *model.CoinMarketCapCoinInfo
+					var err error
+					// if sourceData.ContractAddress != "" {
+					// 	coinInfo, err = coinmarketcap.CachedGetCoinInfo(ctx, message.Network, sourceData.ContractAddress)
+					// } else {
+					coinInfo, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, message.Network)
+					// }
+					if err != nil {
+						logrus.Error(err)
+					} else {
+						metadataModel.Token = &metadata.Token{
+							TokenAddress:  sourceData.ContractAddress,
+							TokenStandard: "erc20",
+							TokenValue:    &sourceData.Value,
+							Logo:          coinInfo.Logo,
+							Name:          coinInfo.Name,
+							Symbol:        coinInfo.Symbol,
+							Decimals:      coinInfo.Decimals,
+						}
+						transfer.Tags = append(transfer.Tags, constant.TransferTagErc20.String())
+					}
+				}
+
+				rawMetadata, err := json.Marshal(metadataModel)
+				if err != nil {
+					return nil, err
+				}
+				transfer.Metadata = rawMetadata
+			}
+			transfer.Type = "transfer"
+
+			// Copy the transaction to map
+			value, exist := internalTransactionMap[transaction.Hash]
+			if !exist {
+				value = transaction
+
+				// Ignore transfers data that will not be updated
+				value.Transfers = make([]model.Transfer, 0)
+			}
+
+			value.Transfers = append(value.Transfers, transfer)
+			internalTransactionMap[transaction.Hash] = value
+		}
+	}
+
+	internalTransactions := make([]model.Transaction, 0)
+
+	for _, internalTransaction := range internalTransactionMap {
+		internalTransactions = append(internalTransactions, internalTransaction)
+	}
+
+	return internalTransactions, nil
 }
 
 func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
@@ -172,7 +270,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					TokenValue:    &tokenValue,
 					NFTMetadata:   nftMetadata,
 				}
-				transfer.Tags = append(transfer.Tags, constant.TransferTagNFT.String())
+				transfer.Tags = append(transfer.Tags, constant.TransferTagErc721.String())
 			} else if _, exist = sourceDataMap["address"]; exist {
 				// Token transfer
 				tokenTransfer := moralisx.TokenTransfer{}
@@ -303,11 +401,9 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				}
 				transfer.Tags = append(transfer.Tags, constant.TransferTagErc721.String())
 			} else { // token
-				tokenID := decimal.NewFromInt(*tokenInfo.ID)
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  tokenInfo.Address,
 					TokenStandard: "erc20",
-					TokenID:       &tokenID,
 					TokenValue:    &amount,
 					Decimals:      tokenInfo.Decimals,
 					Symbol:        tokenInfo.Symbol,

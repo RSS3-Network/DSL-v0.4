@@ -11,6 +11,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -49,7 +50,8 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	// Get token transfers
 	internalTokenTransfers, err := d.handleTokenTransfers(ctx, message)
 	if err != nil {
-		return nil, err
+		logrus.Error(err)
+		// return nil, err
 	}
 
 	for _, internalTokenTransfer := range internalTokenTransfers {
@@ -111,7 +113,7 @@ func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.M
 					Network:             message.Network,
 					Source:              d.Name(),
 					SourceData:          sourceData,
-					RelatedUrls:         nil, // TODO
+					RelatedUrls:         GetTxRelatedURLs(message.Network, internalTransaction.Hash),
 				},
 			},
 		})
@@ -146,10 +148,32 @@ func (d *Datasource) handleTokenTransfers(ctx context.Context, message *protocol
 			Network:             message.Network,
 			Source:              d.Name(),
 			SourceData:          sourceData,
+			RelatedUrls:         GetTxRelatedURLs(message.Network, internalTokenTransfer.Hash),
 		})
 	}
 
 	return transfers, nil
+}
+
+// Returns related urls based on the network and contract tx hash.
+func GetTxRelatedURLs(
+	network string,
+	transactionHash string,
+) []string {
+	var urls []string
+
+	switch network {
+	case protocol.NetworkCrossbell:
+		urls = append(urls, "https://scan.crossbell.io/tx/"+transactionHash)
+	case protocol.NetworkXDAI:
+		urls = append(urls, "https://blockscout.com/xdai/mainnet/tx/"+transactionHash)
+	case protocol.NetworkEthereum:
+		urls = append(urls, "https://blockscout.com/eth/mainnet/tx/"+transactionHash)
+	case protocol.NetworkEthereumClassic:
+		urls = append(urls, "https://blockscout.com/etc/mainnet/tx/"+transactionHash)
+	}
+
+	return urls
 }
 
 func New() datasource.Datasource {
