@@ -45,9 +45,9 @@ func (job *SnapshotVoteJob) Run(renewal worker.RenewalFunc) error {
 		}
 
 		if pullInfoStatus == PullInfoStatusLatest {
-			sleepTime = time.Second
+			sleepTime = job.LowUpdateTime
 		} else {
-			sleepTime = time.Minute * 5
+			sleepTime = job.HighUpdateTime
 		}
 
 		if err = renewal(context.Background(), time.Minute); err != nil {

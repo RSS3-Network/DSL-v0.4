@@ -47,9 +47,9 @@ func (job *SnapshotProposalJob) Run(renewal worker.RenewalFunc) error {
 		}
 
 		if pullInfoStatus == PullInfoStatusLatest {
-			sleepTime = time.Second
+			sleepTime = job.LowUpdateTime
 		} else {
-			sleepTime = time.Minute * 5
+			sleepTime = job.HighUpdateTime
 		}
 
 		time.Sleep(sleepTime)

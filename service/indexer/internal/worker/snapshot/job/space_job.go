@@ -48,9 +48,9 @@ func (job *SnapshotSpaceJob) Run(renewal worker.RenewalFunc) error {
 		}
 
 		if pullInfoStatus == PullInfoStatusLatest {
-			sleepTime = time.Second
+			sleepTime = job.LowUpdateTime
 		} else {
-			sleepTime = time.Minute * 5
+			sleepTime = job.HighUpdateTime
 		}
 
 		if err = renewal(context.Background(), time.Minute); err != nil {
@@ -105,6 +105,8 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 			return statusStroge.Status, fmt.Errorf("[snapshot space job] pos[%d], set space in db, db error: %v", statusStroge.Pos, err)
 		}
 	}
+
+	logrus.Infof("[snapshot space job] pull skip [%d]", statusStroge.Pos)
 
 	skip = statusStroge.Pos + job.Limit
 	// nolint:gocritic // dont' want change nan things

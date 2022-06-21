@@ -170,6 +170,8 @@ func (s *service) Jobs() []worker.Job {
 				RedisClient:    s.redisClient,
 				SnapshotClient: s.snapshotClient,
 				Limit:          1000,
+				HighUpdateTime: time.Second,
+				LowUpdateTime:  time.Minute * 5,
 			},
 		},
 		&job.SnapshotProposalJob{
@@ -179,6 +181,8 @@ func (s *service) Jobs() []worker.Job {
 				RedisClient:    s.redisClient,
 				SnapshotClient: s.snapshotClient,
 				Limit:          2000,
+				HighUpdateTime: time.Second,
+				LowUpdateTime:  time.Minute * 5,
 			},
 		},
 		&job.SnapshotVoteJob{
@@ -188,6 +192,8 @@ func (s *service) Jobs() []worker.Job {
 				RedisClient:    s.redisClient,
 				SnapshotClient: s.snapshotClient,
 				Limit:          100000,
+				HighUpdateTime: time.Second,
+				LowUpdateTime:  time.Minute * 5,
 			},
 		},
 	}

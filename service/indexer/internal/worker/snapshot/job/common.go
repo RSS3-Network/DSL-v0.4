@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
+	"time"
 )
 
 type (
@@ -31,7 +32,9 @@ type SnapshotJobBase struct {
 	RedisClient    *redis.Client
 	SnapshotClient *snapshot.Client
 
-	Limit int32
+	Limit          int32
+	HighUpdateTime time.Duration
+	LowUpdateTime  time.Duration
 }
 
 func (job *SnapshotJobBase) Check() error {
