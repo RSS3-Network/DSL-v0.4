@@ -36,6 +36,8 @@ func (job *SnapshotVoteJob) Run(renewal worker.RenewalFunc) error {
 	// nolint:ineffassign // just an initialization
 	sleepTime := time.Second
 
+	logrus.Info("[snapshot vote job] run")
+
 	for {
 		pullInfoStatus, err := job.InnerJobRun()
 		if err != nil {
@@ -65,8 +67,6 @@ func (job *SnapshotVoteJob) InnerJobRun() (PullInfoStatus, error) {
 	ctx, runSnap := otel.Tracer(traceVoteJob).Start(context.Background(), "run")
 	defer runSnap.End()
 
-	logrus.Info("[snapshot vote job] run")
-
 	// get latest vote id
 	statusStroge, err := job.GetLastStatusFromCache(ctx)
 	if err != nil {
@@ -83,7 +83,8 @@ func (job *SnapshotVoteJob) InnerJobRun() (PullInfoStatus, error) {
 	}
 
 	// get vote info from url
-	skip := statusStroge.Pos + job.Limit
+	skip := statusStroge.Pos
+
 	variable := snapshot.GetMultipleVotesVariable{
 		First:          graphql.Int(job.Limit),
 		Skip:           graphql.Int(skip),
@@ -96,25 +97,23 @@ func (job *SnapshotVoteJob) InnerJobRun() (PullInfoStatus, error) {
 		return statusStroge.Status, fmt.Errorf("[snapshot vote job] get multiple votes, graphql error: %v", err)
 	}
 
-	setInDb := false
+	// set vote info in db
+	if len(votes) > 0 {
+		if err := job.setVoteInDB(ctx, votes); err != nil {
+			return statusStroge.Status, fmt.Errorf("[snapshot vote job] pos[%d], set vote in db, db error: %v", statusStroge.Pos, err)
+		}
+	}
+
+	skip = statusStroge.Pos + job.Limit
 	// nolint:gocritic // dont' want change nan things
 	if len(votes) == 0 {
 		statusStroge.Status = PullInfoStatusLatest
 	} else if len(votes) < int(job.Limit) {
-		setInDb = true
 		statusStroge.Pos = statusStroge.Pos + int32(len(votes))
 		statusStroge.Status = PullInfoStatusLatest
 	} else {
-		setInDb = true
 		statusStroge.Pos = skip
 		statusStroge.Status = PullInfoStatusNotLatest
-	}
-
-	// set vote info in db
-	if setInDb {
-		if err := job.setVoteInDB(ctx, votes); err != nil {
-			return statusStroge.Status, fmt.Errorf("[snapshot vote job] pos[%d], set vote in db, db error: %v", statusStroge.Pos, err)
-		}
 	}
 
 	// set vote status in cache and db
@@ -150,10 +149,11 @@ func (job *SnapshotVoteJob) setVoteInDB(ctx context.Context, graphqlVotes []grap
 	votes := []model.SnapshotVote{}
 
 	for _, graphqlVote := range graphqlVotes {
+
 		vote := model.SnapshotVote{
 			ID:          string(graphqlVote.Id),
 			Voter:       string(graphqlVote.Voter),
-			Choice:      int(graphqlVote.Choice),
+			Choice:      graphqlVote.Choice,
 			ProposalID:  string(graphqlVote.Proposal.Id),
 			SpaceID:     string(graphqlVote.Space.Id),
 			DateCreated: time.Unix(int64(graphqlVote.Created), 0),

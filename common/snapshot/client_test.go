@@ -42,7 +42,7 @@ func TestGetMultipleProposals(t *testing.T) {
 		Skip:           graphql.Int(0),
 		OrderBy:        graphql.String("created"),
 		OrderDirection: snapshot.OrderDirectionAsc,
-		Where: &graphqlx.ProposalWhere{
+		Where: graphqlx.ProposalWhere{
 			Space_in: []graphql.String{"ens.eth"},
 			State:    graphql.String("closed"),
 		},
@@ -63,7 +63,7 @@ func TestGetMultipleVotes(t *testing.T) {
 		Skip:           graphql.Int(0),
 		OrderBy:        graphql.String("created"),
 		OrderDirection: snapshot.OrderDirectionAsc,
-		Where: &graphqlx.VoteWhere{
+		Where: graphqlx.VoteWhere{
 			Proposal: graphql.String("QmPvbwguLfcVryzBRrbY4Pb9bCtxURagdv1XjhtFLf3wHj"),
 		},
 	}

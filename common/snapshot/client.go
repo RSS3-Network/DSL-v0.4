@@ -73,11 +73,11 @@ func (c *Client) GetMultipleSpaces(ctx context.Context, variable GetMultipleSpac
 }
 
 type GetMultipleProposalsVariable struct {
-	First          graphql.Int             `json:"first"`
-	Skip           graphql.Int             `json:"skip"`
-	Where          *graphqlx.ProposalWhere `json:"where"`
-	OrderBy        graphql.String          `json:"orderBy"`
-	OrderDirection OrderDirection          `json:"orderDirection"`
+	First          graphql.Int            `json:"first"`
+	Skip           graphql.Int            `json:"skip"`
+	Where          graphqlx.ProposalWhere `json:"where"`
+	OrderBy        graphql.String         `json:"orderBy"`
+	OrderDirection OrderDirection         `json:"orderDirection"`
 }
 
 func (c *Client) GetMultipleProposals(ctx context.Context, variable GetMultipleProposalsVariable) ([]graphqlx.Proposal, error) {
@@ -105,11 +105,7 @@ func (c *Client) GetMultipleProposals(ctx context.Context, variable GetMultipleP
 		return nil, fmt.Errorf("variable 'OrderBy' must not be nil")
 	}
 
-	if (variable.Where.Space_in != nil && len(variable.Where.Space_in) > 0) ||
-		variable.Where.State != "" {
-		variableMap["where"] = variable.Where
-	}
-
+	variableMap["where"] = variable.Where
 	variableMap["orderDirection"] = variable.OrderDirection
 
 	fmt.Printf("variableMap: %v\n", variableMap)
@@ -124,7 +120,7 @@ func (c *Client) GetMultipleProposals(ctx context.Context, variable GetMultipleP
 type GetMultipleVotesVariable struct {
 	First          graphql.Int
 	Skip           graphql.Int
-	Where          *graphqlx.VoteWhere
+	Where          graphqlx.VoteWhere
 	OrderBy        graphql.String
 	OrderDirection OrderDirection
 }
@@ -154,11 +150,7 @@ func (c *Client) GetMultipleVotes(ctx context.Context, variable GetMultipleVotes
 		return nil, fmt.Errorf("variable 'OrderBy' must not be nil")
 	}
 
-	if variable.Where != nil &&
-		variable.Where.Proposal != "" {
-		variableMap["where"] = variable.Where
-	}
-
+	variableMap["where"] = variable.Where
 	variableMap["orderDirection"] = variable.OrderDirection
 
 	if err := c.graphqlClient.Query(ctx, &query, variableMap); err != nil {

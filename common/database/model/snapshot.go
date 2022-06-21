@@ -18,11 +18,12 @@ func (SnapshotSpace) TableName() string {
 }
 
 type SnapshotProposal struct {
-	ID        string          `gorm:"column:id;primaryKey" json:"id"`
-	SpaceID   string          `gorm:"column:space_id" json:"space_id"`
-	Metadata  json.RawMessage `gorm:"column:metadata;type:jsonb" json:"metadata"`
-	CreatedAt time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index"`
-	UpdatedAt time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index"`
+	ID          string          `gorm:"column:id;primaryKey" json:"id"`
+	SpaceID     string          `gorm:"column:space_id" json:"space_id"`
+	Metadata    json.RawMessage `gorm:"column:metadata;type:jsonb" json:"metadata"`
+	DateCreated time.Time       `gorm:"column:date_created;index:index_note_date_created" json:"date_created"`
+	CreatedAt   time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index"`
+	UpdatedAt   time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index"`
 }
 
 func (SnapshotProposal) TableName() string {
@@ -30,14 +31,14 @@ func (SnapshotProposal) TableName() string {
 }
 
 type SnapshotVote struct {
-	ID          string    `gorm:"column:id;primaryKey" json:"id"`
-	Voter       string    `gorm:"column:voter" json:"voter"`
-	Choice      int       `gorm:"column:choice" json:"choice"`
-	ProposalID  string    `gorm:"column:proposal_id" json:"proposal_id"`
-	SpaceID     string    `gorm:"column:space_id" json:"space_id"`
-	DateCreated time.Time `gorm:"column:date_created;index:index_note_date_created" json:"date_created"`
-	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime;not null;default:now();index"`
-	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index"`
+	ID          string          `gorm:"column:id;primaryKey" json:"id"`
+	Voter       string          `gorm:"column:voter" json:"voter"`
+	Choice      json.RawMessage `gorm:"column:choice;type:jsonb" json:"choice"`
+	ProposalID  string          `gorm:"column:proposal_id" json:"proposal_id"`
+	SpaceID     string          `gorm:"column:space_id" json:"space_id"`
+	DateCreated time.Time       `gorm:"column:date_created;index:index_note_date_created" json:"date_created"`
+	CreatedAt   time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index"`
+	UpdatedAt   time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index"`
 }
 
 func (SnapshotVote) TableName() string {

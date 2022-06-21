@@ -60,6 +60,7 @@ type Proposal struct {
 	State    graphql.String   `json:"state"`
 	Author   graphql.String   `json:"author"`
 	Space    ProposalSpace    `json:"space"`
+	Created  graphql.Int      `json:"created"`
 }
 
 type ProposalWhere struct {
@@ -78,12 +79,12 @@ type VoteSpace struct {
 }
 
 type Vote struct {
-	Id       graphql.String `json:"id"`
-	Voter    graphql.String `json:"voter"`
-	Created  graphql.Int    `json:"created"`
-	Proposal VoteProposal   `json:"proposal"`
-	Choice   graphql.Int    `json:"choice"`
-	Space    VoteSpace      `json:"space"`
+	Id       graphql.String  `json:"id"`
+	Voter    graphql.String  `json:"voter"`
+	Created  graphql.Int     `json:"created"`
+	Proposal VoteProposal    `json:"proposal"`
+	Choice   json.RawMessage `json:"choice"`
+	Space    VoteSpace       `json:"space"`
 }
 
 type VoteWhere struct {

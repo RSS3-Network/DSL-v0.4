@@ -38,6 +38,8 @@ func (job *SnapshotProposalJob) Run(renewal worker.RenewalFunc) error {
 	// nolint:ineffassign // just an initialization
 	sleepTime := time.Second
 
+	logrus.Info("[snapshot proposal job] run")
+
 	for {
 		pullInfoStatus, err := job.InnerJobRun()
 		if err != nil {
@@ -63,8 +65,6 @@ func (job *SnapshotProposalJob) InnerJobRun() (PullInfoStatus, error) {
 	ctx, runSnap := otel.Tracer(traceProposalJob).Start(context.Background(), "run")
 	defer runSnap.End()
 
-	logrus.Info("[snapshot proposal job] run")
-
 	// get latest proposal id
 	statusStroge, err := job.GetLastStatusFromCache(ctx)
 	if err != nil {
@@ -81,7 +81,7 @@ func (job *SnapshotProposalJob) InnerJobRun() (PullInfoStatus, error) {
 	}
 
 	// get proposal info from url
-	skip := statusStroge.Pos + job.Limit
+	skip := statusStroge.Pos
 	variable := snapshot.GetMultipleProposalsVariable{
 		First:          graphql.Int(job.Limit),
 		Skip:           graphql.Int(skip),
@@ -94,28 +94,31 @@ func (job *SnapshotProposalJob) InnerJobRun() (PullInfoStatus, error) {
 		return statusStroge.Status, fmt.Errorf("[snapshot proposal job] get multiple proposals, graphql error: %v", err)
 	}
 
-	setInDb := false
-	// nolint:gocritic // dont' want change nan things
-	if len(proposals) == 0 {
-		statusStroge.Status = PullInfoStatusLatest
-	} else if len(proposals) < int(job.Limit) {
-		setInDb = true
-		statusStroge.Pos = statusStroge.Pos + int32(len(proposals))
-		statusStroge.Status = PullInfoStatusLatest
-	} else {
-		setInDb = true
-		statusStroge.Pos = skip
-		statusStroge.Status = PullInfoStatusNotLatest
-	}
-
-	// set proposal info in db
-	if setInDb {
+	if len(proposals) > 0 {
 		if err := job.setProposalsInDB(ctx, proposals); err != nil {
 			return statusStroge.Status, fmt.Errorf("[snapshot proposal job] pos[%d], set proposal in db, db error: %v", statusStroge.Pos, err)
 		}
 	}
 
-	return PullInfoStatusLatest, nil
+	skip = statusStroge.Pos + job.Limit
+	// nolint:gocritic // dont' want change nan things
+	if len(proposals) == 0 {
+		statusStroge.Status = PullInfoStatusLatest
+	} else if len(proposals) < int(job.Limit) {
+		statusStroge.Pos = statusStroge.Pos + int32(len(proposals))
+		statusStroge.Status = PullInfoStatusLatest
+	} else {
+		statusStroge.Pos = skip
+		statusStroge.Status = PullInfoStatusNotLatest
+	}
+
+	// set space status in cache and db
+	err = job.SetCurrentStatus(ctx, statusStroge)
+	if err != nil {
+		return statusStroge.Status, fmt.Errorf("[snapshot proposal job] set current status, db error: %v", err)
+	}
+
+	return statusStroge.Status, nil
 }
 
 func (job *SnapshotProposalJob) getProposalTotalFromDB(ctx context.Context) (int32, error) {
@@ -149,9 +152,10 @@ func (job *SnapshotProposalJob) setProposalsInDB(ctx context.Context, graphqlpro
 		}
 
 		proposal := model.SnapshotProposal{
-			ID:       string(graphqlproposal.Id),
-			SpaceID:  string(graphqlproposal.Id),
-			Metadata: metadata,
+			ID:          string(graphqlproposal.Id),
+			SpaceID:     string(graphqlproposal.Space.Id),
+			DateCreated: time.Unix(int64(graphqlproposal.Created), 0),
+			Metadata:    metadata,
 		}
 
 		proposals = append(proposals, proposal)

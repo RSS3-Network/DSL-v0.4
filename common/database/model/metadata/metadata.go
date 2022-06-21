@@ -79,7 +79,7 @@ type POAP struct {
 }
 
 type SnapShot struct {
-	Proposal string `json:"proposal"`
-	Space    string `json:"space"`
-	Choice   int    `json:"choice"`
+	Proposal json.RawMessage `json:"proposal"`
+	Space    json.RawMessage `json:"space"`
+	Choice   json.RawMessage `json:"choice"`
 }

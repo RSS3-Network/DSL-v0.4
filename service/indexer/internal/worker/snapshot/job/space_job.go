@@ -39,6 +39,8 @@ func (job *SnapshotSpaceJob) Run(renewal worker.RenewalFunc) error {
 	// nolint:ineffassign // just an initialization
 	sleepTime := time.Second
 
+	logrus.Info("[snapshot space job] run")
+
 	for {
 		pullInfoStatus, err := job.InnerJobRun()
 		if err != nil {
@@ -68,8 +70,6 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 	ctx, runSnap := otel.Tracer(traceSpaceJob).Start(context.Background(), "run")
 	defer runSnap.End()
 
-	logrus.Info("[snapshot space job] run")
-
 	// get latest space id
 	statusStroge, err := job.GetLastStatusFromCache(ctx)
 	if err != nil {
@@ -86,7 +86,7 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 	}
 
 	// get space info from url
-	skip := statusStroge.Pos + job.Limit
+	skip := statusStroge.Pos
 	variable := snapshot.GetMultipleSpacesVariable{
 		First:          graphql.Int(job.Limit),
 		Skip:           graphql.Int(skip),
@@ -99,25 +99,23 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 		return statusStroge.Status, fmt.Errorf("[snapshot space job] get multiple spaces, graphql error: %v", err)
 	}
 
-	setInDb := false
+	// set space info in db
+	if len(spaces) > 0 {
+		if err := job.setSpaceInDB(ctx, spaces); err != nil {
+			return statusStroge.Status, fmt.Errorf("[snapshot space job] pos[%d], set space in db, db error: %v", statusStroge.Pos, err)
+		}
+	}
+
+	skip = statusStroge.Pos + job.Limit
 	// nolint:gocritic // dont' want change nan things
 	if len(spaces) == 0 {
 		statusStroge.Status = PullInfoStatusLatest
 	} else if len(spaces) < int(job.Limit) {
-		setInDb = true
 		statusStroge.Pos = statusStroge.Pos + int32(len(spaces))
 		statusStroge.Status = PullInfoStatusLatest
 	} else {
-		setInDb = true
 		statusStroge.Pos = skip
 		statusStroge.Status = PullInfoStatusNotLatest
-	}
-
-	// set space info in db
-	if setInDb {
-		if err := job.setSpaceInDB(ctx, spaces); err != nil {
-			return statusStroge.Status, fmt.Errorf("[snapshot space job] pos[%d], set space in db, db error: %v", statusStroge.Pos, err)
-		}
 	}
 
 	// set space status in cache and db

@@ -59,6 +59,8 @@ func TestSnapshotSpaceInnerJob(t *testing.T) {
 		if _, err := spaceJob.InnerJobRun(); err != nil {
 			panic(err)
 		}
+
+		count = count + 1
 	}
 }
 
@@ -82,6 +84,8 @@ func TestSnapshotProposalInnerJob(t *testing.T) {
 		if _, err := proposalJob.InnerJobRun(); err != nil {
 			panic(err)
 		}
+
+		count = count + 1
 	}
 }
 
@@ -94,15 +98,18 @@ func TestSnapshotVoteInnerJob(t *testing.T) {
 		}
 		voteJob := job.SnapshotVoteJob{
 			SnapshotJobBase: job.SnapshotJobBase{
-				Name:           "snapshot_proposal_job",
+				Name:           "snapshot_vote_job",
 				DatabaseClient: databaseClient,
 				RedisClient:    redisClient,
 				SnapshotClient: snapshotClient,
+				Limit:          100,
 			},
 		}
 
 		if _, err := voteJob.InnerJobRun(); err != nil {
 			t.Error(err)
 		}
+
+		count = count + 1
 	}
 }
