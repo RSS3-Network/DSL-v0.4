@@ -109,6 +109,7 @@ func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graph
 					RelatedURL: item.Post.RelatedURL,
 					Platform:   item.Post.Platform,
 					Metadata:   item.Post.Metadata,
+					CreatedAt:  item.Post.CreatedAt,
 				}
 				// assign the right target to the publication
 				if err := assignTarget(&item, &publication); err != nil {
