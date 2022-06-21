@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
 	"time"
+
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
@@ -24,6 +25,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
 	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
@@ -128,6 +131,7 @@ func (s *Server) Initialize() (err error) {
 		poapworker.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
 		snapshot.New(s.databaseClient, s.redisClient),
+		crossbell.New(),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
