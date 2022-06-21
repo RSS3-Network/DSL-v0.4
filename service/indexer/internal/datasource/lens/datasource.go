@@ -6,16 +6,19 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/shurcooL/graphql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
-
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/lens"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/action"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/shurcooL/graphql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
+
+// lens datasource handles all the work of fetching data from the lens API
+// including the worker logic
 
 const (
 	Source = "lens"
@@ -34,7 +37,7 @@ func (d *Datasource) Name() string {
 
 func (d *Datasource) Networks() []string {
 	return []string{
-		protocol.NetworkArweave,
+		protocol.NetworkPolygon,
 	}
 }
 
@@ -64,7 +67,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		Cursor:     graphql.String(lensCursor.Cursor),
 		TotalCount: 0,
 	}
-
+	// handle publications
 	result, err := d.lensClient.GetAllPublicationsByAddress(ctx, &options)
 	if err != nil {
 		return nil, err
@@ -113,13 +116,14 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			SourceData:  sourceData,
 			Transfers: []model.Transfer{
 				{
-					Type:            Source,
-					TransactionHash: string(publication.ID),
+					Type:            getType(string(publication.Type)),
+					Tag:             action.TagSocial,
+					TransactionHash: Source + "-" + string(publication.ID),
 					Timestamp:       publication.CreatedAt,
 					AddressFrom:     message.Address,
 					AddressTo:       "",
 					Metadata:        rawMetadata,
-					Network:         protocol.NetworkPolygon,
+					Network:         Source,
 					Platform:        string(publication.Platform),
 					RelatedUrls:     []string{string(publication.RelatedURL)},
 					Source:          d.Name(),
@@ -142,6 +146,19 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	}
 
 	return transactions, nil
+}
+
+func getType(pubType string) string {
+	switch pubType {
+	case "Post":
+		return action.SocialPost
+	case "Comment":
+		return action.SocialComment
+	case "Mirror":
+		return action.SocialShare
+	}
+
+	return action.SocialPost
 }
 
 func New(databaseClient *gorm.DB) datasource.Datasource {
