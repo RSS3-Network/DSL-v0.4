@@ -2,10 +2,10 @@ package protocol
 
 import "github.com/shopspring/decimal"
 
-var (
-	ExchangeJob = "jobs"
-
+const (
+	Version         = ""
+	ExchangeJob     = "jobs"
 	ContentTypeJSON = "application/json"
-
-	LogIndexVirtual = decimal.NewFromInt(-1)
 )
+
+var LogIndexVirtual = decimal.NewFromInt(-1)

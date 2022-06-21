@@ -7,10 +7,10 @@ import (
 
 	"github.com/naturalselectionlabs/pregod/common/arweave"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
-	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/action"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 )
 
@@ -86,7 +86,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			transfer.Metadata = rawMetadata
-			transfer.Tags = append(transfer.Tags, constant.TransferTagMirror.String())
+			transfer.Tag = action.TagSocial
+			transfer.Type = action.SocialPost
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
