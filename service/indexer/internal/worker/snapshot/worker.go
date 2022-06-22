@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	mapset "github.com/deckarep/golang-set"
 	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/protocol/action"
@@ -12,8 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
-	"strings"
-	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -237,7 +238,7 @@ func (s *service) getSnapshotProposals(ctx context.Context, proposals []string) 
 	defer handlerSpan.End()
 
 	var snapshotProposals []model.SnapshotProposal
-	var snapshotProposalMap = make(map[string]model.SnapshotProposal)
+	snapshotProposalMap := make(map[string]model.SnapshotProposal)
 
 	// TODO:from redis
 
@@ -261,7 +262,7 @@ func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networ
 	defer handlerSpan.End()
 
 	var snapshotSpaces []model.SnapshotSpace
-	var snapshotSpaceMap = make(map[string]model.SnapshotSpace)
+	snapshotSpaceMap := make(map[string]model.SnapshotSpace)
 
 	// TODO:from redis
 
@@ -281,18 +282,19 @@ func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networ
 	return snapshotSpaceMap, nil
 }
 
-// TODO
+//nolint:unused // TODO
 func (s *service) setSnapshotVotesInCache(ctx context.Context) {}
 
-// TODO
+//nolint:unused // TODO
 func (s *service) setSnapshotProposalsInCache(ctx context.Context) {}
 
-// TODO
+//nolint:unused // TODO
 func (s *service) setSnapshotSpacesInCache(ctx context.Context) {}
 
 func New(
 	databaseClient *gorm.DB,
-	redisClient *redis.Client) worker.Worker {
+	redisClient *redis.Client,
+) worker.Worker {
 	return &service{
 		databaseClient: databaseClient,
 		redisClient:    redisClient,

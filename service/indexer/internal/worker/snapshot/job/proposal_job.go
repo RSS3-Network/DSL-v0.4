@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"time"
+
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 
 	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
