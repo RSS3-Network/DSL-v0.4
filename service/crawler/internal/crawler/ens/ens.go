@@ -87,7 +87,9 @@ func (s *service) Run() error {
 	go func() {
 		time.Sleep(time.Second)
 
-		s.employer.Renewal(ctx, s.Name(), 10*time.Second)
+		if err := s.employer.Renewal(ctx, s.Name(), 10*time.Second); err != nil {
+			logrus.Errorf("[crawler] ens: employer renewal error, %v", err)
+		}
 	}()
 
 	if err := s.subscribeEns(); err != nil {
@@ -157,7 +159,11 @@ func (s *service) subscribeEns() error {
 				}
 
 				// create a rabbitmq job to index the latest user data
-				go s.createRabbitmqJob(owner.String())
+				go func() {
+					if err := s.createRabbitmqJob(owner.String()); err != nil {
+						logrus.Errorf("[crawler] ens: createRabbitmqJob error, %v", err)
+					}
+				}()
 			}
 		}
 	}

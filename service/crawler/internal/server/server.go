@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -110,10 +111,12 @@ func (s *Server) Run() error {
 
 	defer s.employer.Stop()
 
-	for _, c := range s.crawlers {
-		go func() {
-			c.Run()
-		}()
+	for _, internalCrawler := range s.crawlers {
+		go func(internalCrawler crawler.Crawler) {
+			if err := internalCrawler.Run(); err != nil {
+				logrus.Errorf("[crawler] run error: %v", err)
+			}
+		}(internalCrawler)
 	}
 
 	return nil
