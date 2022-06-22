@@ -9,12 +9,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/blockscout"
-	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	moralisx "github.com/naturalselectionlabs/pregod/common/moralis"
 	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/action"
 	"github.com/naturalselectionlabs/pregod/common/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
@@ -159,12 +159,12 @@ func (s *service) handleCrossbell_XDAI(ctx context.Context, message *protocol.Me
 
 					metadataModel.Token = &metadata.Token{
 						TokenAddress:  sourceData.ContractAddress,
-						TokenStandard: "erc721",
+						TokenStandard: protocol.TokenTypeERC721,
 						TokenID:       &sourceData.TokenID,
 						TokenValue:    &sourceData.Value,
 						NFTMetadata:   nftMetadata,
 					}
-					transfer.Tags = append(transfer.Tags, constant.TransferTagErc721.String())
+					transfer.Tag = action.TagTransaction
 				case message.Network == protocol.NetworkXDAI && sourceData.ContractAddress != "":
 					var coinInfo *model.CoinMarketCapCoinInfo
 					var err error
@@ -178,14 +178,14 @@ func (s *service) handleCrossbell_XDAI(ctx context.Context, message *protocol.Me
 					} else {
 						metadataModel.Token = &metadata.Token{
 							TokenAddress:  sourceData.ContractAddress,
-							TokenStandard: "erc20",
+							TokenStandard: protocol.TokenTypeERC20,
 							TokenValue:    &sourceData.Value,
 							Logo:          coinInfo.Logo,
 							Name:          coinInfo.Name,
 							Symbol:        coinInfo.Symbol,
 							Decimals:      coinInfo.Decimals,
 						}
-						transfer.Tags = append(transfer.Tags, constant.TransferTagErc20.String())
+						transfer.Tag = action.TagTransaction
 					}
 				}
 
@@ -195,7 +195,7 @@ func (s *service) handleCrossbell_XDAI(ctx context.Context, message *protocol.Me
 				}
 				transfer.Metadata = rawMetadata
 			}
-			transfer.Type = "transfer"
+			transfer.Type = action.TransactionTransfer
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
@@ -265,12 +265,12 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  nftTransfer.TokenAddress,
-					TokenStandard: strings.ToLower(nftTransfer.ContractType),
+					TokenStandard: strings.ToUpper(nftTransfer.ContractType),
 					TokenID:       &tokenID,
 					TokenValue:    &tokenValue,
 					NFTMetadata:   nftMetadata,
 				}
-				transfer.Tags = append(transfer.Tags, constant.TransferTagErc721.String())
+				transfer.Tag = action.TagTransaction
 			} else if _, exist = sourceDataMap["address"]; exist {
 				// Token transfer
 				tokenTransfer := moralisx.TokenTransfer{}
@@ -291,14 +291,14 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  tokenTransfer.Address,
-					TokenStandard: "erc20",
+					TokenStandard: protocol.TokenTypeERC20,
 					TokenValue:    &tokenValue,
 					Logo:          coinInfo.Logo,
 					Name:          coinInfo.Name,
 					Symbol:        coinInfo.Symbol,
 					Decimals:      coinInfo.Decimals,
 				}
-				transfer.Tags = append(transfer.Tags, constant.TransferTagErc20.String())
+				transfer.Tag = action.TagTransaction
 			} else {
 				// Native transfer
 				nativeTransfer := moralisx.Transaction{}
@@ -325,7 +325,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					Symbol:        coinInfo.Symbol,
 					Decimals:      coinInfo.Decimals,
 				}
-				transfer.Tags = append(transfer.Tags, constant.TransferTagEth.String())
+				transfer.Tag = action.TagTransaction
 			}
 
 			rawMetadata, err := json.Marshal(metadataModel)
@@ -335,7 +335,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 			transfer.Metadata = rawMetadata
 
-			transfer.Type = "transfer"
+			transfer.Type = action.TransactionTransfer
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
@@ -393,22 +393,26 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				tokenID := decimal.NewFromInt(*nftTokenInfo.ID)
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  nftTokenInfo.Address,
-					TokenStandard: "erc721",
+					TokenStandard: protocol.TokenTypeERC721,
 					TokenID:       &tokenID,
 					TokenValue:    &amount,
 					Symbol:        nftTokenInfo.Symbol,
 					NFTMetadata:   nftTokenInfo.Bytes(),
 				}
-				transfer.Tags = append(transfer.Tags, constant.TransferTagErc721.String())
+				transfer.Tag = action.TagNFT
+
+				// TODO: check the NFT action type here
+				transfer.Type = action.NFTTransfer
 			} else { // token
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  tokenInfo.Address,
-					TokenStandard: "erc20",
+					TokenStandard: protocol.TokenTypeERC20,
 					TokenValue:    &amount,
 					Decimals:      tokenInfo.Decimals,
 					Symbol:        tokenInfo.Symbol,
 				}
-				transfer.Tags = append(transfer.Tags, constant.TransferTagErc20.String())
+				transfer.Tag = action.TagTransaction
+				transfer.Type = action.TransactionTransfer
 			}
 
 			rawMetadata, err := json.Marshal(metadataModel)
@@ -417,7 +421,6 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 			}
 
 			transfer.Metadata = rawMetadata
-			transfer.Type = "transfer"
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
