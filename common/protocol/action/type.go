@@ -30,4 +30,7 @@ const (
 	// voting types: propose | vote
 	VotePropose = "Propose"
 	VoteVote    = "Vote"
+
+	// donation type: donate
+	DonationDonate = "Donate"
 )

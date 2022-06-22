@@ -95,6 +95,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			transfer.Tag = action.TagDonation
+			transfer.Type = action.DonationDonate
 			transfer.Metadata = metadata
 
 			// Copy the transaction to map
