@@ -4,13 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/action"
 	"github.com/naturalselectionlabs/pregod/common/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -93,12 +92,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			if strings.EqualFold(transfer.AddressFrom, message.Address) {
-				transfer.Type = "swap_in"
-			} else {
-				transfer.Type = "swap_out"
-			}
-
 			metadataModel.Swap = &metadata.SwapPool{
 				Name:     swapModel.Source,
 				Network:  swapModel.Network,
@@ -112,9 +105,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
+			transfer.Tag = action.TagExchange
+			transfer.Type = action.ExchangeSwap
 			transfer.Metadata = rawMetadata
-			transfer.Tags = append(transfer.Tags, constant.TransferTagSwap.String())
-
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
 			if !exist {

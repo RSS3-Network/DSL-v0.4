@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 
-	"github.com/naturalselectionlabs/pregod/common/constant"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/server"
 	"github.com/sirupsen/logrus"
@@ -15,7 +15,7 @@ var rootCommand = cobra.Command{
 	Use:           "hub",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	Version:       constant.Version,
+	Version:       protocol.Version,
 }
 
 func init() {

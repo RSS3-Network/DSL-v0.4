@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/naturalselectionlabs/pregod/common/constant"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/server"
 	"github.com/sirupsen/logrus"
@@ -12,7 +12,7 @@ var rootCommand = cobra.Command{
 	Use:           "crawler",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	Version:       constant.Version,
+	Version:       protocol.Version,
 }
 
 func main() {
