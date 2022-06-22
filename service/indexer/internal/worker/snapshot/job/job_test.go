@@ -78,6 +78,7 @@ func TestSnapshotProposalInnerJob(t *testing.T) {
 				DatabaseClient: databaseClient,
 				RedisClient:    redisClient,
 				SnapshotClient: snapshotClient,
+				Limit:          100,
 			},
 		}
 
