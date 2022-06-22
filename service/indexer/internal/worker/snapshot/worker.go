@@ -130,7 +130,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			continue
 		}
 
-		var snapShotMetadata = metadata.SnapShot{
+		snapShotMetadata := metadata.SnapShot{
 			Proposal: proposal.Metadata,
 			Space:    space.Metadata,
 			Choice:   vote.Choice,
