@@ -1,6 +1,10 @@
 package server
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -109,8 +113,6 @@ func (s *Server) Run() error {
 
 	s.employer.Start()
 
-	defer s.employer.Stop()
-
 	for _, internalCrawler := range s.crawlers {
 		go func(internalCrawler crawler.Crawler) {
 			if err := internalCrawler.Run(); err != nil {
@@ -118,6 +120,11 @@ func (s *Server) Run() error {
 			}
 		}(internalCrawler)
 	}
+
+	stopchan := make(chan os.Signal, 1)
+	signal.Notify(stopchan, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+	<-stopchan
+	s.employer.Stop()
 
 	return nil
 }
