@@ -81,3 +81,7 @@ type CoinMarketCap struct {
 type Infura struct {
 	ProjectID string `mapstructure:"projectid"`
 }
+
+type Gateway struct {
+	EthEndpoint string `mapstructure:"ethendpoint"`
+}
