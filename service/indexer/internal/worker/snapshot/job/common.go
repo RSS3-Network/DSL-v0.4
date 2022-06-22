@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/snapshot"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 )
@@ -76,8 +75,7 @@ func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (StatusS
 
 	data, err := job.RedisClient.Get(ctx, statusKey).Result()
 	if err != nil {
-		logrus.Warnf("get %s from cache error:%+v", statusKey, err)
-		return StatusStroge{}, nil
+		return StatusStroge{}, err
 	}
 
 	if err = json.Unmarshal([]byte(data), &statusStroge); err != nil {

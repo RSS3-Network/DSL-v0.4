@@ -70,15 +70,19 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 	ctx, runSnap := otel.Tracer(traceSpaceJob).Start(context.Background(), "run")
 	defer runSnap.End()
 
+	var statusStroge StatusStroge
+
 	// get latest space id
-	statusStroge, err := job.GetLastStatusFromCache(ctx)
-	if err != nil {
-		logrus.Errorf("[snapshot space job] get last status, db error: %v", err)
-		statusStroge.Pos = 0
-		statusStroge.Status = PullInfoStatusNotLatest
+	if job.RedisClient != nil {
+		statusStroge, err = job.GetLastStatusFromCache(ctx)
+		if err != nil {
+			logrus.Errorf("[snapshot space job] get last status, db error: %v", err)
+			statusStroge.Pos = 0
+			statusStroge.Status = PullInfoStatusNotLatest
+		}
 	}
 
-	if err != nil {
+	if job.RedisClient == nil || err != nil {
 		statusStroge.Pos, err = job.getSpaceTotalFromDB(ctx)
 		if err != nil {
 			return statusStroge.Status, fmt.Errorf("[snapshot space job] get space total from db, db error: %v", err)
@@ -120,9 +124,11 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 	}
 
 	// set space status in cache and db
-	err = job.SetCurrentStatus(ctx, statusStroge)
-	if err != nil {
-		return statusStroge.Status, fmt.Errorf("[snapshot space job] set current status, db error: %v", err)
+	if job.RedisClient != nil {
+		err = job.SetCurrentStatus(ctx, statusStroge)
+		if err != nil {
+			return statusStroge.Status, fmt.Errorf("[snapshot space job] set current status, db error: %v", err)
+		}
 	}
 
 	return statusStroge.Status, nil
