@@ -100,6 +100,9 @@ func (job *SnapshotVoteJob) InnerJobRun() (PullInfoStatus, error) {
 
 	// set vote info in db
 	if len(votes) > 0 {
+		if err := job.setVoteInDB(ctx, votes); err != nil {
+			return statusStroge.Status, fmt.Errorf("[snapshot vote job] pos[%d], set vote in db, db error: %v", statusStroge.Pos, err)
+		}
 		logrus.Infof("[snapshot vote job] pull skip [%d]", statusStroge.Pos)
 	}
 
