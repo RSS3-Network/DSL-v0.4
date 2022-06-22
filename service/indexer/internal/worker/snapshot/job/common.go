@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/snapshot"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
-	"time"
 )
 
 type (

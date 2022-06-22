@@ -6,11 +6,13 @@ import (
 	"fmt"
 	mapset "github.com/deckarep/golang-set"
 	"github.com/go-redis/redis/v8"
+	"github.com/naturalselectionlabs/pregod/common/protocol/action"
 	"github.com/naturalselectionlabs/pregod/common/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot/job"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
+	"strings"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -65,6 +67,7 @@ func (s *service) Initialize(ctx context.Context) error {
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	// Only some mainnets are currently supported
 	snapshotNetworkNum := snapshotNetworkNumMap[message.Network]
 
 	votes, err := s.getSnapshotVotes(ctx, message.Address, message.Timestamp)
@@ -86,19 +89,19 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	}
 
 	for _, proposalNode := range proposalIDSet.ToSlice() {
-		proposal, ok := proposalNode.(model.SnapshotProposal)
+		proposal, ok := proposalNode.(string)
 		if !ok {
 			logrus.Warnf("[snapshot worker] failed to convert proposal node to snapshot proposal:%v", proposalNode)
 		}
-		proposalIDs = append(proposalIDs, proposal.ID)
+		proposalIDs = append(proposalIDs, proposal)
 	}
 
 	for _, spaceNode := range spaceIDSet.ToSlice() {
-		space, ok := spaceNode.(model.SnapshotSpace)
+		space, ok := spaceNode.(string)
 		if !ok {
 			logrus.Warnf("[snapshot worker] failed to convert space node to snapshot space:%v", spaceNode)
 		}
-		spaceIDs = append(spaceIDs, space.ID)
+		spaceIDs = append(spaceIDs, space)
 	}
 
 	proposalMap, err := s.getSnapshotProposals(ctx, proposalIDs)
@@ -117,13 +120,13 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		proposal, ok := proposalMap[vote.ProposalID]
 		if !ok {
 			logrus.Warnf("[snapshot worker] failed to get proposal:%v", vote.ProposalID)
-			proposal = model.SnapshotProposal{}
+			continue
 		}
 
 		space, ok := spaceMap[vote.SpaceID]
 		if !ok {
 			logrus.Warnf("[snapshot worker] failed to get space:%v", vote.SpaceID)
-			space = model.SnapshotSpace{}
+			continue
 		}
 
 		var snapShotMetadata = metadata.SnapShot{
@@ -140,19 +143,29 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			continue
 		}
 
+		relatedUrl := "https://snapshot.org/#/" + vote.SpaceID + "/proposal/" + vote.ProposalID
+		lowerAddress := strings.ToLower(message.Address)
+
 		transactions = append(transactions, model.Transaction{
 			Hash:        vote.ID,
 			Timestamp:   vote.DateCreated,
-			AddressFrom: message.Address,
+			AddressFrom: lowerAddress,
 			Network:     message.Network,
+			Source:      s.Name(),
+			SourceData:  rawMetadata,
 			Transfers: []model.Transfer{
 				{
 					TransactionHash:     vote.ID,
+					Tag:                 action.TagVote,
+					Type:                action.VoteVote,
 					Timestamp:           vote.DateCreated,
 					TransactionLogIndex: protocol.LogIndexVirtual,
-					AddressFrom:         message.Address,
+					AddressFrom:         lowerAddress,
 					Metadata:            rawMetadata,
 					Network:             message.Network,
+					Source:              s.Name(),
+					SourceData:          rawMetadata,
+					RelatedUrls:         []string{relatedUrl},
 				},
 			},
 		})
@@ -191,7 +204,7 @@ func (s *service) Jobs() []worker.Job {
 				DatabaseClient: s.databaseClient,
 				RedisClient:    s.redisClient,
 				SnapshotClient: s.snapshotClient,
-				Limit:          100000,
+				Limit:          10000,
 				HighUpdateTime: time.Second,
 				LowUpdateTime:  time.Minute * 5,
 			},
@@ -211,6 +224,7 @@ func (s *service) getSnapshotVotes(ctx context.Context, address string, timestam
 	if err := s.databaseClient.
 		Model(&model.SnapshotVote{}).
 		Where("voter = ?", address).
+		Where("date_created >= ?", timestamp).
 		Find(&snapshotVotes).Error; err != nil {
 		return nil, err
 	}
@@ -230,7 +244,7 @@ func (s *service) getSnapshotProposals(ctx context.Context, proposals []string) 
 	// from db
 	if err := s.databaseClient.
 		Model(&model.SnapshotProposal{}).
-		Where("proposal_id IN (?)", proposals).
+		Where("id IN (?)", proposals).
 		Find(&snapshotProposals).Error; err != nil {
 		return nil, err
 	}
@@ -254,8 +268,8 @@ func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networ
 	// from db
 	if err := s.databaseClient.
 		Model(&model.SnapshotSpace{}).
-		Where("space in (?)", spaces).
-		Where("network = ?", networkNum).
+		Where("id in (?)", spaces).
+		Where("network in (?)", networkNum).
 		Find(&snapshotSpaces).Error; err != nil {
 		return nil, err
 	}

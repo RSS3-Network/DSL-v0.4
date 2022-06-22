@@ -31,7 +31,7 @@ func (job *SnapshotProposalJob) Spec() string {
 }
 
 func (job *SnapshotProposalJob) Timeout() time.Duration {
-	return time.Minute
+	return time.Minute * 2
 }
 
 func (job *SnapshotProposalJob) Run(renewal worker.RenewalFunc) error {
@@ -50,6 +50,10 @@ func (job *SnapshotProposalJob) Run(renewal worker.RenewalFunc) error {
 			sleepTime = job.LowUpdateTime
 		} else {
 			sleepTime = job.HighUpdateTime
+		}
+
+		if err = renewal(context.Background(), time.Minute*2); err != nil {
+			return err
 		}
 
 		time.Sleep(sleepTime)
@@ -73,7 +77,7 @@ func (job *SnapshotProposalJob) InnerJobRun() (PullInfoStatus, error) {
 		statusStroge.Status = PullInfoStatusNotLatest
 	}
 
-	if err != nil || statusStroge.Pos == 0 {
+	if err != nil {
 		statusStroge.Pos, err = job.getProposalTotalFromDB(ctx)
 		if err != nil {
 			return statusStroge.Status, fmt.Errorf("[snapshot proposal job] get proposal total from db, db error: %v", err)
@@ -98,6 +102,7 @@ func (job *SnapshotProposalJob) InnerJobRun() (PullInfoStatus, error) {
 		if err := job.setProposalsInDB(ctx, proposals); err != nil {
 			return statusStroge.Status, fmt.Errorf("[snapshot proposal job] pos[%d], set proposal in db, db error: %v", statusStroge.Pos, err)
 		}
+		logrus.Infof("[snapshot proposal job] pull skip [%d]", statusStroge.Pos)
 	}
 
 	skip = statusStroge.Pos + job.Limit

@@ -32,7 +32,7 @@ func (job *SnapshotSpaceJob) Spec() string {
 }
 
 func (job *SnapshotSpaceJob) Timeout() time.Duration {
-	return time.Minute
+	return time.Minute * 2
 }
 
 func (job *SnapshotSpaceJob) Run(renewal worker.RenewalFunc) error {
@@ -53,7 +53,7 @@ func (job *SnapshotSpaceJob) Run(renewal worker.RenewalFunc) error {
 			sleepTime = job.HighUpdateTime
 		}
 
-		if err = renewal(context.Background(), time.Minute); err != nil {
+		if err = renewal(context.Background(), time.Minute*2); err != nil {
 			return err
 		}
 
@@ -78,7 +78,7 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 		statusStroge.Status = PullInfoStatusNotLatest
 	}
 
-	if err != nil || statusStroge.Pos == 0 {
+	if err != nil {
 		statusStroge.Pos, err = job.getSpaceTotalFromDB(ctx)
 		if err != nil {
 			return statusStroge.Status, fmt.Errorf("[snapshot space job] get space total from db, db error: %v", err)
@@ -104,9 +104,8 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 		if err := job.setSpaceInDB(ctx, spaces); err != nil {
 			return statusStroge.Status, fmt.Errorf("[snapshot space job] pos[%d], set space in db, db error: %v", statusStroge.Pos, err)
 		}
+		logrus.Infof("[snapshot space job] pull skip [%d]", statusStroge.Pos)
 	}
-
-	logrus.Infof("[snapshot space job] pull skip [%d]", statusStroge.Pos)
 
 	skip = statusStroge.Pos + job.Limit
 	// nolint:gocritic // dont' want change nan things
@@ -162,6 +161,7 @@ func (job *SnapshotSpaceJob) setSpaceInDB(ctx context.Context, graphqlSpaces []g
 		space := model.SnapshotSpace{
 			ID:       string(graphqlSpace.Id),
 			Metadata: metadata,
+			Network:  string(graphqlSpace.Network),
 		}
 
 		spaces = append(spaces, space)

@@ -3,6 +3,8 @@ package job
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/snapshot"
@@ -11,7 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm/clause"
-	"time"
 )
 
 type SnapshotVoteJob struct {
@@ -75,7 +76,7 @@ func (job *SnapshotVoteJob) InnerJobRun() (PullInfoStatus, error) {
 		statusStroge.Status = PullInfoStatusNotLatest
 	}
 
-	if err != nil || statusStroge.Pos == 0 {
+	if err != nil {
 		statusStroge.Pos, err = job.getVoteTotalFromDB(ctx)
 		if err != nil {
 			return statusStroge.Status, fmt.Errorf("[snapshot vote job] get vote total from db, db error: %v", err)
@@ -99,9 +100,7 @@ func (job *SnapshotVoteJob) InnerJobRun() (PullInfoStatus, error) {
 
 	// set vote info in db
 	if len(votes) > 0 {
-		if err := job.setVoteInDB(ctx, votes); err != nil {
-			return statusStroge.Status, fmt.Errorf("[snapshot vote job] pos[%d], set vote in db, db error: %v", statusStroge.Pos, err)
-		}
+		logrus.Infof("[snapshot vote job] pull skip [%d]", statusStroge.Pos)
 	}
 
 	skip = statusStroge.Pos + job.Limit

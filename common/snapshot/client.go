@@ -108,8 +108,6 @@ func (c *Client) GetMultipleProposals(ctx context.Context, variable GetMultipleP
 	variableMap["where"] = variable.Where
 	variableMap["orderDirection"] = variable.OrderDirection
 
-	fmt.Printf("variableMap: %v\n", variableMap)
-
 	if err := c.graphqlClient.Query(ctx, &query, variableMap); err != nil {
 		return nil, err
 	}
