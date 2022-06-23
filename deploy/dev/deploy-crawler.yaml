@@ -4,7 +4,7 @@ metadata:
   name: pregod2-crawler
   namespace: pregod
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: pregod2-crawler

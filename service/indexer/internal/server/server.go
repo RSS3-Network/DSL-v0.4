@@ -6,8 +6,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/lens"
-
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -22,9 +20,11 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
 
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
@@ -130,6 +130,7 @@ func (s *Server) Initialize() (err error) {
 		mirror.New(),
 		poapworker.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
+		snapshot.New(s.databaseClient, s.redisClient),
 		crossbell.New(),
 	}
 
@@ -244,11 +245,37 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 				if err := s.upsertTransactions(ctx, internalTransactions); err != nil {
 					return err
 				}
+				// if no replacement here, transfers may be edited by more than one workers
+				// but previous edits will be lost
+				transactions = replaceTransactions(transactions, internalTransactions)
 			}
 		}
 	}
 
 	return nil
+}
+
+// if same hash exists in newTransactions, replace it
+func replaceTransactions(oldTransactions, newTransactions []model.Transaction) []model.Transaction {
+	newMap := map[string]model.Transaction{}
+	for _, t := range newTransactions {
+		newMap[t.Hash] = t
+	}
+
+	resultMap := map[string]model.Transaction{}
+	for _, oldT := range oldTransactions {
+		if newT, exists := newMap[oldT.Hash]; exists {
+			resultMap[oldT.Hash] = newT
+		} else {
+			resultMap[oldT.Hash] = oldT
+		}
+	}
+
+	result := []model.Transaction{}
+	for _, t := range resultMap {
+		result = append(result, t)
+	}
+	return result
 }
 
 func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Transaction) error {

@@ -147,15 +147,21 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			return nil, err
 		}
 
+		index, err := decimal.NewFromString(internalTransaction.TransactionIndex)
+		if err != nil {
+			return nil, err
+		}
+
 		sourceData, err := json.Marshal(internalTransaction)
 		if err != nil {
 			return nil, err
 		}
 
 		transactions = append(transactions, model.Transaction{
-			BlockNumber: blockNumber,
+			BlockNumber: blockNumber.IntPart(),
 			Timestamp:   timestamp,
 			Hash:        internalTransaction.Hash,
+			Index:       index.IntPart(),
 			AddressFrom: internalTransaction.FromAddress,
 			AddressTo:   internalTransaction.ToAddress,
 			Network:     message.Network,
@@ -164,16 +170,16 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{
-					TransactionHash:     internalTransaction.Hash,
-					Timestamp:           timestamp,
-					TransactionLogIndex: protocol.LogIndexVirtual,
-					AddressFrom:         internalTransaction.FromAddress,
-					AddressTo:           internalTransaction.ToAddress,
-					Metadata:            metadata.Default,
-					Network:             message.Network,
-					Source:              d.Name(),
-					SourceData:          sourceData,
-					RelatedUrls:         []string{GetTxHashURL(message.Network, internalTransaction.Hash)},
+					TransactionHash: internalTransaction.Hash,
+					Timestamp:       timestamp,
+					Index:           protocol.IndexVirtual,
+					AddressFrom:     internalTransaction.FromAddress,
+					AddressTo:       internalTransaction.ToAddress,
+					Metadata:        metadata.Default,
+					Network:         message.Network,
+					Source:          d.Name(),
+					SourceData:      sourceData,
+					RelatedUrls:     []string{GetTxHashURL(message.Network, internalTransaction.Hash)},
 				},
 			},
 		})
@@ -223,16 +229,16 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 		}
 
 		transfers = append(transfers, model.Transfer{
-			TransactionHash:     internalTokenTransfer.TransactionHash,
-			Timestamp:           timestamp,
-			TransactionLogIndex: decimal.NewFromInt(int64(i)), // This is because Moralis don't provide log index
-			AddressFrom:         internalTokenTransfer.FromAddress,
-			AddressTo:           internalTokenTransfer.ToAddress,
-			Metadata:            metadata.Default,
-			Network:             message.Network,
-			Source:              d.Name(),
-			SourceData:          sourceData,
-			RelatedUrls:         []string{GetTxHashURL(message.Network, internalTokenTransfer.TransactionHash)},
+			TransactionHash: internalTokenTransfer.TransactionHash,
+			Timestamp:       timestamp,
+			Index:           int64(i), // This is because Moralis don't provide log index
+			AddressFrom:     internalTokenTransfer.FromAddress,
+			AddressTo:       internalTokenTransfer.ToAddress,
+			Metadata:        metadata.Default,
+			Network:         message.Network,
+			Source:          d.Name(),
+			SourceData:      sourceData,
+			RelatedUrls:     []string{GetTxHashURL(message.Network, internalTokenTransfer.TransactionHash)},
 		})
 	}
 
@@ -290,16 +296,16 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 
 		internalTransfersMap[internalNFTTransfer.BlockHash] = map[int64]model.Transfer{
 			internalNFTTransfer.LogIndex.IntPart(): {
-				TransactionHash:     internalNFTTransfer.TransactionHash,
-				Timestamp:           timestamp,
-				TransactionLogIndex: internalNFTTransfer.LogIndex,
-				AddressFrom:         internalNFTTransfer.FromAddress,
-				AddressTo:           internalNFTTransfer.ToAddress,
-				Metadata:            metadata.Default,
-				Network:             message.Network,
-				Source:              d.Name(),
-				SourceData:          sourceData,
-				RelatedUrls:         []string{utils.GetTxHashURL(message.Network, internalNFTTransfer.TransactionHash)},
+				TransactionHash: internalNFTTransfer.TransactionHash,
+				Timestamp:       timestamp,
+				Index:           internalNFTTransfer.LogIndex.IntPart(),
+				AddressFrom:     internalNFTTransfer.FromAddress,
+				AddressTo:       internalNFTTransfer.ToAddress,
+				Metadata:        metadata.Default,
+				Network:         message.Network,
+				Source:          d.Name(),
+				SourceData:      sourceData,
+				RelatedUrls:     []string{utils.GetTxHashURL(message.Network, internalNFTTransfer.TransactionHash)},
 			},
 		}
 	}

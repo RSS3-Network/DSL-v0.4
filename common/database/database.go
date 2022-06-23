@@ -15,6 +15,9 @@ var tables = []any{
 	&model.GetTokenInfo{},
 	&model.GetNFTTokenInfo{},
 	&model.CoinMarketCapCoinInfo{},
+	&model.SnapshotSpace{},
+	&model.SnapshotProposal{},
+	&model.SnapshotVote{},
 	&model.LensCursor{},
 }
 

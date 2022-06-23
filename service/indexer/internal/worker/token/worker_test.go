@@ -3,16 +3,16 @@ package token
 import (
 	"context"
 	"encoding/json"
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/naturalselectionlabs/pregod/common/protocol/action"
 
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -142,7 +142,7 @@ func Test_service_Handle(t *testing.T) {
 				},
 				transactions: []model.Transaction{
 					{
-						BlockNumber: decimal.NewFromInt32(0),
+						BlockNumber: 0,
 						Timestamp:   fakeTime,
 						Hash:        "0x7d3a23577c600b76fa7528f1a7cae8631cc7fa786a4b5923d676aed2f619121d",
 						AddressFrom: "0x0000000000000000000000000000000000000000",
@@ -152,15 +152,15 @@ func Test_service_Handle(t *testing.T) {
 						SourceData:  []byte(sourceData),
 						Transfers: []model.Transfer{
 							{
-								TransactionHash:     "0x7d3a23577c600b76fa7528f1a7cae8631cc7fa786a4b5923d676aed2f619121d",
-								Timestamp:           fakeTime,
-								TransactionLogIndex: decimal.NewFromInt32(360),
-								AddressFrom:         "0x0000000000000000000000000000000000000000",
-								AddressTo:           "0xe02a52a553acf14cd5552e53d48dc0fc072978d8",
-								Network:             protocol.NetworkPolygon,
-								Source:              "moralis",
-								SourceData:          []byte(sourceData),
-								Metadata:            []byte("{}"),
+								TransactionHash: "0x7d3a23577c600b76fa7528f1a7cae8631cc7fa786a4b5923d676aed2f619121d",
+								Timestamp:       fakeTime,
+								Index:           360,
+								AddressFrom:     "0x0000000000000000000000000000000000000000",
+								AddressTo:       "0xe02a52a553acf14cd5552e53d48dc0fc072978d8",
+								Network:         protocol.NetworkPolygon,
+								Source:          "moralis",
+								SourceData:      []byte(sourceData),
+								Metadata:        []byte("{}"),
 							},
 						},
 					},
@@ -168,7 +168,7 @@ func Test_service_Handle(t *testing.T) {
 			},
 			want: []model.Transaction{
 				{
-					BlockNumber: decimal.NewFromInt32(0),
+					BlockNumber: 0,
 					Timestamp:   fakeTime,
 					Hash:        "0x7d3a23577c600b76fa7528f1a7cae8631cc7fa786a4b5923d676aed2f619121d",
 					AddressFrom: "0x0000000000000000000000000000000000000000",
@@ -178,17 +178,17 @@ func Test_service_Handle(t *testing.T) {
 					SourceData:  []byte(sourceData),
 					Transfers: []model.Transfer{
 						{
-							TransactionHash:     "0x7d3a23577c600b76fa7528f1a7cae8631cc7fa786a4b5923d676aed2f619121d",
-							Timestamp:           time.Date(2022, 6, 14, 0, 0, 0, 0, location),
-							TransactionLogIndex: decimal.NewFromInt32(360),
-							AddressFrom:         "0x0000000000000000000000000000000000000000",
-							AddressTo:           "0xe02a52a553acf14cd5552e53d48dc0fc072978d8",
-							Network:             protocol.NetworkPolygon,
-							Source:              "moralis",
-							SourceData:          []byte(sourceData),
-							Tag:                 action.TagTransaction,
-							Type:                "transfer",
-							Metadata:            []byte(`{"token":{"token_id":"1","token_value":"1","token_address":"0xb3a5104f3d934fffab52cfa5edd4968d0bbaa470","token_standard":"ERC1155"}}`),
+							TransactionHash: "0x7d3a23577c600b76fa7528f1a7cae8631cc7fa786a4b5923d676aed2f619121d",
+							Timestamp:       time.Date(2022, 6, 14, 0, 0, 0, 0, location),
+							Index:           360,
+							AddressFrom:     "0x0000000000000000000000000000000000000000",
+							AddressTo:       "0xe02a52a553acf14cd5552e53d48dc0fc072978d8",
+							Network:         protocol.NetworkPolygon,
+							Source:          "moralis",
+							SourceData:      []byte(sourceData),
+							Tag:             action.TagTransaction,
+							Type:            action.TransactionTransfer,
+							Metadata:        []byte(`{"token":{"token_id":"1","token_value":"1","token_address":"0xb3a5104f3d934fffab52cfa5edd4968d0bbaa470","token_standard":"ERC1155"}}`),
 						},
 					},
 				},
@@ -205,7 +205,7 @@ func Test_service_Handle(t *testing.T) {
 				},
 				transactions: []model.Transaction{
 					{
-						BlockNumber: decimal.NewFromInt32(0),
+						BlockNumber: 0,
 						Timestamp:   fakeTime,
 						Hash:        "0x3ad53192eb24de7c476d6e6d6b1edfa8068313831615503878c8f49efa52d4e7",
 						AddressFrom: "0x000000a52a03835517e9d193b3c27626e1bc96b1",
@@ -215,15 +215,15 @@ func Test_service_Handle(t *testing.T) {
 						SourceData:  []byte(sourceDataZkSync),
 						Transfers: []model.Transfer{
 							{
-								TransactionHash:     "0x3ad53192eb24de7c476d6e6d6b1edfa8068313831615503878c8f49efa52d4e7",
-								Timestamp:           time.Date(2022, 6, 14, 0, 0, 0, 0, location),
-								TransactionLogIndex: decimal.NewFromInt32(0),
-								AddressFrom:         "0x000000a52a03835517e9d193b3c27626e1bc96b1",
-								AddressTo:           "0x000000a52a03835517e9d193b3c27626e1bc96b1",
-								Network:             protocol.NetworkZkSync,
-								Source:              "zksync",
-								SourceData:          []byte(sourceDataZkSync),
-								Metadata:            []byte("{}"),
+								TransactionHash: "0x3ad53192eb24de7c476d6e6d6b1edfa8068313831615503878c8f49efa52d4e7",
+								Timestamp:       time.Date(2022, 6, 14, 0, 0, 0, 0, location),
+								Index:           0,
+								AddressFrom:     "0x000000a52a03835517e9d193b3c27626e1bc96b1",
+								AddressTo:       "0x000000a52a03835517e9d193b3c27626e1bc96b1",
+								Network:         protocol.NetworkZkSync,
+								Source:          "zksync",
+								SourceData:      []byte(sourceDataZkSync),
+								Metadata:        []byte("{}"),
 							},
 						},
 					},
@@ -231,7 +231,7 @@ func Test_service_Handle(t *testing.T) {
 			},
 			want: []model.Transaction{
 				{
-					BlockNumber: decimal.NewFromInt32(0),
+					BlockNumber: 0,
 					Timestamp:   fakeTime,
 					Hash:        "0x3ad53192eb24de7c476d6e6d6b1edfa8068313831615503878c8f49efa52d4e7",
 					AddressFrom: "0x000000a52a03835517e9d193b3c27626e1bc96b1",
@@ -241,17 +241,17 @@ func Test_service_Handle(t *testing.T) {
 					SourceData:  []byte(sourceDataZkSync),
 					Transfers: []model.Transfer{
 						{
-							TransactionHash:     "0x3ad53192eb24de7c476d6e6d6b1edfa8068313831615503878c8f49efa52d4e7",
-							Timestamp:           time.Date(2022, 6, 14, 0, 0, 0, 0, location),
-							Tag:                 action.TagTransaction,
-							TransactionLogIndex: decimal.NewFromInt32(0),
-							AddressFrom:         "0x000000a52a03835517e9d193b3c27626e1bc96b1",
-							AddressTo:           "0x000000a52a03835517e9d193b3c27626e1bc96b1",
-							Network:             protocol.NetworkZkSync,
-							Source:              "zksync",
-							SourceData:          []byte(sourceDataZkSync),
-							Type:                action.TransactionTransfer,
-							Metadata:            []byte(`{"token":{"symbol":"DAI","decimals":18,"token_id":"1","token_value":"0","token_address":"0x6b175474e89094c44da98b954eedeac495271d0f","token_standard":"erc20"}}`),
+							TransactionHash: "0x3ad53192eb24de7c476d6e6d6b1edfa8068313831615503878c8f49efa52d4e7",
+							Timestamp:       time.Date(2022, 6, 14, 0, 0, 0, 0, location),
+							Tag:             action.TagTransaction,
+							Index:           0,
+							AddressFrom:     "0x000000a52a03835517e9d193b3c27626e1bc96b1",
+							AddressTo:       "0x000000a52a03835517e9d193b3c27626e1bc96b1",
+							Network:         protocol.NetworkZkSync,
+							Source:          "zksync",
+							SourceData:      []byte(sourceDataZkSync),
+							Type:            action.TransactionTransfer,
+							Metadata:        []byte(`{"token":{"symbol":"DAI","decimals":18,"token_id":"1","token_value":"0","token_address":"0x6b175474e89094c44da98b954eedeac495271d0f","token_standard":"ERC20"}}`),
 						},
 					},
 				},
@@ -268,7 +268,7 @@ func Test_service_Handle(t *testing.T) {
 				},
 				transactions: []model.Transaction{
 					{
-						BlockNumber: decimal.NewFromInt32(0),
+						BlockNumber: 0,
 						Timestamp:   fakeTime,
 						Hash:        "0x060914bad793e53410914c974a180267fc28fc0a83141a32a33f5316a7ab2852",
 						AddressFrom: "0x37719d7662a616e466b4d0f139a38e032946d503",
@@ -278,15 +278,15 @@ func Test_service_Handle(t *testing.T) {
 						SourceData:  []byte(sourceDataZkSyncNFT),
 						Transfers: []model.Transfer{
 							{
-								TransactionHash:     "0x060914bad793e53410914c974a180267fc28fc0a83141a32a33f5316a7ab2852",
-								Timestamp:           time.Date(2022, 6, 14, 0, 0, 0, 0, location),
-								TransactionLogIndex: decimal.NewFromInt32(0),
-								AddressFrom:         "0x37719d7662a616e466b4d0f139a38e032946d503",
-								AddressTo:           "0xbaffff8509fc36ca4c6bccea3ae4c5fe53286892",
-								Network:             protocol.NetworkZkSync,
-								Source:              "zksync",
-								SourceData:          []byte(sourceDataZkSyncNFT),
-								Metadata:            []byte("{}"),
+								TransactionHash: "0x060914bad793e53410914c974a180267fc28fc0a83141a32a33f5316a7ab2852",
+								Timestamp:       time.Date(2022, 6, 14, 0, 0, 0, 0, location),
+								Index:           0,
+								AddressFrom:     "0x37719d7662a616e466b4d0f139a38e032946d503",
+								AddressTo:       "0xbaffff8509fc36ca4c6bccea3ae4c5fe53286892",
+								Network:         protocol.NetworkZkSync,
+								Source:          "zksync",
+								SourceData:      []byte(sourceDataZkSyncNFT),
+								Metadata:        []byte("{}"),
 							},
 						},
 					},
@@ -294,7 +294,7 @@ func Test_service_Handle(t *testing.T) {
 			},
 			want: []model.Transaction{
 				{
-					BlockNumber: decimal.NewFromInt32(0),
+					BlockNumber: 0,
 					Timestamp:   fakeTime,
 					Hash:        "0x060914bad793e53410914c974a180267fc28fc0a83141a32a33f5316a7ab2852",
 					AddressFrom: "0x37719d7662a616e466b4d0f139a38e032946d503",
@@ -304,17 +304,17 @@ func Test_service_Handle(t *testing.T) {
 					SourceData:  []byte(sourceDataZkSyncNFT),
 					Transfers: []model.Transfer{
 						{
-							TransactionHash:     "0x060914bad793e53410914c974a180267fc28fc0a83141a32a33f5316a7ab2852",
-							Timestamp:           time.Date(2022, 6, 14, 0, 0, 0, 0, location),
-							TransactionLogIndex: decimal.NewFromInt32(0),
-							AddressFrom:         "0x37719d7662a616e466b4d0f139a38e032946d503",
-							AddressTo:           "0xbaffff8509fc36ca4c6bccea3ae4c5fe53286892",
-							Network:             protocol.NetworkZkSync,
-							Source:              "zksync",
-							Tag:                 action.TagTransaction,
-							SourceData:          []byte(sourceDataZkSyncNFT),
-							Type:                action.NFTTransfer,
-							Metadata:            []byte(`{"token":{"symbol":"NFT-424218","token_id":"424218","token_value":"1","nft_metadata":{"id":424218,"symbol":"NFT-424218","address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","serialId":0,"creatorId":1101474,"contentHash":"0xd252497a6db751c63bb23eb1493e8461b280bdc398bcc494e6bb5bab2d04935a","creatorAddress":"0x37719d7662a616e466b4d0f139a38e032946d503","currentFactory":"0x7c770595a2be9a87cf49b35ea9bc534f1a59552d","withdrawnFactory":""},"token_address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","token_standard":"erc721"}}`),
+							TransactionHash: "0x060914bad793e53410914c974a180267fc28fc0a83141a32a33f5316a7ab2852",
+							Timestamp:       time.Date(2022, 6, 14, 0, 0, 0, 0, location),
+							Index:           0,
+							AddressFrom:     "0x37719d7662a616e466b4d0f139a38e032946d503",
+							AddressTo:       "0xbaffff8509fc36ca4c6bccea3ae4c5fe53286892",
+							Network:         protocol.NetworkZkSync,
+							Source:          "zksync",
+							Tag:             action.TagNFT,
+							SourceData:      []byte(sourceDataZkSyncNFT),
+							Type:            action.NFTTransfer,
+							Metadata:        []byte(`{"token":{"symbol":"NFT-424218","token_id":"424218","token_value":"1","nft_metadata":{"id":424218,"symbol":"NFT-424218","address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","serialId":0,"creatorId":1101474,"contentHash":"0xd252497a6db751c63bb23eb1493e8461b280bdc398bcc494e6bb5bab2d04935a","creatorAddress":"0x37719d7662a616e466b4d0f139a38e032946d503","currentFactory":"0x7c770595a2be9a87cf49b35ea9bc534f1a59552d","withdrawnFactory":""},"token_address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","token_standard":"ERC721"}}`),
 						},
 					},
 				},

@@ -14,7 +14,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/handler"
-	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 )
 
@@ -82,10 +81,10 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 		}
 
 		// Retain the action model of the transfer type
-		transferMap := make(map[decimal.Decimal]model.Transfer)
+		transferMap := make(map[int64]model.Transfer)
 
 		for _, transfer := range transaction.Transfers {
-			transferMap[transfer.TransactionLogIndex] = transfer
+			transferMap[transfer.Index] = transfer
 		}
 
 		// Empty transfer data to avoid data duplication
@@ -98,7 +97,7 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 		}
 
 		for _, log := range receipt.Logs {
-			logIndex := decimal.NewFromInt(int64(log.Index))
+			logIndex := int64(log.Index)
 
 			transfer, exist := transferMap[logIndex]
 			if !exist {
@@ -109,14 +108,14 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 
 				// Virtual transfer
 				transfer = model.Transfer{
-					TransactionHash:     transaction.Hash,
-					Timestamp:           transaction.Timestamp,
-					TransactionLogIndex: logIndex,
-					AddressFrom:         transaction.AddressFrom,
-					Metadata:            metadata.Default,
-					Network:             message.Network,
-					Source:              protocol.SourceOrigin,
-					SourceData:          sourceData,
+					TransactionHash: transaction.Hash,
+					Timestamp:       transaction.Timestamp,
+					Index:           logIndex,
+					AddressFrom:     transaction.AddressFrom,
+					Metadata:        metadata.Default,
+					Network:         message.Network,
+					Source:          protocol.SourceOrigin,
+					SourceData:      sourceData,
 				}
 			}
 

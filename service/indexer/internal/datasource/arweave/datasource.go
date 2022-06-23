@@ -6,14 +6,13 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/arweave"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
-	"github.com/shopspring/decimal"
-	"github.com/shurcooL/graphql"
 )
 
 const (
@@ -63,7 +62,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		addressTo := ""
 
 		transactions = append(transactions, model.Transaction{
-			BlockNumber: decimal.NewFromInt32(int32(edge.Node.Block.Height)),
+			BlockNumber: int64(edge.Node.Block.Height),
 			Timestamp:   timestamp,
 			Hash:        edge.Node.ID.(string),
 			AddressFrom: string(edge.Node.Owner.Address),
@@ -74,15 +73,15 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{
-					TransactionHash:     edge.Node.ID.(string),
-					Timestamp:           timestamp,
-					TransactionLogIndex: protocol.LogIndexVirtual,
-					AddressFrom:         string(edge.Node.Owner.Address),
-					AddressTo:           addressTo,
-					Metadata:            metadata.Default,
-					Network:             protocol.NetworkArweave,
-					Source:              Source,
-					SourceData:          sourceData,
+					TransactionHash: edge.Node.ID.(string),
+					Timestamp:       timestamp,
+					Index:           protocol.IndexVirtual,
+					AddressFrom:     string(edge.Node.Owner.Address),
+					AddressTo:       addressTo,
+					Metadata:        metadata.Default,
+					Network:         protocol.NetworkArweave,
+					Source:          Source,
+					SourceData:      sourceData,
 				},
 			},
 		})

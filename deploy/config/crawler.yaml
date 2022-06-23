@@ -18,17 +18,11 @@ opentelemetry:
   port: 14268
   path: /api/traces
 
-moralis:
-  key:
-
 redis:
   tls: false
   addr: 127.0.0.1:6379
   db: 0
   password: ''
 
-coinmarketcap:
-  apikey: ""
-
-infura:
-  projectid: ""
+gateway:
+  ethendpoint: "wss://eth.rss3.dev"

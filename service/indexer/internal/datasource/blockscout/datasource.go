@@ -95,7 +95,9 @@ func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.M
 
 		transactions = append(transactions, model.Transaction{
 			Hash:        internalTransaction.Hash,
+			BlockNumber: internalTransaction.BlockNumber.IntPart(),
 			Timestamp:   timestamp,
+			Index:       internalTransaction.TransactionIndex.IntPart(),
 			AddressFrom: internalTransaction.From,
 			AddressTo:   internalTransaction.To,
 			Network:     message.Network,
@@ -104,16 +106,16 @@ func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.M
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{
-					TransactionHash:     internalTransaction.Hash,
-					Timestamp:           timestamp,
-					TransactionLogIndex: protocol.LogIndexVirtual,
-					AddressFrom:         internalTransaction.From,
-					AddressTo:           internalTransaction.To,
-					Metadata:            metadata.Default,
-					Network:             message.Network,
-					Source:              d.Name(),
-					SourceData:          sourceData,
-					RelatedUrls:         GetTxRelatedURLs(message.Network, internalTransaction.Hash),
+					TransactionHash: internalTransaction.Hash,
+					Timestamp:       timestamp,
+					Index:           protocol.IndexVirtual,
+					AddressFrom:     internalTransaction.From,
+					AddressTo:       internalTransaction.To,
+					Metadata:        metadata.Default,
+					Network:         message.Network,
+					Source:          d.Name(),
+					SourceData:      sourceData,
+					RelatedUrls:     GetTxRelatedURLs(message.Network, internalTransaction.Hash),
 				},
 			},
 		})
@@ -140,15 +142,15 @@ func (d *Datasource) handleTokenTransfers(ctx context.Context, message *protocol
 		}
 
 		transfers = append(transfers, model.Transfer{
-			TransactionHash:     internalTokenTransfer.Hash,
-			Timestamp:           time.Unix(internalTokenTransfer.TimeStamp.BigInt().Int64(), 0),
-			TransactionLogIndex: internalTokenTransfer.LogIndex,
-			AddressFrom:         internalTokenTransfer.From,
-			AddressTo:           internalTokenTransfer.To,
-			Network:             message.Network,
-			Source:              d.Name(),
-			SourceData:          sourceData,
-			RelatedUrls:         GetTxRelatedURLs(message.Network, internalTokenTransfer.Hash),
+			TransactionHash: internalTokenTransfer.Hash,
+			Timestamp:       time.Unix(internalTokenTransfer.TimeStamp.BigInt().Int64(), 0),
+			Index:           internalTokenTransfer.LogIndex.IntPart(),
+			AddressFrom:     internalTokenTransfer.From,
+			AddressTo:       internalTokenTransfer.To,
+			Network:         message.Network,
+			Source:          d.Name(),
+			SourceData:      sourceData,
+			RelatedUrls:     GetTxRelatedURLs(message.Network, internalTokenTransfer.Hash),
 		})
 	}
 
