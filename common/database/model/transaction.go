@@ -19,5 +19,5 @@ type Transaction struct {
 	CreatedAt   time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index" json:"-"`
 	UpdatedAt   time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index" json:"-"`
 
-	Transfers []Transfer `gorm:"-:all"`
+	Transfers []*Transfer `gorm:"-:all" json:"actions"`
 }
