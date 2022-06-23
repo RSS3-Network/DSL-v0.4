@@ -73,15 +73,15 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{
-					TransactionHash:     edge.Node.ID.(string),
-					Timestamp:           timestamp,
-					TransactionLogIndex: protocol.LogIndexVirtual,
-					AddressFrom:         string(edge.Node.Owner.Address),
-					AddressTo:           addressTo,
-					Metadata:            metadata.Default,
-					Network:             protocol.NetworkArweave,
-					Source:              Source,
-					SourceData:          sourceData,
+					TransactionHash: edge.Node.ID.(string),
+					Timestamp:       timestamp,
+					Index:           protocol.IndexVirtual,
+					AddressFrom:     string(edge.Node.Owner.Address),
+					AddressTo:       addressTo,
+					Metadata:        metadata.Default,
+					Network:         protocol.NetworkArweave,
+					Source:          Source,
+					SourceData:      sourceData,
 				},
 			},
 		})

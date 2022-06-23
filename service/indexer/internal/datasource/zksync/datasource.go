@@ -3,6 +3,7 @@ package zksync
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -80,15 +81,15 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 				Transfers: []model.Transfer{
 					// This is a virtual transfer
 					{
-						TransactionHash:     internalTransaction.TransactionHash,
-						Timestamp:           internalTransaction.CreatedAt,
-						TransactionLogIndex: protocol.LogIndexVirtual,
-						AddressFrom:         transactionData.Transaction.Operation.From,
-						AddressTo:           transactionData.Transaction.Operation.To,
-						Metadata:            metadata.Default,
-						Network:             message.Network,
-						Source:              d.Name(),
-						SourceData:          sourceData,
+						TransactionHash: internalTransaction.TransactionHash,
+						Timestamp:       internalTransaction.CreatedAt,
+						Index:           protocol.IndexVirtual,
+						AddressFrom:     transactionData.Transaction.Operation.From,
+						AddressTo:       transactionData.Transaction.Operation.To,
+						Metadata:        metadata.Default,
+						Network:         message.Network,
+						Source:          d.Name(),
+						SourceData:      sourceData,
 					},
 				},
 			})
