@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
+
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -128,6 +130,7 @@ func (s *Server) Initialize() (err error) {
 		mirror.New(),
 		poapworker.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
+		snapshot.New(s.databaseClient, s.redisClient),
 		crossbell.New(),
 	}
 
