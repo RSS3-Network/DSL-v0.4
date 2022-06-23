@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	graphqlx "github.com/naturalselectionlabs/pregod/common/snapshot/graphql"
-	"github.com/shopspring/decimal"
 	"strings"
 	"time"
+
+	graphqlx "github.com/naturalselectionlabs/pregod/common/snapshot/graphql"
+	"github.com/shopspring/decimal"
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/go-redis/redis/v8"
@@ -223,17 +224,17 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			SourceData:  rawMetadata,
 			Transfers: []model.Transfer{
 				{
-					TransactionHash:     vote.ID,
-					Tag:                 action.TagVote,
-					Type:                action.VoteVote,
-					Timestamp:           vote.DateCreated,
-					TransactionLogIndex: protocol.LogIndexVirtual,
-					AddressFrom:         lowerAddress,
-					Metadata:            rawMetadata,
-					Network:             message.Network,
-					Source:              s.Name(),
-					SourceData:          rawSourcedata,
-					RelatedUrls:         []string{relatedUrl},
+					TransactionHash: vote.ID,
+					Tag:             action.TagVote,
+					Type:            action.VoteVote,
+					Timestamp:       vote.DateCreated,
+					Index:           protocol.IndexVirtual,
+					AddressFrom:     lowerAddress,
+					Metadata:        rawMetadata,
+					Network:         message.Network,
+					Source:          s.Name(),
+					SourceData:      rawSourcedata,
+					RelatedUrls:     []string{relatedUrl},
 				},
 			},
 		})
