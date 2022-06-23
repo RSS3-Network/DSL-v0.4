@@ -13,9 +13,7 @@ import (
 const (
 	EndpointScheme = "https"
 	EndpointHost   = "hub.snapshot.org"
-	// EndpointScheme = "http"
-	// EndpointHost   = "127.0.0.1:8080"
-	EndpointPath = "/graphql"
+	EndpointPath   = "/graphql"
 )
 
 type OrderDirection graphql.String

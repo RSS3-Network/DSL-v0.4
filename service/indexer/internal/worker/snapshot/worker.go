@@ -219,8 +219,6 @@ func (s *service) getSnapshotVotes(ctx context.Context, address string, timestam
 
 	var snapshotVotes []model.SnapshotVote
 
-	// TODO:from redis
-
 	// from db
 	if err := s.databaseClient.
 		Model(&model.SnapshotVote{}).
@@ -239,8 +237,6 @@ func (s *service) getSnapshotProposals(ctx context.Context, proposals []string) 
 
 	var snapshotProposals []model.SnapshotProposal
 	snapshotProposalMap := make(map[string]model.SnapshotProposal)
-
-	// TODO:from redis
 
 	// from db
 	if err := s.databaseClient.
@@ -264,8 +260,6 @@ func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networ
 	var snapshotSpaces []model.SnapshotSpace
 	snapshotSpaceMap := make(map[string]model.SnapshotSpace)
 
-	// TODO:from redis
-
 	// from db
 	if err := s.databaseClient.
 		Model(&model.SnapshotSpace{}).
@@ -281,15 +275,6 @@ func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networ
 
 	return snapshotSpaceMap, nil
 }
-
-//nolint:unused // TODO
-func (s *service) setSnapshotVotesInCache(ctx context.Context) {}
-
-//nolint:unused // TODO
-func (s *service) setSnapshotProposalsInCache(ctx context.Context) {}
-
-//nolint:unused // TODO
-func (s *service) setSnapshotSpacesInCache(ctx context.Context) {}
 
 func New(
 	databaseClient *gorm.DB,

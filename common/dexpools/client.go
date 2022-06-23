@@ -3,6 +3,7 @@ package dexpools
 import (
 	"context"
 	"encoding/json"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"reflect"
 	"strings"
@@ -81,6 +82,7 @@ func (c *Client) GetSwapPools(ctx context.Context, swap SwapPool) ([]graphqlx.Pa
 					return &query
 				}
 
+				logrus.Infof("UniSwapV21")
 				return c.GetGraphQLResult(ctx, getQueryFun, swap.Limit)
 			} else {
 				getQueryFun := func() interface{} {
@@ -91,6 +93,7 @@ func (c *Client) GetSwapPools(ctx context.Context, swap SwapPool) ([]graphqlx.Pa
 					return &query
 				}
 
+				logrus.Infof("UniSwapV22")
 				return c.GetGraphQLResult(ctx, getQueryFun, swap.Limit)
 			}
 
