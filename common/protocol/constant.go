@@ -8,4 +8,4 @@ const (
 	ContentTypeJSON = "application/json"
 )
 
-var LogIndexVirtual = decimal.NewFromInt(-1)
+var IndexVirtual = decimal.NewFromInt(-1)

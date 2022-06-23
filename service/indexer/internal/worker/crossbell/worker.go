@@ -85,7 +85,7 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 		transferMap := make(map[decimal.Decimal]model.Transfer)
 
 		for _, transfer := range transaction.Transfers {
-			transferMap[transfer.TransactionLogIndex] = transfer
+			transferMap[transfer.Index] = transfer
 		}
 
 		// Empty transfer data to avoid data duplication
@@ -109,14 +109,14 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 
 				// Virtual transfer
 				transfer = model.Transfer{
-					TransactionHash:     transaction.Hash,
-					Timestamp:           transaction.Timestamp,
-					TransactionLogIndex: logIndex,
-					AddressFrom:         transaction.AddressFrom,
-					Metadata:            metadata.Default,
-					Network:             message.Network,
-					Source:              protocol.SourceOrigin,
-					SourceData:          sourceData,
+					TransactionHash: transaction.Hash,
+					Timestamp:       transaction.Timestamp,
+					Index:           logIndex,
+					AddressFrom:     transaction.AddressFrom,
+					Metadata:        metadata.Default,
+					Network:         message.Network,
+					Source:          protocol.SourceOrigin,
+					SourceData:      sourceData,
 				}
 			}
 
