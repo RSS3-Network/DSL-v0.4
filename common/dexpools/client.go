@@ -7,14 +7,16 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/hasura/go-graphql-client"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/dexpools/graphql"
-	"github.com/shurcooL/graphql"
 )
 
 type Client struct {
 	httpClient    *http.Client
 	graphqlClient *graphql.Client
 }
+
+type GetQueryFun func() interface{}
 
 // GetSwapPools returns all pools from a DEX
 func (c *Client) GetSwapPools(ctx context.Context, swap SwapPool) ([]graphqlx.Pair, error) {
@@ -71,33 +73,49 @@ func (c *Client) GetSwapPools(ctx context.Context, swap SwapPool) ([]graphqlx.Pa
 		case UniSwapV2:
 			// nolint:gocritic // cannot dynamically create a new struct with different graphql tags
 			if swap.OrderByVolumeUSD {
-				var query struct {
-					Pairs []graphqlx.Pair `graphql:"pairs(first: 1000, skip: $skip, orderBy: volumeUSD, orderDirection: desc)"`
+				getQueryFun := func() interface{} {
+					var query struct {
+						Pairs []graphqlx.Pair `graphql:"pairs(first: 1000, skip: $skip, orderBy: volumeUSD, orderDirection: desc)"`
+					}
+
+					return &query
 				}
 
-				return c.GetGraphQLResult(ctx, &query, swap.Limit)
+				return c.GetGraphQLResult(ctx, getQueryFun, swap.Limit)
 			} else {
-				var query struct {
-					Pairs []graphqlx.Pair `graphql:"pairs(first: 1000, skip: $skip)"`
+				getQueryFun := func() interface{} {
+					var query struct {
+						Pairs []graphqlx.Pair `graphql:"pairs(first: 1000, skip: $skip)"`
+					}
+
+					return &query
 				}
 
-				return c.GetGraphQLResult(ctx, &query, swap.Limit)
+				return c.GetGraphQLResult(ctx, getQueryFun, swap.Limit)
 			}
 
 		case UniSwapV3:
 			// nolint:gocritic // cannot dynamically create a new struct with different graphql tags
 			if swap.OrderByVolumeUSD {
-				var query struct {
-					Pairs []graphqlx.Pair `graphql:"pools(first: 1000, skip: $skip, orderBy: volumeUSD, orderDirection: desc)"`
+				getQueryFun := func() interface{} {
+					var query struct {
+						Pairs []graphqlx.Pair `graphql:"pools(first: 1000, skip: $skip, orderBy: volumeUSD, orderDirection: desc)"`
+					}
+
+					return &query
 				}
 
-				return c.GetGraphQLResult(ctx, &query, swap.Limit)
+				return c.GetGraphQLResult(ctx, getQueryFun, swap.Limit)
 			} else {
-				var query struct {
-					Pairs []graphqlx.Pair `graphql:"pools(first: 1000, skip: $skip)"`
+				getQueryFun := func() interface{} {
+					var query struct {
+						Pairs []graphqlx.Pair `graphql:"pools(first: 1000, skip: $skip)"`
+					}
+
+					return &query
 				}
 
-				return c.GetGraphQLResult(ctx, &query, swap.Limit)
+				return c.GetGraphQLResult(ctx, getQueryFun, swap.Limit)
 			}
 
 		}
@@ -108,7 +126,7 @@ func (c *Client) GetSwapPools(ctx context.Context, swap SwapPool) ([]graphqlx.Pa
 }
 
 // GetGraphQLResult executes a GraphQL query and returns the result
-func (c *Client) GetGraphQLResult(ctx context.Context, query interface{}, limit int) ([]graphqlx.Pair, error) {
+func (c *Client) GetGraphQLResult(ctx context.Context, queryFun GetQueryFun, limit int) ([]graphqlx.Pair, error) {
 	result := make([]graphqlx.Pair, 0)
 	firstQuery := true
 
@@ -119,6 +137,8 @@ func (c *Client) GetGraphQLResult(ctx context.Context, query interface{}, limit 
 		variableMap := map[string]interface{}{
 			"skip": graphql.NewInt(graphql.Int(i * 1000)),
 		}
+
+		query := queryFun()
 
 		firstQuery = false
 

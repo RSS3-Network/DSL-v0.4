@@ -22,6 +22,7 @@ type Metadata struct {
 	Mirror    *Mirror    `json:"mirror,omitempty"`
 	POAP      *POAP      `json:"poap,omitempty"`
 	Gitcoin   *Gitcoin   `json:"gitcoin,omitempty"`
+	SnapShot  *SnapShot  `json:"snapshot,omitempty"`
 	Crossbell *Crossbell `json:"crossbell,omitempty"`
 }
 
@@ -77,6 +78,12 @@ type POAP struct {
 	EndDate     string `json:"end_date"`
 	ExpiryDate  string `json:"expiry_date"`
 	TokenID     string `json:"token_id"`
+}
+
+type SnapShot struct {
+	Proposal json.RawMessage `json:"proposal"`
+	Space    json.RawMessage `json:"space"`
+	Choice   json.RawMessage `json:"choice"`
 }
 
 type Crossbell struct {

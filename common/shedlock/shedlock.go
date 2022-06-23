@@ -60,7 +60,7 @@ func (e *Employer) Stop() {
 }
 
 func (e *Employer) Renewal(ctx context.Context, name string, duration time.Duration) error {
-	return e.redisClient.SetNX(ctx, name, 0, duration).Err()
+	return e.redisClient.SetEX(ctx, name, 0, duration).Err()
 }
 
 func New(redisClient *redis.Client) *Employer {
