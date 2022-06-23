@@ -12,7 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/nft"
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
 )
 
@@ -231,7 +231,7 @@ func (p *profile) handlePostNote(ctx context.Context, transfer model.Transfer, l
 	noteID := big.NewInt(0)
 	noteID.SetString(log.Topics[2].Hex(), 0)
 
-	transfer.Type = action.SocialPost
+	transfer.Type = filter.SocialPost
 
 	profileMetadata, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileID)
 	if err != nil {

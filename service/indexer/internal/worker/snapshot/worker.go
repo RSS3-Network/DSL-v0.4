@@ -13,7 +13,7 @@ import (
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/go-redis/redis/v8"
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot/job"
 	"github.com/sirupsen/logrus"
@@ -226,8 +226,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			Transfers: []model.Transfer{
 				{
 					TransactionHash: vote.ID,
-					Tag:             action.TagVote,
-					Type:            action.VoteVote,
+					Tag:             filter.TagGovernance,
+					Type:            filter.GovernanceVote,
 					Timestamp:       vote.DateCreated,
 					Index:           protocol.IndexVirtual,
 					AddressFrom:     lowerAddress,

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 
 	"github.com/naturalselectionlabs/pregod/common/blockscout"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -88,8 +88,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			transfer.Metadata = rawMetadata
-			transfer.Tag = action.TagNFT
-			transfer.Type = action.NFTPoap
+			transfer.Tag = filter.TagCollectible
+			transfer.Type = filter.NFTPoap
 
 			value.Transfers = append(value.Transfers, transfer)
 

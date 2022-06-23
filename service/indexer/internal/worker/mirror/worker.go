@@ -10,7 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 )
 
@@ -86,8 +86,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			transfer.Metadata = rawMetadata
-			transfer.Tag = action.TagSocial
-			transfer.Type = action.SocialPost
+			transfer.Tag = filter.TagSocial
+			transfer.Type = filter.SocialPost
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]

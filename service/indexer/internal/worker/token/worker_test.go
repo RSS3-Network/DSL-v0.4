@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -186,8 +186,8 @@ func Test_service_Handle(t *testing.T) {
 							Network:         protocol.NetworkPolygon,
 							Source:          "moralis",
 							SourceData:      []byte(sourceData),
-							Tag:             action.TagTransaction,
-							Type:            action.TransactionTransfer,
+							Tag:             filter.TagTransaction,
+							Type:            filter.TransactionTransfer,
 							Metadata:        []byte(`{"token":{"token_id":"1","token_value":"1","token_address":"0xb3a5104f3d934fffab52cfa5edd4968d0bbaa470","token_standard":"ERC1155"}}`),
 						},
 					},
@@ -243,14 +243,14 @@ func Test_service_Handle(t *testing.T) {
 						{
 							TransactionHash: "0x3ad53192eb24de7c476d6e6d6b1edfa8068313831615503878c8f49efa52d4e7",
 							Timestamp:       time.Date(2022, 6, 14, 0, 0, 0, 0, location),
-							Tag:             action.TagTransaction,
+							Tag:             filter.TagTransaction,
 							Index:           0,
 							AddressFrom:     "0x000000a52a03835517e9d193b3c27626e1bc96b1",
 							AddressTo:       "0x000000a52a03835517e9d193b3c27626e1bc96b1",
 							Network:         protocol.NetworkZkSync,
 							Source:          "zksync",
 							SourceData:      []byte(sourceDataZkSync),
-							Type:            action.TransactionTransfer,
+							Type:            filter.TransactionTransfer,
 							Metadata:        []byte(`{"token":{"symbol":"DAI","decimals":18,"token_id":"1","token_value":"0","token_address":"0x6b175474e89094c44da98b954eedeac495271d0f","token_standard":"ERC20"}}`),
 						},
 					},
@@ -311,9 +311,9 @@ func Test_service_Handle(t *testing.T) {
 							AddressTo:       "0xbaffff8509fc36ca4c6bccea3ae4c5fe53286892",
 							Network:         protocol.NetworkZkSync,
 							Source:          "zksync",
-							Tag:             action.TagNFT,
+							Tag:             filter.TagNFT,
 							SourceData:      []byte(sourceDataZkSyncNFT),
-							Type:            action.NFTTransfer,
+							Type:            filter.NFTTransfer,
 							Metadata:        []byte(`{"token":{"symbol":"NFT-424218","token_id":"424218","token_value":"1","nft_metadata":{"id":424218,"symbol":"NFT-424218","address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","serialId":0,"creatorId":1101474,"contentHash":"0xd252497a6db751c63bb23eb1493e8461b280bdc398bcc494e6bb5bab2d04935a","creatorAddress":"0x37719d7662a616e466b4d0f139a38e032946d503","currentFactory":"0x7c770595a2be9a87cf49b35ea9bc534f1a59552d","withdrawnFactory":""},"token_address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","token_standard":"ERC721"}}`),
 						},
 					},

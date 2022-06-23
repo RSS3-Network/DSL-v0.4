@@ -9,7 +9,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin/job"
 	"github.com/sirupsen/logrus"
@@ -94,8 +94,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				continue
 			}
 
-			transfer.Tag = action.TagDonation
-			transfer.Type = action.DonationDonate
+			transfer.Tag = filter.TagDonation
+			transfer.Type = filter.DonationDonate
 			transfer.Metadata = metadata
 
 			// Copy the transaction to map
