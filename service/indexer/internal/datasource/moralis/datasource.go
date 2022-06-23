@@ -147,6 +147,11 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			return nil, err
 		}
 
+		index, err := decimal.NewFromString(internalTransaction.TransactionIndex)
+		if err != nil {
+			return nil, err
+		}
+
 		sourceData, err := json.Marshal(internalTransaction)
 		if err != nil {
 			return nil, err
@@ -156,6 +161,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			BlockNumber: blockNumber,
 			Timestamp:   timestamp,
 			Hash:        internalTransaction.Hash,
+			Index:       index.IntPart(),
 			AddressFrom: internalTransaction.FromAddress,
 			AddressTo:   internalTransaction.ToAddress,
 			Network:     message.Network,

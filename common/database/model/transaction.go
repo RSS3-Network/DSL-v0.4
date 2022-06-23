@@ -11,6 +11,7 @@ type Transaction struct {
 	BlockNumber decimal.Decimal `gorm:"column:block_number"`
 	Timestamp   time.Time       `gorm:"column:timestamp"`
 	Hash        string          `gorm:"column:hash;primaryKey"`
+	Index       int64           `gorm:"column:index;index;default:0"`
 	AddressFrom string          `gorm:"column:address_from"`
 	AddressTo   string          `gorm:"column:address_to"`
 	Network     string          `gorm:"column:network;primaryKey"`
