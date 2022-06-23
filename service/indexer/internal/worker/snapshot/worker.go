@@ -45,6 +45,47 @@ type service struct {
 
 var snapShotWorker = "snapshot_worker"
 
+type MetadataSpaceFilter struct {
+	MinScore    decimal.Decimal `json:"minScore"`
+	OnlyMembers bool            `json:"onlyMembers"`
+}
+
+type MetadataSpace struct {
+	Id      string              `json:"id"`
+	Name    string              `json:"name"`
+	About   string              `json:"about"`
+	Network string              `json:"network"`
+	Symbol  string              `json:"symbol"`
+	Filters MetadataSpaceFilter `json:"filters"`
+}
+
+func getFilterSnapshotMetadataSpaceJson(spaceJson json.RawMessage) ([]byte, error) {
+	space := graphqlx.Space{}
+
+	if err := json.Unmarshal(spaceJson, &space); err != nil {
+		return []byte{}, fmt.Errorf("failed to unmarshal space json: %w", err)
+	}
+
+	currSpace := MetadataSpace{
+		Id:      string(space.Id),
+		Name:    string(space.Name),
+		About:   string(space.About),
+		Network: string(space.Network),
+		Symbol:  string(space.Symbol),
+		Filters: MetadataSpaceFilter{
+			MinScore:    decimal.NewFromFloat(float64(space.Filters.MinScore)),
+			OnlyMembers: bool(space.Filters.OnlyMembers),
+		},
+	}
+
+	bytes, err := json.Marshal(currSpace)
+	if err != nil {
+		return []byte{}, fmt.Errorf("failed to marshal space json: %w", err)
+	}
+
+	return bytes, nil
+}
+
 func (s *service) Name() string {
 	return "snapshot"
 }
@@ -130,19 +171,37 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			continue
 		}
 
+		spaceMetadata, err := getFilterSnapshotMetadataSpaceJson(space.Metadata)
+		if err != nil {
+			logrus.Warnf("[snapshot worker] failed to get space metadata:%v, voteid[%s]", err, vote.ID)
+			spaceMetadata = space.Metadata
+		}
+
 		snapShotMetadata := metadata.SnapShot{
+			Proposal: proposal.Metadata,
+			Space:    spaceMetadata,
+			Choice:   vote.Choice,
+		}
+
+		rawMetadata, err := json.Marshal(snapShotMetadata)
+		if err != nil {
+			logrus.Warnf("[snapshot worker] failed to marshal metadata:%v", err)
+			continue
+		}
+
+		snapShotSourcedata := metadata.SnapShot{
 			Proposal: proposal.Metadata,
 			Space:    space.Metadata,
 			Choice:   vote.Choice,
 		}
 
-		metadataModel.SnapShot = &snapShotMetadata
-
-		rawMetadata, err := json.Marshal(metadataModel)
+		rawSourcedata, err := json.Marshal(snapShotSourcedata)
 		if err != nil {
-			logrus.Warnf("[snapshot worker] failed to marshal metadata:%v", err)
+			logrus.Warnf("[snapshot worker] failed to marshal sourcedata:%v", err)
 			continue
 		}
+
+		metadataModel.SnapShot = &snapShotMetadata
 
 		relatedUrl := "https://snapshot.org/#/" + vote.SpaceID + "/proposal/" + vote.ProposalID
 		lowerAddress := strings.ToLower(message.Address)
@@ -165,7 +224,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 					Metadata:            rawMetadata,
 					Network:             message.Network,
 					Source:              s.Name(),
-					SourceData:          rawMetadata,
+					SourceData:          rawSourcedata,
 					RelatedUrls:         []string{relatedUrl},
 				},
 			},
