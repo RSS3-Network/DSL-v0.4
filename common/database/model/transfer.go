@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/lib/pq"
-	"github.com/shopspring/decimal"
 )
 
 type Transfer struct {
@@ -13,7 +12,7 @@ type Transfer struct {
 	Timestamp       time.Time       `gorm:"column:timestamp" json:"-"`
 	Type            string          `gorm:"column:type" json:"type"`
 	Tag             string          `gorm:"column:tag;" json:"tag"`
-	Index           decimal.Decimal `gorm:"column:index;primaryKey" json:"index"`
+	Index           int64           `gorm:"column:index;primaryKey" json:"index"`
 	AddressFrom     string          `gorm:"column:address_from" json:"address_from"`
 	AddressTo       string          `gorm:"column:address_to" json:"address_to"`
 	Metadata        json.RawMessage `gorm:"column:metadata;type:jsonb;default:'{}'" json:"metadata"`

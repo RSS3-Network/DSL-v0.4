@@ -144,7 +144,7 @@ func (d *Datasource) handleTokenTransfers(ctx context.Context, message *protocol
 		transfers = append(transfers, model.Transfer{
 			TransactionHash: internalTokenTransfer.Hash,
 			Timestamp:       time.Unix(internalTokenTransfer.TimeStamp.BigInt().Int64(), 0),
-			Index:           internalTokenTransfer.LogIndex,
+			Index:           internalTokenTransfer.LogIndex.IntPart(),
 			AddressFrom:     internalTokenTransfer.From,
 			AddressTo:       internalTokenTransfer.To,
 			Network:         message.Network,

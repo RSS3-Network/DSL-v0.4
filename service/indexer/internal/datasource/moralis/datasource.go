@@ -231,7 +231,7 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 		transfers = append(transfers, model.Transfer{
 			TransactionHash: internalTokenTransfer.TransactionHash,
 			Timestamp:       timestamp,
-			Index:           decimal.NewFromInt(int64(i)), // This is because Moralis don't provide log index
+			Index:           int64(i), // This is because Moralis don't provide log index
 			AddressFrom:     internalTokenTransfer.FromAddress,
 			AddressTo:       internalTokenTransfer.ToAddress,
 			Metadata:        metadata.Default,
@@ -298,7 +298,7 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 			internalNFTTransfer.LogIndex.IntPart(): {
 				TransactionHash: internalNFTTransfer.TransactionHash,
 				Timestamp:       timestamp,
-				Index:           internalNFTTransfer.LogIndex,
+				Index:           internalNFTTransfer.LogIndex.IntPart(),
 				AddressFrom:     internalNFTTransfer.FromAddress,
 				AddressTo:       internalNFTTransfer.ToAddress,
 				Metadata:        metadata.Default,
