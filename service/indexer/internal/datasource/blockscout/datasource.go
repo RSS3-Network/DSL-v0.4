@@ -95,6 +95,7 @@ func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.M
 
 		transactions = append(transactions, model.Transaction{
 			Hash:        internalTransaction.Hash,
+			BlockNumber: internalTransaction.BlockNumber.IntPart(),
 			Timestamp:   timestamp,
 			Index:       internalTransaction.TransactionIndex.IntPart(),
 			AddressFrom: internalTransaction.From,

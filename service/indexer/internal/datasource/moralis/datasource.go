@@ -158,7 +158,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 		}
 
 		transactions = append(transactions, model.Transaction{
-			BlockNumber: blockNumber,
+			BlockNumber: blockNumber.IntPart(),
 			Timestamp:   timestamp,
 			Hash:        internalTransaction.Hash,
 			Index:       index.IntPart(),

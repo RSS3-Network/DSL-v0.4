@@ -3,12 +3,10 @@ package model
 import (
 	"encoding/json"
 	"time"
-
-	"github.com/shopspring/decimal"
 )
 
 type Transaction struct {
-	BlockNumber decimal.Decimal `gorm:"column:block_number"`
+	BlockNumber int64           `gorm:"column:block_number"`
 	Timestamp   time.Time       `gorm:"column:timestamp"`
 	Hash        string          `gorm:"column:hash;primaryKey"`
 	Index       int64           `gorm:"column:index;index;default:0"`
