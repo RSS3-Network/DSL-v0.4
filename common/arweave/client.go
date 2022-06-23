@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"net/url"
 
+	graphql "github.com/hasura/go-graphql-client"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
-	"github.com/shurcooL/graphql"
 )
 
 const (

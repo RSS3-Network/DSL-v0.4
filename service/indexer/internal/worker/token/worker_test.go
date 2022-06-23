@@ -3,10 +3,11 @@ package token
 import (
 	"context"
 	"encoding/json"
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/naturalselectionlabs/pregod/common/protocol/action"
 
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
