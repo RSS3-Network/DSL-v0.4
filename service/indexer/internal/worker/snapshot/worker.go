@@ -165,6 +165,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot spaces: %w", err)
 	}
 
+	logrus.Infof("snapshot Handle")
 	for _, vote := range votes {
 		var metadataModel metadata.Metadata
 
@@ -176,13 +177,13 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 		space, ok := spaceMap[vote.SpaceID]
 		if !ok {
-			logrus.Warnf("[snapshot worker] failed to get space:%v", vote.SpaceID)
+			logrus.Warnf("[snapshot worker] failed to get space:%v, network:%v", vote.SpaceID, message.Network)
 			continue
 		}
 
 		spaceMetadata, err := getFilterSnapshotMetadataSpaceJson(space.Metadata)
 		if err != nil {
-			logrus.Warnf("[snapshot worker] failed to get space metadata:%v, voteid[%s]", err, vote.ID)
+			logrus.Warnf("[snapshot worker] failed to get space metadata:%v, voteid:%s, voterid:%s", err, vote.ID, message.Address)
 			spaceMetadata = space.Metadata
 		}
 
