@@ -3,7 +3,10 @@ package snapshot
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/snapshot/graphql"
+	"github.com/shopspring/decimal"
 	"strings"
 	"time"
 
@@ -112,7 +115,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	// Only some mainnets are currently supported
 	snapshotNetworkNum := snapshotNetworkNumMap[message.Network]
 
-	votes, err := s.getSnapshotVotes(ctx, message.Address, message.Timestamp)
+	timeStamp, err := s.getLatestTimestamp(message)
+	if err != nil {
+		return nil, err
+	}
+
+	votes, err := s.getSnapshotVotes(ctx, message.Address, timeStamp)
 	if err != nil {
 		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot votes: %w", err)
 	}
@@ -270,6 +278,27 @@ func (s *service) Jobs() []worker.Job {
 			},
 		},
 	}
+}
+
+func (s *service) getLatestTimestamp(message *protocol.Message) (time.Time, error) {
+	var timestamp time.Time
+
+	if err := s.databaseClient.
+		Model((*model.Transaction)(nil)).
+		Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp").
+		Where(map[string]interface{}{
+			"address_from": strings.ToLower(message.Address),
+			"network":      message.Network,
+			"source":       s.Name(),
+		}).
+		Order("timestamp DESC").
+		Limit(1).
+		Pluck("timestamp", &timestamp).
+		Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return time.Time{}, err
+	}
+
+	return timestamp, nil
 }
 
 func (s *service) getSnapshotVotes(ctx context.Context, address string, timestamp time.Time) ([]model.SnapshotVote, error) {
