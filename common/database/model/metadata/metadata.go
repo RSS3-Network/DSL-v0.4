@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"errors"
 	"math/big"
 
 	"github.com/shopspring/decimal"
@@ -9,6 +10,10 @@ import (
 )
 
 var Default json.RawMessage
+
+var (
+	ErrorUnsupportedType = errors.New("unsupported metadata type")
+)
 
 func init() {
 	if err := json.Unmarshal([]byte("{}"), &Default); err != nil {
@@ -93,4 +98,31 @@ type Crossbell struct {
 	Metadata      json.RawMessage `json:"metadata,omitempty"`
 	MetadataFrom  json.RawMessage `json:"metadata_from,omitempty"`
 	MetadataTo    json.RawMessage `json:"metadata_to,omitempty"`
+}
+
+func BuildMetadataRawMessage(metadataRawMessage json.RawMessage, metadataModel any) (json.RawMessage, error) {
+	var internalMetadataModel Metadata
+
+	if err := json.Unmarshal(metadataRawMessage, &internalMetadataModel); err != nil {
+		return nil, err
+	}
+
+	switch model := metadataModel.(type) {
+	case *Token:
+		internalMetadataModel.Token = model
+	case *SwapPool:
+		internalMetadataModel.Swap = model
+	case *Mirror:
+		internalMetadataModel.Mirror = model
+	case *POAP:
+		internalMetadataModel.POAP = model
+	case *Gitcoin:
+		internalMetadataModel.Gitcoin = model
+	case *Crossbell:
+		internalMetadataModel.Crossbell = model
+	default:
+		return nil, ErrorUnsupportedType
+	}
+
+	return json.Marshal(internalMetadataModel)
 }

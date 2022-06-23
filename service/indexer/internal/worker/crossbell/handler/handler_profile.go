@@ -12,7 +12,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/nft"
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
 )
 
@@ -83,6 +82,8 @@ func (p *profile) Handle(ctx context.Context, transaction model.Transaction, tra
 }
 
 func (p *profile) handleProfileCreated(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	transfer.Type = EventNameProfileCreated
+
 	profileCreated := contract.ProfileCreated{}
 
 	if err := p.abi.UnpackIntoInterface(&profileCreated, EventNameProfileCreated, log.Data); err != nil {
@@ -100,15 +101,12 @@ func (p *profile) handleProfileCreated(ctx context.Context, transfer model.Trans
 		return nil, err
 	}
 
-	transfer.Type = EventNameProfileCreated
 	transfer.AddressFrom = addressCreator.String()
 	transfer.AddressTo = addressOwner.String()
 
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			TokenID:  profileID,
-			Metadata: metadataSelf,
-		},
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+		TokenID:  profileID,
+		Metadata: metadataSelf,
 	}); err != nil {
 		return nil, err
 	}
@@ -117,6 +115,8 @@ func (p *profile) handleProfileCreated(ctx context.Context, transfer model.Trans
 }
 
 func (p *profile) handleSetHandle(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	transfer.Type = EventNameSetHandle
+
 	profileID := big.NewInt(0)
 	profileID.SetString(log.Topics[2].Hex(), 0)
 
@@ -131,14 +131,10 @@ func (p *profile) handleSetHandle(ctx context.Context, transfer model.Transfer, 
 		return nil, err
 	}
 
-	transfer.Type = EventNameSetHandle
-
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			TokenID:  profileID,
-			Handle:   setHandlerData.NewHandle,
-			Metadata: metadataSelf,
-		},
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+		TokenID:  profileID,
+		Handle:   setHandlerData.NewHandle,
+		Metadata: metadataSelf,
 	}); err != nil {
 		return nil, err
 	}
@@ -147,6 +143,8 @@ func (p *profile) handleSetHandle(ctx context.Context, transfer model.Transfer, 
 }
 
 func (p *profile) handleLinkProfile(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	transfer.Type = EventNameLinkProfile
+
 	tokenIDFrom := big.NewInt(0)
 	tokenIDFrom.SetString(log.Topics[2].Hex(), 0)
 
@@ -158,8 +156,6 @@ func (p *profile) handleLinkProfile(ctx context.Context, transfer model.Transfer
 		return nil, err
 	}
 
-	transfer.Type = EventNameLinkProfile
-
 	metadataFrom, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, tokenIDFrom)
 	if err != nil {
 		return nil, err
@@ -170,14 +166,12 @@ func (p *profile) handleLinkProfile(ctx context.Context, transfer model.Transfer
 		return nil, err
 	}
 
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			TokenIDFrom:  tokenIDFrom,
-			TokenIDTo:    tokenIDTo,
-			LinkType:     LinkTypeMap[linkProfile.LinkType],
-			MetadataFrom: metadataFrom,
-			MetadataTo:   metadataTo,
-		},
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+		TokenIDFrom:  tokenIDFrom,
+		TokenIDTo:    tokenIDTo,
+		LinkType:     LinkTypeMap[linkProfile.LinkType],
+		MetadataFrom: metadataFrom,
+		MetadataTo:   metadataTo,
 	}); err != nil {
 		return nil, err
 	}
@@ -186,6 +180,8 @@ func (p *profile) handleLinkProfile(ctx context.Context, transfer model.Transfer
 }
 
 func (p *profile) handleUnlinkProfile(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	transfer.Type = EventNameUnlinkProfile
+
 	tokenIDFrom := big.NewInt(0)
 	tokenIDFrom.SetString(log.Topics[2].Hex(), 0)
 
@@ -197,8 +193,6 @@ func (p *profile) handleUnlinkProfile(ctx context.Context, transfer model.Transf
 		return nil, err
 	}
 
-	transfer.Type = EventNameUnlinkProfile
-
 	metadataFrom, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, tokenIDFrom)
 	if err != nil {
 		return nil, err
@@ -209,14 +203,12 @@ func (p *profile) handleUnlinkProfile(ctx context.Context, transfer model.Transf
 		return nil, err
 	}
 
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			TokenIDFrom:  tokenIDFrom,
-			TokenIDTo:    tokenIDTo,
-			LinkType:     LinkTypeMap[unlinkProfile.LinkType],
-			MetadataFrom: metadataFrom,
-			MetadataTo:   metadataTo,
-		},
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+		TokenIDFrom:  tokenIDFrom,
+		TokenIDTo:    tokenIDTo,
+		LinkType:     LinkTypeMap[unlinkProfile.LinkType],
+		MetadataFrom: metadataFrom,
+		MetadataTo:   metadataTo,
 	}); err != nil {
 		return nil, err
 	}
@@ -225,13 +217,13 @@ func (p *profile) handleUnlinkProfile(ctx context.Context, transfer model.Transf
 }
 
 func (p *profile) handlePostNote(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	transfer.Type = EventNamePostNote
+
 	profileID := big.NewInt(0)
 	profileID.SetString(log.Topics[1].Hex(), 0)
 
 	noteID := big.NewInt(0)
 	noteID.SetString(log.Topics[2].Hex(), 0)
-
-	transfer.Type = action.SocialPost
 
 	profileMetadata, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileID)
 	if err != nil {
@@ -243,13 +235,11 @@ func (p *profile) handlePostNote(ctx context.Context, transfer model.Transfer, l
 		return nil, err
 	}
 
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			TokenIDFrom:  profileID,
-			TokenIDTo:    noteID,
-			MetadataFrom: profileMetadata,
-			MetadataTo:   noteMetadata,
-		},
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+		TokenIDFrom:  profileID,
+		TokenIDTo:    noteID,
+		MetadataFrom: profileMetadata,
+		MetadataTo:   noteMetadata,
 	}); err != nil {
 		return nil, err
 	}
@@ -276,13 +266,11 @@ func (p *profile) handleSetPrimaryProfileId(ctx context.Context, transfer model.
 		return nil, err
 	}
 
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			ProfileIDFrom: profileIDFrom,
-			ProfileIDTo:   profileIDTo,
-			MetadataFrom:  metadataFrom,
-			MetadataTo:    metadataTo,
-		},
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+		ProfileIDFrom: profileIDFrom,
+		ProfileIDTo:   profileIDTo,
+		MetadataFrom:  metadataFrom,
+		MetadataTo:    metadataTo,
 	}); err != nil {
 		return nil, err
 	}
@@ -306,13 +294,11 @@ func (p *profile) handleAttachLinkList(ctx context.Context, transfer model.Trans
 		return nil, err
 	}
 
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			ProfileID:  profileID,
-			LinkListID: linklistID,
-			LinkType:   linkType,
-			Metadata:   profileMetadata,
-		},
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+		ProfileID:  profileID,
+		LinkListID: linklistID,
+		LinkType:   linkType,
+		Metadata:   profileMetadata,
 	}); err != nil {
 		return nil, err
 	}
@@ -336,12 +322,10 @@ func (p *profile) handleSetProfileUri(ctx context.Context, transfer model.Transf
 		return nil, err
 	}
 
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			TokenID:  profileID,
-			URI:      setProfileUri.NewUri,
-			Metadata: profileMetadata,
-		},
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+		TokenID:  profileID,
+		URI:      setProfileUri.NewUri,
+		Metadata: profileMetadata,
 	}); err != nil {
 		return nil, err
 	}
