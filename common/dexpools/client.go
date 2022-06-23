@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/hasura/go-graphql-client"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/dexpools/graphql"
 )
