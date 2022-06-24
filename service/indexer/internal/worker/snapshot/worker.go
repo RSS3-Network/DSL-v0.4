@@ -167,10 +167,16 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	if err != nil {
 		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot proposals: %w", err)
 	}
+	if message.Network == "ethereum" {
+		logrus.Infof("this is ethereum, address: %s, len(proposalMap):%d", message.Address, len(proposalMap))
+	}
 
 	spaceMap, err := s.getSnapshotSpaces(ctx, spaceIDs, snapshotNetworkNum)
 	if err != nil {
 		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot spaces: %w", err)
+	}
+	if message.Network == "ethereum" {
+		logrus.Infof("this is ethereum, address: %s, len(spaceMap):%d", message.Address, len(spaceMap))
 	}
 
 	// logrus.Infof("snapshot Handle")
