@@ -217,8 +217,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			Space:    spaceMetadata,
 			Choice:   vote.Choice,
 		}
+		metadataModel.SnapShot = &snapShotMetadata
 
-		rawMetadata, err := json.Marshal(snapShotMetadata)
+		rawMetadata, err := json.Marshal(metadataModel)
 		if err != nil {
 			logrus.Warnf("[snapshot worker] failed to marshal metadata:%v", err)
 			continue
@@ -236,8 +237,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			continue
 		}
 
-		metadataModel.SnapShot = &snapShotMetadata
-
 		relatedUrl := "https://snapshot.org/#/" + vote.SpaceID + "/proposal/" + vote.ProposalID
 		lowerAddress := strings.ToLower(message.Address)
 
@@ -248,7 +247,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			Platform:    Name,
 			Network:     message.Network,
 			Source:      s.Name(),
-			SourceData:  rawMetadata,
+			SourceData:  rawSourcedata,
 			Transfers: []model.Transfer{
 				{
 					TransactionHash: vote.ID,
