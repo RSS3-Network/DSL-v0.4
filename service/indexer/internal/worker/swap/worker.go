@@ -108,6 +108,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			transfer.Tag = filter.TagExchange
 			transfer.Type = filter.ExchangeSwap
 			transfer.Metadata = rawMetadata
+
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
 			if !exist {
@@ -118,6 +119,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
 		}
 	}

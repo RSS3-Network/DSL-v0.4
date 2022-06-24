@@ -3,14 +3,16 @@ module github.com/naturalselectionlabs/pregod
 go 1.18
 
 require (
+	github.com/deckarep/golang-set v1.8.0
 	github.com/ethereum/go-ethereum v1.10.18
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/google/go-querystring v1.1.0
 	github.com/hasura/go-graphql-client v0.7.1
-	github.com/json-iterator/go v1.1.12
+	github.com/ipfs/go-cid v0.2.0
 	github.com/labstack/echo/v4 v4.7.2
 	github.com/lib/pq v1.10.6
+	github.com/multiformats/go-multibase v0.1.1
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/samber/lo v1.21.0
@@ -35,7 +37,6 @@ require (
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/edsrzf/mmap-go v1.1.0 // indirect
@@ -61,13 +62,19 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/klauspost/compress v1.10.3 // indirect
+	github.com/klauspost/cpuid/v2 v2.0.4 // indirect
 	github.com/labstack/gommon v0.3.1 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
+	github.com/minio/sha256-simd v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/mr-tron/base58 v1.2.0 // indirect
+	github.com/multiformats/go-base32 v0.0.3 // indirect
+	github.com/multiformats/go-base36 v0.1.0 // indirect
+	github.com/multiformats/go-multihash v0.0.15 // indirect
+	github.com/multiformats/go-varint v0.0.6 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.0-beta.8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

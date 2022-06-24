@@ -80,6 +80,8 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 			continue
 		}
 
+		transaction.Platform = Name
+
 		// Retain the action model of the transfer type
 		transferMap := make(map[int64]model.Transfer)
 
@@ -129,6 +131,8 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 
 				continue
 			}
+
+			transfer.Platform = Name
 
 			transaction.Transfers = append(transaction.Transfers, *internalTransfer)
 		}

@@ -25,6 +25,10 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+const (
+	Name = "token"
+)
+
 var (
 	_ worker.Worker = (*service)(nil)
 
@@ -38,7 +42,7 @@ type service struct {
 }
 
 func (s *service) Name() string {
-	return "token"
+	return Name
 }
 
 func (s *service) Networks() []string {
@@ -124,14 +128,14 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	case protocol.NetworkZkSync:
 		return s.handleZkSync(ctx, message, transactions)
 	case protocol.NetworkCrossbell, protocol.NetworkXDAI:
-		return s.handleCrossbell_XDAI(ctx, message, transactions)
+		return s.handleCrossbellAndXDAI(ctx, message, transactions)
 	}
 
 	return []model.Transaction{}, nil
 }
 
 // handle crossbell / XDAI NFT (link list / profile)
-func (s *service) handleCrossbell_XDAI(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {

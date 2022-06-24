@@ -26,6 +26,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 )
 
+const (
+	Name = "snapshot"
+)
+
 // Need to go to the official website to get the corresponding network key
 // to correspond to the corresponding network processing.
 // https://github.com/snapshot-labs/snapshot.js/blob/master/src/networks.json
@@ -91,7 +95,7 @@ func getFilterSnapshotMetadataSpaceJson(spaceJson json.RawMessage) ([]byte, erro
 }
 
 func (s *service) Name() string {
-	return "snapshot"
+	return Name
 }
 
 func (s *service) Networks() []string {
@@ -227,6 +231,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			Hash:        vote.ID,
 			Timestamp:   vote.DateCreated,
 			AddressFrom: lowerAddress,
+			Platform:    Name,
 			Network:     message.Network,
 			Source:      s.Name(),
 			SourceData:  rawMetadata,
@@ -239,6 +244,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 					Index:           protocol.IndexVirtual,
 					AddressFrom:     lowerAddress,
 					Metadata:        rawMetadata,
+					Platform:        Name,
 					Network:         message.Network,
 					Source:          s.Name(),
 					SourceData:      rawSourcedata,
