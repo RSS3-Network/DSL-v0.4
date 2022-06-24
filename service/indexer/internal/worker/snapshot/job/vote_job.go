@@ -3,6 +3,7 @@ package job
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hasura/go-graphql-client"
@@ -160,7 +161,7 @@ func (job *SnapshotVoteJob) setVoteInDB(ctx context.Context, graphqlVotes []grap
 
 		vote := model.SnapshotVote{
 			ID:          string(graphqlVote.Id),
-			Voter:       string(graphqlVote.Voter),
+			Voter:       strings.ToLower(string(graphqlVote.Voter)),
 			Choice:      graphqlVote.Choice,
 			ProposalID:  string(graphqlVote.Proposal.Id),
 			SpaceID:     string(graphqlVote.Space.Id),
