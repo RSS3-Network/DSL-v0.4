@@ -126,11 +126,11 @@ func (s *Server) Initialize() (err error) {
 	s.workers = []worker.Worker{
 		crossbell.New(),
 		token.New(s.databaseClient),
+		snapshot.New(s.databaseClient, s.redisClient),
 		swap.New(s.employer, s.databaseClient),
 		mirror.New(),
 		poapworker.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
-		snapshot.New(s.databaseClient, s.redisClient),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
