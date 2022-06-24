@@ -8,7 +8,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -98,9 +98,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			transfer.Tag = action.TagExchange
-			transfer.Type = action.ExchangeSwap
+			transfer.Tag = filter.TagExchange
+			transfer.Type = filter.ExchangeSwap
 			transfer.Metadata = rawMetadata
+
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
 			if !exist {
@@ -111,6 +112,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
 		}
 	}

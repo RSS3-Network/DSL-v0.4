@@ -24,12 +24,12 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
 
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
 	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
@@ -125,13 +125,13 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
+		crossbell.New(),
+		snapshot.New(s.databaseClient, s.redisClient),
 		token.New(s.databaseClient),
 		swap.New(s.employer, s.databaseClient),
 		mirror.New(),
 		poapworker.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
-		snapshot.New(s.databaseClient, s.redisClient),
-		crossbell.New(),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
@@ -179,7 +179,7 @@ func (s *Server) Run() error {
 
 		go func() {
 			if err := s.handle(context.Background(), &message); err != nil {
-				logrus.Errorln(err)
+				logrus.Errorf("message.Address:%v, message.Network:%v,err:%v", message.Address, message.Network, err)
 			}
 		}()
 	}
@@ -229,27 +229,24 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		}
 	}
 
-	if err := s.upsertTransactions(ctx, transactions); err != nil {
-		return err
-	}
-
 	// Using workers to clean data
 	for _, worker := range s.workers {
 		for _, network := range worker.Networks() {
 			if network == message.Network {
 				internalTransactions, err := worker.Handle(ctx, message, transactions)
 				if err != nil {
+					logrus.Error(worker.Name(), message.Network, err)
 					return err
 				}
 
-				if err := s.upsertTransactions(ctx, internalTransactions); err != nil {
-					return err
-				}
 				// if no replacement here, transfers may be edited by more than one workers
 				// but previous edits will be lost
 				transactions = replaceTransactions(transactions, internalTransactions)
 			}
 		}
+	}
+	if err := s.upsertTransactions(ctx, transactions); err != nil {
+		return err
 	}
 
 	return nil

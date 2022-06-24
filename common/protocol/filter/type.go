@@ -1,0 +1,36 @@
+package filter
+
+const (
+	// transaction types: mint | transfer | burn
+	TransactionMint     = "mint"
+	TransactionTransfer = "transfer"
+	TransactionBurn     = "burn"
+
+	// exchange types: transfer | withdraw | deposit | swap in | swap out
+	ExchangeTransfer = "transfer"
+	ExchangeWithdraw = "withdraw"
+	ExchangeDeposit  = "deposit"
+	ExchangeSwap     = "swap"
+
+	// NFT types: transfer | mint | burn | poap
+	NFTTransfer = "transfer"
+	NFTMint     = "mint"
+	NFTBurn     = "burn"
+	NFTPoap     = "POAP"
+
+	// social types: post | comment | share (retweet) | profile | follow | unfollow | like
+	SocialPost     = "post"
+	SocialComment  = "comment"
+	SocialShare    = "share"
+	SocialProfile  = "profile"
+	SocialFollow   = "follow"
+	SocialUnfollow = "unfollow"
+	SocialLike     = "like"
+
+	// Governance types: propose | vote
+	GovernancePropose = "propose"
+	GovernanceVote    = "vote"
+
+	// donation type: donate
+	DonationDonate = "donate"
+)

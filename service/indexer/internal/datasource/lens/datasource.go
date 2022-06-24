@@ -10,7 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/lens"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/shurcooL/graphql"
 	"gorm.io/gorm"
@@ -117,7 +117,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			Transfers: []model.Transfer{
 				{
 					Type:            getType(string(publication.Type)),
-					Tag:             action.TagSocial,
+					Tag:             filter.TagSocial,
 					TransactionHash: Source + "-" + string(publication.ID),
 					Timestamp:       publication.CreatedAt,
 					AddressFrom:     message.Address,
@@ -151,14 +151,14 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 func getType(pubType string) string {
 	switch pubType {
 	case "Post":
-		return action.SocialPost
+		return filter.SocialPost
 	case "Comment":
-		return action.SocialComment
+		return filter.SocialComment
 	case "Mirror":
-		return action.SocialShare
+		return filter.SocialShare
 	}
 
-	return action.SocialPost
+	return filter.SocialPost
 }
 
 func New(databaseClient *gorm.DB) datasource.Datasource {

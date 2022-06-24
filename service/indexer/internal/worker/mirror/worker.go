@@ -10,8 +10,12 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+)
+
+const (
+	Name = "mirror"
 )
 
 var _ worker.Worker = &service{}
@@ -21,7 +25,7 @@ type service struct {
 }
 
 func (s *service) Name() string {
-	return "mirror"
+	return Name
 }
 
 func (s *service) Networks() []string {
@@ -49,6 +53,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			if transactionEdge.Node.Owner.Address != arweave.AddressMirror {
 				continue
 			}
+
+			transfer.Platform = Name
 
 			var metadataModel metadata.Metadata
 
@@ -86,8 +92,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			transfer.Metadata = rawMetadata
-			transfer.Tag = action.TagSocial
-			transfer.Type = action.SocialPost
+			transfer.Tag = filter.TagSocial
+			transfer.Type = filter.SocialPost
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
@@ -106,6 +112,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactions := make([]model.Transaction, 0)
 
 	for _, transaction := range internalTransactionMap {
+		transaction.Platform = Name
+
 		internalTransactions = append(internalTransactions, transaction)
 	}
 

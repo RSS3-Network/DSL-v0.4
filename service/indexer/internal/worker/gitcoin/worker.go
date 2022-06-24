@@ -9,12 +9,16 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/protocol/action"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin/job"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
+)
+
+const (
+	Name = "gitcoin"
 )
 
 var _ worker.Worker = (*service)(nil)
@@ -34,7 +38,7 @@ func New(databaseClient *gorm.DB, redisClient *redis.Client) worker.Worker {
 }
 
 func (s *service) Name() string {
-	return "gitcoin"
+	return Name
 }
 
 func (s *service) Networks() []string {
@@ -94,8 +98,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				continue
 			}
 
-			transfer.Tag = action.TagDonation
-			transfer.Type = action.DonationDonate
+			transfer.Platform = Name
+			transfer.Tag = filter.TagDonation
+			transfer.Type = filter.DonationDonate
 			transfer.Metadata = metadata
 
 			// Copy the transaction to map
@@ -108,6 +113,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
 		}
 	}
@@ -115,6 +121,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactions := make([]model.Transaction, 0)
 
 	for _, internalTransaction := range internalTransactionMap {
+		internalTransaction.Platform = Name
+
 		internalTransactions = append(internalTransactions, internalTransaction)
 	}
 
