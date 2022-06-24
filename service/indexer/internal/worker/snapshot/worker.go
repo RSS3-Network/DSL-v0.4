@@ -118,6 +118,7 @@ func (s *service) Initialize(ctx context.Context) error {
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	// Only some mainnets are currently supported
+	logrus.Infof("This is snapshot, Handling message: %s", message.Network)
 	snapshotNetworkNum := snapshotNetworkNumMap[message.Network]
 
 	if message.Network == "ethereum" {
