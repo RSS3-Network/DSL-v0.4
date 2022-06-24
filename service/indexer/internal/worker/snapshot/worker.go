@@ -290,7 +290,7 @@ func (s *service) Jobs() []worker.Job {
 				RedisClient:    s.redisClient,
 				SnapshotClient: s.snapshotClient,
 				Limit:          10000,
-				HighUpdateTime: time.Second,
+				HighUpdateTime: time.Second * 15,
 				LowUpdateTime:  time.Minute * 5,
 			},
 		},
