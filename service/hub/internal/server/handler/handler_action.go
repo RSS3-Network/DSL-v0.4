@@ -90,13 +90,13 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		return err
 	}
 
-	transferMap := make(map[string][]*model.Transfer)
+	transferMap := make(map[string][]model.Transfer)
 	for _, transfer := range transferList {
 		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
 	}
 
-	for _, transaction := range transactionList {
-		transaction.Transfers = transferMap[transaction.Hash]
+	for index := range transactionList {
+		transactionList[index].Transfers = transferMap[transactionList[index].Hash]
 	}
 
 	return c.JSON(http.StatusOK, &Response{
@@ -107,13 +107,13 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 }
 
 // getTransactionListDatabse get transaction data from database
-func (h *Handler) getTransactionListDatabse(c context.Context, request GetActionListRequest) ([]*model.Transaction, int64, error) {
+func (h *Handler) getTransactionListDatabse(c context.Context, request GetActionListRequest) ([]model.Transaction, int64, error) {
 	tracer := otel.Tracer("getActionListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
-	transactionList := []*model.Transaction{}
+	transactionList := []model.Transaction{}
 	total := int64(0)
 	sql := h.DatabaseClient.
 		Model(&model.Transaction{}).
@@ -129,11 +129,7 @@ func (h *Handler) getTransactionListDatabse(c context.Context, request GetAction
 			return nil, 0, err
 		}
 
-		sql = sql.Where("timestamp <= ?", lastItem.Timestamp).
-			Where(
-				"hash != ? AND index < ?",
-				lastItem.Hash, lastItem.Index,
-			)
+		sql = sql.Where("timestamp < ? OR (timestamp = ? AND index < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)
 	}
 
 	if len(request.Tags) > 0 {
@@ -144,8 +140,7 @@ func (h *Handler) getTransactionListDatabse(c context.Context, request GetAction
 		sql = sql.Where("network IN ?", request.Networks)
 	}
 
-	if err := sql.Limit(request.Limit).Order("timestamp DESC").Find(&transactionList).
-		Limit(-1).Count(&total).Error; err != nil {
+	if err := sql.Count(&total).Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactionList).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -153,13 +148,13 @@ func (h *Handler) getTransactionListDatabse(c context.Context, request GetAction
 }
 
 // getActionListDatabase get transfer data from database
-func (h *Handler) getActionListDatabase(c context.Context, transactionHashList []string, request GetActionListRequest) ([]*model.Transfer, error) {
+func (h *Handler) getActionListDatabase(c context.Context, transactionHashList []string, request GetActionListRequest) ([]model.Transfer, error) {
 	tracer := otel.Tracer("getActionListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
-	transfers := make([]*model.Transfer, 0)
+	transfers := make([]model.Transfer, 0)
 
 	sql := h.DatabaseClient.Model(&model.Transfer{})
 
