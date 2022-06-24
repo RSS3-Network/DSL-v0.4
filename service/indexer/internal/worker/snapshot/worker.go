@@ -116,6 +116,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	// Only some mainnets are currently supported
 	snapshotNetworkNum := snapshotNetworkNumMap[message.Network]
 
+	if message.Network == "ethereum" {
+		logrus.Infof("this is ethereum, address: %s", message.Address)
+	}
+
 	timeStamp, err := s.getLatestTimestamp(message)
 	if err != nil {
 		return nil, err
@@ -165,7 +169,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot spaces: %w", err)
 	}
 
-	logrus.Infof("snapshot Handle")
+	// logrus.Infof("snapshot Handle")
+	if message.Network == "ethereum" {
+		logrus.Infof("this is ethereum, address: %s", message.Address)
+	}
 	for _, vote := range votes {
 		var metadataModel metadata.Metadata
 
@@ -216,7 +223,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		relatedUrl := "https://snapshot.org/#/" + vote.SpaceID + "/proposal/" + vote.ProposalID
 		lowerAddress := strings.ToLower(message.Address)
 
-		transactions = append(transactions, model.Transaction{
+		currTransaction := model.Transaction{
 			Hash:        vote.ID,
 			Timestamp:   vote.DateCreated,
 			AddressFrom: lowerAddress,
@@ -238,7 +245,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 					RelatedUrls:     []string{relatedUrl},
 				},
 			},
-		})
+		}
+
+		transactions = append(transactions, currTransaction)
 	}
 
 	return transactions, nil
@@ -312,7 +321,7 @@ func (s *service) getSnapshotVotes(ctx context.Context, address string, timestam
 	// from db
 	if err := s.databaseClient.
 		Model(&model.SnapshotVote{}).
-		Where("voter = ?", address).
+		Where("voter = ?", strings.ToLower(address)).
 		Where("date_created >= ?", timestamp).
 		Find(&snapshotVotes).Error; err != nil {
 		return nil, err
