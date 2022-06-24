@@ -89,8 +89,15 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			transfer.Platform = Name
 			transfer.Metadata = rawMetadata
-			transfer.Tag = filter.TagCollectible
-			transfer.Type = filter.NFTPoap
+
+			if filter.TagPriority[filter.TagCollectible] > filter.TagPriority[transfer.Tag] {
+				transfer.Tag = filter.TagCollectible
+				transfer.Type = filter.NFTPoap
+
+				if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
+					transaction.Tag = transfer.Tag
+				}
+			}
 
 			value.Transfers = append(value.Transfers, transfer)
 

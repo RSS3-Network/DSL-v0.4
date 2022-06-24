@@ -99,9 +99,16 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			transfer.Platform = Name
-			transfer.Tag = filter.TagDonation
-			transfer.Type = filter.DonationDonate
 			transfer.Metadata = metadata
+
+			if filter.TagPriority[filter.TagSocial] > filter.TagPriority[transfer.Tag] {
+				transfer.Tag = filter.TagDonation
+				transfer.Type = filter.DonationDonate
+
+				if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
+					transaction.Tag = transfer.Tag
+				}
+			}
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]

@@ -105,8 +105,14 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			transfer.Tag = filter.TagExchange
-			transfer.Type = filter.ExchangeSwap
+			if filter.TagPriority[filter.TagExchange] > filter.TagPriority[transfer.Tag] {
+				transfer.Tag = filter.TagExchange
+				transfer.Type = filter.ExchangeSwap
+
+				if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
+					transaction.Tag = transfer.Tag
+				}
+			}
 			transfer.Metadata = rawMetadata
 
 			// Copy the transaction to map

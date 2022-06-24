@@ -177,7 +177,14 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 						TokenValue:    &sourceData.Value,
 						NFTMetadata:   nftMetadata,
 					}
-					transfer.Tag = filter.TagTransaction
+
+					if filter.TagPriority[filter.TagTransaction] > filter.TagPriority[transfer.Tag] {
+						transfer.Tag = filter.TagTransaction
+
+						if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
+							transaction.Tag = transfer.Tag
+						}
+					}
 				case message.Network == protocol.NetworkXDAI:
 					var coinInfo *model.CoinMarketCapCoinInfo
 					var err error
@@ -198,7 +205,14 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 							Symbol:        coinInfo.Symbol,
 							Decimals:      coinInfo.Decimals,
 						}
-						transfer.Tag = filter.TagTransaction
+
+						if filter.TagPriority[filter.TagTransaction] > filter.TagPriority[transfer.Tag] {
+							transfer.Tag = filter.TagTransaction
+
+							if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
+								transaction.Tag = transfer.Tag
+							}
+						}
 					}
 				}
 
@@ -283,7 +297,14 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					TokenValue:    &tokenValue,
 					NFTMetadata:   nftMetadata,
 				}
-				transfer.Tag = filter.TagTransaction
+
+				if filter.TagPriority[filter.TagTransaction] > filter.TagPriority[transfer.Tag] {
+					transfer.Tag = filter.TagTransaction
+
+					if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
+						transaction.Tag = transfer.Tag
+					}
+				}
 			} else if _, exist = sourceDataMap["address"]; exist {
 				// Token transfer
 				tokenTransfer := moralisx.TokenTransfer{}
@@ -311,7 +332,10 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					Symbol:        coinInfo.Symbol,
 					Decimals:      coinInfo.Decimals,
 				}
-				transfer.Tag = filter.TagTransaction
+
+				if filter.TagPriority[filter.TagTransaction] > filter.TagPriority[transfer.Tag] {
+					transfer.Tag = filter.TagTransaction
+				}
 			} else {
 				// Native transfer
 				nativeTransfer := moralisx.Transaction{}
@@ -338,7 +362,14 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					Symbol:        coinInfo.Symbol,
 					Decimals:      coinInfo.Decimals,
 				}
-				transfer.Tag = filter.TagTransaction
+
+				if filter.TagPriority[filter.TagTransaction] > filter.TagPriority[transfer.Tag] {
+					transfer.Tag = filter.TagTransaction
+
+					if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
+						transaction.Tag = transfer.Tag
+					}
+				}
 			}
 
 			rawMetadata, err := json.Marshal(metadataModel)
@@ -412,10 +443,17 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 					Symbol:        nftTokenInfo.Symbol,
 					NFTMetadata:   nftTokenInfo.Bytes(),
 				}
-				transfer.Tag = filter.TagCollectible
 
-				// TODO: check the NFT filter type here
-				transfer.Type = filter.NFTTransfer
+				if filter.TagPriority[filter.TagCollectible] > filter.TagPriority[transfer.Tag] {
+					transfer.Tag = filter.TagCollectible
+
+					// TODO: check the NFT filter type here
+					transfer.Type = filter.NFTTransfer
+
+					if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
+						transaction.Tag = transfer.Tag
+					}
+				}
 			} else { // token
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  tokenInfo.Address,
@@ -424,8 +462,15 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 					Decimals:      tokenInfo.Decimals,
 					Symbol:        tokenInfo.Symbol,
 				}
-				transfer.Tag = filter.TagTransaction
-				transfer.Type = filter.TransactionTransfer
+
+				if filter.TagPriority[filter.TagTransaction] > filter.TagPriority[transfer.Tag] {
+					transfer.Tag = filter.TagTransaction
+					transfer.Type = filter.TransactionTransfer
+
+					if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
+						transaction.Tag = transfer.Tag
+					}
+				}
 			}
 
 			rawMetadata, err := json.Marshal(metadataModel)
@@ -446,6 +491,8 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 
 			value.Transfers = append(value.Transfers, transfer)
 			internalTransactionMap[transaction.Hash] = value
+
+			// transaction tag
 		}
 	}
 
