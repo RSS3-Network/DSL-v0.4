@@ -87,6 +87,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
+			transfer.Platform = Name
 			transfer.Metadata = rawMetadata
 			transfer.Tag = filter.TagCollectible
 			transfer.Type = filter.NFTPoap
@@ -100,6 +101,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransfers := make([]model.Transaction, 0)
 
 	for _, internalTransaction := range internalTransactionMap {
+		internalTransaction.Platform = Name
+
 		internalTransfers = append(internalTransfers, internalTransaction)
 	}
 

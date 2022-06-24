@@ -17,6 +17,10 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	Name = "gitcoin"
+)
+
 var _ worker.Worker = (*service)(nil)
 
 type service struct {
@@ -34,7 +38,7 @@ func New(databaseClient *gorm.DB, redisClient *redis.Client) worker.Worker {
 }
 
 func (s *service) Name() string {
-	return "gitcoin"
+	return Name
 }
 
 func (s *service) Networks() []string {
@@ -94,6 +98,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				continue
 			}
 
+			transfer.Platform = Name
 			transfer.Tag = filter.TagDonation
 			transfer.Type = filter.DonationDonate
 			transfer.Metadata = metadata
@@ -108,6 +113,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
 		}
 	}
@@ -115,6 +121,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactions := make([]model.Transaction, 0)
 
 	for _, internalTransaction := range internalTransactionMap {
+		internalTransaction.Platform = Name
+
 		internalTransactions = append(internalTransactions, internalTransaction)
 	}
 

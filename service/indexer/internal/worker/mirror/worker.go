@@ -14,6 +14,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 )
 
+const (
+	Name = "mirror"
+)
+
 var _ worker.Worker = &service{}
 
 type service struct {
@@ -21,7 +25,7 @@ type service struct {
 }
 
 func (s *service) Name() string {
-	return "mirror"
+	return Name
 }
 
 func (s *service) Networks() []string {
@@ -49,6 +53,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			if transactionEdge.Node.Owner.Address != arweave.AddressMirror {
 				continue
 			}
+
+			transfer.Platform = Name
 
 			var metadataModel metadata.Metadata
 
@@ -106,6 +112,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactions := make([]model.Transaction, 0)
 
 	for _, transaction := range internalTransactionMap {
+		transaction.Platform = Name
+
 		internalTransactions = append(internalTransactions, transaction)
 	}
 
