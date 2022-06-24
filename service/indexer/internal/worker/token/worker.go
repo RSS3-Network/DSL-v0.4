@@ -148,7 +148,7 @@ func (s *service) handleCrossbell_XDAI(ctx context.Context, message *protocol.Me
 
 				switch {
 				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress != "":
-					nftMetadata, err := nft.GetMetadata(
+					nftMetadata, err := nft.GetTokenMetadataByID(
 						message.Network,
 						common.HexToAddress(sourceData.ContractAddress),
 						sourceData.TokenID.BigInt(),
@@ -249,7 +249,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					return nil, err
 				}
 
-				nftMetadata, err := nft.GetMetadata(
+				nftMetadata, err := nft.GetTokenMetadataByID(
 					message.Network,
 					common.HexToAddress(nftTransfer.TokenAddress),
 					tokenID.BigInt(),

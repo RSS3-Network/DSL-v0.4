@@ -34,7 +34,7 @@ func Initialize(projectID string) {
 	ProjectID = projectID
 }
 
-func GetMetadata(network string, contractAddress common.Address, tokenID *big.Int) ([]byte, error) {
+func GetTokenMetadataByID(network string, contractAddress common.Address, tokenID *big.Int) ([]byte, error) {
 	ethereumEndpoint := ""
 
 	switch network {
@@ -68,6 +68,10 @@ func GetMetadata(network string, contractAddress common.Address, tokenID *big.In
 		}
 	}
 
+	return GetTokenMetadata(tokenURI)
+}
+
+func GetTokenMetadata(tokenURI string) (json.RawMessage, error) {
 	if strings.HasPrefix(tokenURI, "ipfs://") {
 		tokenURI = strings.Replace(tokenURI, "ipfs://", "https://rss3.infura-ipfs.io/ipfs/", 1)
 	} else if strings.Contains(tokenURI, ";base64,") {

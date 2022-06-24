@@ -40,3 +40,8 @@ type UnlinkProfile struct {
 type SetProfileUri struct {
 	NewUri string
 }
+
+type PostNote struct {
+	LinkItemType [32]byte
+	Data         []byte
+}

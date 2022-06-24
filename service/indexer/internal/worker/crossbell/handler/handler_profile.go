@@ -96,7 +96,7 @@ func (p *profile) handleProfileCreated(ctx context.Context, transfer model.Trans
 	addressCreator := common.HexToAddress(log.Topics[2].Hex())
 	addressOwner := common.HexToAddress(log.Topics[3].Hex())
 
-	metadataSelf, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileID)
+	metadataSelf, err := nft.GetTokenMetadataByID(nft.NetworkCrossbell, AddressProfileProxy, profileID)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (p *profile) handleSetHandle(ctx context.Context, transfer model.Transfer, 
 		return nil, err
 	}
 
-	metadataSelf, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileID)
+	metadataSelf, err := nft.GetTokenMetadataByID(nft.NetworkCrossbell, AddressProfileProxy, profileID)
 	if err != nil {
 		return nil, err
 	}
@@ -156,12 +156,12 @@ func (p *profile) handleLinkProfile(ctx context.Context, transfer model.Transfer
 		return nil, err
 	}
 
-	metadataFrom, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, tokenIDFrom)
+	metadataFrom, err := nft.GetTokenMetadataByID(nft.NetworkCrossbell, AddressProfileProxy, tokenIDFrom)
 	if err != nil {
 		return nil, err
 	}
 
-	metadataTo, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, tokenIDTo)
+	metadataTo, err := nft.GetTokenMetadataByID(nft.NetworkCrossbell, AddressProfileProxy, tokenIDTo)
 	if err != nil {
 		return nil, err
 	}
@@ -193,12 +193,12 @@ func (p *profile) handleUnlinkProfile(ctx context.Context, transfer model.Transf
 		return nil, err
 	}
 
-	metadataFrom, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, tokenIDFrom)
+	metadataFrom, err := nft.GetTokenMetadataByID(nft.NetworkCrossbell, AddressProfileProxy, tokenIDFrom)
 	if err != nil {
 		return nil, err
 	}
 
-	metadataTo, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, tokenIDTo)
+	metadataTo, err := nft.GetTokenMetadataByID(nft.NetworkCrossbell, AddressProfileProxy, tokenIDTo)
 	if err != nil {
 		return nil, err
 	}
@@ -225,21 +225,31 @@ func (p *profile) handlePostNote(ctx context.Context, transfer model.Transfer, l
 	noteID := big.NewInt(0)
 	noteID.SetString(log.Topics[2].Hex(), 0)
 
-	profileMetadata, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileID)
+	// linkKey := string(common.TrimRightZeroes(log.Topics[3][:]))
+
+	postNote := contract.PostNote{}
+	if err := p.abi.UnpackIntoInterface(&postNote, EventNamePostNote, log.Data); err != nil {
+		return nil, err
+	}
+
+	profileMetadata, err := nft.GetTokenMetadataByID(nft.NetworkCrossbell, AddressProfileProxy, profileID)
 	if err != nil {
 		return nil, err
 	}
 
-	noteMetadata, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, noteID)
-	if err != nil {
-		return nil, err
-	}
+	// TODO Need to parse input
+	//noteMetadata, err := nft.GetTokenMetadata()
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+		LinkType:     string(common.TrimRightZeroes(postNote.LinkItemType[:])),
+		NoteData:     string(postNote.Data),
 		TokenIDFrom:  profileID,
 		TokenIDTo:    noteID,
 		MetadataFrom: profileMetadata,
-		MetadataTo:   noteMetadata,
+		//MetadataTo:   noteMetadata,
 	}); err != nil {
 		return nil, err
 	}
@@ -256,12 +266,12 @@ func (p *profile) handleSetPrimaryProfileId(ctx context.Context, transfer model.
 	profileIDFrom := big.NewInt(0)
 	profileIDFrom.SetString(log.Topics[3].Hex(), 0)
 
-	metadataFrom, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileIDFrom)
+	metadataFrom, err := nft.GetTokenMetadataByID(nft.NetworkCrossbell, AddressProfileProxy, profileIDFrom)
 	if err != nil {
 		return nil, err
 	}
 
-	metadataTo, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileIDTo)
+	metadataTo, err := nft.GetTokenMetadataByID(nft.NetworkCrossbell, AddressProfileProxy, profileIDTo)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +299,7 @@ func (p *profile) handleAttachLinkList(ctx context.Context, transfer model.Trans
 
 	linkType := LinkTypeMap[log.Topics[3]]
 
-	profileMetadata, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileID)
+	profileMetadata, err := nft.GetTokenMetadataByID(nft.NetworkCrossbell, AddressProfileProxy, profileID)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +327,7 @@ func (p *profile) handleSetProfileUri(ctx context.Context, transfer model.Transf
 		return nil, err
 	}
 
-	profileMetadata, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileID)
+	profileMetadata, err := nft.GetTokenMetadataByID(nft.NetworkCrossbell, AddressProfileProxy, profileID)
 	if err != nil {
 		return nil, err
 	}

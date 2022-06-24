@@ -93,6 +93,10 @@ type Crossbell struct {
 	ProfileIDFrom *big.Int        `json:"profile_id_from,omitempty"`
 	ProfileIDTo   *big.Int        `json:"profile_id_to,omitempty"`
 	LinkType      string          `json:"link_type,omitempty"`
+	LinkKey       string          `json:"link_key,omitempty"`
+	LinkItemType  string          `json:"link_item_type,omitempty"`
+	NoteID        *big.Int        `json:"note_id,omitempty"`
+	NoteData      string          `json:"note_data,omitempty"`
 	URI           string          `json:"uri,omitempty"`
 	Handle        string          `json:"handle,omitempty"`
 	Metadata      json.RawMessage `json:"metadata,omitempty"`
