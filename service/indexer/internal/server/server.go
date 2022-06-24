@@ -6,8 +6,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
-
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -30,6 +28,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
 	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
@@ -125,13 +124,13 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
+		crossbell.New(),
 		token.New(s.databaseClient),
+		snapshot.New(s.databaseClient, s.redisClient),
 		swap.New(s.employer, s.databaseClient),
 		mirror.New(),
 		poapworker.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
-		snapshot.New(s.databaseClient, s.redisClient),
-		crossbell.New(),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
@@ -235,6 +234,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 			if network == message.Network {
 				internalTransactions, err := worker.Handle(ctx, message, transactions)
 				if err != nil {
+					logrus.Error(worker.Name(), message.Network, err)
 					return err
 				}
 

@@ -160,6 +160,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 						Symbol:        "CSB",
 						Decimals:      18,
 					}
+					transfer.Tag = filter.TagTransaction
 				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress != "":
 					nftMetadata, err := nft.GetMetadata(
 						message.Network,
