@@ -229,10 +229,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		}
 	}
 
-	if err := s.upsertTransactions(ctx, transactions); err != nil {
-		return err
-	}
-
 	// Using workers to clean data
 	for _, worker := range s.workers {
 		for _, network := range worker.Networks() {
@@ -242,14 +238,14 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 					return err
 				}
 
-				if err := s.upsertTransactions(ctx, internalTransactions); err != nil {
-					return err
-				}
 				// if no replacement here, transfers may be edited by more than one workers
 				// but previous edits will be lost
 				transactions = replaceTransactions(transactions, internalTransactions)
 			}
 		}
+	}
+	if err := s.upsertTransactions(ctx, transactions); err != nil {
+		return err
 	}
 
 	return nil
