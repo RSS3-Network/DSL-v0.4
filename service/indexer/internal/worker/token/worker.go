@@ -147,6 +147,15 @@ func (s *service) handleCrossbell_XDAI(ctx context.Context, message *protocol.Me
 				}
 
 				switch {
+				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress == "":
+					// crossbell empty: use CSB
+					metadataModel.Token = &metadata.Token{
+						TokenStandard: protocol.TokenTypeERC20,
+						Logo:          "https://scan.crossbell.io/images/csb-yellow-no-bg.svg",
+						Name:          "Crossbell",
+						Symbol:        "CSB",
+						Decimals:      18,
+					}
 				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress != "":
 					nftMetadata, err := nft.GetMetadata(
 						message.Network,
@@ -165,14 +174,14 @@ func (s *service) handleCrossbell_XDAI(ctx context.Context, message *protocol.Me
 						NFTMetadata:   nftMetadata,
 					}
 					transfer.Tag = filter.TagTransaction
-				case message.Network == protocol.NetworkXDAI && sourceData.ContractAddress != "":
+				case message.Network == protocol.NetworkXDAI:
 					var coinInfo *model.CoinMarketCapCoinInfo
 					var err error
-					// if sourceData.ContractAddress != "" {
-					// 	coinInfo, err = coinmarketcap.CachedGetCoinInfo(ctx, message.Network, sourceData.ContractAddress)
-					// } else {
-					coinInfo, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, message.Network)
-					// }
+					if sourceData.ContractAddress != "" {
+						coinInfo, err = coinmarketcap.CachedGetCoinInfo(ctx, message.Network, sourceData.ContractAddress)
+					} else {
+						coinInfo, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, message.Network)
+					}
 					if err != nil {
 						logrus.Error(err)
 					} else {

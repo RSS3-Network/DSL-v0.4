@@ -102,7 +102,7 @@ func (s *Server) Initialize() (err error) {
 
 	s.httpServer.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
 
-	s.httpServer.GET("/addresses/:address/actions", s.httpHandler.GetActionListFunc)
+	s.httpServer.GET("/notes/:address", s.httpHandler.GetActionListFunc)
 
 	return nil
 }

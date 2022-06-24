@@ -4,13 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"sort"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	m "github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 )
@@ -73,91 +71,102 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		}
 	}()
 
-	transfers, total, err := h.getActionListDatabase(ctx, request)
+	transactionList, total, err := h.getTransactionListDatabse(ctx, request)
+	if err != nil {
+		return err
+	}
+
+	if len(transactionList) == 0 {
+		return c.JSON(http.StatusOK, &Response{})
+	}
+
+	transactionHashList := []string{}
+	for _, transactionHash := range transactionList {
+		transactionHashList = append(transactionHashList, transactionHash.Hash)
+	}
+
+	transferList, err := h.getActionListDatabase(ctx, transactionHashList, request)
 	if err != nil {
 		return err
 	}
 
 	transferMap := make(map[string][]model.Transfer)
-	for _, transfer := range transfers {
+	for _, transfer := range transferList {
 		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
 	}
 
-	result := make([]m.Feed, 0)
-
-	for transactionHash, transfers := range transferMap {
-		feed := m.Feed{
-			TransactionHash: transactionHash,
-			Timestamp:       transfers[0].Timestamp,
-			Network:         transfers[0].Network,
-			Actions:         transfers,
-		}
-
-		result = append(result, feed)
+	for index := range transactionList {
+		transactionList[index].Transfers = transferMap[transactionList[index].Hash]
 	}
-
-	if len(result) == 0 {
-		return c.JSON(http.StatusOK, &Response{})
-	}
-
-	sort.Sort(m.Feeds(result))
 
 	return c.JSON(http.StatusOK, &Response{
 		Total:  total,
-		Cursor: result[len(result)-1].TransactionHash,
-		Result: result,
+		Cursor: transactionList[len(transactionList)-1].Hash,
+		Result: transactionList,
 	})
 }
 
-// getActionListDatabase get transfer data from database
-func (h *Handler) getActionListDatabase(c context.Context, request GetActionListRequest) ([]model.Transfer, int64, error) {
+// getTransactionListDatabse get transaction data from database
+func (h *Handler) getTransactionListDatabse(c context.Context, request GetActionListRequest) ([]model.Transaction, int64, error) {
 	tracer := otel.Tracer("getActionListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
-	transfers := make([]model.Transfer, 0)
-	transactionHashList := []string{}
+	transactionList := []model.Transaction{}
 	total := int64(0)
 	sql := h.DatabaseClient.
-		Model(&model.Transfer{}).
-		Select("transaction_hash").
-		Where("LOWER(address_from) = ? OR LOWER(address_to) = ? OR (network = 'arweave' AND LOWER(metadata #>> '{mirror, contributor}') = ?)",
-			strings.ToLower(request.Address),
+		Model(&model.Transaction{}).
+		Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
 			strings.ToLower(request.Address),
 			strings.ToLower(request.Address),
 		)
 
 	if len(request.Cursor) > 0 {
-		sql = sql.Where("transaction_hash < ?", request.Cursor)
-	}
+		var lastItem model.Transaction
 
-	if len(request.Types) > 0 {
-		sql = sql.Where("\"type\" in ? ", request.Types)
+		if err := h.DatabaseClient.Where("hash = ?", strings.ToLower(request.Cursor)).First(&lastItem).Error; err != nil {
+			return nil, 0, err
+		}
+
+		sql = sql.Where("timestamp < ? OR (timestamp = ? AND index < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)
 	}
 
 	if len(request.Tags) > 0 {
 		sql = sql.Where("tag IN ?", request.Tags)
 	}
 
-	if len(request.ItemSources) > 0 {
-		sql = sql.Where("source IN ?", request.ItemSources)
-	}
-
 	if len(request.Networks) > 0 {
 		sql = sql.Where("network IN ?", request.Networks)
 	}
 
-	if err := sql.Group("transaction_hash").Limit(request.Limit).Find(&transactionHashList).
-		Limit(-1).Count(&total).Error; err != nil {
+	if err := sql.Count(&total).Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactionList).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := h.DatabaseClient.Model(&model.Transfer{}).
+	return transactionList, total, nil
+}
+
+// getActionListDatabase get transfer data from database
+func (h *Handler) getActionListDatabase(c context.Context, transactionHashList []string, request GetActionListRequest) ([]model.Transfer, error) {
+	tracer := otel.Tracer("getActionListDatabase")
+	_, postgresSnap := tracer.Start(c, "postgres")
+
+	defer postgresSnap.End()
+
+	transfers := make([]model.Transfer, 0)
+
+	sql := h.DatabaseClient.Model(&model.Transfer{})
+
+	if len(request.Types) > 0 {
+		sql = sql.Where("\"type\" in ? ", request.Types)
+	}
+
+	if err := sql.
 		Where("transaction_hash IN ?", transactionHashList).
 		Find(&transfers).Error; err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
-	return transfers, total, nil
+	return transfers, nil
 }
