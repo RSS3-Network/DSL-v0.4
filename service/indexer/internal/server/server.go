@@ -178,7 +178,7 @@ func (s *Server) Run() error {
 
 		go func() {
 			if err := s.handle(context.Background(), &message); err != nil {
-				logrus.Errorln(err)
+				logrus.Errorf("message.Address:%v, message.Network:%v,err:%v", message.Address, message.Network, err)
 			}
 		}()
 	}
