@@ -266,6 +266,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			},
 		}
 
+		logrus.Infof("[snapshot worker] transaction:%v", currTransaction)
 		transactions = append(transactions, currTransaction)
 	}
 
