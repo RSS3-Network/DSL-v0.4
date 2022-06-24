@@ -126,10 +126,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	timeStamp, err := s.getLatestTimestamp(message)
 	if message.Network == "ethereum" {
-		logrus.Infof("this is ethereum, address: %s, timeStamp:", message.Address, timeStamp)
+		logrus.Infof("this is ethereum, address: %s, %s:", message.Address, timeStamp)
 	}
 	if err != nil {
-		logrus.Errorf("failed to get latest timestamp: %w", err)
+		logrus.Errorf("failed to get latest timestamp: %s", err)
 		return nil, err
 	}
 
@@ -138,8 +138,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		logrus.Infof("this is ethereum, address: %s, len(votes):%d", message.Address, len(votes))
 	}
 	if err != nil {
-		logrus.Errorf("failed to get snapshot votes: %w", err)
-		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot votes: %w", err)
+		logrus.Errorf("failed to get snapshot votes: %s", err)
+		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot votes: %s", err)
 	}
 	if len(votes) == 0 {
 		return nil, nil
@@ -217,8 +217,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			Space:    spaceMetadata,
 			Choice:   vote.Choice,
 		}
+		metadataModel.SnapShot = &snapShotMetadata
 
-		rawMetadata, err := json.Marshal(snapShotMetadata)
+		rawMetadata, err := json.Marshal(metadataModel)
 		if err != nil {
 			logrus.Warnf("[snapshot worker] failed to marshal metadata:%v", err)
 			continue
@@ -236,8 +237,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			continue
 		}
 
-		metadataModel.SnapShot = &snapShotMetadata
-
 		relatedUrl := "https://snapshot.org/#/" + vote.SpaceID + "/proposal/" + vote.ProposalID
 		lowerAddress := strings.ToLower(message.Address)
 
@@ -248,7 +247,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			Platform:    Name,
 			Network:     message.Network,
 			Source:      s.Name(),
-			SourceData:  rawMetadata,
+			SourceData:  rawSourcedata,
 			Transfers: []model.Transfer{
 				{
 					TransactionHash: vote.ID,
@@ -297,7 +296,7 @@ func (s *service) Jobs() []worker.Job {
 				LowUpdateTime:  time.Minute * 5,
 			},
 		},
-		//&job.SnapshotVoteJob{
+		// &job.SnapshotVoteJob{
 		//	SnapshotJobBase: job.SnapshotJobBase{
 		//		Name:           "snapshot_vote_job",
 		//		DatabaseClient: s.databaseClient,
@@ -307,7 +306,7 @@ func (s *service) Jobs() []worker.Job {
 		//		HighUpdateTime: time.Second * 15,
 		//		LowUpdateTime:  time.Minute * 5,
 		//	},
-		//},
+		// },
 	}
 }
 
