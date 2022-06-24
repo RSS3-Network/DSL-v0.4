@@ -129,12 +129,20 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		return nil, err
 	}
 
+	if message.Network == "ethereum" {
+		logrus.Infof("this is ethereum, address: %s, timeStamp:", message.Address, timeStamp)
+	}
+
 	votes, err := s.getSnapshotVotes(ctx, message.Address, timeStamp)
 	if err != nil {
 		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot votes: %w", err)
 	}
 	if len(votes) == 0 {
 		return nil, nil
+	}
+
+	if message.Network == "ethereum" {
+		logrus.Infof("this is ethereum, address: %s, len(votes):%d", message.Address, len(votes))
 	}
 
 	proposalIDSet := mapset.NewSet()
