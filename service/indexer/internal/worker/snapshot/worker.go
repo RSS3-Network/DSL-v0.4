@@ -118,7 +118,6 @@ func (s *service) Initialize(ctx context.Context) error {
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	// Only some mainnets are currently supported
-	logrus.Infof("This is snapshot, Handling message: %s", message.Network)
 	snapshotNetworkNum := snapshotNetworkNumMap[message.Network]
 
 	if message.Network == "ethereum" {
@@ -126,24 +125,24 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	}
 
 	timeStamp, err := s.getLatestTimestamp(message)
-	if err != nil {
-		return nil, err
-	}
-
 	if message.Network == "ethereum" {
 		logrus.Infof("this is ethereum, address: %s, timeStamp:", message.Address, timeStamp)
 	}
+	if err != nil {
+		logrus.Errorf("failed to get latest timestamp: %w", err)
+		return nil, err
+	}
 
 	votes, err := s.getSnapshotVotes(ctx, message.Address, timeStamp)
+	if message.Network == "ethereum" {
+		logrus.Infof("this is ethereum, address: %s, len(votes):%d", message.Address, len(votes))
+	}
 	if err != nil {
+		logrus.Errorf("failed to get snapshot votes: %w", err)
 		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot votes: %w", err)
 	}
 	if len(votes) == 0 {
 		return nil, nil
-	}
-
-	if message.Network == "ethereum" {
-		logrus.Infof("this is ethereum, address: %s, len(votes):%d", message.Address, len(votes))
 	}
 
 	proposalIDSet := mapset.NewSet()
@@ -298,17 +297,17 @@ func (s *service) Jobs() []worker.Job {
 				LowUpdateTime:  time.Minute * 5,
 			},
 		},
-		&job.SnapshotVoteJob{
-			SnapshotJobBase: job.SnapshotJobBase{
-				Name:           "snapshot_vote_job",
-				DatabaseClient: s.databaseClient,
-				RedisClient:    s.redisClient,
-				SnapshotClient: s.snapshotClient,
-				Limit:          10000,
-				HighUpdateTime: time.Second * 15,
-				LowUpdateTime:  time.Minute * 5,
-			},
-		},
+		//&job.SnapshotVoteJob{
+		//	SnapshotJobBase: job.SnapshotJobBase{
+		//		Name:           "snapshot_vote_job",
+		//		DatabaseClient: s.databaseClient,
+		//		RedisClient:    s.redisClient,
+		//		SnapshotClient: s.snapshotClient,
+		//		Limit:          10000,
+		//		HighUpdateTime: time.Second * 15,
+		//		LowUpdateTime:  time.Minute * 5,
+		//	},
+		//},
 	}
 }
 
