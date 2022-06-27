@@ -92,7 +92,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
 			if transfer.Tag == filter.TagCollectible {
-				transfer.Type = filter.NFTPoap
+				transfer.Type = filter.CollectiblePoap
 			}
 
 			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)

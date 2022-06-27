@@ -218,17 +218,17 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 			case transfer.AddressFrom == EmptyAddress:
 				transfer.Type = filter.TransactionMint
 				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.NFTMint
+					transfer.Type = filter.CollectibleMint
 				}
 			case transfer.AddressTo == EmptyAddress:
 				transfer.Type = filter.TransactionBurn
 				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.NFTBurn
+					transfer.Type = filter.CollectibleBurn
 				}
 			default:
 				transfer.Type = filter.TransactionTransfer
 				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.NFTTransfer
+					transfer.Type = filter.CollectibleTransfer
 				}
 			}
 
@@ -386,17 +386,17 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 			case transfer.AddressFrom == EmptyAddress:
 				transfer.Type = filter.TransactionMint
 				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.NFTMint
+					transfer.Type = filter.CollectibleMint
 				}
 			case transfer.AddressTo == EmptyAddress:
 				transfer.Type = filter.TransactionBurn
 				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.NFTBurn
+					transfer.Type = filter.CollectibleBurn
 				}
 			default:
 				transfer.Type = filter.TransactionTransfer
 				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.NFTTransfer
+					transfer.Type = filter.CollectibleTransfer
 				}
 			}
 
@@ -484,17 +484,17 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 			case transfer.AddressFrom == EmptyAddress:
 				transfer.Type = filter.TransactionMint
 				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.NFTMint
+					transfer.Type = filter.CollectibleMint
 				}
 			case transfer.AddressTo == EmptyAddress:
 				transfer.Type = filter.TransactionBurn
 				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.NFTBurn
+					transfer.Type = filter.CollectibleBurn
 				}
 			default:
 				transfer.Type = filter.TransactionTransfer
 				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.NFTTransfer
+					transfer.Type = filter.CollectibleTransfer
 				}
 			}
 

@@ -1,9 +1,9 @@
 package filter
 
 const (
-	// transaction types: mint | transfer | burn
-	TransactionMint     = "mint"
+	// transaction types:  transfer | mint | burn | cancel
 	TransactionTransfer = "transfer"
+	TransactionMint     = "mint"
 	TransactionBurn     = "burn"
 	TransactionCancel   = "cancel"
 
@@ -14,10 +14,10 @@ const (
 	ExchangeSwap     = "swap"
 
 	// NFT types: transfer | mint | burn | poap
-	NFTTransfer = "transfer"
-	NFTMint     = "mint"
-	NFTBurn     = "burn"
-	NFTPoap     = "POAP"
+	CollectibleTransfer = "transfer"
+	CollectibleMint     = "mint"
+	CollectibleBurn     = "burn"
+	CollectiblePoap     = "POAP"
 
 	// social types: post | comment | share (retweet) | profile | follow | unfollow | like
 	SocialPost     = "post"
@@ -33,5 +33,6 @@ const (
 	GovernanceVote    = "vote"
 
 	// donation type: donate
+	DonationLaunch = "launch"
 	DonationDonate = "donate"
 )

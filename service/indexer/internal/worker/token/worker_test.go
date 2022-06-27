@@ -316,7 +316,7 @@ func Test_service_Handle(t *testing.T) {
 							Source:          "zksync",
 							Tag:             filter.TagCollectible,
 							SourceData:      []byte(sourceDataZkSyncNFT),
-							Type:            filter.NFTTransfer,
+							Type:            filter.CollectibleTransfer,
 							Metadata:        []byte(`{"token":{"symbol":"NFT-424218","token_id":"424218","token_value":"1","nft_metadata":{"id":424218,"symbol":"NFT-424218","address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","serialId":0,"creatorId":1101474,"contentHash":"0xd252497a6db751c63bb23eb1493e8461b280bdc398bcc494e6bb5bab2d04935a","creatorAddress":"0x37719d7662a616e466b4d0f139a38e032946d503","currentFactory":"0x7c770595a2be9a87cf49b35ea9bc534f1a59552d","withdrawnFactory":""},"token_address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","token_standard":"ERC-721"}}`),
 						},
 					},
