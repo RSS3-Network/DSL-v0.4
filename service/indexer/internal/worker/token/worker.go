@@ -26,7 +26,8 @@ import (
 )
 
 const (
-	Name = "token"
+	EmptyAddress = "0x0000000000000000000000000000000000000000"
+	Name         = "token"
 )
 
 var (
@@ -212,7 +213,24 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 				}
 				transfer.Metadata = rawMetadata
 			}
-			transfer.Type = filter.TransactionTransfer
+
+			switch {
+			case transfer.AddressFrom == EmptyAddress:
+				transfer.Type = filter.TransactionMint
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.NFTMint
+				}
+			case transfer.AddressTo == EmptyAddress:
+				transfer.Type = filter.TransactionBurn
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.NFTBurn
+				}
+			default:
+				transfer.Type = filter.TransactionTransfer
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.NFTTransfer
+				}
+			}
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
@@ -364,7 +382,23 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 			transfer.Metadata = rawMetadata
 
-			transfer.Type = filter.TransactionTransfer
+			switch {
+			case transfer.AddressFrom == EmptyAddress:
+				transfer.Type = filter.TransactionMint
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.NFTMint
+				}
+			case transfer.AddressTo == EmptyAddress:
+				transfer.Type = filter.TransactionBurn
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.NFTBurn
+				}
+			default:
+				transfer.Type = filter.TransactionTransfer
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.NFTTransfer
+				}
+			}
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
@@ -435,10 +469,6 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				}
 
 				transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
-
-				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.NFTTransfer
-				}
 			} else { // token
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  tokenInfo.Address,
@@ -449,9 +479,22 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				}
 
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
-
-				if transfer.Tag == filter.TagTransaction {
-					transfer.Type = filter.TransactionTransfer
+			}
+			switch {
+			case transfer.AddressFrom == EmptyAddress:
+				transfer.Type = filter.TransactionMint
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.NFTMint
+				}
+			case transfer.AddressTo == EmptyAddress:
+				transfer.Type = filter.TransactionBurn
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.NFTBurn
+				}
+			default:
+				transfer.Type = filter.TransactionTransfer
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.NFTTransfer
 				}
 			}
 

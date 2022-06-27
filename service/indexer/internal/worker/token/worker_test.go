@@ -175,6 +175,7 @@ func Test_service_Handle(t *testing.T) {
 					AddressTo:   "0xe02a52a553acf14cd5552e53d48dc0fc072978d8",
 					Network:     protocol.NetworkPolygon,
 					Source:      "moralis",
+					Tag:         filter.TagCollectible,
 					SourceData:  []byte(sourceData),
 					Transfers: []model.Transfer{
 						{
@@ -186,8 +187,8 @@ func Test_service_Handle(t *testing.T) {
 							Network:         protocol.NetworkPolygon,
 							Source:          "moralis",
 							SourceData:      []byte(sourceData),
-							Tag:             filter.TagTransaction,
-							Type:            filter.TransactionTransfer,
+							Tag:             filter.TagCollectible,
+							Type:            filter.TransactionMint,
 							Metadata:        []byte(`{"token":{"token_id":"1","token_value":"1","token_address":"0xb3a5104f3d934fffab52cfa5edd4968d0bbaa470","token_standard":"ERC1155"}}`),
 						},
 					},
@@ -238,6 +239,7 @@ func Test_service_Handle(t *testing.T) {
 					AddressTo:   "0x000000a52a03835517e9d193b3c27626e1bc96b1",
 					Network:     protocol.NetworkZkSync,
 					Source:      "zksync",
+					Tag:         filter.TagTransaction,
 					SourceData:  []byte(sourceDataZkSync),
 					Transfers: []model.Transfer{
 						{
@@ -300,6 +302,7 @@ func Test_service_Handle(t *testing.T) {
 					AddressFrom: "0x37719d7662a616e466b4d0f139a38e032946d503",
 					AddressTo:   "0xbaffff8509fc36ca4c6bccea3ae4c5fe53286892",
 					Network:     protocol.NetworkZkSync,
+					Tag:         filter.TagCollectible,
 					Source:      "zksync",
 					SourceData:  []byte(sourceDataZkSyncNFT),
 					Transfers: []model.Transfer{
@@ -314,7 +317,7 @@ func Test_service_Handle(t *testing.T) {
 							Tag:             filter.TagCollectible,
 							SourceData:      []byte(sourceDataZkSyncNFT),
 							Type:            filter.NFTTransfer,
-							Metadata:        []byte(`{"token":{"symbol":"NFT-424218","token_id":"424218","token_value":"1","nft_metadata":{"id":424218,"symbol":"NFT-424218","address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","serialId":0,"creatorId":1101474,"contentHash":"0xd252497a6db751c63bb23eb1493e8461b280bdc398bcc494e6bb5bab2d04935a","creatorAddress":"0x37719d7662a616e466b4d0f139a38e032946d503","currentFactory":"0x7c770595a2be9a87cf49b35ea9bc534f1a59552d","withdrawnFactory":""},"token_address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","token_standard":"ERC721"}}`),
+							Metadata:        []byte(`{"token":{"symbol":"NFT-424218","token_id":"424218","token_value":"1","nft_metadata":{"id":424218,"symbol":"NFT-424218","address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","serialId":0,"creatorId":1101474,"contentHash":"0xd252497a6db751c63bb23eb1493e8461b280bdc398bcc494e6bb5bab2d04935a","creatorAddress":"0x37719d7662a616e466b4d0f139a38e032946d503","currentFactory":"0x7c770595a2be9a87cf49b35ea9bc534f1a59552d","withdrawnFactory":""},"token_address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","token_standard":"ERC-721"}}`),
 						},
 					},
 				},
