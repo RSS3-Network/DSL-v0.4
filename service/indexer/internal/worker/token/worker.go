@@ -180,7 +180,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 						NFTMetadata:   nftMetadata,
 					}
 
-					transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
+					transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 				case message.Network == protocol.NetworkXDAI:
 					var coinInfo *model.CoinMarketCapCoinInfo
 					var err error
@@ -223,7 +223,9 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
 
 			// transaction tag
@@ -291,7 +293,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					NFTMetadata:   nftMetadata,
 				}
 
-				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
+				transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 			} else if _, exist = sourceDataMap["address"]; exist {
 				// Token transfer
 				tokenTransfer := moralisx.TokenTransfer{}
@@ -369,7 +371,9 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
 
 			// transaction tag
@@ -463,6 +467,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
 			internalTransactionMap[transaction.Hash] = value
 

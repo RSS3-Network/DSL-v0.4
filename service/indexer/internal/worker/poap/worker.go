@@ -95,6 +95,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				transfer.Type = filter.NFTPoap
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
 
 			internalTransactionMap[value.Hash] = value
