@@ -17,3 +17,10 @@ var TagPriority = map[string]int{
 	TagDonation:    4,
 	TagGovernance:  4,
 }
+
+func UpdateTag(targetTag string, currentTag string) string {
+	if TagPriority[targetTag] > TagPriority[currentTag] {
+		return targetTag
+	}
+	return currentTag
+}
