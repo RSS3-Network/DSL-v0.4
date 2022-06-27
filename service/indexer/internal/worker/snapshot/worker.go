@@ -126,13 +126,26 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		return nil, err
 	}
 
+	currTansactions := transactions
+
+	isVoteError := false
 	votes, err := s.getSnapshotVotes(ctx, message.Address, timeStamp)
 	if err != nil {
 		logrus.Errorf("failed to get snapshot votes: %s", err)
-		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot votes: %s", err)
+		isVoteError = true
 	}
+
+	isProposalsByAuthorError := false
+	proposalsByAuthorMap, err := s.getProposalsByAuthor(ctx, message.Address, timeStamp)
+	if err != nil {
+
+	}
+
 	if len(votes) == 0 {
 		return nil, nil
+	}
+	if isVoteError && isProposalsByAuthorError {
+		return nil, errors.New("failed to get snapshot votes and proposals by author")
 	}
 
 	proposalIDSet := mapset.NewSet()
@@ -171,86 +184,33 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot spaces: %w", err)
 	}
 
-	for _, vote := range votes {
-		var metadataModel metadata.Metadata
-
-		proposal, ok := proposalMap[vote.ProposalID]
-		if !ok {
-			logrus.Warnf("[snapshot worker] failed to get proposal:%v", vote.ProposalID)
-			continue
+	if !isVoteError {
+		for _, vote := range votes {
+			newTansaction, err := s.cleaningVote(vote, proposalMap, spaceMap, message)
+			if err != nil {
+				logrus.Errorf("failed to cleaning vote: %s", err)
+				continue
+			}
+			if newTansaction != nil {
+				currTansactions = append(currTansactions, *newTansaction)
+			}
 		}
-
-		space, ok := spaceMap[vote.SpaceID]
-		if !ok {
-			logrus.Warnf("[snapshot worker] failed to get space:%v, network:%v", vote.SpaceID, message.Network)
-			continue
-		}
-
-		spaceMetadata, err := getFilterSnapshotMetadataSpaceJson(space.Metadata)
-		if err != nil {
-			logrus.Warnf("[snapshot worker] failed to get space metadata:%v, voteid:%s, voterid:%s", err, vote.ID, message.Address)
-			spaceMetadata = space.Metadata
-		}
-
-		snapShotMetadata := metadata.SnapShot{
-			Proposal: proposal.Metadata,
-			Space:    spaceMetadata,
-			Choice:   vote.Choice,
-		}
-		metadataModel.SnapShot = &snapShotMetadata
-
-		rawMetadata, err := json.Marshal(metadataModel)
-		if err != nil {
-			logrus.Warnf("[snapshot worker] failed to marshal metadata:%v", err)
-			continue
-		}
-
-		snapShotSourcedata := metadata.SnapShot{
-			Proposal: proposal.Metadata,
-			Space:    space.Metadata,
-			Choice:   vote.Choice,
-		}
-
-		rawSourcedata, err := json.Marshal(snapShotSourcedata)
-		if err != nil {
-			logrus.Warnf("[snapshot worker] failed to marshal sourcedata:%v", err)
-			continue
-		}
-
-		relatedUrl := "https://snapshot.org/#/" + vote.SpaceID + "/proposal/" + vote.ProposalID
-		lowerAddress := strings.ToLower(message.Address)
-
-		currTransaction := model.Transaction{
-			Hash:        vote.ID,
-			Timestamp:   vote.DateCreated,
-			AddressFrom: lowerAddress,
-			Platform:    Name,
-			Network:     message.Network,
-			Source:      s.Name(),
-			SourceData:  rawMetadata,
-			Tag:         filter.TagGovernance,
-			Transfers: []model.Transfer{
-				{
-					TransactionHash: vote.ID,
-					Tag:             filter.TagGovernance,
-					Type:            filter.GovernanceVote,
-					Timestamp:       vote.DateCreated,
-					Index:           protocol.IndexVirtual,
-					AddressFrom:     lowerAddress,
-					Metadata:        rawMetadata,
-					Platform:        Name,
-					Network:         message.Network,
-					Source:          s.Name(),
-					SourceData:      rawSourcedata,
-					RelatedUrls:     []string{relatedUrl},
-				},
-			},
-		}
-
-		transactions = append(transactions, currTransaction)
 	}
 
-	return transactions, nil
+	if !isProposalsByAuthorError {
+		for _, proposal := range proposalsByAuthorMap {
+			newTansaction, err := s.cleaningProposalsByAuthor(proposal, spaceMap, message)
+			if err != nil {
+				logrus.Errorf("failed to cleaning proposal: %s", err)
+				continue
+			}
+			if newTansaction != nil {
+				currTansactions = append(currTansactions, *newTansaction)
+			}
+		}
+	}
+
+	return currTansactions, nil
 }
 
 func (s *service) Jobs() []worker.Job {
@@ -373,6 +333,190 @@ func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networ
 	}
 
 	return snapshotSpaceMap, nil
+}
+
+func (s *service) getProposalsByAuthor(ctx context.Context, author string, timestamp time.Time) (map[string]model.SnapshotProposal, error) {
+	_, handlerSpan := otel.Tracer(snapShotWorker).Start(ctx, "get_snapshot_by_author")
+	defer handlerSpan.End()
+
+	var snapshotProposals []model.SnapshotProposal
+	snapshotProposalMap := make(map[string]model.SnapshotProposal)
+
+	// from db
+	if err := s.databaseClient.
+		Model(&model.SnapshotProposal{}).
+		Where("author IN (?)", author).
+		Where("date_created >= ?", timestamp).
+		Find(&snapshotProposals).Error; err != nil {
+		return nil, err
+	}
+
+	for _, proposal := range snapshotProposals {
+		snapshotProposalMap[proposal.ID] = proposal
+	}
+
+	return snapshotProposalMap, nil
+}
+
+func (s *service) cleaningVote(
+	vote model.SnapshotVote,
+	proposalMap map[string]model.SnapshotProposal,
+	spaceMap map[string]model.SnapshotSpace,
+	message *protocol.Message,
+) (*model.Transaction, error) {
+
+	var metadataModel metadata.Metadata
+
+	proposal, ok := proposalMap[vote.ProposalID]
+	if !ok {
+		logrus.Warnf("[snapshot worker] failed to get proposal:%v", vote.ProposalID)
+		return nil, nil
+	}
+
+	space, ok := spaceMap[vote.SpaceID]
+	if !ok {
+		logrus.Warnf("[snapshot worker] failed to get space:%v, network:%v", vote.SpaceID, message.Network)
+		return nil, nil
+	}
+
+	spaceMetadata, err := getFilterSnapshotMetadataSpaceJson(space.Metadata)
+	if err != nil {
+		logrus.Warnf("[snapshot worker] failed to get space metadata:%v, voteid:%s, voterid:%s", err, vote.ID, message.Address)
+		spaceMetadata = space.Metadata
+	}
+
+	snapShotMetadata := metadata.SnapShot{
+		Proposal: proposal.Metadata,
+		Space:    spaceMetadata,
+		Choice:   vote.Choice,
+	}
+	metadataModel.SnapShot = &snapShotMetadata
+
+	rawMetadata, err := json.Marshal(metadataModel)
+	if err != nil {
+		logrus.Warnf("[snapshot worker] failed to marshal metadata:%v", err)
+		return nil, nil
+	}
+
+	snapShotSourcedata := metadata.SnapShot{
+		Proposal: proposal.Metadata,
+		Space:    space.Metadata,
+		Choice:   vote.Choice,
+	}
+
+	rawSourcedata, err := json.Marshal(snapShotSourcedata)
+	if err != nil {
+		logrus.Warnf("[snapshot worker] failed to marshal sourcedata:%v", err)
+		return nil, nil
+	}
+
+	relatedUrl := "https://snapshot.org/#/" + vote.SpaceID + "/proposal/" + vote.ProposalID
+	lowerAddress := strings.ToLower(message.Address)
+
+	currTransaction := model.Transaction{
+		Hash:        vote.ID,
+		Timestamp:   vote.DateCreated,
+		AddressFrom: lowerAddress,
+		Platform:    Name,
+		Network:     message.Network,
+		Source:      Name,
+		SourceData:  rawSourcedata,
+		Tag:         filter.TagGovernance,
+		Transfers: []model.Transfer{
+			{
+				TransactionHash: vote.ID,
+				Tag:             filter.TagGovernance,
+				Type:            filter.GovernanceVote,
+				Timestamp:       vote.DateCreated,
+				Index:           protocol.IndexVirtual,
+				AddressFrom:     lowerAddress,
+				Metadata:        rawMetadata,
+				Platform:        Name,
+				Network:         message.Network,
+				Source:          Name,
+				SourceData:      rawSourcedata,
+				RelatedUrls:     []string{relatedUrl},
+			},
+		},
+	}
+
+	return &currTransaction, nil
+}
+
+func (s *service) cleaningProposalsByAuthor(
+	proposal model.SnapshotProposal,
+	spaceMap map[string]model.SnapshotSpace,
+	message *protocol.Message,
+) (*model.Transaction, error) {
+
+	var metadataModel metadata.Metadata
+
+	space, ok := spaceMap[proposal.SpaceID]
+	if !ok {
+		logrus.Warnf("[snapshot worker] failed to get space:%v, network:%v", proposal.SpaceID, message.Network)
+		return nil, nil
+	}
+
+	spaceMetadata, err := getFilterSnapshotMetadataSpaceJson(space.Metadata)
+	if err != nil {
+		logrus.Warnf("[snapshot worker] failed to get space metadata:%v, proposalid:%s, authorid:%s", err, proposal.ID, message.Address)
+		spaceMetadata = space.Metadata
+	}
+
+	snapShotMetadata := metadata.SnapShot{
+		Proposal: proposal.Metadata,
+		Space:    spaceMetadata,
+	}
+	metadataModel.SnapShot = &snapShotMetadata
+
+	rawMetadata, err := json.Marshal(metadataModel)
+	if err != nil {
+		logrus.Warnf("[snapshot worker] failed to marshal metadata:%v", err)
+		return nil, nil
+	}
+
+	snapShotSourcedata := metadata.SnapShot{
+		Proposal: proposal.Metadata,
+		Space:    space.Metadata,
+	}
+
+	rawSourcedata, err := json.Marshal(snapShotSourcedata)
+	if err != nil {
+		logrus.Warnf("[snapshot worker] failed to marshal sourcedata:%v", err)
+		return nil, nil
+	}
+
+	relatedUrl := "https://snapshot.org/#/" + proposal.SpaceID + "/proposal/" + proposal.ID
+	lowerAddress := strings.ToLower(message.Address)
+
+	currTransaction := model.Transaction{
+		Hash:        proposal.ID,
+		Timestamp:   proposal.DateCreated,
+		AddressFrom: lowerAddress,
+		Platform:    Name,
+		Network:     message.Network,
+		Source:      s.Name(),
+		SourceData:  rawMetadata,
+		Tag:         filter.TagGovernance,
+		Transfers: []model.Transfer{
+			{
+				TransactionHash: proposal.ID,
+				Tag:             filter.TagGovernance,
+				Type:            filter.GovernancePropose,
+				Timestamp:       proposal.DateCreated,
+				Index:           protocol.IndexVirtual,
+				AddressFrom:     lowerAddress,
+				Metadata:        rawMetadata,
+				Platform:        Name,
+				Network:         message.Network,
+				Source:          s.Name(),
+				SourceData:      rawSourcedata,
+				RelatedUrls:     []string{relatedUrl},
+			},
+		},
+	}
+
+	return &currTransaction, nil
 }
 
 func New(

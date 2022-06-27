@@ -166,6 +166,7 @@ func (job *SnapshotProposalJob) setProposalsInDB(ctx context.Context, graphqlpro
 		proposal := model.SnapshotProposal{
 			ID:          string(graphqlproposal.Id),
 			SpaceID:     string(graphqlproposal.Space.Id),
+			Author:      string(graphqlproposal.Author),
 			DateCreated: time.Unix(int64(graphqlproposal.Created), 0),
 			Metadata:    metadata,
 		}
