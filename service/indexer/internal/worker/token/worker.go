@@ -160,7 +160,8 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 						Symbol:        "CSB",
 						Decimals:      18,
 					}
-					transfer.Tag = filter.TagTransaction
+
+					transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress != "":
 					nftMetadata, err := nft.GetMetadata(
 						message.Network,
@@ -179,13 +180,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 						NFTMetadata:   nftMetadata,
 					}
 
-					if filter.TagPriority[filter.TagTransaction] > filter.TagPriority[transfer.Tag] {
-						transfer.Tag = filter.TagTransaction
-
-						if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
-							transaction.Tag = transfer.Tag
-						}
-					}
+					transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 				case message.Network == protocol.NetworkXDAI:
 					var coinInfo *model.CoinMarketCapCoinInfo
 					var err error
@@ -207,13 +202,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 							Decimals:      coinInfo.Decimals,
 						}
 
-						if filter.TagPriority[filter.TagTransaction] > filter.TagPriority[transfer.Tag] {
-							transfer.Tag = filter.TagTransaction
-
-							if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
-								transaction.Tag = transfer.Tag
-							}
-						}
+						transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 					}
 				}
 
@@ -234,7 +223,9 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
 		}
 	}
@@ -299,13 +290,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					NFTMetadata:   nftMetadata,
 				}
 
-				if filter.TagPriority[filter.TagTransaction] > filter.TagPriority[transfer.Tag] {
-					transfer.Tag = filter.TagTransaction
-
-					if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
-						transaction.Tag = transfer.Tag
-					}
-				}
+				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 			} else if _, exist = sourceDataMap["address"]; exist {
 				// Token transfer
 				tokenTransfer := moralisx.TokenTransfer{}
@@ -334,9 +319,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					Decimals:      coinInfo.Decimals,
 				}
 
-				if filter.TagPriority[filter.TagTransaction] > filter.TagPriority[transfer.Tag] {
-					transfer.Tag = filter.TagTransaction
-				}
+				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 			} else {
 				// Native transfer
 				nativeTransfer := moralisx.Transaction{}
@@ -364,13 +347,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					Decimals:      coinInfo.Decimals,
 				}
 
-				if filter.TagPriority[filter.TagTransaction] > filter.TagPriority[transfer.Tag] {
-					transfer.Tag = filter.TagTransaction
-
-					if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
-						transaction.Tag = transfer.Tag
-					}
-				}
+				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 			}
 
 			rawMetadata, err := json.Marshal(metadataModel)
@@ -391,7 +368,9 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
 		}
 	}
@@ -445,15 +424,10 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 					NFTMetadata:   nftTokenInfo.Bytes(),
 				}
 
-				if filter.TagPriority[filter.TagCollectible] > filter.TagPriority[transfer.Tag] {
-					transfer.Tag = filter.TagCollectible
+				transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
-					// TODO: check the NFT filter type here
+				if transfer.Tag == filter.TagCollectible {
 					transfer.Type = filter.NFTTransfer
-
-					if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
-						transaction.Tag = transfer.Tag
-					}
 				}
 			} else { // token
 				metadataModel.Token = &metadata.Token{
@@ -464,13 +438,10 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 					Symbol:        tokenInfo.Symbol,
 				}
 
-				if filter.TagPriority[filter.TagTransaction] > filter.TagPriority[transfer.Tag] {
-					transfer.Tag = filter.TagTransaction
-					transfer.Type = filter.TransactionTransfer
+				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
-					if filter.TagPriority[transfer.Tag] > filter.TagPriority[transaction.Tag] {
-						transaction.Tag = transfer.Tag
-					}
+				if transfer.Tag == filter.TagTransaction {
+					transfer.Type = filter.TransactionTransfer
 				}
 			}
 
@@ -490,10 +461,9 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
 			internalTransactionMap[transaction.Hash] = value
-
-			// transaction tag
 		}
 	}
 
