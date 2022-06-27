@@ -3,11 +3,13 @@ package swap
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/errorx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/shedlock"
@@ -35,6 +37,9 @@ var (
 		// https://docs.pancakeswap.finance/code/smart-contracts/pancakeswap-exchange/router-v2
 		strings.ToLower("0x10ED43C718714eb63d5aA57B78B54704E256024E"): "PancakeSwap", // PancakeSwap V2
 	}
+
+	ErrorMetadataDoesNotHaveTokenField   = errors.New("metadata doesn't have token field")
+	ErrorRouterTransferIsNotYetSupported = errors.New("router transfer isn't yet supported")
 )
 
 var _ worker.Worker = &service{}
@@ -94,70 +99,14 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 		transaction.Platform = routerName
 
 		for _, transfer := range transaction.Transfers {
-			var swapPoolModel model.SwapPool
-
-			var metadataModel metadata.Metadata
-
-			if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-				return nil, err
-			}
-
-			if metadataModel.Token == nil {
-				continue
-			}
-
-			if transfer.AddressFrom == address {
-				transfer.Type = filter.ExchangeSwapIn
-
-				if metadataModel.Token.TokenStandard != "native" {
-					if err := s.databaseClient.
-						Model((*model.SwapPool)(nil)).
-						Where(map[string]interface{}{
-							"contract_address": transfer.AddressTo,
-							"network":          message.Network,
-						}).
-						First(&swapPoolModel).
-						Error; err != nil {
-						continue
-					}
+			internalTransfer, err := s.handleEthereumTransfer(ctx, message, transaction.AddressTo, transfer)
+			if err != nil {
+				if errorx.IsUnexpectedError(err, gorm.ErrRecordNotFound, ErrorRouterTransferIsNotYetSupported, ErrorRouterTransferIsNotYetSupported) {
+					logrus.Error(err)
 				}
-			} else if transfer.AddressTo == address {
-				transfer.Type = filter.ExchangeSwapOut
-
-				if metadataModel.Token.TokenStandard != "native" {
-					if err := s.databaseClient.
-						Model((*model.SwapPool)(nil)).
-						Where(map[string]interface{}{
-							"contract_address": transfer.AddressFrom,
-							"network":          message.Network,
-						}).
-						First(&swapPoolModel).
-						Error; err != nil {
-						continue
-					}
-				}
-			} else {
-				// TODO Router
 
 				continue
 			}
-
-			var err error
-
-			if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.SwapPool{
-				Name:     swapPoolModel.Source,
-				Network:  swapPoolModel.Network,
-				Token0:   swapPoolModel.Token0,
-				Token1:   swapPoolModel.Token1,
-				Protocol: swapPoolModel.Protocol,
-			}); err != nil {
-				logrus.Error(err)
-
-				continue
-			}
-
-			transfer.Tag = filter.TagExchange
-			transfer.Platform = swapPoolModel.Source
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
@@ -168,7 +117,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
-			value.Transfers = append(value.Transfers, transfer)
+			value.Transfers = append(value.Transfers, *internalTransfer)
 
 			internalTransactionMap[transaction.Hash] = value
 		}
@@ -184,6 +133,94 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	}
 
 	return internalTransactions, nil
+}
+
+func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.Message, swapRouterAddress string, transfer model.Transfer) (*model.Transfer, error) {
+	var swapPoolModel model.SwapPool
+
+	var metadataModel metadata.Metadata
+
+	if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
+		return nil, err
+	}
+
+	if metadataModel.Token == nil {
+		return nil, ErrorMetadataDoesNotHaveTokenField
+	}
+
+	var swapPoolAddress string
+
+	switch strings.ToLower(message.Address) {
+	case transfer.AddressFrom:
+		transfer.Type = filter.ExchangeSwapIn
+		swapPoolAddress = transfer.AddressTo
+	case transfer.AddressTo:
+		transfer.Type = filter.ExchangeSwapOut
+		swapPoolAddress = transfer.AddressFrom
+	default:
+		// TODO Router
+
+		return nil, ErrorRouterTransferIsNotYetSupported
+	}
+
+	if transfer.AddressFrom == swapRouterAddress || transfer.AddressTo == swapRouterAddress {
+		if err := s.handleEthereumTransferSwapRouter(ctx, message, &transfer, swapRouterAddress); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := s.handleEthereumTransferSwapPool(ctx, message, &transfer, swapPoolAddress); err != nil {
+			return nil, err
+		}
+	}
+
+	transfer.Tag = filter.TagExchange
+	transfer.Platform = swapPoolModel.Source
+
+	return &transfer, nil
+}
+
+func (s *service) handleEthereumTransferSwapPool(ctx context.Context, message *protocol.Message, transfer *model.Transfer, swapPoolAddress string) error {
+	var swapPoolModel model.SwapPool
+
+	if err := s.databaseClient.
+		Model((*model.SwapPool)(nil)).
+		Where(map[string]interface{}{
+			"contract_address": swapPoolAddress,
+			"network":          message.Network,
+		}).
+		First(&swapPoolModel).
+		Error; err != nil {
+		return err
+	}
+
+	var err error
+
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.SwapPool{
+		Name:     swapPoolModel.Source,
+		Type:     metadata.SwapTypePool,
+		Network:  swapPoolModel.Network,
+		Token0:   swapPoolModel.Token0,
+		Token1:   swapPoolModel.Token1,
+		Protocol: swapPoolModel.Protocol,
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) handleEthereumTransferSwapRouter(ctx context.Context, message *protocol.Message, transfer *model.Transfer, swapRouterAddress string) error {
+	var err error
+
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.SwapPool{
+		Name:    routerMap[swapRouterAddress],
+		Type:    metadata.SwapTypeRouter,
+		Network: message.Network,
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {

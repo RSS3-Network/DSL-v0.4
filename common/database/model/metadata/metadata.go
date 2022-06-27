@@ -11,9 +11,7 @@ import (
 
 var Default json.RawMessage
 
-var (
-	ErrorUnsupportedType = errors.New("unsupported metadata type")
-)
+var ErrorUnsupportedType = errors.New("unsupported metadata type")
 
 func init() {
 	if err := json.Unmarshal([]byte("{}"), &Default); err != nil {
@@ -53,10 +51,16 @@ type Mirror struct {
 	Content               json.RawMessage `json:"content"`
 }
 
+const (
+	SwapTypeRouter = "router"
+	SwapTypePool   = "pool"
+)
+
 type SwapPool struct {
 	Name     string `json:"name"`
-	Token0   string `json:"token0"`
-	Token1   string `json:"token1"`
+	Type     string `json:"type"`
+	Token0   string `json:"token0,omitempty"`
+	Token1   string `json:"token1,omitempty"`
 	Network  string `json:"network"`
 	Protocol string `json:"protocol"`
 }

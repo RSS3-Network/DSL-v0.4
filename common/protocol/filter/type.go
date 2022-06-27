@@ -7,12 +7,12 @@ const (
 	TransactionBurn     = "burn"
 	TransactionCancel   = "cancel"
 
-	// exchange types: transfer | withdraw | deposit | swap in | swap out
+	// exchange types: transfer | withdraw | deposit | swap
 	ExchangeTransfer = "transfer"
 	ExchangeWithdraw = "withdraw"
 	ExchangeDeposit  = "deposit"
-	ExchangeSwapIn   = "swap_in"
-	ExchangeSwapOut  = "swap_out"
+	ExchangeSwapIn   = "swap"
+	ExchangeSwapOut  = "swap"
 
 	// NFT types: transfer | mint | burn | poap
 	NFTTransfer = "transfer"
