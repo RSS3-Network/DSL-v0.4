@@ -19,6 +19,9 @@ const (
 	Source = "moralis"
 
 	MaxPage = 5
+
+	StatusFailed  = "0"
+	StatusSuccess = "1"
 )
 
 var _ datasource.Datasource = &Datasource{}
@@ -157,6 +160,13 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			return nil, err
 		}
 
+		// Mark the transaction successful or not
+		success := true
+
+		if internalTransaction.ReceiptStatus == StatusFailed {
+			success = false
+		}
+
 		transactions = append(transactions, model.Transaction{
 			BlockNumber: blockNumber.IntPart(),
 			Timestamp:   timestamp,
@@ -166,6 +176,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			AddressTo:   internalTransaction.ToAddress,
 			Platform:    message.Network,
 			Network:     message.Network,
+			Success:     success,
 			Source:      d.Name(),
 			SourceData:  sourceData,
 			Transfers: []model.Transfer{

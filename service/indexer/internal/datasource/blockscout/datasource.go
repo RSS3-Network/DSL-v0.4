@@ -16,6 +16,9 @@ import (
 
 const (
 	Name = "blockscout"
+
+	StatusFailed  = "0"
+	StatusSuccess = "1"
 )
 
 var _ datasource.Datasource = (*Datasource)(nil)
@@ -93,6 +96,13 @@ func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.M
 
 		timestamp := time.Unix(internalTransaction.TimeStamp.BigInt().Int64(), 0)
 
+		// Mark the transaction successful or not
+		success := true
+
+		if internalTransaction.TxReceiptStatus.String() == StatusFailed {
+			success = false
+		}
+
 		transactions = append(transactions, model.Transaction{
 			Hash:        internalTransaction.Hash,
 			BlockNumber: internalTransaction.BlockNumber.IntPart(),
@@ -102,6 +112,7 @@ func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.M
 			AddressTo:   internalTransaction.To,
 			Platform:    message.Network,
 			Network:     message.Network,
+			Success:     success,
 			Source:      d.Name(),
 			SourceData:  sourceData,
 			Transfers: []model.Transfer{
