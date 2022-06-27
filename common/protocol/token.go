@@ -1,7 +1,10 @@
 package protocol
 
 const (
-	TokenTypeERC20   = "ERC20"
-	TokenTypeERC721  = "ERC721"
-	TokenTypeERC1155 = "ERC1155"
+	// https://ethereum.org/en/developers/docs/standards/tokens/
+
+	TokenStandardNative  = "Native"
+	TokenStandardERC20   = "ERC-20"
+	TokenStandardERC721  = "ERC-721"
+	TokenStandardERC1155 = "ERC-1155"
 )

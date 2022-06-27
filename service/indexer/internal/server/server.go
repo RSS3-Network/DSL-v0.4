@@ -240,6 +240,10 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 					return err
 				}
 
+				if len(internalTransactions) == 0 {
+					continue
+				}
+
 				newTransactionMap := getTransactionsMap(internalTransactions)
 				for _, t := range newTransactionMap {
 					transactionsMap[t.Hash] = t

@@ -107,7 +107,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
 
 			// transaction tag
