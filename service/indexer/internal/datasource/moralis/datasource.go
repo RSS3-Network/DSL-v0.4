@@ -65,7 +65,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 	}
 
 	// Get token transfer for this address
-	internalTokenTransfers, err := d.handleEthereumTokenTransfers(ctx, message)
+	internalTokenTransfers, moralisTokenTransferMap, err := d.handleEthereumTokenTransfers(ctx, message)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,31 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 	for _, tokenTransfer := range internalTokenTransfers {
 		transaction, exist := transactionMap[tokenTransfer.TransactionHash]
 		if !exist {
-			continue
+			internalTransaction := moralisTokenTransferMap[tokenTransfer.TransactionHash]
+			blockNumber, err := decimal.NewFromString(internalTransaction.BlockNumber)
+			if err != nil {
+				return nil, err
+			}
+			timestamp, err := time.Parse(time.RFC3339, internalTransaction.BlockTimestamp)
+			if err != nil {
+				return nil, err
+			}
+			sourceData, err := json.Marshal(internalTransaction)
+			if err != nil {
+				return nil, err
+			}
+
+			transaction = model.Transaction{
+				BlockNumber: blockNumber.IntPart(),
+				Timestamp:   timestamp,
+				Hash:        internalTransaction.TransactionHash,
+				Index:       0,
+				AddressFrom: internalTransaction.FromAddress,
+				AddressTo:   internalTransaction.ToAddress,
+				Network:     message.Network,
+				Source:      d.Name(),
+				SourceData:  sourceData,
+			}
 		}
 
 		transaction.Transfers = append(transaction.Transfers, tokenTransfer)
@@ -83,7 +107,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 	}
 
 	// Get nft transfer for this address
-	internalNFTTransfers, err := d.handleEthereumNFTTransfers(ctx, message)
+	internalNFTTransfers, moralisNFTTransferMap, err := d.handleEthereumNFTTransfers(ctx, message)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +116,31 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 	for _, nftTransfer := range internalNFTTransfers {
 		transaction, exist := transactionMap[nftTransfer.TransactionHash]
 		if !exist {
-			continue
+			internalTransaction := moralisNFTTransferMap[nftTransfer.TransactionHash]
+			blockNumber, err := decimal.NewFromString(internalTransaction.BlockNumber)
+			if err != nil {
+				return nil, err
+			}
+			timestamp, err := time.Parse(time.RFC3339, internalTransaction.BlockTimestamp)
+			if err != nil {
+				return nil, err
+			}
+			sourceData, err := json.Marshal(internalTransaction)
+			if err != nil {
+				return nil, err
+			}
+
+			transaction = model.Transaction{
+				BlockNumber: blockNumber.IntPart(),
+				Timestamp:   timestamp,
+				Hash:        internalTransaction.TransactionHash,
+				Index:       internalTransaction.TransactionIndex.IntPart(),
+				AddressFrom: internalTransaction.FromAddress,
+				AddressTo:   internalTransaction.ToAddress,
+				Network:     message.Network,
+				Source:      d.Name(),
+				SourceData:  sourceData,
+			}
 		}
 
 		transaction.Transfers = append(transaction.Transfers, nftTransfer)
@@ -202,7 +250,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 	return transactions, nil
 }
 
-func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
+func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, map[string]moralis.TokenTransfer, error) {
 	address := common.HexToAddress(message.Address)
 
 	// Get token transfers from Moralis
@@ -210,7 +258,7 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 		Chain: protocol.NetworkToID(message.Network),
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Iterate through the next page of data
@@ -223,23 +271,26 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 		})
 
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		internalTokenTransfers = append(internalTokenTransfers, nextInternalTokenTransfers...)
 	}
 
 	transfers := make([]model.Transfer, 0)
+	moralisTokenTransferMap := map[string]moralis.TokenTransfer{}
 
 	for i, internalTokenTransfer := range internalTokenTransfers {
+		moralisTokenTransferMap[internalTokenTransfer.TransactionHash] = internalTokenTransfer
+
 		timestamp, err := time.Parse(time.RFC3339, internalTokenTransfer.BlockTimestamp)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		sourceData, err := json.Marshal(internalTokenTransfer)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		transfers = append(transfers, model.Transfer{
@@ -257,10 +308,10 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 		})
 	}
 
-	return transfers, nil
+	return transfers, moralisTokenTransferMap, nil
 }
 
-func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
+func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, map[string]moralis.NFTTransfer, error) {
 	address := common.HexToAddress(message.Address)
 
 	// Get nft transfers from Moralis
@@ -268,7 +319,7 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 		Chain: protocol.NetworkToID(message.Network),
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Iterate through the next page of data
@@ -281,7 +332,7 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 		})
 
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		internalNFTTransfers = append(internalNFTTransfers, nextInternalNFTTransfers...)
@@ -289,16 +340,19 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 
 	// Moralis may return duplicate transfers data
 	internalTransfersMap := make(map[string]map[int64]model.Transfer)
+	moralisNFTTransferMap := make(map[string]moralis.NFTTransfer)
 
 	for _, internalNFTTransfer := range internalNFTTransfers {
+		moralisNFTTransferMap[internalNFTTransfer.TransactionHash] = internalNFTTransfer
+
 		timestamp, err := time.Parse(time.RFC3339, internalNFTTransfer.BlockTimestamp)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		sourceData, err := json.Marshal(internalNFTTransfer)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		// Data deduplication
@@ -334,7 +388,7 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 		}
 	}
 
-	return transfers, nil
+	return transfers, moralisNFTTransferMap, nil
 }
 
 // Returns related urls based on the network and contract tx hash.
