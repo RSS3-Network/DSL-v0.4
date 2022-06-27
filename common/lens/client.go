@@ -32,7 +32,7 @@ type (
 	}
 )
 
-func (c *Client) GetProfiles(ctx context.Context, address string) ([]string, error) {
+func (c *Client) GetProfiles(ctx context.Context, options *Options) ([]string, error) {
 	var query struct {
 		Profiles struct {
 			Items []struct {
@@ -41,11 +41,9 @@ func (c *Client) GetProfiles(ctx context.Context, address string) ([]string, err
 		} `graphql:"profiles(request: $request )"`
 	}
 
-	variable := EthereumAddress(address)
-
 	variableMap := map[string]interface{}{
 		"request": ProfileQueryRequest{
-			OwnedBy: []EthereumAddress{variable},
+			OwnedBy: []EthereumAddress{EthereumAddress(options.Address)},
 		},
 	}
 
@@ -193,7 +191,7 @@ func (c *Client) GetPublicationPageInfo(ctx context.Context, options *Options) e
 }
 
 func (c *Client) GetAllPublicationsByAddress(ctx context.Context, options *Options) ([]graphqlx.Publication, error) {
-	profiles, err := c.GetProfiles(ctx, string(options.Address))
+	profiles, err := c.GetProfiles(ctx, options)
 	if err != nil {
 		return nil, err
 	}

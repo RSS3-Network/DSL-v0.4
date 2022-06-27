@@ -26,7 +26,7 @@ func init() {
 
 func TestGetProfiles(t *testing.T) {
 
-	result, err := client.GetProfiles(context.Background(), address)
+	result, err := client.GetProfiles(context.Background(), &options)
 	if err != nil {
 		t.Fatal(err)
 	}

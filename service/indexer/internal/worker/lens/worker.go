@@ -11,43 +11,52 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/lens"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/shurcooL/graphql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-// lens datasource handles all the work of fetching data from the lens API
-// including the worker logic
-
 const (
-	Source = "lens"
+	Name = "lens"
 )
 
-var _ datasource.Datasource = &Datasource{}
+var _ worker.Worker = (*service)(nil)
 
-type Datasource struct {
-	lensClient     *lens.Client
+type service struct {
 	databaseClient *gorm.DB
+	lensClient     *lens.Client
 }
 
-func (d *Datasource) Name() string {
-	return Source
+func New(databaseClient *gorm.DB) worker.Worker {
+	return &service{
+		databaseClient: databaseClient,
+	}
 }
 
-func (d *Datasource) Networks() []string {
+func (s *service) Name() string {
+	return Name
+}
+
+func (s *service) Networks() []string {
 	return []string{
 		protocol.NetworkPolygon,
 	}
 }
 
-func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
-	transactions := make([]model.Transaction, 0)
+func (s *service) Initialize(ctx context.Context) error {
+	return nil
+}
 
+func (s *service) Jobs() []worker.Job {
+	return nil
+}
+
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	// read the last cursor value from the database
 	var lensCursor model.LensCursor
 
-	if err := d.databaseClient.Model((*model.LensCursor)(nil)).
+	if err := s.databaseClient.Model((*model.LensCursor)(nil)).
 		Where(map[string]interface{}{
 			"address": strings.ToLower(message.Address),
 		}).First(&lensCursor).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -63,12 +72,12 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	}
 
 	options := lens.Options{
-		Address:    graphql.String(strings.ToLower(message.Address)),
-		Cursor:     graphql.String(lensCursor.Cursor),
-		TotalCount: 0,
+		Address: graphql.String(strings.ToLower(message.Address)),
+		Cursor:  graphql.String(lensCursor.Cursor),
 	}
+
 	// handle publications
-	result, err := d.lensClient.GetAllPublicationsByAddress(ctx, &options)
+	result, err := s.lensClient.GetAllPublicationsByAddress(ctx, &options)
 	if err != nil {
 		return nil, err
 	}
@@ -113,8 +122,8 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			AddressTo:   "",
 			Tag:         filter.TagSocial,
 			Network:     message.Network,
-			Platform:    string(publication.Platform),
-			Source:      d.Name(),
+			Platform:    Name,
+			Source:      s.Name(),
 			SourceData:  sourceData,
 			Transfers: []model.Transfer{
 				{
@@ -125,10 +134,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 					AddressFrom:     message.Address,
 					AddressTo:       "",
 					Metadata:        rawMetadata,
-					Network:         Source,
+					Network:         protocol.NetworkPolygon,
 					Platform:        string(publication.Platform),
 					RelatedUrls:     []string{string(publication.RelatedURL)},
-					Source:          d.Name(),
+					Source:          s.Name(),
 					SourceData:      sourceData,
 				},
 			},
@@ -138,7 +147,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	// update the latest cursor value in the database
 	lensCursor.Cursor = string(options.Cursor)
 
-	if err := d.databaseClient.Model((*model.LensCursor)(nil)).
+	if err := s.databaseClient.Model((*model.LensCursor)(nil)).
 		Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "address"}},
 			DoUpdates: clause.AssignmentColumns([]string{"cursor"}),
@@ -161,11 +170,4 @@ func getType(pubType string) string {
 	}
 
 	return filter.SocialPost
-}
-
-func New(databaseClient *gorm.DB) datasource.Datasource {
-	return &Datasource{
-		lensClient:     lens.NewClient(),
-		databaseClient: databaseClient,
-	}
 }
