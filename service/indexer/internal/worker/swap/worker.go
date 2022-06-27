@@ -22,20 +22,40 @@ const (
 	Name = "swap"
 )
 
+type Router struct {
+	Name     string
+	Protocol string
+}
+
 var (
-	routerMap = map[string]string{
+	routerUniswap = Router{
+		Name:     "Uniswap",
+		Protocol: "UniSwapV3",
+	}
+
+	routerSushiSwap = Router{
+		Name:     "SushiSwap",
+		Protocol: "UniSwapV3",
+	}
+
+	pancakeSwap = Router{
+		Name:     "PancakeSwap",
+		Protocol: "UniSwapV3",
+	}
+
+	routerMap = map[string]Router{
 		// Uniswap
 		// https://docs.uniswap.org/protocol/reference/deployments
-		strings.ToLower("0xE592427A0AEce92De3Edee1F18E0157C05861564"): "Uniswap", // Uniswap V3 1
-		strings.ToLower("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"): "Uniswap", // Uniswap V3 2
+		strings.ToLower("0xE592427A0AEce92De3Edee1F18E0157C05861564"): routerUniswap, // Uniswap V3 1
+		strings.ToLower("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"): routerUniswap, // Uniswap V3 2
 		// SushiSwap
 		// https://docs.sushi.com/docs/Developers/Deployment%20Addresses
-		strings.ToLower("0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F"): "SushiSwap", // SushiSwap Ethereum
-		strings.ToLower("0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"): "SushiSwap", // SushiSwap Polygon
-		strings.ToLower("0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"): "SushiSwap", // SushiSwap Binance Smart Chain
+		strings.ToLower("0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F"): routerSushiSwap, // SushiSwap Ethereum
+		strings.ToLower("0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"): routerSushiSwap, // SushiSwap Polygon
+		strings.ToLower("0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"): routerSushiSwap, // SushiSwap Binance Smart Chain
 		// PancakeSwap
 		// https://docs.pancakeswap.finance/code/smart-contracts/pancakeswap-exchange/router-v2
-		strings.ToLower("0x10ED43C718714eb63d5aA57B78B54704E256024E"): "PancakeSwap", // PancakeSwap V2
+		strings.ToLower("0x10ED43C718714eb63d5aA57B78B54704E256024E"): pancakeSwap, // PancakeSwap V2
 	}
 
 	ErrorMetadataDoesNotHaveTokenField   = errors.New("metadata doesn't have token field")
@@ -90,22 +110,26 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 		}
 
 		// Handle swap entry
-		routerName, exist := routerMap[transaction.AddressTo]
+		router, exist := routerMap[transaction.AddressTo]
 		if !exist {
 			continue
 		}
 
-		transaction.Tag = filter.TagExchange
-		transaction.Platform = routerName
-
 		for _, transfer := range transaction.Transfers {
-			internalTransfer, err := s.handleEthereumTransfer(ctx, message, transaction.AddressTo, transfer)
+			internalTransfer, err := s.handleEthereumTransfer(ctx, message, transfer, transaction.AddressTo)
 			if err != nil {
 				if errorx.IsUnexpectedError(err, gorm.ErrRecordNotFound, ErrorRouterTransferIsNotYetSupported, ErrorRouterTransferIsNotYetSupported) {
 					logrus.Error(err)
 				}
 
 				continue
+			}
+
+			internalTransfer.Tag = filter.UpdateTag(filter.TagExchange, internalTransfer.Tag)
+
+			if internalTransfer.Tag == filter.TagExchange {
+				internalTransfer.Type = filter.ExchangeSwap
+				internalTransfer.Platform = router.Name
 			}
 
 			// Copy the transaction to map
@@ -119,10 +143,14 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 			value.Transfers = append(value.Transfers, *internalTransfer)
 
-			internalTransactionMap[transaction.Hash] = value
+			// Update transaction tag
+			value.Tag = filter.UpdateTag(internalTransfer.Tag, transaction.Tag)
 
-			// transaction tag
-			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
+			if value.Tag == filter.TagExchange {
+				value.Platform = router.Name
+			}
+
+			internalTransactionMap[transaction.Hash] = value
 		}
 	}
 
@@ -130,17 +158,13 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	internalTransactions := make([]model.Transaction, 0)
 
 	for _, transaction := range internalTransactionMap {
-		transaction.Tag = filter.TagExchange
-
 		internalTransactions = append(internalTransactions, transaction)
 	}
 
 	return internalTransactions, nil
 }
 
-func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.Message, swapRouterAddress string, transfer model.Transfer) (*model.Transfer, error) {
-	var swapPoolModel model.SwapPool
-
+func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.Message, transfer model.Transfer, swapRouterAddress string) (*model.Transfer, error) {
 	var metadataModel metadata.Metadata
 
 	if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
@@ -155,10 +179,8 @@ func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.
 
 	switch strings.ToLower(message.Address) {
 	case transfer.AddressFrom:
-		transfer.Type = filter.ExchangeSwap
 		swapPoolAddress = transfer.AddressTo
 	case transfer.AddressTo:
-		transfer.Type = filter.ExchangeSwap
 		swapPoolAddress = transfer.AddressFrom
 	default:
 		// TODO Router
@@ -175,9 +197,6 @@ func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.
 			return nil, err
 		}
 	}
-
-	transfer.Tag = filter.TagExchange
-	transfer.Platform = swapPoolModel.Source
 
 	return &transfer, nil
 }
@@ -215,10 +234,13 @@ func (s *service) handleEthereumTransferSwapPool(ctx context.Context, message *p
 func (s *service) handleEthereumTransferSwapRouter(ctx context.Context, message *protocol.Message, transfer *model.Transfer, swapRouterAddress string) error {
 	var err error
 
+	router := routerMap[swapRouterAddress]
+
 	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.SwapPool{
-		Name:    routerMap[swapRouterAddress],
-		Type:    metadata.SwapTypeRouter,
-		Network: message.Network,
+		Name:     router.Name,
+		Type:     metadata.SwapTypeRouter,
+		Network:  message.Network,
+		Protocol: router.Protocol,
 	}); err != nil {
 		return err
 	}
