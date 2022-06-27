@@ -238,6 +238,10 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 					return err
 				}
 
+				if len(internalTransactions) == 0 {
+					continue
+				}
+
 				// if no replacement here, transfers may be edited by more than one workers
 				// but previous edits will be lost
 				transactions = replaceTransactions(transactions, internalTransactions)

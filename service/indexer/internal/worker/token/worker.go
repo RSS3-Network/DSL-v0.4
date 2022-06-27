@@ -223,7 +223,9 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
 
 			// transaction tag
@@ -369,7 +371,9 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
 
 			// transaction tag
@@ -463,6 +467,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
 			internalTransactionMap[transaction.Hash] = value
 
