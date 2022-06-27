@@ -158,10 +158,13 @@ func (h *Handler) getActionListDatabase(c context.Context, transactionHashList [
 
 	transfers := make([]model.Transfer, 0)
 
-	sql := h.DatabaseClient.Model(&model.Transfer{})
+	sql := h.DatabaseClient.Model(&model.Transfer{}).Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
+		strings.ToLower(request.Address),
+		strings.ToLower(request.Address),
+	)
 
 	if len(request.Types) > 0 {
-		sql = sql.Where("\"type\" in ? ", request.Types)
+		sql = sql.Where("\"type\" IN ? ", request.Types)
 	}
 
 	if err := sql.
