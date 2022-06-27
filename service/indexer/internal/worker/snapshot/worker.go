@@ -120,23 +120,13 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	// Only some mainnets are currently supported
 	snapshotNetworkNum := snapshotNetworkNumMap[message.Network]
 
-	if message.Network == "ethereum" {
-		logrus.Infof("this is ethereum, address: %s", message.Address)
-	}
-
 	timeStamp, err := s.getLatestTimestamp(message)
-	if message.Network == "ethereum" {
-		logrus.Infof("this is ethereum, address: %s, %s:", message.Address, timeStamp)
-	}
 	if err != nil {
 		logrus.Errorf("failed to get latest timestamp: %s", err)
 		return nil, err
 	}
 
 	votes, err := s.getSnapshotVotes(ctx, message.Address, timeStamp)
-	if message.Network == "ethereum" {
-		logrus.Infof("this is ethereum, address: %s, len(votes):%d", message.Address, len(votes))
-	}
 	if err != nil {
 		logrus.Errorf("failed to get snapshot votes: %s", err)
 		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot votes: %s", err)
@@ -175,22 +165,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	if err != nil {
 		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot proposals: %w", err)
 	}
-	if message.Network == "ethereum" {
-		logrus.Infof("this is ethereum, address: %s, len(proposalMap):%d", message.Address, len(proposalMap))
-	}
 
 	spaceMap, err := s.getSnapshotSpaces(ctx, spaceIDs, snapshotNetworkNum)
 	if err != nil {
 		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot spaces: %w", err)
 	}
-	if message.Network == "ethereum" {
-		logrus.Infof("this is ethereum, address: %s, len(spaceMap):%d", message.Address, len(spaceMap))
-	}
 
-	// logrus.Infof("snapshot Handle")
-	if message.Network == "ethereum" {
-		logrus.Infof("this is ethereum, address: %s", message.Address)
-	}
 	for _, vote := range votes {
 		var metadataModel metadata.Metadata
 
@@ -267,7 +247,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			},
 		}
 
-		logrus.Infof("[snapshot worker] transaction:%v", currTransaction)
 		transactions = append(transactions, currTransaction)
 	}
 
@@ -298,17 +277,17 @@ func (s *service) Jobs() []worker.Job {
 				LowUpdateTime:  time.Minute * 5,
 			},
 		},
-		// &job.SnapshotVoteJob{
-		//	SnapshotJobBase: job.SnapshotJobBase{
-		//		Name:           "snapshot_vote_job",
-		//		DatabaseClient: s.databaseClient,
-		//		RedisClient:    s.redisClient,
-		//		SnapshotClient: s.snapshotClient,
-		//		Limit:          10000,
-		//		HighUpdateTime: time.Second * 15,
-		//		LowUpdateTime:  time.Minute * 5,
-		//	},
-		// },
+		&job.SnapshotVoteJob{
+			SnapshotJobBase: job.SnapshotJobBase{
+				Name:           "snapshot_vote_job",
+				DatabaseClient: s.databaseClient,
+				RedisClient:    s.redisClient,
+				SnapshotClient: s.snapshotClient,
+				Limit:          10000,
+				HighUpdateTime: time.Second * 15,
+				LowUpdateTime:  time.Minute * 5,
+			},
+		},
 	}
 }
 

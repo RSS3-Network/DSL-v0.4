@@ -178,7 +178,7 @@ func (s *Server) Run() error {
 
 		go func() {
 			if err := s.handle(context.Background(), &message); err != nil {
-				logrus.Errorf("message.Address:%v, message.Network:%v,err:%v", message.Address, message.Network, err)
+				logrus.Errorf("message.Address:%v, message.Network:%v, err:%v", message.Address, message.Network, err)
 			}
 		}()
 	}
@@ -228,6 +228,8 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		}
 	}
 
+	transactionsMap := getTransactionsMap(transactions)
+
 	// Using workers to clean data
 	for _, worker := range s.workers {
 		for _, network := range worker.Networks() {
@@ -238,12 +240,16 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 					return err
 				}
 
-				// if no replacement here, transfers may be edited by more than one workers
-				// but previous edits will be lost
-				transactions = replaceTransactions(transactions, internalTransactions)
+				newTransactionMap := getTransactionsMap(internalTransactions)
+				for _, t := range newTransactionMap {
+					transactionsMap[t.Hash] = t
+				}
+
+				transactions = transactionsMap2Array(transactionsMap)
 			}
 		}
 	}
+
 	if err := s.upsertTransactions(ctx, transactions); err != nil {
 		return err
 	}
@@ -251,27 +257,22 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	return nil
 }
 
-// if same hash exists in newTransactions, replace it
-func replaceTransactions(oldTransactions, newTransactions []model.Transaction) []model.Transaction {
-	newMap := map[string]model.Transaction{}
-	for _, t := range newTransactions {
-		newMap[t.Hash] = t
+func getTransactionsMap(transactions []model.Transaction) map[string]model.Transaction {
+	transactionsMap := map[string]model.Transaction{}
+	for _, t := range transactions {
+		transactionsMap[t.Hash] = t
 	}
 
-	resultMap := map[string]model.Transaction{}
-	for _, oldT := range oldTransactions {
-		if newT, exists := newMap[oldT.Hash]; exists {
-			resultMap[oldT.Hash] = newT
-		} else {
-			resultMap[oldT.Hash] = oldT
-		}
+	return transactionsMap
+}
+
+func transactionsMap2Array(transactionsMap map[string]model.Transaction) []model.Transaction {
+	transactions := []model.Transaction{}
+	for _, t := range transactionsMap {
+		transactions = append(transactions, t)
 	}
 
-	result := []model.Transaction{}
-	for _, t := range resultMap {
-		result = append(result, t)
-	}
-	return result
+	return transactions
 }
 
 func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Transaction) error {
