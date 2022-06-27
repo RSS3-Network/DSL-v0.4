@@ -23,7 +23,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
@@ -262,7 +261,8 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 }
 
 func getTransactionsMap(transactions []model.Transaction) map[string]model.Transaction {
-	transactionsMap := map[string]model.Transaction{}
+	transactionsMap := make(map[string]model.Transaction)
+
 	for _, t := range transactions {
 		transactionsMap[t.Hash] = t
 	}
@@ -271,7 +271,8 @@ func getTransactionsMap(transactions []model.Transaction) map[string]model.Trans
 }
 
 func transactionsMap2Array(transactionsMap map[string]model.Transaction) []model.Transaction {
-	transactions := []model.Transaction{}
+	transactions := make([]model.Transaction, 0)
+
 	for _, t := range transactionsMap {
 		transactions = append(transactions, t)
 	}

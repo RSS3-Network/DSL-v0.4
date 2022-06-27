@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -87,7 +88,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 				AddressTo:   transactionData.Transaction.Operation.To,
 				Platform:    message.Network,
 				Network:     message.Network,
-				Success:     success,
+				Success:     database.WrapNullBool(success),
 				Source:      d.Name(),
 				SourceData:  sourceData,
 				Transfers: []model.Transfer{
