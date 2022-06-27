@@ -247,7 +247,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			Platform:    Name,
 			Network:     message.Network,
 			Source:      s.Name(),
-			SourceData:  rawSourcedata,
+			SourceData:  rawMetadata,
+			Tag:         filter.TagGovernance,
 			Transfers: []model.Transfer{
 				{
 					TransactionHash: vote.ID,

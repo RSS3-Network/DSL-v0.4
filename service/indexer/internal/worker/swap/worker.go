@@ -105,8 +105,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			transfer.Tag = filter.TagExchange
-			transfer.Type = filter.ExchangeSwap
+			transfer.Tag = filter.UpdateTag(filter.TagExchange, transfer.Tag)
+
+			if transfer.Tag == filter.TagExchange {
+				transfer.Type = filter.ExchangeSwap
+			}
+
 			transfer.Metadata = rawMetadata
 
 			// Copy the transaction to map
@@ -121,6 +125,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			value.Transfers = append(value.Transfers, transfer)
 
 			internalTransactionMap[transaction.Hash] = value
+
+			// transaction tag
+			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 	}
 

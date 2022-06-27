@@ -89,12 +89,18 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			transfer.Platform = Name
 			transfer.Metadata = rawMetadata
-			transfer.Tag = filter.TagCollectible
-			transfer.Type = filter.NFTPoap
+			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
+
+			if transfer.Tag == filter.TagCollectible {
+				transfer.Type = filter.NFTPoap
+			}
 
 			value.Transfers = append(value.Transfers, transfer)
 
 			internalTransactionMap[value.Hash] = value
+
+			// transaction tag
+			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 	}
 
