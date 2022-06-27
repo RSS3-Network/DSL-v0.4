@@ -27,6 +27,7 @@ type Metadata struct {
 	Gitcoin   *Gitcoin   `json:"gitcoin,omitempty"`
 	SnapShot  *SnapShot  `json:"snapshot,omitempty"`
 	Crossbell *Crossbell `json:"crossbell,omitempty"`
+	Lens      *Lens      `json:"lens,omitempty"`
 }
 
 type Token struct {
@@ -111,6 +112,13 @@ type Crossbell struct {
 	MetadataTo    json.RawMessage `json:"metadata_to,omitempty"`
 }
 
+type Lens struct {
+	Type    string          `json:"type"`
+	Content string          `json:"content"`
+	Media   json.RawMessage `json:"media"`
+	Target  json.RawMessage `json:"target,omitempty"`
+}
+
 func BuildMetadataRawMessage(metadataRawMessage json.RawMessage, metadataModel any) (json.RawMessage, error) {
 	var internalMetadataModel Metadata
 
@@ -131,6 +139,8 @@ func BuildMetadataRawMessage(metadataRawMessage json.RawMessage, metadataModel a
 		internalMetadataModel.Gitcoin = model
 	case *Crossbell:
 		internalMetadataModel.Crossbell = model
+	case *Lens:
+		internalMetadataModel.Lens = model
 	default:
 		return nil, ErrorUnsupportedType
 	}

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
-	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -80,13 +79,7 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) error {
-	job := &Job{
-		databaseClient: s.databaseClient,
-	}
-
-	return job.Run(func(ctx context.Context, duration time.Duration) error {
-		return s.employer.Renewal(ctx, job.Name(), duration)
-	})
+	return nil
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
