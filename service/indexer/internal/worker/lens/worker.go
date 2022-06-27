@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	Name = "lens"
+	Name = protocol.PlatfromLens
 )
 
 var _ worker.Worker = (*service)(nil)

@@ -20,7 +20,7 @@ import (
 //go:generate abigen --abi ./contract/erc721.abi --pkg contract --type ERC721 --out ./contract/erc721.go
 
 const (
-	Name = "crossbell"
+	Name = protocol.PlatfromCrossbell
 
 	Endpoint = "https://rpc.crossbell.io"
 
