@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -19,6 +20,9 @@ const (
 	Limit = 100
 
 	OperationTypeTransfer = "Transfer"
+
+	StatusSuccess  = "success"
+	StatusRejected = "rejected"
 )
 
 type Datasource struct {
@@ -64,9 +68,16 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 				continue
 			}
 
+			// Mark the transaction successful or not
 			sourceData, err := json.Marshal(transactionData)
 			if err != nil {
 				return nil, err
+			}
+
+			success := true
+
+			if internalTransaction.Status != StatusSuccess {
+				success = false
 			}
 
 			transactions = append(transactions, model.Transaction{
@@ -77,6 +88,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 				AddressTo:   transactionData.Transaction.Operation.To,
 				Platform:    message.Network,
 				Network:     message.Network,
+				Success:     database.WrapNullBool(success),
 				Source:      d.Name(),
 				SourceData:  sourceData,
 				Transfers: []model.Transfer{

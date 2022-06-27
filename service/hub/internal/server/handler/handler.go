@@ -17,6 +17,6 @@ type Handler struct {
 
 type Response struct {
 	Total  int64  `json:"total"`
-	Cursor string `json:"cursor"`
+	Cursor string `json:"cursor,omitempty"`
 	Result any    `json:"result"`
 }

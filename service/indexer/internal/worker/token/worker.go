@@ -154,13 +154,14 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress == "":
 					// crossbell empty: use CSB
 					metadataModel.Token = &metadata.Token{
-						TokenStandard: protocol.TokenTypeERC20,
+						TokenStandard: protocol.TokenStandardERC20,
 						Logo:          "https://scan.crossbell.io/images/csb-yellow-no-bg.svg",
 						Name:          "Crossbell",
 						Symbol:        "CSB",
 						Decimals:      18,
 					}
-					transfer.Tag = filter.TagTransaction
+
+					transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress != "":
 					nftMetadata, err := nft.GetMetadata(
 						message.Network,
@@ -173,12 +174,13 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 
 					metadataModel.Token = &metadata.Token{
 						TokenAddress:  sourceData.ContractAddress,
-						TokenStandard: protocol.TokenTypeERC721,
+						TokenStandard: protocol.TokenStandardERC721,
 						TokenID:       &sourceData.TokenID,
 						TokenValue:    &sourceData.Value,
 						NFTMetadata:   nftMetadata,
 					}
-					transfer.Tag = filter.TagTransaction
+
+					transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 				case message.Network == protocol.NetworkXDAI:
 					var coinInfo *model.CoinMarketCapCoinInfo
 					var err error
@@ -192,14 +194,15 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 					} else {
 						metadataModel.Token = &metadata.Token{
 							TokenAddress:  sourceData.ContractAddress,
-							TokenStandard: protocol.TokenTypeERC20,
+							TokenStandard: protocol.TokenStandardERC20,
 							TokenValue:    &sourceData.Value,
 							Logo:          coinInfo.Logo,
 							Name:          coinInfo.Name,
 							Symbol:        coinInfo.Symbol,
 							Decimals:      coinInfo.Decimals,
 						}
-						transfer.Tag = filter.TagTransaction
+
+						transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 					}
 				}
 
@@ -220,8 +223,13 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
+
+			// transaction tag
+			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 	}
 
@@ -284,7 +292,8 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					TokenValue:    &tokenValue,
 					NFTMetadata:   nftMetadata,
 				}
-				transfer.Tag = filter.TagTransaction
+
+				transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 			} else if _, exist = sourceDataMap["address"]; exist {
 				// Token transfer
 				tokenTransfer := moralisx.TokenTransfer{}
@@ -305,14 +314,15 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  tokenTransfer.Address,
-					TokenStandard: protocol.TokenTypeERC20,
+					TokenStandard: protocol.TokenStandardERC20,
 					TokenValue:    &tokenValue,
 					Logo:          coinInfo.Logo,
 					Name:          coinInfo.Name,
 					Symbol:        coinInfo.Symbol,
 					Decimals:      coinInfo.Decimals,
 				}
-				transfer.Tag = filter.TagTransaction
+
+				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 			} else {
 				// Native transfer
 				nativeTransfer := moralisx.Transaction{}
@@ -332,14 +342,15 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				}
 
 				metadataModel.Token = &metadata.Token{
-					TokenStandard: "native",
+					TokenStandard: protocol.TokenStandardNative,
 					TokenValue:    &tokenValue,
 					Logo:          coinInfo.Logo,
 					Name:          coinInfo.Name,
 					Symbol:        coinInfo.Symbol,
 					Decimals:      coinInfo.Decimals,
 				}
-				transfer.Tag = filter.TagTransaction
+
+				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 			}
 
 			rawMetadata, err := json.Marshal(metadataModel)
@@ -360,8 +371,13 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
+
 			internalTransactionMap[transaction.Hash] = value
+
+			// transaction tag
+			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 	}
 
@@ -407,26 +423,32 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				tokenID := decimal.NewFromInt(*nftTokenInfo.ID)
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  nftTokenInfo.Address,
-					TokenStandard: protocol.TokenTypeERC721,
+					TokenStandard: protocol.TokenStandardERC721,
 					TokenID:       &tokenID,
 					TokenValue:    &amount,
 					Symbol:        nftTokenInfo.Symbol,
 					NFTMetadata:   nftTokenInfo.Bytes(),
 				}
-				transfer.Tag = filter.TagCollectible
 
-				// TODO: check the NFT filter type here
-				transfer.Type = filter.NFTTransfer
+				transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
+
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.NFTTransfer
+				}
 			} else { // token
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  tokenInfo.Address,
-					TokenStandard: protocol.TokenTypeERC20,
+					TokenStandard: protocol.TokenStandardERC20,
 					TokenValue:    &amount,
 					Decimals:      tokenInfo.Decimals,
 					Symbol:        tokenInfo.Symbol,
 				}
-				transfer.Tag = filter.TagTransaction
-				transfer.Type = filter.TransactionTransfer
+
+				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
+
+				if transfer.Tag == filter.TagTransaction {
+					transfer.Type = filter.TransactionTransfer
+				}
 			}
 
 			rawMetadata, err := json.Marshal(metadataModel)
@@ -445,8 +467,12 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
 			internalTransactionMap[transaction.Hash] = value
+
+			// transaction tag
+			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 	}
 

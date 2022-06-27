@@ -99,9 +99,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			transfer.Platform = Name
-			transfer.Tag = filter.TagDonation
-			transfer.Type = filter.DonationDonate
 			transfer.Metadata = metadata
+			transfer.Tag = filter.UpdateTag(filter.TagDonation, transfer.Tag)
+
+			if transfer.Tag == filter.TagDonation {
+				transfer.Type = filter.DonationDonate
+			}
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
@@ -112,9 +115,13 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
+			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
 
 			internalTransactionMap[transaction.Hash] = value
+
+			// transaction tag
+			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 	}
 
