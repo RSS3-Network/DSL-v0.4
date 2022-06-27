@@ -111,14 +111,16 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			Hash:        string(publication.ID),
 			AddressFrom: message.Address,
 			AddressTo:   "",
+			Tag:         filter.TagSocial,
 			Network:     message.Network,
+			Platform:    string(publication.Platform),
 			Source:      d.Name(),
 			SourceData:  sourceData,
 			Transfers: []model.Transfer{
 				{
 					Type:            getType(string(publication.Type)),
 					Tag:             filter.TagSocial,
-					TransactionHash: Source + "-" + string(publication.ID),
+					TransactionHash: string(publication.ID),
 					Timestamp:       publication.CreatedAt,
 					AddressFrom:     message.Address,
 					AddressTo:       "",
