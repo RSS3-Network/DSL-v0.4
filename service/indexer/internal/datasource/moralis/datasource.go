@@ -164,6 +164,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			Index:       index.IntPart(),
 			AddressFrom: internalTransaction.FromAddress,
 			AddressTo:   internalTransaction.ToAddress,
+			Platform:    message.Network,
 			Network:     message.Network,
 			Source:      d.Name(),
 			SourceData:  sourceData,

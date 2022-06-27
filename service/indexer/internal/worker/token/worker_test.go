@@ -251,7 +251,7 @@ func Test_service_Handle(t *testing.T) {
 							Source:          "zksync",
 							SourceData:      []byte(sourceDataZkSync),
 							Type:            filter.TransactionTransfer,
-							Metadata:        []byte(`{"token":{"symbol":"DAI","decimals":18,"token_id":"1","token_value":"0","token_address":"0x6b175474e89094c44da98b954eedeac495271d0f","token_standard":"ERC20"}}`),
+							Metadata:        []byte(`{"token":{"symbol":"DAI","decimals":18,"token_id":"1","token_value":"0","token_address":"0x6b175474e89094c44da98b954eedeac495271d0f","token_standard":"ERC-20"}}`),
 						},
 					},
 				},

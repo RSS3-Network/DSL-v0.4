@@ -154,7 +154,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress == "":
 					// crossbell empty: use CSB
 					metadataModel.Token = &metadata.Token{
-						TokenStandard: protocol.TokenTypeERC20,
+						TokenStandard: protocol.TokenStandardERC20,
 						Logo:          "https://scan.crossbell.io/images/csb-yellow-no-bg.svg",
 						Name:          "Crossbell",
 						Symbol:        "CSB",
@@ -174,7 +174,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 
 					metadataModel.Token = &metadata.Token{
 						TokenAddress:  sourceData.ContractAddress,
-						TokenStandard: protocol.TokenTypeERC721,
+						TokenStandard: protocol.TokenStandardERC721,
 						TokenID:       &sourceData.TokenID,
 						TokenValue:    &sourceData.Value,
 						NFTMetadata:   nftMetadata,
@@ -194,7 +194,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 					} else {
 						metadataModel.Token = &metadata.Token{
 							TokenAddress:  sourceData.ContractAddress,
-							TokenStandard: protocol.TokenTypeERC20,
+							TokenStandard: protocol.TokenStandardERC20,
 							TokenValue:    &sourceData.Value,
 							Logo:          coinInfo.Logo,
 							Name:          coinInfo.Name,
@@ -314,7 +314,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  tokenTransfer.Address,
-					TokenStandard: protocol.TokenTypeERC20,
+					TokenStandard: protocol.TokenStandardERC20,
 					TokenValue:    &tokenValue,
 					Logo:          coinInfo.Logo,
 					Name:          coinInfo.Name,
@@ -342,7 +342,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				}
 
 				metadataModel.Token = &metadata.Token{
-					TokenStandard: "native",
+					TokenStandard: protocol.TokenStandardNative,
 					TokenValue:    &tokenValue,
 					Logo:          coinInfo.Logo,
 					Name:          coinInfo.Name,
@@ -423,7 +423,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				tokenID := decimal.NewFromInt(*nftTokenInfo.ID)
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  nftTokenInfo.Address,
-					TokenStandard: protocol.TokenTypeERC721,
+					TokenStandard: protocol.TokenStandardERC721,
 					TokenID:       &tokenID,
 					TokenValue:    &amount,
 					Symbol:        nftTokenInfo.Symbol,
@@ -438,7 +438,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 			} else { // token
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  tokenInfo.Address,
-					TokenStandard: protocol.TokenTypeERC20,
+					TokenStandard: protocol.TokenStandardERC20,
 					TokenValue:    &amount,
 					Decimals:      tokenInfo.Decimals,
 					Symbol:        tokenInfo.Symbol,

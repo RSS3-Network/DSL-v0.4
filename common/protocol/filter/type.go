@@ -5,8 +5,9 @@ const (
 	TransactionMint     = "mint"
 	TransactionTransfer = "transfer"
 	TransactionBurn     = "burn"
+	TransactionCancel   = "cancel"
 
-	// exchange types: transfer | withdraw | deposit | swap in | swap out
+	// exchange types: transfer | withdraw | deposit | swap
 	ExchangeTransfer = "transfer"
 	ExchangeWithdraw = "withdraw"
 	ExchangeDeposit  = "deposit"
