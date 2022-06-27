@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"encoding/json"
 	"time"
 )
@@ -16,6 +17,7 @@ type Transaction struct {
 	Platform    string          `gorm:"column:platform" json:"platform"`
 	Source      string          `gorm:"column:source;primaryKey" json:"-"`
 	Tag         string          `gorm:"column:tag;index" json:"tag"`
+	Success     sql.NullBool    `gorm:"column:success;default:true" json:"success"`
 	SourceData  json.RawMessage `gorm:"column:source_data;type:jsonb" json:"-"`
 	CreatedAt   time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index" json:"-"`
 	UpdatedAt   time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index" json:"-"`
