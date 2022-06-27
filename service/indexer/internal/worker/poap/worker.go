@@ -99,6 +99,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			value.Transfers = append(value.Transfers, transfer)
 
 			internalTransactionMap[value.Hash] = value
+
+			// transaction tag
+			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 	}
 
