@@ -77,10 +77,12 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 	}
 
 	if len(transactionList) == 0 {
-		return c.JSON(http.StatusOK, &Response{})
+		return c.JSON(http.StatusOK, &Response{
+			Result: make([]model.Transaction, 0),
+		})
 	}
 
-	transactionHashList := []string{}
+	transactionHashList := make([]string, 0)
 	for _, transactionHash := range transactionList {
 		transactionHashList = append(transactionHashList, transactionHash.Hash)
 	}
@@ -113,7 +115,7 @@ func (h *Handler) getTransactionListDatabse(c context.Context, request GetAction
 
 	defer postgresSnap.End()
 
-	transactionList := []model.Transaction{}
+	transactionList := make([]model.Transaction, 0)
 	total := int64(0)
 	sql := h.DatabaseClient.
 		Model(&model.Transaction{}).
