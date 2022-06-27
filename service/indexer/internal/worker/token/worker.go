@@ -330,6 +330,10 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 					return nil, err
 				}
 
+				if len(nativeTransfer.Value) == 0 {
+					nativeTransfer.Value = "18"
+				}
+
 				tokenValue, err := decimal.NewFromString(nativeTransfer.Value)
 				if err != nil {
 					return nil, err
