@@ -229,7 +229,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 			default:
 				transfer.Type = filter.TransactionTransfer
 				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.CollectibleTransfer
+					transfer.Type = filter.CollectibleTrade
 				}
 			}
 
@@ -411,7 +411,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 			default:
 				transfer.Type = filter.TransactionTransfer
 				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.CollectibleTransfer
+					transfer.Type = filter.CollectibleTrade
 				}
 			}
 
@@ -508,7 +508,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 			default:
 				transfer.Type = filter.TransactionTransfer
 				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.CollectibleTransfer
+					transfer.Type = filter.CollectibleTrade
 				}
 			}
 
