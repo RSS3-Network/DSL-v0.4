@@ -120,6 +120,9 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 			value.Transfers = append(value.Transfers, *internalTransfer)
 
 			internalTransactionMap[transaction.Hash] = value
+
+			// transaction tag
+			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 	}
 

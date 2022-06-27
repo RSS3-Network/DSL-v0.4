@@ -8,3 +8,19 @@ const (
 	TagDonation    = "donation"
 	TagGovernance  = "governance"
 )
+
+var TagPriority = map[string]int{
+	TagTransaction: 1,
+	TagExchange:    2,
+	TagCollectible: 3,
+	TagSocial:      4,
+	TagDonation:    4,
+	TagGovernance:  4,
+}
+
+func UpdateTag(targetTag string, currentTag string) string {
+	if TagPriority[targetTag] > TagPriority[currentTag] {
+		return targetTag
+	}
+	return currentTag
+}
