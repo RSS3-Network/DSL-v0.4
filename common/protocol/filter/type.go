@@ -11,8 +11,7 @@ const (
 	ExchangeTransfer = "transfer"
 	ExchangeWithdraw = "withdraw"
 	ExchangeDeposit  = "deposit"
-	ExchangeSwapIn   = "swap"
-	ExchangeSwapOut  = "swap"
+	ExchangeSwap     = "swap"
 
 	// NFT types: transfer | mint | burn | poap
 	NFTTransfer = "transfer"

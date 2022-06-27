@@ -155,10 +155,10 @@ func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.
 
 	switch strings.ToLower(message.Address) {
 	case transfer.AddressFrom:
-		transfer.Type = filter.ExchangeSwapIn
+		transfer.Type = filter.ExchangeSwap
 		swapPoolAddress = transfer.AddressTo
 	case transfer.AddressTo:
-		transfer.Type = filter.ExchangeSwapOut
+		transfer.Type = filter.ExchangeSwap
 		swapPoolAddress = transfer.AddressFrom
 	default:
 		// TODO Router
