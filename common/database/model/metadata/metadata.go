@@ -67,7 +67,7 @@ type SwapPool struct {
 }
 
 type Gitcoin struct {
-	Id          int    `json:"id"`
+	ID          int    `json:"id"`
 	Slug        string `json:"slug"`
 	Title       string `json:"title"`
 	Description string `json:"description"`

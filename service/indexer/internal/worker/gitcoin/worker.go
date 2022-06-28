@@ -64,6 +64,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	for _, transaction := range transactions {
 		for _, transfer := range transaction.Transfers {
+			if transfer.AddressTo == "" ||
+				transfer.AddressTo == "0x0" ||
+				transfer.AddressTo == "0x0000000000000000000000000000000000000000" {
+				continue
+			}
+
 			projectStr, err := s.redisClient.HGet(ctx, s.gitcoinProjectCacheKey, transfer.AddressTo).Result()
 			if err != nil || len(projectStr) == 0 {
 				continue
@@ -75,7 +81,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				continue
 			}
 
-			transfer.RelatedUrls = append(transfer.RelatedUrls, "https://gitcoin.co/grants"+strconv.Itoa(project.Id)+"/"+project.Slug)
+			transfer.RelatedUrls = append(transfer.RelatedUrls, "https://gitcoin.co/grants"+strconv.Itoa(project.ID)+"/"+project.Slug)
 
 			// format metadata
 			var metadataModel metadata.Metadata
@@ -86,7 +92,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			metadataModel.Gitcoin = &metadata.Gitcoin{
-				Id:          project.Id,
+				ID:          project.ID,
 				Slug:        project.Slug,
 				Title:       project.Title,
 				Description: project.Description,
