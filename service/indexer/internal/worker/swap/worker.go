@@ -28,9 +28,14 @@ type Router struct {
 }
 
 var (
-	routerUniswap = Router{
+	routerUniswapV2 = Router{
 		Name:     protocol.PlatformUniswap,
-		Protocol: "UniSwapV3",
+		Protocol: "UniSwapV2",
+	}
+
+	routerUniswapV3 = Router{
+		Name:     protocol.PlatformUniswap,
+		Protocol: "UniSwapV2",
 	}
 
 	routerSushiSwap = Router{
@@ -40,14 +45,17 @@ var (
 
 	pancakeSwap = Router{
 		Name:     protocol.PlatformPancakeswap,
-		Protocol: "UniSwapV3",
+		Protocol: "UniSwapV2",
 	}
 
 	routerMap = map[string]Router{
-		// Uniswap
+		// Uniswap V2
+		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
+		strings.ToLower("0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"): routerUniswapV2, // Uniswap V2 2
+		// Uniswap V3
 		// https://docs.uniswap.org/protocol/reference/deployments
-		strings.ToLower("0xE592427A0AEce92De3Edee1F18E0157C05861564"): routerUniswap, // Uniswap V3 1
-		strings.ToLower("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"): routerUniswap, // Uniswap V3 2
+		strings.ToLower("0xE592427A0AEce92De3Edee1F18E0157C05861564"): routerUniswapV3, // Uniswap V3 1
+		strings.ToLower("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"): routerUniswapV3, // Uniswap V3 2
 		// SushiSwap
 		// https://docs.sushi.com/docs/Developers/Deployment%20Addresses
 		strings.ToLower("0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F"): routerSushiSwap, // SushiSwap Ethereum
