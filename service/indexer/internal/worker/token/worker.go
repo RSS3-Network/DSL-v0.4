@@ -368,7 +368,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
 				// check for exchange transaction
-				if err := s.checkExchangeWallet(message.Address, &transfer, &wallet); err != nil {
+				if err := s.checkExchangeWallet(strings.ToLower(message.Address), &transfer, &wallet); err != nil {
 					return nil, err
 				}
 			}
