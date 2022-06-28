@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	EmptyAddress = "0x0000000000000000000000000000000000000000"
-	Name         = "token"
+	Name = "token"
+
+	AddressGenesis = "0x0000000000000000000000000000000000000000"
 )
 
 var (
@@ -215,23 +216,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 				transfer.Metadata = rawMetadata
 			}
 
-			switch {
-			case transfer.AddressFrom == EmptyAddress:
-				transfer.Type = filter.TransactionMint
-				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.CollectibleMint
-				}
-			case transfer.AddressTo == EmptyAddress:
-				transfer.Type = filter.TransactionBurn
-				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.CollectibleBurn
-				}
-			default:
-				transfer.Type = filter.TransactionTransfer
-				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.CollectibleTrade
-				}
-			}
+			transaction, transfer = s.updateType(ctx, transaction, transfer)
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
@@ -395,25 +380,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 			transfer.Metadata = rawMetadata
 
-			switch {
-			case transfer.AddressFrom == EmptyAddress:
-				transfer.Type = filter.TransactionMint
-				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.CollectibleMint
-				}
-			case transfer.AddressTo == EmptyAddress:
-				transfer.Type = filter.TransactionBurn
-				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.CollectibleBurn
-				}
-			case transfer.Tag == filter.TagExchange:
-				transaction.Platform = transfer.Platform
-			default:
-				transfer.Type = filter.TransactionTransfer
-				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.CollectibleTrade
-				}
-			}
+			transaction, transfer = s.updateType(ctx, transaction, transfer)
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
@@ -494,23 +461,8 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 			}
-			switch {
-			case transfer.AddressFrom == EmptyAddress:
-				transfer.Type = filter.TransactionMint
-				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.CollectibleMint
-				}
-			case transfer.AddressTo == EmptyAddress:
-				transfer.Type = filter.TransactionBurn
-				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.CollectibleBurn
-				}
-			default:
-				transfer.Type = filter.TransactionTransfer
-				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.CollectibleTrade
-				}
-			}
+
+			transaction, transfer = s.updateType(ctx, transaction, transfer)
 
 			rawMetadata, err := json.Marshal(metadataModel)
 			if err != nil {
@@ -550,13 +502,6 @@ func (s *service) Jobs() []worker.Job {
 	return nil
 }
 
-func New(databaseClient *gorm.DB) worker.Worker {
-	return &service{
-		databaseClient: databaseClient,
-		zksyncClient:   zksync.New(),
-	}
-}
-
 func (s *service) checkExchangeWallet(address string, transfer *model.Transfer, wallet *model.ExchangeWallet) error {
 	if err := s.databaseClient.Model((*model.ExchangeWallet)(nil)).
 		Where("wallet_address = ?", strings.ToLower(transfer.AddressTo)).Or("wallet_address = ?", strings.ToLower(transfer.AddressFrom)).First(&wallet).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -575,4 +520,46 @@ func (s *service) checkExchangeWallet(address string, transfer *model.Transfer, 
 	}
 
 	return nil
+}
+
+func (s *service) updateType(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (model.Transaction, model.Transfer) {
+	switch {
+	case transfer.AddressFrom == AddressGenesis:
+		transfer.Type = filter.TransactionMint
+		switch transfer.Tag {
+		case filter.TagTransaction:
+			transfer.Type = filter.TransactionMint
+		case filter.TagCollectible:
+			transfer.Type = filter.CollectibleMint
+		}
+	case transfer.AddressTo == AddressGenesis:
+		transfer.Type = filter.TransactionBurn
+		switch transfer.Tag {
+		case filter.TagTransaction:
+			transfer.Type = filter.TransactionBurn
+		case filter.TagCollectible:
+			transfer.Type = filter.CollectibleBurn
+		}
+	case transfer.AddressFrom == transfer.AddressTo:
+		transfer.Type = filter.TransactionCancel
+	case transfer.Tag == filter.TagExchange:
+		transaction.Platform = transfer.Platform
+	default:
+		transfer.Type = filter.TransactionTransfer
+		switch transfer.Tag {
+		case filter.TagTransaction:
+			transfer.Type = filter.TransactionTransfer
+		case filter.TagCollectible:
+			transfer.Type = filter.CollectibleTrade
+		}
+	}
+
+	return transaction, transfer
+}
+
+func New(databaseClient *gorm.DB) worker.Worker {
+	return &service{
+		databaseClient: databaseClient,
+		zksyncClient:   zksync.New(),
+	}
 }
