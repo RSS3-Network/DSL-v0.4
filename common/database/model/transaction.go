@@ -11,7 +11,7 @@ type Transaction struct {
 	Hash        string          `gorm:"column:hash;primaryKey" json:"hash"`
 	Index       int64           `gorm:"column:index;index;default:0" json:"index"`
 	AddressFrom string          `gorm:"column:address_from;index" json:"address_from"`
-	AddressTo   string          `gorm:"column:address_to;index" json:"address_to"`
+	AddressTo   string          `gorm:"column:address_to;index" json:"address_to,omitempty"`
 	Network     string          `gorm:"column:network;primaryKey" json:"network"`
 	Platform    string          `gorm:"column:platform;index" json:"platform"`
 	Source      string          `gorm:"column:source;primaryKey" json:"-"`

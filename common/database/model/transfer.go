@@ -14,7 +14,7 @@ type Transfer struct {
 	Type            string          `gorm:"column:type;index" json:"type"`
 	Index           int64           `gorm:"column:index;primaryKey" json:"index"`
 	AddressFrom     string          `gorm:"column:address_from;index" json:"address_from"`
-	AddressTo       string          `gorm:"column:address_to;index" json:"address_to"`
+	AddressTo       string          `gorm:"column:address_to;index" json:"address_to,omitempty"`
 	Metadata        json.RawMessage `gorm:"column:metadata;type:jsonb;default:'{}'" json:"metadata"`
 	Network         string          `gorm:"column:network;primaryKey" json:"-"`
 	Platform        string          `gorm:"column:platform;index" json:"platform"`
