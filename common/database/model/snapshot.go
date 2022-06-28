@@ -20,6 +20,7 @@ func (SnapshotSpace) TableName() string {
 type SnapshotProposal struct {
 	ID          string          `gorm:"column:id;primaryKey" json:"id"`
 	SpaceID     string          `gorm:"column:space_id" json:"space_id"`
+	Author      string          `gorm:"column:author" json:"author"`
 	Metadata    json.RawMessage `gorm:"column:metadata;type:jsonb" json:"metadata"`
 	DateCreated time.Time       `gorm:"column:date_created;index:index_note_date_created" json:"date_created"`
 	CreatedAt   time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index"`
