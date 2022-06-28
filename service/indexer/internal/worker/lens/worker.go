@@ -31,6 +31,7 @@ type service struct {
 func New(databaseClient *gorm.DB) worker.Worker {
 	return &service{
 		databaseClient: databaseClient,
+		lensClient:     lens.NewClient(),
 	}
 }
 
