@@ -2,7 +2,7 @@ package model
 
 type GitcoinProject struct {
 	Active          bool   `gorm:"column:active" json:"active"`
-	Id              int    `gorm:"column:id" json:"id"`
+	ID              int    `gorm:"column:id" json:"id"`
 	Title           string `gorm:"column:title" json:"title"`
 	Slug            string `gorm:"column:slug" json:"slug"`
 	Description     string `gorm:"column:description" json:"description"`
