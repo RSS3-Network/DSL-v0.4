@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	Name = "snapshot"
+	Name = protocol.PlatfromSnapshot
 )
 
 // Need to go to the official website to get the corresponding network key

@@ -29,17 +29,17 @@ type Router struct {
 
 var (
 	routerUniswap = Router{
-		Name:     "Uniswap",
+		Name:     protocol.PlatformUniswap,
 		Protocol: "UniSwapV3",
 	}
 
 	routerSushiSwap = Router{
-		Name:     "SushiSwap",
+		Name:     protocol.PlatformSushiswap,
 		Protocol: "UniSwapV3",
 	}
 
 	pancakeSwap = Router{
-		Name:     "PancakeSwap",
+		Name:     protocol.PlatformPancakeswap,
 		Protocol: "UniSwapV3",
 	}
 

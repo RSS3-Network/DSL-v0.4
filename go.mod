@@ -17,6 +17,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/samber/lo v1.21.0
 	github.com/shopspring/decimal v1.2.0
+	github.com/shurcooL/graphql v0.0.0-20220606043923-3cf50f8a0a29
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.11.0

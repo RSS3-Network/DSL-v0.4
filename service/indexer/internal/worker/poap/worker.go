@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	Name = "poap"
+	Name = protocol.PlatfromPOAP
 
 	ContractAddress = "0x22c1f6050e56d2876009903609a2cc3fef83b415"
 )
@@ -92,7 +92,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
 			if transfer.Tag == filter.TagCollectible {
-				transfer.Type = filter.NFTPoap
+				transfer.Type = filter.CollectiblePoap
 			}
 
 			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)

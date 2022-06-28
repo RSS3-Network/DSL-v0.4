@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	Name = "gitcoin"
+	Name = protocol.PlatfromGitcoin
 )
 
 var _ worker.Worker = (*service)(nil)

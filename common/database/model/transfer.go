@@ -10,8 +10,8 @@ import (
 type Transfer struct {
 	TransactionHash string          `gorm:"column:transaction_hash;primaryKey" json:"-"`
 	Timestamp       time.Time       `gorm:"column:timestamp" json:"-"`
-	Type            string          `gorm:"column:type;index" json:"type"`
 	Tag             string          `gorm:"column:tag;index" json:"tag"`
+	Type            string          `gorm:"column:type;index" json:"type"`
 	Index           int64           `gorm:"column:index;primaryKey" json:"index"`
 	AddressFrom     string          `gorm:"column:address_from;index" json:"address_from"`
 	AddressTo       string          `gorm:"column:address_to;index" json:"address_to"`

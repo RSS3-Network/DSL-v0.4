@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -26,7 +27,8 @@ import (
 )
 
 const (
-	Name = "token"
+	EmptyAddress = "0x0000000000000000000000000000000000000000"
+	Name         = "token"
 )
 
 var (
@@ -212,7 +214,24 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 				}
 				transfer.Metadata = rawMetadata
 			}
-			transfer.Type = filter.TransactionTransfer
+
+			switch {
+			case transfer.AddressFrom == EmptyAddress:
+				transfer.Type = filter.TransactionMint
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.CollectibleMint
+				}
+			case transfer.AddressTo == EmptyAddress:
+				transfer.Type = filter.TransactionBurn
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.CollectibleBurn
+				}
+			default:
+				transfer.Type = filter.TransactionTransfer
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.CollectibleTrade
+				}
+			}
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
@@ -248,6 +267,8 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	for _, transaction := range transactions {
 		for _, transfer := range transaction.Transfers {
 			sourceDataMap := make(map[string]interface{})
+
+			var wallet model.ExchangeWallet
 
 			if err := json.Unmarshal(transfer.SourceData, &sourceDataMap); err != nil {
 				return nil, err
@@ -323,11 +344,20 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				}
 
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
+
+				// check for exchange transaction
+				if err := s.checkExchangeWallet(strings.ToLower(message.Address), &transfer, &wallet); err != nil {
+					return nil, err
+				}
 			} else {
 				// Native transfer
 				nativeTransfer := moralisx.Transaction{}
 				if err := json.Unmarshal(transfer.SourceData, &nativeTransfer); err != nil {
 					return nil, err
+				}
+
+				if len(nativeTransfer.Value) == 0 {
+					nativeTransfer.Value = "18"
 				}
 
 				tokenValue, err := decimal.NewFromString(nativeTransfer.Value)
@@ -351,6 +381,11 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				}
 
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
+
+				// check for exchange transaction
+				if err := s.checkExchangeWallet(message.Address, &transfer, &wallet); err != nil {
+					return nil, err
+				}
 			}
 
 			rawMetadata, err := json.Marshal(metadataModel)
@@ -360,13 +395,30 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 			transfer.Metadata = rawMetadata
 
-			transfer.Type = filter.TransactionTransfer
+			switch {
+			case transfer.AddressFrom == EmptyAddress:
+				transfer.Type = filter.TransactionMint
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.CollectibleMint
+				}
+			case transfer.AddressTo == EmptyAddress:
+				transfer.Type = filter.TransactionBurn
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.CollectibleBurn
+				}
+			case transfer.Tag == filter.TagExchange:
+				transaction.Platform = transfer.Platform
+			default:
+				transfer.Type = filter.TransactionTransfer
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.CollectibleTrade
+				}
+			}
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
 			if !exist {
 				value = transaction
-
 				// Ignore transfers data that will not be updated
 				value.Transfers = make([]model.Transfer, 0)
 			}
@@ -431,10 +483,6 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				}
 
 				transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
-
-				if transfer.Tag == filter.TagCollectible {
-					transfer.Type = filter.NFTTransfer
-				}
 			} else { // token
 				metadataModel.Token = &metadata.Token{
 					TokenAddress:  tokenInfo.Address,
@@ -445,9 +493,22 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				}
 
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
-
-				if transfer.Tag == filter.TagTransaction {
-					transfer.Type = filter.TransactionTransfer
+			}
+			switch {
+			case transfer.AddressFrom == EmptyAddress:
+				transfer.Type = filter.TransactionMint
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.CollectibleMint
+				}
+			case transfer.AddressTo == EmptyAddress:
+				transfer.Type = filter.TransactionBurn
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.CollectibleBurn
+				}
+			default:
+				transfer.Type = filter.TransactionTransfer
+				if transfer.Tag == filter.TagCollectible {
+					transfer.Type = filter.CollectibleTrade
 				}
 			}
 
@@ -494,4 +555,24 @@ func New(databaseClient *gorm.DB) worker.Worker {
 		databaseClient: databaseClient,
 		zksyncClient:   zksync.New(),
 	}
+}
+
+func (s *service) checkExchangeWallet(address string, transfer *model.Transfer, wallet *model.ExchangeWallet) error {
+	if err := s.databaseClient.Model((*model.ExchangeWallet)(nil)).
+		Where("wallet_address = ?", strings.ToLower(transfer.AddressTo)).Or("wallet_address = ?", strings.ToLower(transfer.AddressFrom)).First(&wallet).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
+	if wallet.Name != "" {
+		transfer.Tag = filter.UpdateTag(filter.TagExchange, transfer.Tag)
+		transfer.Platform = wallet.Name
+
+		if transfer.AddressTo == address {
+			transfer.Type = filter.ExchangeWithdraw
+		} else if transfer.AddressFrom == address {
+			transfer.Type = filter.ExchangeDeposit
+		}
+	}
+
+	return nil
 }
