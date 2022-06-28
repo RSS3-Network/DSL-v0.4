@@ -138,12 +138,14 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	isProposalsByAuthorError := false
 	proposalsByAuthorMap, err := s.getProposalsByAuthor(ctx, message.Address, timeStamp)
 	if err != nil {
-
+		logrus.Errorf("failed to get proposals by author: %s", err)
+		isProposalsByAuthorError = true
 	}
 
-	if len(votes) == 0 {
+	if len(votes) == 0 && len(proposalsByAuthorMap) == 0 {
 		return nil, nil
 	}
+
 	if isVoteError && isProposalsByAuthorError {
 		return nil, errors.New("failed to get snapshot votes and proposals by author")
 	}
@@ -156,6 +158,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	for _, vote := range votes {
 		proposalIDSet.Add(vote.ProposalID)
 		spaceIDSet.Add(vote.SpaceID)
+	}
+
+	for _, proposal := range proposalsByAuthorMap {
+		proposalIDSet.Add(proposal.ID)
+		spaceIDSet.Add(proposal.SpaceID)
 	}
 
 	for _, proposalNode := range proposalIDSet.ToSlice() {
@@ -496,7 +503,7 @@ func (s *service) cleaningProposalsByAuthor(
 		Platform:    Name,
 		Network:     message.Network,
 		Source:      s.Name(),
-		SourceData:  rawMetadata,
+		SourceData:  rawSourcedata,
 		Tag:         filter.TagGovernance,
 		Transfers: []model.Transfer{
 			{
