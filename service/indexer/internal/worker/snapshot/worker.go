@@ -371,7 +371,6 @@ func (s *service) cleaningVote(
 	spaceMap map[string]model.SnapshotSpace,
 	message *protocol.Message,
 ) (*model.Transaction, error) {
-
 	var metadataModel metadata.Metadata
 
 	proposal, ok := proposalMap[vote.ProposalID]
@@ -455,7 +454,6 @@ func (s *service) cleaningProposalsByAuthor(
 	spaceMap map[string]model.SnapshotSpace,
 	message *protocol.Message,
 ) (*model.Transaction, error) {
-
 	var metadataModel metadata.Metadata
 
 	space, ok := spaceMap[proposal.SpaceID]
