@@ -14,13 +14,13 @@ import (
 )
 
 type GetActionListRequest struct {
-	Address     string   `param:"address"`
-	Limit       int      `query:"limit"`
-	Cursor      string   `query:"cursor"`
-	Types       []string `query:"types"`
-	Tags        []string `query:"tags"`
-	ItemSources []string `query:"item_sources"`
-	Networks    []string `query:"networks"`
+	Address  string   `param:"address"`
+	Limit    int      `query:"limit"`
+	Cursor   string   `query:"cursor"`
+	Type     []string `query:"type"`
+	Tag      string   `query:"tag"`
+	Network  []string `query:"network"`
+	Platform []string `query:"platform"`
 }
 
 // GetActionListFunc HTTP handler for action API
@@ -134,12 +134,16 @@ func (h *Handler) getTransactionListDatabse(c context.Context, request GetAction
 		sql = sql.Where("timestamp < ? OR (timestamp = ? AND index < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)
 	}
 
-	if len(request.Tags) > 0 {
-		sql = sql.Where("tag IN ?", request.Tags)
+	if len(request.Tag) > 0 {
+		sql = sql.Where("tag = ?", request.Tag)
 	}
 
-	if len(request.Networks) > 0 {
-		sql = sql.Where("network IN ?", request.Networks)
+	if len(request.Network) > 0 {
+		sql = sql.Where("network IN ?", request.Network)
+	}
+
+	if len(request.Platform) > 0 {
+		sql = sql.Where("platform IN ?", request.Platform)
 	}
 
 	if err := sql.Count(&total).Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactionList).Error; err != nil {
@@ -163,8 +167,8 @@ func (h *Handler) getActionListDatabase(c context.Context, transactionHashList [
 		strings.ToLower(request.Address),
 	)
 
-	if len(request.Types) > 0 {
-		sql = sql.Where("\"type\" IN ? ", request.Types)
+	if len(request.Tag) > 0 && len(request.Type) > 0 {
+		sql = sql.Where("\"type\" IN ? ", request.Type)
 	}
 
 	if err := sql.
