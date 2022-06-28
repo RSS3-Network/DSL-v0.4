@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/arweave"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
@@ -91,6 +92,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
+			transfer.AddressTo = string(transactionEdge.Node.Owner.Address)
+			transfer.AddressFrom = strings.ToLower(metadataModel.Mirror.Contributor)
 			transfer.Metadata = rawMetadata
 			transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
 
@@ -102,6 +105,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			value, exist := internalTransactionMap[transaction.Hash]
 			if !exist {
 				value = transaction
+				value.AddressTo = string(transactionEdge.Node.Owner.Address)
+				value.AddressFrom = strings.ToLower(metadataModel.Mirror.Contributor)
 
 				// Ignore transfers data that will not be updated
 				value.Transfers = make([]model.Transfer, 0)
@@ -111,9 +116,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			value.Transfers = append(value.Transfers, transfer)
 
 			internalTransactionMap[transaction.Hash] = value
-
-			// transaction tag
-			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 	}
 
