@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-resty/resty/v2"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/contract"
@@ -46,9 +48,9 @@ var (
 		Address string
 	}{
 		"ethereum":            {"ETH", ""},
-		"binance_smart_chain": {"BNB", "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"},   // BNB address (on BSC)
+		"binance_smart_chain": {"WBNB", "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"},  // WBNB address (on BSC)
 		"polygon":             {"MATIC", "0x0000000000000000000000000000000000001010"}, // MATIC address (on polygon)
-		"xdai":                {"xDAI", "0x9c58bacc331c9aa871afd802db6379a98e80cedb"},  // xDAI address (on xDAI)
+		"xdai":                {"GNO", "0x9c58bacc331c9aa871afd802db6379a98e80cedb"},   // Gnosis address (on xDAI)
 	}
 )
 
@@ -137,7 +139,14 @@ func getDecimals(ctx context.Context, network, addressHex string) (uint8, error)
 func CachedGetCoinInfo(ctx context.Context, network, address string) (*model.CoinMarketCapCoinInfo, error) {
 	result := &model.CoinMarketCapCoinInfo{}
 
-	// get
+	// get from redis cache
+	key := fmt.Sprintf("get_coin_info.%s.%s", network, address)
+	exists, err := cache.GetMsgPack(ctx, key, result)
+	if err != nil || exists {
+		return result, err
+	}
+
+	// get from db
 	if err := database.Client.Where("? = ANY(addresses)", address).First(result).Error; err != nil {
 		if err != gorm.ErrRecordNotFound {
 			logrus.Error(err)
@@ -147,7 +156,7 @@ func CachedGetCoinInfo(ctx context.Context, network, address string) (*model.Coi
 		return result, nil
 	}
 
-	result, err := getCoinInfo(ctx, network, address)
+	result, err = getCoinInfo(ctx, network, address)
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -160,8 +169,9 @@ func CachedGetCoinInfo(ctx context.Context, network, address string) (*model.Coi
 		logrus.Error(err)
 		return nil, err
 	}
+	err = cache.SetMsgPack(ctx, key, result, 24*time.Hour)
 
-	return result, nil
+	return result, err
 }
 
 // for token native transfer
@@ -212,6 +222,14 @@ func CachedGetCoinInfoByNetwork(ctx context.Context, network string) (*model.Coi
 
 	result := &model.CoinMarketCapCoinInfo{}
 
+	// get from redis cache
+	key := fmt.Sprintf("get_coin_info_by_network.%s", network)
+	exists, err := cache.GetMsgPack(ctx, key, result)
+	if err != nil || exists {
+		return result, err
+	}
+
+	// get from db
 	if err := database.Client.Where("symbol = ?", token.Symbol).First(result).Error; err != nil {
 		if err != gorm.ErrRecordNotFound {
 			return nil, err
@@ -220,7 +238,7 @@ func CachedGetCoinInfoByNetwork(ctx context.Context, network string) (*model.Coi
 		return result, nil
 	}
 
-	result, err := getCoinInfoByNetwork(ctx, network)
+	result, err = getCoinInfoByNetwork(ctx, network)
 	if err != nil {
 		logrus.Error(err)
 		return nil, err
@@ -233,6 +251,7 @@ func CachedGetCoinInfoByNetwork(ctx context.Context, network string) (*model.Coi
 		logrus.Error(err)
 		return nil, err
 	}
+	err = cache.SetMsgPack(ctx, key, result, 24*time.Hour)
 
-	return result, nil
+	return result, err
 }

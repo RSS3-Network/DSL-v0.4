@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/naturalselectionlabs/pregod/common/cache"
+	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
@@ -11,14 +13,24 @@ import (
 )
 
 func setup() {
+	_, _ = cache.Dial(&configx.Redis{
+		Addr: "127.0.0.1:6379",
+		Password: "",
+		DB: 0,
+	})
+	_ = cache.Clear(context.Background())
+
 	db, _ := database.Dial("postgres://postgres:password@127.0.0.1:5432/pregod2", true)
 	db.Delete(model.GetNFTTokenInfo{})
 	db.Delete(model.GetTokenInfo{})
 	db.Delete(model.CoinMarketCapCoinInfo{})
+
 	coinmarketcap.Init("11f16fe7-7036-42c7-8155-1524d74b05eb")
 }
 
 func teardown() {
+	cache.Close()
+
 	coinmarketcap.Init("")
 }
 
@@ -89,11 +101,11 @@ func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
 	// BSC
 	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "binance_smart_chain")
 	assert.Nil(t, err)
-	assert.EqualValues(t, "BNB", info.Name)
-	assert.EqualValues(t, "bnb", info.Slug)
+	assert.EqualValues(t, "Wrapped BNB", info.Name)
+	assert.EqualValues(t, "wbnb", info.Slug)
 	assert.EqualValues(t, 18, info.Decimals)
-	assert.EqualValues(t, "BNB", info.Symbol)
-	assert.EqualValues(t, "coin", info.Category)
+	assert.EqualValues(t, "WBNB", info.Symbol)
+	assert.EqualValues(t, "token", info.Category)
 
 	// polygon
 	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "polygon")

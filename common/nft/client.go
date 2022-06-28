@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/nft/contract/nft"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
 const (
@@ -34,8 +35,19 @@ func Initialize(projectID string) {
 	ProjectID = projectID
 }
 
+func NetworkToAlias(network string) string {
+	switch network {
+	case protocol.NetworkBinanceSmartChain:
+		return "binance"
+	default:
+		return network
+	}
+}
+
 func GetMetadata(network string, contractAddress common.Address, tokenID *big.Int) ([]byte, error) {
 	ethereumEndpoint := ""
+
+	network = NetworkToAlias(network)
 
 	switch network {
 	case NetworkEthereum:
