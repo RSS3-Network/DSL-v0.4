@@ -7,7 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/blockscout"
-	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -113,7 +112,7 @@ func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.M
 			AddressTo:   internalTransaction.To,
 			Platform:    message.Network,
 			Network:     message.Network,
-			Success:     database.WrapNullBool(success),
+			Success:     &success,
 			Source:      d.Name(),
 			SourceData:  sourceData,
 			Transfers: []model.Transfer{

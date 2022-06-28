@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/moralis"
@@ -95,6 +94,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 				Index:       0,
 				AddressFrom: internalTransaction.FromAddress,
 				AddressTo:   internalTransaction.ToAddress,
+				Platform:    message.Network,
 				Network:     message.Network,
 				Source:      d.Name(),
 				SourceData:  sourceData,
@@ -137,6 +137,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 				Index:       internalTransaction.TransactionIndex.IntPart(),
 				AddressFrom: internalTransaction.FromAddress,
 				AddressTo:   internalTransaction.ToAddress,
+				Platform:    message.Network,
 				Network:     message.Network,
 				Source:      d.Name(),
 				SourceData:  sourceData,
@@ -225,7 +226,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			AddressTo:   internalTransaction.ToAddress,
 			Platform:    message.Network,
 			Network:     message.Network,
-			Success:     database.WrapNullBool(success),
+			Success:     &success,
 			Source:      d.Name(),
 			SourceData:  sourceData,
 			Transfers: []model.Transfer{
