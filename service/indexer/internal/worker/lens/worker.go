@@ -6,13 +6,13 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/lens"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/shurcooL/graphql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
