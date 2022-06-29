@@ -75,8 +75,8 @@ func (s *Server) Initialize() (err error) {
 		trace.WithBatcher(exporter),
 		trace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("pregod-indexer"),
-			semconv.ServiceVersionKey.String("v0.5.0"),
+			semconv.ServiceNameKey.String("pregod2-indexer"),
+			semconv.ServiceVersionKey.String("v1.0.0"),
 		)),
 	))
 
