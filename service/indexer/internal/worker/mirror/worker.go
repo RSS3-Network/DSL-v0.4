@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -40,6 +41,11 @@ func (s *service) Initialize(ctx context.Context) error {
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	tracer := otel.Tracer("mirror_worker")
+	_, trace := tracer.Start(ctx, "Handle")
+
+	defer trace.End()
+
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {

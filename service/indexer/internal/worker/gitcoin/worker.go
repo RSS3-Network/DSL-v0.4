@@ -54,11 +54,10 @@ func (s *service) Initialize(ctx context.Context) error {
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
-	tracer := otel.Tracer("worker_gitcoin")
+	tracer := otel.Tracer("gitcoin_worker")
+	_, trace := tracer.Start(ctx, "Handle")
 
-	_, handlerSpan := tracer.Start(ctx, "handler")
-
-	defer handlerSpan.End()
+	defer trace.End()
 
 	internalTransactionMap := make(map[string]model.Transaction)
 

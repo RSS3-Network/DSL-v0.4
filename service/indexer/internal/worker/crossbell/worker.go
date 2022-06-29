@@ -15,6 +15,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/handler"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 )
 
 //go:generate abigen --abi ./contract/erc721.abi --pkg contract --type ERC721 --out ./contract/erc721.go
@@ -70,6 +71,11 @@ func (w *Worker) Initialize(ctx context.Context) (err error) {
 }
 
 func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	tracer := otel.Tracer("crossbell_worker")
+	_, trace := tracer.Start(ctx, "Handle")
+
+	defer trace.End()
+
 	internalTransactions := make([]model.Transaction, 0)
 
 	for _, transaction := range transactions {

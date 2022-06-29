@@ -14,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
+	"go.opentelemetry.io/otel"
 )
 
 var (
@@ -54,6 +55,11 @@ type profile struct {
 }
 
 func (p *profile) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+	tracer := otel.Tracer("crossbell_handle_profile")
+	ctx, trace := tracer.Start(ctx, "Handler")
+
+	defer trace.End()
+
 	var log types.Log
 
 	if err := json.Unmarshal(transfer.SourceData, &log); err != nil {
@@ -83,6 +89,11 @@ func (p *profile) Handle(ctx context.Context, transaction model.Transaction, tra
 }
 
 func (p *profile) handleProfileCreated(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("crossbell_handle_profile")
+	_, trace := tracer.Start(ctx, "handleProfileCreated")
+
+	defer trace.End()
+
 	profileCreated := contract.ProfileCreated{}
 
 	if err := p.abi.UnpackIntoInterface(&profileCreated, EventNameProfileCreated, log.Data); err != nil {

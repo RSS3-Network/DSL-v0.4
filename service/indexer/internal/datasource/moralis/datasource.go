@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/shopspring/decimal"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -41,6 +42,11 @@ func (d *Datasource) Networks() []string {
 }
 
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	tracer := otel.Tracer("moralis_datasource")
+	_, trace := tracer.Start(ctx, "Handle")
+
+	defer trace.End()
+
 	switch message.Network {
 	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain:
 		return d.handleEthereum(ctx, message)
@@ -50,6 +56,11 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 }
 
 func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	tracer := otel.Tracer("moralis_datasource")
+	_, trace := tracer.Start(ctx, "handleEthereum")
+
+	defer trace.End()
+
 	transactionMap := make(map[string]model.Transaction)
 
 	// Get transactions for this address
@@ -160,6 +171,11 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 }
 
 func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	tracer := otel.Tracer("moralis_datasource")
+	_, trace := tracer.Start(ctx, "handleEthereumTransactions")
+
+	defer trace.End()
+
 	address := common.HexToAddress(message.Address)
 
 	// Get transactions from Moralis
@@ -252,6 +268,11 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 }
 
 func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, map[string]moralis.TokenTransfer, error) {
+	tracer := otel.Tracer("moralis_datasource")
+	_, trace := tracer.Start(ctx, "handleEthereumTokenTransfers")
+
+	defer trace.End()
+
 	address := common.HexToAddress(message.Address)
 
 	// Get token transfers from Moralis
@@ -313,6 +334,11 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 }
 
 func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, map[string]moralis.NFTTransfer, error) {
+	tracer := otel.Tracer("moralis_datasource")
+	_, trace := tracer.Start(ctx, "handleEthereumNFTTransfers")
+
+	defer trace.End()
+
 	address := common.HexToAddress(message.Address)
 
 	// Get nft transfers from Moralis

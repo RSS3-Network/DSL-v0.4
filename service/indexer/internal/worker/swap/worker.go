@@ -15,6 +15,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 )
 
@@ -98,6 +99,11 @@ func (s *service) Initialize(ctx context.Context) error {
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	tracer := otel.Tracer("swap_worker")
+	_, trace := tracer.Start(ctx, "Handle")
+
+	defer trace.End()
+
 	switch message.Network {
 	case protocol.NetworkZkSync:
 		return s.handleZkSync(ctx, message, transactions)
@@ -107,6 +113,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 }
 
 func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	tracer := otel.Tracer("swap_worker")
+	_, trace := tracer.Start(ctx, "handleEthereum")
+
+	defer trace.End()
+
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
@@ -173,6 +184,11 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 }
 
 func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.Message, transfer model.Transfer, swapRouterAddress string) (*model.Transfer, error) {
+	tracer := otel.Tracer("swap_worker")
+	_, trace := tracer.Start(ctx, "handleEthereumTransfer")
+
+	defer trace.End()
+
 	var metadataModel metadata.Metadata
 
 	if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {

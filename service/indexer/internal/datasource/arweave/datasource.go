@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -36,6 +37,11 @@ func (d *Datasource) Networks() []string {
 }
 
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	tracer := otel.Tracer("arweave_datasource")
+	_, trace := tracer.Start(ctx, "Handle")
+
+	defer trace.End()
+
 	address := common.NewMixedcaseAddress(common.HexToAddress(message.Address))
 
 	transactions := make([]model.Transaction, 0)

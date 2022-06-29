@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"go.opentelemetry.io/otel"
 )
 
 var _ datasource.Datasource = (*Datasource)(nil)
@@ -39,6 +40,11 @@ func (d *Datasource) Networks() []string {
 }
 
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	tracer := otel.Tracer("zksync_datasource")
+	_, trace := tracer.Start(ctx, "Handle")
+
+	defer trace.End()
+
 	transactions := make([]model.Transaction, 0)
 
 	address := common.HexToAddress(message.Address)
