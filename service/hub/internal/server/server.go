@@ -25,7 +25,10 @@ import (
 	"gorm.io/gorm"
 )
 
-var _ command.Interface = &Server{}
+var (
+	_       command.Interface = &Server{}
+	version                   = "v1.0.0"
+)
 
 type Server struct {
 	config             *config.Config
@@ -61,7 +64,7 @@ func (s *Server) Initialize() (err error) {
 		trace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceNameKey.String("pregod-hub"),
-			semconv.ServiceVersionKey.String("v1.0.0"),
+			semconv.ServiceVersionKey.String(version),
 		)),
 	))
 
@@ -105,7 +108,9 @@ func (s *Server) Initialize() (err error) {
 
 	s.httpServer.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
-			"message": "ok",
+			"status":        "ok",
+			"version":       version,
+			"documentation": "https://docs.rss3.io/PreGod/" + version + "/api/",
 		})
 	})
 
