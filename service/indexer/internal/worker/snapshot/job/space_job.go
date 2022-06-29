@@ -21,8 +21,6 @@ type SnapshotSpaceJob struct {
 	SnapshotJobBase
 }
 
-var traceSpaceJob = "space_job"
-
 func (job *SnapshotSpaceJob) Name() string {
 	return "snapshot_space_job"
 }
@@ -67,8 +65,10 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 		return PullInfoStatusNotLatest, fmt.Errorf("[snapshot space job] check error: %v", err)
 	}
 
-	ctx, runSnap := otel.Tracer(traceSpaceJob).Start(context.Background(), "run")
-	defer runSnap.End()
+	tracer := otel.Tracer("snapshot_space_job")
+	ctx, trace := tracer.Start(context.Background(), "snapshot_space_job:Handle")
+
+	defer trace.End()
 
 	var statusStroge StatusStroge
 
@@ -135,8 +135,10 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 }
 
 func (job *SnapshotSpaceJob) getSpaceTotalFromDB(ctx context.Context) (int32, error) {
-	_, handlerSpan := otel.Tracer(traceSpaceJob).Start(ctx, "get_space_total_from_db")
-	defer handlerSpan.End()
+	tracer := otel.Tracer("snapshot_space_job")
+	_, trace := tracer.Start(ctx, "snapshot_space_job:getSpaceTotalFromDB")
+
+	defer trace.End()
 
 	var count int64
 
@@ -152,8 +154,10 @@ func (job *SnapshotSpaceJob) getSpaceTotalFromDB(ctx context.Context) (int32, er
 }
 
 func (job *SnapshotSpaceJob) setSpaceInDB(ctx context.Context, graphqlSpaces []graphqlx.Space) error {
-	_, handlerSpan := otel.Tracer(traceSpaceJob).Start(ctx, "set_space_in_db")
-	defer handlerSpan.End()
+	tracer := otel.Tracer("snapshot_space_job")
+	_, trace := tracer.Start(ctx, "snapshot_space_job:setSpaceInDB")
+
+	defer trace.End()
 
 	spaces := []model.SnapshotSpace{}
 

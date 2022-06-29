@@ -54,6 +54,11 @@ func (job *SnapshotJobBase) Check() error {
 }
 
 func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (StatusStroge, error) {
+	tracer := otel.Tracer("snapshot_job")
+	_, trace := tracer.Start(ctx, "snapshot_job:GetLastStatusFromCache")
+
+	defer trace.End()
+
 	if job.Name == "" {
 		return StatusStroge{}, fmt.Errorf("job name is empty")
 	}
@@ -63,15 +68,10 @@ func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (StatusS
 	}
 
 	statusKey := job.Name + "_status"
-	tracerName := "get_" + statusKey
-	tracer := otel.Tracer(tracerName)
 	statusStroge := StatusStroge{
 		Pos:    0,
 		Status: PullInfoStatusNotLatest,
 	}
-
-	_, handlerSpan := tracer.Start(ctx, "get_by_cache")
-	defer handlerSpan.End()
 
 	data, err := job.RedisClient.Get(ctx, statusKey).Result()
 	if err != nil {

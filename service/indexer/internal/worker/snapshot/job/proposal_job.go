@@ -22,8 +22,6 @@ type SnapshotProposalJob struct {
 	SnapshotJobBase
 }
 
-var traceProposalJob = "proposal_job"
-
 func (job *SnapshotProposalJob) Name() string {
 	return "snapshot_proposal_job"
 }
@@ -68,8 +66,10 @@ func (job *SnapshotProposalJob) InnerJobRun() (PullInfoStatus, error) {
 		return PullInfoStatusNotLatest, fmt.Errorf("[snapshot proposal job] check error: %v", err)
 	}
 
-	ctx, runSnap := otel.Tracer(traceProposalJob).Start(context.Background(), "run")
-	defer runSnap.End()
+	tracer := otel.Tracer("snapshot_proposal_job")
+	ctx, trace := tracer.Start(context.Background(), "snapshot_proposal_job:InnerJobRun")
+
+	defer trace.End()
 
 	var statusStroge StatusStroge
 
@@ -135,8 +135,10 @@ func (job *SnapshotProposalJob) InnerJobRun() (PullInfoStatus, error) {
 }
 
 func (job *SnapshotProposalJob) getProposalTotalFromDB(ctx context.Context) (int32, error) {
-	_, handlerSpan := otel.Tracer(traceProposalJob).Start(ctx, "get_proposal_total_from_db")
-	defer handlerSpan.End()
+	tracer := otel.Tracer("snapshot_proposal_job")
+	_, trace := tracer.Start(ctx, "snapshot_proposal_job:getProposalTotalFromDB")
+
+	defer trace.End()
 
 	var count int64
 
@@ -152,8 +154,10 @@ func (job *SnapshotProposalJob) getProposalTotalFromDB(ctx context.Context) (int
 }
 
 func (job *SnapshotProposalJob) setProposalsInDB(ctx context.Context, graphqlproposals []graphqlx.Proposal) error {
-	_, handlerSpan := otel.Tracer(traceProposalJob).Start(ctx, "set_proposal_in_db")
-	defer handlerSpan.End()
+	tracer := otel.Tracer("snapshot_proposal_job")
+	_, trace := tracer.Start(ctx, "snapshot_proposal_job:setProposalsInDB")
+
+	defer trace.End()
 
 	proposals := []model.SnapshotProposal{}
 
