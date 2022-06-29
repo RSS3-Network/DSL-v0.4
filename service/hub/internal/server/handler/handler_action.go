@@ -101,9 +101,14 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		transactionList[index].Transfers = transferMap[transactionList[index].Hash]
 	}
 
+	var cursor string
+	if total > int64(request.Limit) {
+		cursor = transactionList[len(transactionList)-1].Hash
+	}
+
 	return c.JSON(http.StatusOK, &Response{
 		Total:  total,
-		Cursor: transactionList[len(transactionList)-1].Hash,
+		Cursor: cursor,
 		Result: transactionList,
 	})
 }
