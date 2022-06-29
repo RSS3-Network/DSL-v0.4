@@ -81,7 +81,7 @@ func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	// no cache
-	info, err := coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "ethereum")
+	info, err := coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "ethereum", -1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, "Ethereum", info.Name)
 	assert.EqualValues(t, "ethereum", info.Slug)
@@ -90,7 +90,7 @@ func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
 	assert.EqualValues(t, "coin", info.Category)
 
 	// cache exists
-	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "ethereum")
+	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "ethereum", -1)
 	assert.EqualValues(t, "Ethereum", info.Name)
 	assert.EqualValues(t, "ethereum", info.Slug)
 	assert.EqualValues(t, "ETH", info.Symbol)
@@ -99,7 +99,7 @@ func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
 
 
 	// BSC
-	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "binance_smart_chain")
+	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "binance_smart_chain", 10086)
 	assert.Nil(t, err)
 	assert.EqualValues(t, "Wrapped BNB", info.Name)
 	assert.EqualValues(t, "wbnb", info.Slug)
@@ -108,7 +108,7 @@ func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
 	assert.EqualValues(t, "token", info.Category)
 
 	// polygon
-	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "polygon")
+	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "polygon", 10086)
 	assert.Nil(t, err)
 	assert.EqualValues(t, "Polygon", info.Name)
 	assert.EqualValues(t, "polygon", info.Slug)

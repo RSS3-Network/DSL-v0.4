@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/contract"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -214,7 +215,32 @@ func getCoinInfoByNetwork(ctx context.Context, network string) (*model.CoinMarke
 }
 
 // for token native transfer
-func CachedGetCoinInfoByNetwork(ctx context.Context, network string) (*model.CoinMarketCapCoinInfo, error) {
+func CachedGetCoinInfoByNetwork(ctx context.Context, network string, logIndex int64) (*model.CoinMarketCapCoinInfo, error) {
+	// hard code xDAI / BNB info
+	switch {
+	case logIndex == -1 && network == protocol.NetworkXDAI:
+		return &model.CoinMarketCapCoinInfo{
+			Name:        "xDAI",
+			Symbol:      "xDAI",
+			Logo:        "https://s2.coinmarketcap.com/static/img/coins/64x64/8635.png",
+			Slug:        "xdaistable",
+			Category:    "token",
+			Description: "xDAI (xDAI) is a cryptocurrency . xDAI has a current supply of 0. The last known price of xDAI is 0.99581946 USD and is up 0.16 over the last 24 hours. It is currently trading on 2 active market(s) with $108,496.32 traded over the last 24 hours. More information can be found at http://xdaichain.com/.",
+			Decimals:    18,
+		}, nil
+	case logIndex == -1 && network == protocol.NetworkBinanceSmartChain:
+		return &model.CoinMarketCapCoinInfo{
+			Name:        "BNB",
+			Symbol:      "BNB",
+			Logo:        "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
+			Slug:        "bnb",
+			Category:    "coin",
+			Description: "BNB (BNB) is a cryptocurrency . BNB has a current supply of 163,276,974.63. The last known price of BNB is 220.69016174 USD and is down -5.85 over the last 24 hours. It is currently trading on 981 active market(s) with $1,183,715,416.39 traded over the last 24 hours. More information can be found at https://www.binance.com/.",
+			Decimals:    18,
+		}, nil
+	}
+	// end: hard code xDAI / BNB info
+
 	token, exists := Network2Token[network]
 	if !exists {
 		return nil, errors.New(network + ": symbol for the network not exists")
