@@ -71,7 +71,6 @@ type (
 )
 
 func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graphqlx.Publication, error) {
-
 	variable := PublicationsQueryRequest{
 		ProfileId:        options.Profile,
 		PublicationTypes: PublicationType,
