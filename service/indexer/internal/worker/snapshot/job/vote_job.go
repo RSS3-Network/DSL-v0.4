@@ -20,8 +20,6 @@ type SnapshotVoteJob struct {
 	SnapshotJobBase
 }
 
-var traceVoteJob = "vote_job"
-
 func (job *SnapshotVoteJob) Name() string {
 	return "snapshot_vote_job"
 }
@@ -66,8 +64,10 @@ func (job *SnapshotVoteJob) InnerJobRun() (PullInfoStatus, error) {
 		return PullInfoStatusNotLatest, fmt.Errorf("[snapshot vote job] check error: %v", err)
 	}
 
-	ctx, runSnap := otel.Tracer(traceVoteJob).Start(context.Background(), "run")
-	defer runSnap.End()
+	tracer := otel.Tracer("snapshot_vote_job")
+	ctx, trace := tracer.Start(context.Background(), "snapshot_vote_job:InnerJobRun")
+
+	defer trace.End()
 
 	var statusStroge StatusStroge
 
@@ -135,8 +135,10 @@ func (job *SnapshotVoteJob) InnerJobRun() (PullInfoStatus, error) {
 }
 
 func (job *SnapshotVoteJob) getVoteTotalFromDB(ctx context.Context) (int32, error) {
-	_, handlerSpan := otel.Tracer(traceVoteJob).Start(ctx, "get_vote_total_from_db")
-	defer handlerSpan.End()
+	tracer := otel.Tracer("snapshot_vote_job")
+	_, trace := tracer.Start(ctx, "snapshot_vote_job:getVoteTotalFromDB")
+
+	defer trace.End()
 
 	var count int64
 
@@ -152,8 +154,10 @@ func (job *SnapshotVoteJob) getVoteTotalFromDB(ctx context.Context) (int32, erro
 }
 
 func (job *SnapshotVoteJob) setVoteInDB(ctx context.Context, graphqlVotes []graphqlx.Vote) error {
-	_, handlerSpan := otel.Tracer(traceVoteJob).Start(ctx, "set_vote_in_db")
-	defer handlerSpan.End()
+	tracer := otel.Tracer("snapshot_vote_job")
+	_, trace := tracer.Start(ctx, "snapshot_vote_job:setVoteInDB")
+
+	defer trace.End()
 
 	votes := []model.SnapshotVote{}
 
