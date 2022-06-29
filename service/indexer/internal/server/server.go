@@ -36,6 +36,7 @@ import (
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
@@ -189,6 +190,14 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) handle(ctx context.Context, message *protocol.Message) (err error) {
+	tracer := otel.Tracer("indexer")
+	ctx, handlerSpan := tracer.Start(ctx, "handler")
+	handlerSpan.SetAttributes(
+		attribute.String("network", message.Network),
+	)
+
+	defer handlerSpan.End()
+
 	logrus.Info(message.Address, message.Network)
 
 	// Get data from datasources

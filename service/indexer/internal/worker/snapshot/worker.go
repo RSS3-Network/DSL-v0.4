@@ -117,6 +117,11 @@ func (s *service) Initialize(ctx context.Context) error {
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	tracer := otel.Tracer("snapshot_worker")
+	_, trace := tracer.Start(ctx, "Handle")
+
+	defer trace.End()
+
 	// Only some mainnets are currently supported
 	snapshotNetworkNum := snapshotNetworkNumMap[message.Network]
 

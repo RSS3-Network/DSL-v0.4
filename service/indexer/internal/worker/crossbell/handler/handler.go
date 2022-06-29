@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
+	"go.opentelemetry.io/otel"
 )
 
 var (
@@ -37,6 +38,11 @@ type handler struct {
 }
 
 func (h *handler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+	tracer := otel.Tracer("crossbell_handle")
+	_, trace := tracer.Start(ctx, "Handle")
+
+	defer trace.End()
+
 	// Transfer type actions should be handled by the token worker
 	if transfer.Source != protocol.SourceOrigin {
 		return h.handleTransfer(ctx, transaction, transfer)

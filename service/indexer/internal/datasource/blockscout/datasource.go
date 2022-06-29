@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -38,6 +39,11 @@ func (d *Datasource) Networks() []string {
 }
 
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	tracer := otel.Tracer("blockscout_datasource")
+	_, trace := tracer.Start(ctx, "Handle")
+
+	defer trace.End()
+
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	// Get transactions
