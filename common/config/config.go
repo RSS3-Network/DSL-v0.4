@@ -2,6 +2,8 @@ package configx
 
 import "fmt"
 
+type Mode string
+
 type File interface{}
 
 type HTTP struct {

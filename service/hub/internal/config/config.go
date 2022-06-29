@@ -5,6 +5,7 @@ import (
 )
 
 type Config struct {
+	Mode          configx.Mode           `json:"mode"`
 	HTTP          *configx.HTTP          `mapstructure:"http"`
 	RabbitMQ      *configx.RabbitMQ      `mapstructure:"rabbitmq"`
 	OpenTelemetry *configx.OpenTelemetry `mapstructure:"opentelemetry"`
