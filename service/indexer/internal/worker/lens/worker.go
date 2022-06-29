@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/lens"

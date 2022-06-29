@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/hasura/go-graphql-client"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/lens/graphql"
-	"github.com/shurcooL/graphql"
 )
 
 const (
@@ -71,12 +71,6 @@ type (
 )
 
 func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graphqlx.Publication, error) {
-	var query struct {
-		Publications struct {
-			Items    []graphqlx.Item
-			PageInfo graphqlx.PageInfo
-		} `graphql:"publications(request: $request)"`
-	}
 
 	variable := PublicationsQueryRequest{
 		ProfileId:        options.Profile,
@@ -96,6 +90,14 @@ func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graph
 			variableMap := map[string]interface{}{
 				"request": variable,
 			}
+
+			var query struct {
+				Publications struct {
+					Items    []graphqlx.Item
+					PageInfo graphqlx.PageInfo
+				} `graphql:"publications(request: $request)"`
+			}
+
 			if err := c.graphqlClient.Query(ctx, &query, variableMap); err != nil {
 				return nil, err
 			}

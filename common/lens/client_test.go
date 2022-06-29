@@ -2,8 +2,8 @@ package lens_test
 
 import (
 	"context"
+	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/lens"
-	"github.com/shurcooL/graphql"
 	"testing"
 )
 

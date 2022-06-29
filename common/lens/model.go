@@ -1,7 +1,7 @@
 package lens
 
 import (
-	"github.com/shurcooL/graphql"
+	"github.com/hasura/go-graphql-client"
 )
 
 type Options struct {
