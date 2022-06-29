@@ -5,61 +5,26 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/nft"
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
 	"go.opentelemetry.io/otel"
-)
-
-var (
-	EventNameProfileCreated      = "ProfileCreated"
-	EventNameSetHandle           = "SetHandle"
-	EventNameSetPrimaryProfileId = "SetPrimaryProfileId"
-	EventNameLinkProfile         = "LinkProfile"
-	EventNameUnlinkProfile       = "UnlinkProfile"
-	EventNameAttachLinklist      = "AttachLinkList"
-	EventNameSetProfileUri       = "SetProfileUri"
-	EventNamePostNote            = "PostNote"
-
-	EventHashProfileCreated      = common.BytesToHash(crypto.Keccak256([]byte("ProfileCreated(uint256,address,address,string,uint256)")))
-	EventHashSetHandle           = common.BytesToHash(crypto.Keccak256([]byte("SetHandle(address,uint256,string)")))
-	EventHashSetPrimaryProfileId = common.BytesToHash(crypto.Keccak256([]byte("SetPrimaryProfileId(address,uint256)")))
-	EventHashLinkProfile         = common.BytesToHash(crypto.Keccak256([]byte("LinkProfile(address,uint256,uint256,bytes32,uint256)")))
-	EventHashUnlinkProfile       = common.BytesToHash(crypto.Keccak256([]byte("UnlinkProfile(address,uint256,uint256,bytes32)")))
-	EventHashAttachLinklist      = common.BytesToHash(crypto.Keccak256([]byte("AttachLinklist(uint256,uint256,bytes32)")))
-	EventHashSetProfileUri       = common.BytesToHash(crypto.Keccak256([]byte("SetProfileUri(uint256,string)")))
-	EventHashPostNote            = common.BytesToHash(crypto.Keccak256([]byte("PostNote(uint256,uint256,bytes32,bytes32,bytes)")))
-
-	LinkTypeFollow  = "follow"
-	LinkTypeLike    = "like"
-	LinkTypeComment = "comment"
-
-	LinkTypeMap = map[common.Hash]string{
-		common.BytesToHash(common.RightPadBytes([]byte(LinkTypeFollow), common.HashLength)):  LinkTypeFollow,
-		common.BytesToHash(common.RightPadBytes([]byte(LinkTypeLike), common.HashLength)):    LinkTypeLike,
-		common.BytesToHash(common.RightPadBytes([]byte(LinkTypeComment), common.HashLength)): LinkTypeComment,
-	}
 )
 
 var _ Interface = (*profile)(nil)
 
 type profile struct {
-	contract *contract.ERC721
-	abi      abi.ABI
+	contract any
 }
 
-func (p *profile) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (result *model.Transfer, err error) {
-	tracer := otel.Tracer("crossbell_handle_profile")
-	ctx, trace := tracer.Start(ctx, "crossbell_handle_profile:Handler")
+func (p *profile) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+	tracer := otel.Tracer("worker_crossbell_handler_profileC")
 
-	defer func() { opentelemetry.Log(trace, transaction, result, err) }()
+	ctx, snap := tracer.Start(ctx, "worker_crossbell_handler_profileC:Handle")
+
+	defer snap.End()
 
 	var log types.Log
 
@@ -68,328 +33,31 @@ func (p *profile) Handle(ctx context.Context, transaction model.Transaction, tra
 	}
 
 	switch log.Topics[0] {
-	case EventHashProfileCreated:
+	case contract.EventHashProfileCreated:
 		return p.handleProfileCreated(ctx, transfer, log)
-	case EventHashSetPrimaryProfileId:
-		return p.handleSetPrimaryProfileId(ctx, transfer, log)
-	case EventHashSetHandle:
-		return p.handleSetHandle(ctx, transfer, log)
-	case EventHashLinkProfile:
-		return p.handleLinkProfile(ctx, transfer, log)
-	case EventHashUnlinkProfile:
-		return p.handleUnlinkProfile(ctx, transfer, log)
-	case EventHashAttachLinklist:
-		return p.handleAttachLinkList(ctx, transfer, log)
-	case EventHashSetProfileUri:
-		return p.handleSetProfileUri(ctx, transfer, log)
-	case EventHashPostNote:
-		return p.handlePostNote(ctx, transfer, log)
 	default:
-		return nil, ErrorUnknownUnknownEvent
+		return nil, contract.ErrorUnknownUnknownEvent
 	}
 }
 
-func (p *profile) handleProfileCreated(ctx context.Context, transfer model.Transfer, log types.Log) (result *model.Transfer, err error) {
-	tracer := otel.Tracer("crossbell_handle_profile")
-	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleProfileCreated")
+func (p *profile) handleProfileCreated(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("worker_crossbell_handler_profileC")
 
-	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
+	_, snap := tracer.Start(ctx, "worker_crossbell_handler_profileC:handleProfileCreated")
 
-	profileCreated := contract.ProfileCreated{}
+	defer snap.End()
 
-	if err := p.abi.UnpackIntoInterface(&profileCreated, EventNameProfileCreated, log.Data); err != nil {
-		return nil, err
-	}
+	event := contract.EventProfileCreated{}
 
-	profileID := big.NewInt(0)
-	profileID.SetString(log.Topics[1].Hex(), 0)
+	event.ProfileID = big.NewInt(0)
+	event.ProfileID.SetString(log.Topics[1].Hex(), 0)
 
-	addressCreator := common.HexToAddress(log.Topics[2].Hex())
-	addressOwner := common.HexToAddress(log.Topics[3].Hex())
+	event.Creator = common.HexToAddress(log.Topics[2].Hex())
+	event.To = common.HexToAddress(log.Topics[3].Hex())
 
-	metadataSelf, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileID)
-	if err != nil {
-		return nil, err
-	}
+	var err error
 
-	transfer.Type = EventNameProfileCreated
-	transfer.AddressFrom = addressCreator.String()
-	transfer.AddressTo = addressOwner.String()
-
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			TokenID:  profileID,
-			Metadata: metadataSelf,
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	return &transfer, nil
-}
-
-func (p *profile) handleSetHandle(ctx context.Context, transfer model.Transfer, log types.Log) (result *model.Transfer, err error) {
-	tracer := otel.Tracer("crossbell_handle_profile")
-	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleSetHandle")
-
-	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
-
-	profileID := big.NewInt(0)
-	profileID.SetString(log.Topics[2].Hex(), 0)
-
-	setHandlerData := contract.SetHandle{}
-
-	if err := p.abi.UnpackIntoInterface(&setHandlerData, EventNameSetHandle, log.Data); err != nil {
-		return nil, err
-	}
-
-	metadataSelf, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileID)
-	if err != nil {
-		return nil, err
-	}
-
-	transfer.Type = EventNameSetHandle
-
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			TokenID:  profileID,
-			Handle:   setHandlerData.NewHandle,
-			Metadata: metadataSelf,
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	return &transfer, nil
-}
-
-func (p *profile) handleLinkProfile(ctx context.Context, transfer model.Transfer, log types.Log) (result *model.Transfer, err error) {
-	tracer := otel.Tracer("crossbell_handle_profile")
-	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleLinkProfile")
-
-	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
-
-	tokenIDFrom := big.NewInt(0)
-	tokenIDFrom.SetString(log.Topics[2].Hex(), 0)
-
-	tokenIDTo := big.NewInt(0)
-	tokenIDTo.SetString(log.Topics[3].Hex(), 0)
-
-	linkProfile := contract.LinkProfile{}
-	if err := p.abi.UnpackIntoInterface(&linkProfile, EventNameLinkProfile, log.Data); err != nil {
-		return nil, err
-	}
-
-	transfer.Type = EventNameLinkProfile
-
-	metadataFrom, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, tokenIDFrom)
-	if err != nil {
-		return nil, err
-	}
-
-	metadataTo, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, tokenIDTo)
-	if err != nil {
-		return nil, err
-	}
-
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			TokenIDFrom:  tokenIDFrom,
-			TokenIDTo:    tokenIDTo,
-			LinkType:     LinkTypeMap[linkProfile.LinkType],
-			MetadataFrom: metadataFrom,
-			MetadataTo:   metadataTo,
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	return &transfer, nil
-}
-
-func (p *profile) handleUnlinkProfile(ctx context.Context, transfer model.Transfer, log types.Log) (result *model.Transfer, err error) {
-	tracer := otel.Tracer("crossbell_handle_profile")
-	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleUnlinkProfile")
-
-	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
-
-	tokenIDFrom := big.NewInt(0)
-	tokenIDFrom.SetString(log.Topics[2].Hex(), 0)
-
-	tokenIDTo := big.NewInt(0)
-	tokenIDTo.SetString(log.Topics[3].Hex(), 0)
-
-	unlinkProfile := contract.UnlinkProfile{}
-	if err := p.abi.UnpackIntoInterface(&unlinkProfile, EventNameUnlinkProfile, log.Data); err != nil {
-		return nil, err
-	}
-
-	transfer.Type = EventNameUnlinkProfile
-
-	metadataFrom, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, tokenIDFrom)
-	if err != nil {
-		return nil, err
-	}
-
-	metadataTo, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, tokenIDTo)
-	if err != nil {
-		return nil, err
-	}
-
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			TokenIDFrom:  tokenIDFrom,
-			TokenIDTo:    tokenIDTo,
-			LinkType:     LinkTypeMap[unlinkProfile.LinkType],
-			MetadataFrom: metadataFrom,
-			MetadataTo:   metadataTo,
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	return &transfer, nil
-}
-
-func (p *profile) handlePostNote(ctx context.Context, transfer model.Transfer, log types.Log) (result *model.Transfer, err error) {
-	tracer := otel.Tracer("crossbell_handle_profile")
-	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handlePostNote")
-
-	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
-
-	profileID := big.NewInt(0)
-	profileID.SetString(log.Topics[1].Hex(), 0)
-
-	noteID := big.NewInt(0)
-	noteID.SetString(log.Topics[2].Hex(), 0)
-
-	transfer.Type = filter.SocialPost
-
-	profileMetadata, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileID)
-	if err != nil {
-		return nil, err
-	}
-
-	noteMetadata, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, noteID)
-	if err != nil {
-		return nil, err
-	}
-
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			TokenIDFrom:  profileID,
-			TokenIDTo:    noteID,
-			MetadataFrom: profileMetadata,
-			MetadataTo:   noteMetadata,
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	return &transfer, nil
-}
-
-func (p *profile) handleSetPrimaryProfileId(ctx context.Context, transfer model.Transfer, log types.Log) (result *model.Transfer, err error) {
-	tracer := otel.Tracer("crossbell_handle_profile")
-	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleSetPrimaryProfileId")
-
-	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
-
-	transfer.Type = EventNameSetPrimaryProfileId
-
-	profileIDTo := big.NewInt(0)
-	profileIDTo.SetString(log.Topics[2].Hex(), 0)
-
-	profileIDFrom := big.NewInt(0)
-	profileIDFrom.SetString(log.Topics[3].Hex(), 0)
-
-	metadataFrom, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileIDFrom)
-	if err != nil {
-		return nil, err
-	}
-
-	metadataTo, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileIDTo)
-	if err != nil {
-		return nil, err
-	}
-
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			ProfileIDFrom: profileIDFrom,
-			ProfileIDTo:   profileIDTo,
-			MetadataFrom:  metadataFrom,
-			MetadataTo:    metadataTo,
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	return &transfer, nil
-}
-
-func (p *profile) handleAttachLinkList(ctx context.Context, transfer model.Transfer, log types.Log) (result *model.Transfer, err error) {
-	tracer := otel.Tracer("crossbell_handle_profile")
-	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleAttachLinkList")
-
-	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
-
-	transfer.Type = EventNameAttachLinklist
-
-	linklistID := big.NewInt(0)
-	linklistID.SetString(log.Topics[1].Hex(), 0)
-
-	profileID := big.NewInt(0)
-	profileID.SetString(log.Topics[2].Hex(), 0)
-
-	linkType := LinkTypeMap[log.Topics[3]]
-
-	profileMetadata, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileID)
-	if err != nil {
-		return nil, err
-	}
-
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			ProfileID:  profileID,
-			LinkListID: linklistID,
-			LinkType:   linkType,
-			Metadata:   profileMetadata,
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	return &transfer, nil
-}
-
-func (p *profile) handleSetProfileUri(ctx context.Context, transfer model.Transfer, log types.Log) (result *model.Transfer, err error) {
-	tracer := otel.Tracer("crossbell_handle_profile")
-	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleSetProfileUri")
-
-	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
-
-	transfer.Type = EventNameSetProfileUri
-
-	profileID := big.NewInt(0)
-	profileID.SetString(log.Topics[1].Hex(), 0)
-
-	setProfileUri := contract.SetProfileUri{}
-	if err := p.abi.UnpackIntoInterface(&setProfileUri, EventNameSetProfileUri, log.Data); err != nil {
-		return nil, err
-	}
-
-	profileMetadata, err := nft.GetMetadata(nft.NetworkCrossbell, AddressProfileProxy, profileID)
-	if err != nil {
-		return nil, err
-	}
-
-	if transfer.Metadata, err = json.Marshal(&metadata.Metadata{
-		Crossbell: &metadata.Crossbell{
-			TokenID:  profileID,
-			URI:      setProfileUri.NewUri,
-			Metadata: profileMetadata,
-		},
-	}); err != nil {
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{}); err != nil {
 		return nil, err
 	}
 

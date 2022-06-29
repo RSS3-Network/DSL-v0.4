@@ -7,12 +7,12 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
 )
 
-var _ Interface = (*linkList)(nil)
+var _ Interface = (*character)(nil)
 
-type linkList struct {
+type character struct {
 	contract any
 }
 
-func (l *linkList) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+func (c *character) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
 	return nil, contract.ErrorUnknownUnknownEvent
 }

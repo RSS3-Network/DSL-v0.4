@@ -6,18 +6,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
-	lensworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/lens"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
-	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
-
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -30,7 +18,12 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
@@ -125,13 +118,14 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		token.New(s.databaseClient),
-		swap.New(s.employer, s.databaseClient),
-		mirror.New(),
-		poapworker.New(),
-		gitcoin.New(s.databaseClient, s.redisClient),
-		snapshot.New(s.databaseClient, s.redisClient),
-		lensworker.New(s.databaseClient),
+		crossbell.New(),
+		//token.New(s.databaseClient),
+		//swap.New(s.employer, s.databaseClient),
+		//mirror.New(),
+		//poapworker.New(),
+		//gitcoin.New(s.databaseClient, s.redisClient),
+		//snapshot.New(s.databaseClient, s.redisClient),
+		//lensworker.New(s.databaseClient),
 	}
 
 	s.employer = shedlock.New(s.redisClient)

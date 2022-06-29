@@ -47,8 +47,9 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		defer rabbitmqSnap.End()
 
 		networks := []string{
-			protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
-			protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
+			protocol.NetworkCrossbell,
+			//protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
+			//protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
 		}
 
 		for _, network := range networks {
