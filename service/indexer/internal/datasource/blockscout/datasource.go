@@ -40,7 +40,7 @@ func (d *Datasource) Networks() []string {
 
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
 	tracer := otel.Tracer("blockscout_datasource")
-	_, trace := tracer.Start(ctx, "Handle")
+	_, trace := tracer.Start(ctx, "blockscout_datasource:Handle")
 
 	defer trace.End()
 
@@ -84,6 +84,11 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 }
 
 func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	tracer := otel.Tracer("blockscout_datasource")
+	_, trace := tracer.Start(ctx, "blockscout_datasource:handleTransactions")
+
+	defer trace.End()
+
 	transactions := make([]model.Transaction, 0)
 
 	// Use a different Client for different networks
@@ -144,6 +149,11 @@ func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.M
 }
 
 func (d *Datasource) handleTokenTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
+	tracer := otel.Tracer("blockscout_datasource")
+	_, trace := tracer.Start(ctx, "blockscout_datasource:handleTokenTransfers")
+
+	defer trace.End()
+
 	transfers := make([]model.Transfer, 0)
 
 	// Use a different Client for different networks

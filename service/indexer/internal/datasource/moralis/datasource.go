@@ -43,7 +43,7 @@ func (d *Datasource) Networks() []string {
 
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
 	tracer := otel.Tracer("moralis_datasource")
-	_, trace := tracer.Start(ctx, "Handle")
+	_, trace := tracer.Start(ctx, "moralis_datasource:Handle")
 
 	defer trace.End()
 
@@ -57,7 +57,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
 	tracer := otel.Tracer("moralis_datasource")
-	_, trace := tracer.Start(ctx, "handleEthereum")
+	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereum")
 
 	defer trace.End()
 
@@ -172,7 +172,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 
 func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
 	tracer := otel.Tracer("moralis_datasource")
-	_, trace := tracer.Start(ctx, "handleEthereumTransactions")
+	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereumTransactions")
 
 	defer trace.End()
 
@@ -269,7 +269,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 
 func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, map[string]moralis.TokenTransfer, error) {
 	tracer := otel.Tracer("moralis_datasource")
-	_, trace := tracer.Start(ctx, "handleEthereumTokenTransfers")
+	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereumTokenTransfers")
 
 	defer trace.End()
 
@@ -335,7 +335,7 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 
 func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, map[string]moralis.NFTTransfer, error) {
 	tracer := otel.Tracer("moralis_datasource")
-	_, trace := tracer.Start(ctx, "handleEthereumNFTTransfers")
+	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereumNFTTransfers")
 
 	defer trace.End()
 

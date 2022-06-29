@@ -56,7 +56,7 @@ type profile struct {
 
 func (p *profile) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
 	tracer := otel.Tracer("crossbell_handle_profile")
-	ctx, trace := tracer.Start(ctx, "Handler")
+	ctx, trace := tracer.Start(ctx, "crossbell_handle_profile:Handler")
 
 	defer trace.End()
 
@@ -90,7 +90,7 @@ func (p *profile) Handle(ctx context.Context, transaction model.Transaction, tra
 
 func (p *profile) handleProfileCreated(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("crossbell_handle_profile")
-	_, trace := tracer.Start(ctx, "handleProfileCreated")
+	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleProfileCreated")
 
 	defer trace.End()
 
@@ -128,6 +128,11 @@ func (p *profile) handleProfileCreated(ctx context.Context, transfer model.Trans
 }
 
 func (p *profile) handleSetHandle(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("crossbell_handle_profile")
+	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleSetHandle")
+
+	defer trace.End()
+
 	profileID := big.NewInt(0)
 	profileID.SetString(log.Topics[2].Hex(), 0)
 
@@ -158,6 +163,11 @@ func (p *profile) handleSetHandle(ctx context.Context, transfer model.Transfer, 
 }
 
 func (p *profile) handleLinkProfile(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("crossbell_handle_profile")
+	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleLinkProfile")
+
+	defer trace.End()
+
 	tokenIDFrom := big.NewInt(0)
 	tokenIDFrom.SetString(log.Topics[2].Hex(), 0)
 
@@ -197,6 +207,11 @@ func (p *profile) handleLinkProfile(ctx context.Context, transfer model.Transfer
 }
 
 func (p *profile) handleUnlinkProfile(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("crossbell_handle_profile")
+	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleUnlinkProfile")
+
+	defer trace.End()
+
 	tokenIDFrom := big.NewInt(0)
 	tokenIDFrom.SetString(log.Topics[2].Hex(), 0)
 
@@ -236,6 +251,11 @@ func (p *profile) handleUnlinkProfile(ctx context.Context, transfer model.Transf
 }
 
 func (p *profile) handlePostNote(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("crossbell_handle_profile")
+	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handlePostNote")
+
+	defer trace.End()
+
 	profileID := big.NewInt(0)
 	profileID.SetString(log.Topics[1].Hex(), 0)
 
@@ -269,6 +289,11 @@ func (p *profile) handlePostNote(ctx context.Context, transfer model.Transfer, l
 }
 
 func (p *profile) handleSetPrimaryProfileId(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("crossbell_handle_profile")
+	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleSetPrimaryProfileId")
+
+	defer trace.End()
+
 	transfer.Type = EventNameSetPrimaryProfileId
 
 	profileIDTo := big.NewInt(0)
@@ -302,6 +327,11 @@ func (p *profile) handleSetPrimaryProfileId(ctx context.Context, transfer model.
 }
 
 func (p *profile) handleAttachLinkList(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("crossbell_handle_profile")
+	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleAttachLinkList")
+
+	defer trace.End()
+
 	transfer.Type = EventNameAttachLinklist
 
 	linklistID := big.NewInt(0)
@@ -332,6 +362,11 @@ func (p *profile) handleAttachLinkList(ctx context.Context, transfer model.Trans
 }
 
 func (p *profile) handleSetProfileUri(ctx context.Context, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("crossbell_handle_profile")
+	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleSetProfileUri")
+
+	defer trace.End()
+
 	transfer.Type = EventNameSetProfileUri
 
 	profileID := big.NewInt(0)

@@ -56,7 +56,7 @@ func (s *service) Jobs() []worker.Job {
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	tracer := otel.Tracer("lens_worker")
-	_, trace := tracer.Start(ctx, "Handle")
+	_, trace := tracer.Start(ctx, "lens_worker:Handle")
 
 	defer trace.End()
 

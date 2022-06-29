@@ -39,7 +39,7 @@ type handler struct {
 
 func (h *handler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
 	tracer := otel.Tracer("crossbell_handle")
-	_, trace := tracer.Start(ctx, "Handle")
+	_, trace := tracer.Start(ctx, "crossbell_handle:Handle")
 
 	defer trace.End()
 
