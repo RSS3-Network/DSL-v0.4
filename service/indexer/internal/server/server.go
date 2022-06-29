@@ -10,7 +10,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
 	lensworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
@@ -126,13 +125,12 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		crossbell.New(),
-		snapshot.New(s.databaseClient, s.redisClient),
 		token.New(s.databaseClient),
 		swap.New(s.employer, s.databaseClient),
 		mirror.New(),
 		poapworker.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
+		snapshot.New(s.databaseClient, s.redisClient),
 		lensworker.New(s.databaseClient),
 	}
 
