@@ -2,6 +2,7 @@ package server
 
 import (
 	"net"
+	"net/http"
 	"strconv"
 
 	"github.com/go-redis/redis/v8"
@@ -101,6 +102,12 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.HTTPErrorHandler = s.httpHandler.ErrorFunc
 
 	s.httpServer.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
+
+	s.httpServer.GET("/", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"message": "ok",
+		})
+	})
 
 	s.httpServer.GET("/notes/:address", s.httpHandler.GetActionListFunc)
 
