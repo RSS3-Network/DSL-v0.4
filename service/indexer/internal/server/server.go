@@ -189,7 +189,7 @@ func (s *Server) Run() error {
 
 func (s *Server) handle(ctx context.Context, message *protocol.Message) (err error) {
 	tracer := otel.Tracer("indexer")
-	ctx, handlerSpan := tracer.Start(ctx, "handler")
+	ctx, handlerSpan := tracer.Start(ctx, "indexer:handler")
 	handlerSpan.SetAttributes(
 		attribute.String("network", message.Network),
 	)

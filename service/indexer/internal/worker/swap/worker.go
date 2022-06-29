@@ -100,7 +100,7 @@ func (s *service) Initialize(ctx context.Context) error {
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	tracer := otel.Tracer("swap_worker")
-	_, trace := tracer.Start(ctx, "Handle")
+	_, trace := tracer.Start(ctx, "swap_worker:Handle")
 
 	defer trace.End()
 
@@ -114,7 +114,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	tracer := otel.Tracer("swap_worker")
-	_, trace := tracer.Start(ctx, "handleEthereum")
+	_, trace := tracer.Start(ctx, "swap_worker:handleEthereum")
 
 	defer trace.End()
 
@@ -185,7 +185,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.Message, transfer model.Transfer, swapRouterAddress string) (*model.Transfer, error) {
 	tracer := otel.Tracer("swap_worker")
-	_, trace := tracer.Start(ctx, "handleEthereumTransfer")
+	_, trace := tracer.Start(ctx, "swap_worker:handleEthereumTransfer")
 
 	defer trace.End()
 

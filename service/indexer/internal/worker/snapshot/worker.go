@@ -51,8 +51,6 @@ type service struct {
 	snapshotClient *snapshot.Client
 }
 
-var snapShotWorker = "snapshot_worker"
-
 type MetadataSpaceFilter struct {
 	MinScore    decimal.Decimal `json:"minScore"`
 	OnlyMembers bool            `json:"onlyMembers"`
@@ -118,7 +116,7 @@ func (s *service) Initialize(ctx context.Context) error {
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	tracer := otel.Tracer("snapshot_worker")
-	_, trace := tracer.Start(ctx, "Handle")
+	_, trace := tracer.Start(ctx, "snapshot_worker:Handle")
 
 	defer trace.End()
 
@@ -285,8 +283,10 @@ func (s *service) getLatestTimestamp(message *protocol.Message) (time.Time, erro
 }
 
 func (s *service) getSnapshotVotes(ctx context.Context, address string, timestamp time.Time) ([]model.SnapshotVote, error) {
-	_, handlerSpan := otel.Tracer(snapShotWorker).Start(ctx, "get_snapshot_vote_info")
-	defer handlerSpan.End()
+	tracer := otel.Tracer("snapshot_worker")
+	_, trace := tracer.Start(ctx, "snapshot_worker:getSnapshotVotes")
+
+	defer trace.End()
 
 	var snapshotVotes []model.SnapshotVote
 
@@ -303,8 +303,10 @@ func (s *service) getSnapshotVotes(ctx context.Context, address string, timestam
 }
 
 func (s *service) getSnapshotProposals(ctx context.Context, proposals []string) (map[string]model.SnapshotProposal, error) {
-	_, handlerSpan := otel.Tracer(snapShotWorker).Start(ctx, "get_snapshot_proposal_info")
-	defer handlerSpan.End()
+	tracer := otel.Tracer("snapshot_worker")
+	_, trace := tracer.Start(ctx, "snapshot_worker:getSnapshotProposals")
+
+	defer trace.End()
 
 	var snapshotProposals []model.SnapshotProposal
 	snapshotProposalMap := make(map[string]model.SnapshotProposal)
@@ -325,8 +327,10 @@ func (s *service) getSnapshotProposals(ctx context.Context, proposals []string) 
 }
 
 func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networkNum string) (map[string]model.SnapshotSpace, error) {
-	_, handlerSpan := otel.Tracer(snapShotWorker).Start(ctx, "get_snapshot_space_info")
-	defer handlerSpan.End()
+	tracer := otel.Tracer("snapshot_worker")
+	_, trace := tracer.Start(ctx, "snapshot_worker:getSnapshotSpaces")
+
+	defer trace.End()
 
 	var snapshotSpaces []model.SnapshotSpace
 	snapshotSpaceMap := make(map[string]model.SnapshotSpace)
@@ -348,8 +352,10 @@ func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networ
 }
 
 func (s *service) getProposalsByAuthor(ctx context.Context, author string, timestamp time.Time) (map[string]model.SnapshotProposal, error) {
-	_, handlerSpan := otel.Tracer(snapShotWorker).Start(ctx, "get_snapshot_by_author")
-	defer handlerSpan.End()
+	tracer := otel.Tracer("snapshot_worker")
+	_, trace := tracer.Start(ctx, "snapshot_worker:getProposalsByAuthor")
+
+	defer trace.End()
 
 	var snapshotProposals []model.SnapshotProposal
 	snapshotProposalMap := make(map[string]model.SnapshotProposal)

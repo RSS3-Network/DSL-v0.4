@@ -42,7 +42,7 @@ func (s *service) Initialize(ctx context.Context) error {
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	tracer := otel.Tracer("mirror_worker")
-	_, trace := tracer.Start(ctx, "Handle")
+	_, trace := tracer.Start(ctx, "mirror_worker:Handle")
 
 	defer trace.End()
 

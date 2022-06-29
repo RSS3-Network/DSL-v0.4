@@ -116,8 +116,7 @@ func (s *service) Initialize(ctx context.Context) error {
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	tracer := otel.Tracer("token_worker")
-
-	ctx, handlerSpan := tracer.Start(ctx, "Handle")
+	ctx, handlerSpan := tracer.Start(ctx, "token_worker:Handle")
 
 	defer handlerSpan.End()
 
@@ -140,7 +139,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 // handle crossbell / XDAI NFT (link list / profile)
 func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	tracer := otel.Tracer("token_worker")
-	_, trace := tracer.Start(ctx, "handleCrossbellAndXDAI")
+	_, trace := tracer.Start(ctx, "token_worker:handleCrossbellAndXDAI")
 
 	defer trace.End()
 
@@ -253,7 +252,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 
 func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	tracer := otel.Tracer("token_worker")
-	_, trace := tracer.Start(ctx, "handleEthereum")
+	_, trace := tracer.Start(ctx, "token_worker:handleEthereum")
 
 	defer trace.End()
 
@@ -421,7 +420,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	tracer := otel.Tracer("token_worker")
-	_, trace := tracer.Start(ctx, "handleZkSync")
+	_, trace := tracer.Start(ctx, "token_worker:handleZkSync")
 
 	defer trace.End()
 

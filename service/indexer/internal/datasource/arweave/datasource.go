@@ -38,7 +38,7 @@ func (d *Datasource) Networks() []string {
 
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
 	tracer := otel.Tracer("arweave_datasource")
-	_, trace := tracer.Start(ctx, "Handle")
+	_, trace := tracer.Start(ctx, "arweave_datasource:Handle")
 
 	defer trace.End()
 

@@ -72,7 +72,7 @@ func (w *Worker) Initialize(ctx context.Context) (err error) {
 
 func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	tracer := otel.Tracer("crossbell_worker")
-	_, trace := tracer.Start(ctx, "Handle")
+	_, trace := tracer.Start(ctx, "crossbell_worker:Handle")
 
 	defer trace.End()
 
