@@ -62,7 +62,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 				return
 			}
 
-			if err := h.RabbitmqChannel.Publish(protocol.ExchangeJob, "", false, false, rabbitmq.Publishing{
+			if err := h.RabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
 				ContentType: protocol.ContentTypeJSON,
 				Body:        messageData,
 			}); err != nil {
@@ -101,9 +101,14 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		transactionList[index].Transfers = transferMap[transactionList[index].Hash]
 	}
 
+	var cursor string
+	if total > int64(request.Limit) {
+		cursor = transactionList[len(transactionList)-1].Hash
+	}
+
 	return c.JSON(http.StatusOK, &Response{
 		Total:  total,
-		Cursor: transactionList[len(transactionList)-1].Hash,
+		Cursor: cursor,
 		Result: transactionList,
 	})
 }

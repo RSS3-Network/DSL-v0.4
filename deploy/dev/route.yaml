@@ -8,13 +8,24 @@ spec:
   - web
   routes:
   - kind: Rule
-    match: Host(`test-pregod2.rss3.dev`)
+    match: Host(`test-pregod.rss3.dev`) && PathPrefix(`/v1.0.0`)
     services:
     - name: pregod2-hub-api
       port: 80
     middlewares:
       - name: pregod-hub-ratelimit
       - name: pregod-hub-cors
+      - name: rm-prefix-v100
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: rm-prefix-v100
+  namespace: pregod
+spec:
+  stripPrefix:
+    prefixes:
+      - /v1.0.0
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware

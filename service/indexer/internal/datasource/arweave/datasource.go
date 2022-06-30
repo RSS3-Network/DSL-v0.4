@@ -3,6 +3,7 @@ package arweave
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -71,8 +72,8 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		transactions = append(transactions, model.Transaction{
 			BlockNumber: int64(edge.Node.Block.Height),
 			Timestamp:   timestamp,
-			Hash:        edge.Node.ID.(string),
-			AddressFrom: string(edge.Node.Owner.Address),
+			Hash:        strings.ToLower(edge.Node.ID.(string)),
+			AddressFrom: strings.ToLower(string(edge.Node.Owner.Address)),
 			AddressTo:   addressTo,
 			Platform:    message.Network,
 			Network:     message.Network,
@@ -81,10 +82,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{
-					TransactionHash: edge.Node.ID.(string),
+					TransactionHash: strings.ToLower(edge.Node.ID.(string)),
 					Timestamp:       timestamp,
 					Index:           protocol.IndexVirtual,
-					AddressFrom:     string(edge.Node.Owner.Address),
+					AddressFrom:     strings.ToLower(string(edge.Node.Owner.Address)),
 					AddressTo:       addressTo,
 					Metadata:        metadata.Default,
 					Platform:        message.Network,

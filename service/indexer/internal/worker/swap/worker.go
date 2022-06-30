@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/errorx"
@@ -226,21 +228,35 @@ func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.
 	return &transfer, nil
 }
 
+func keyOfHandleSwapPool(contractAddress, network string) string {
+	return fmt.Sprintf("handleEthereumTransferSwapPool.%s.%s", contractAddress, network)
+}
+
 func (s *service) handleEthereumTransferSwapPool(ctx context.Context, message *protocol.Message, transfer *model.Transfer, swapPoolAddress string) error {
 	var swapPoolModel model.SwapPool
 
-	if err := s.databaseClient.
-		Model((*model.SwapPool)(nil)).
-		Where(map[string]interface{}{
-			"contract_address": swapPoolAddress,
-			"network":          message.Network,
-		}).
-		First(&swapPoolModel).
-		Error; err != nil {
+	// get from redis cache
+	key := keyOfHandleSwapPool(swapPoolAddress, message.Network)
+	exists, err := cache.GetMsgPack(ctx, key, &swapPoolModel)
+	if err != nil {
 		return err
 	}
 
-	var err error
+	if !exists {
+		if err := s.databaseClient.
+			Model((*model.SwapPool)(nil)).
+			Where(map[string]interface{}{
+				"contract_address": swapPoolAddress,
+				"network":          message.Network,
+			}).
+			First(&swapPoolModel).
+			Error; err != nil {
+			return err
+		}
+		if err := cache.SetMsgPack(ctx, key, swapPoolModel, 7*24*time.Hour); err != nil {
+			return err
+		}
+	}
 
 	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.SwapPool{
 		Name:     swapPoolModel.Source,
