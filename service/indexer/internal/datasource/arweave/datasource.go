@@ -3,6 +3,7 @@ package arweave
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -11,6 +12,7 @@ import (
 	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"go.opentelemetry.io/otel"
@@ -36,15 +38,15 @@ func (d *Datasource) Networks() []string {
 	}
 }
 
-func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (transactions []model.Transaction, err error) {
 	tracer := otel.Tracer("arweave_datasource")
 	_, trace := tracer.Start(ctx, "arweave_datasource:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, message, transactions, err)
 
 	address := common.NewMixedcaseAddress(common.HexToAddress(message.Address))
 
-	transactions := make([]model.Transaction, 0)
+	transactions = make([]model.Transaction, 0)
 
 	var query struct {
 		TransactionConnection graphqlx.TransactionConnection `graphql:"transactions(owners: $owners, tags: $tags)"`
@@ -70,8 +72,8 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		transactions = append(transactions, model.Transaction{
 			BlockNumber: int64(edge.Node.Block.Height),
 			Timestamp:   timestamp,
-			Hash:        edge.Node.ID.(string),
-			AddressFrom: string(edge.Node.Owner.Address),
+			Hash:        strings.ToLower(edge.Node.ID.(string)),
+			AddressFrom: strings.ToLower(string(edge.Node.Owner.Address)),
 			AddressTo:   addressTo,
 			Platform:    message.Network,
 			Network:     message.Network,
@@ -80,10 +82,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{
-					TransactionHash: edge.Node.ID.(string),
+					TransactionHash: strings.ToLower(edge.Node.ID.(string)),
 					Timestamp:       timestamp,
 					Index:           protocol.IndexVirtual,
-					AddressFrom:     string(edge.Node.Owner.Address),
+					AddressFrom:     strings.ToLower(string(edge.Node.Owner.Address)),
 					AddressTo:       addressTo,
 					Metadata:        metadata.Default,
 					Platform:        message.Network,

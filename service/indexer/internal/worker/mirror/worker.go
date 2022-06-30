@@ -10,6 +10,7 @@ import (
 	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -40,11 +41,11 @@ func (s *service) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("mirror_worker")
 	_, trace := tracer.Start(ctx, "mirror_worker:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -98,7 +99,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			transfer.AddressTo = string(transactionEdge.Node.Owner.Address)
+			transfer.AddressTo = strings.ToLower(string(transactionEdge.Node.Owner.Address))
 			transfer.AddressFrom = strings.ToLower(metadataModel.Mirror.Contributor)
 			transfer.Metadata = rawMetadata
 			transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
@@ -111,7 +112,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			value, exist := internalTransactionMap[transaction.Hash]
 			if !exist {
 				value = transaction
-				value.AddressTo = string(transactionEdge.Node.Owner.Address)
+				value.AddressTo = strings.ToLower(string(transactionEdge.Node.Owner.Address))
 				value.AddressFrom = strings.ToLower(metadataModel.Mirror.Contributor)
 
 				// Ignore transfers data that will not be updated

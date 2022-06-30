@@ -3,12 +3,14 @@ package main
 import (
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/logger"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 var rootCommand = cobra.Command{
@@ -39,6 +41,10 @@ func main() {
 		logrus.Fatalln(err)
 	}
 
+	if err := logger.Initialize(string(configHub.Mode)); err != nil {
+		logrus.Fatalln(err)
+	}
+
 	srv := server.New(&configHub)
 
 	rootCommand.RunE = func(cmd *cobra.Command, args []string) error {
@@ -46,6 +52,6 @@ func main() {
 	}
 
 	if err := rootCommand.Execute(); err != nil {
-		logrus.Fatalln(err)
+		logger.Global().Fatal("hub execution failed", zap.Error(err))
 	}
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/snapshot"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/snapshot/graphql"
 	"github.com/sirupsen/logrus"
@@ -60,8 +61,8 @@ func (job *SnapshotProposalJob) Run(renewal worker.RenewalFunc) error {
 	}
 }
 
-func (job *SnapshotProposalJob) InnerJobRun() (PullInfoStatus, error) {
-	err := job.Check()
+func (job *SnapshotProposalJob) InnerJobRun() (status PullInfoStatus, err error) {
+	err = job.Check()
 	if err != nil {
 		return PullInfoStatusNotLatest, fmt.Errorf("[snapshot proposal job] check error: %v", err)
 	}
@@ -69,7 +70,7 @@ func (job *SnapshotProposalJob) InnerJobRun() (PullInfoStatus, error) {
 	tracer := otel.Tracer("snapshot_proposal_job")
 	ctx, trace := tracer.Start(context.Background(), "snapshot_proposal_job:InnerJobRun")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, nil, status, err)
 
 	var statusStroge StatusStroge
 
@@ -135,11 +136,6 @@ func (job *SnapshotProposalJob) InnerJobRun() (PullInfoStatus, error) {
 }
 
 func (job *SnapshotProposalJob) getProposalTotalFromDB(ctx context.Context) (int32, error) {
-	tracer := otel.Tracer("snapshot_proposal_job")
-	_, trace := tracer.Start(ctx, "snapshot_proposal_job:getProposalTotalFromDB")
-
-	defer trace.End()
-
 	var count int64
 
 	if err := job.DatabaseClient.
@@ -153,11 +149,11 @@ func (job *SnapshotProposalJob) getProposalTotalFromDB(ctx context.Context) (int
 	return int32(count), nil
 }
 
-func (job *SnapshotProposalJob) setProposalsInDB(ctx context.Context, graphqlproposals []graphqlx.Proposal) error {
+func (job *SnapshotProposalJob) setProposalsInDB(ctx context.Context, graphqlproposals []graphqlx.Proposal) (err error) {
 	tracer := otel.Tracer("snapshot_proposal_job")
 	_, trace := tracer.Start(ctx, "snapshot_proposal_job:setProposalsInDB")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, graphqlproposals, nil, err)
 
 	proposals := []model.SnapshotProposal{}
 

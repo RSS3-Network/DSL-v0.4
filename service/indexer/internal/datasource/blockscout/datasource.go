@@ -9,6 +9,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/blockscout"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/sirupsen/logrus"
@@ -38,11 +39,11 @@ func (d *Datasource) Networks() []string {
 	}
 }
 
-func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (transactions []model.Transaction, err error) {
 	tracer := otel.Tracer("blockscout_datasource")
 	_, trace := tracer.Start(ctx, "blockscout_datasource:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, message, transactions, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -74,7 +75,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		internalTransactionMap[internalTokenTransfer.TransactionHash] = value
 	}
 
-	transactions := make([]model.Transaction, 0)
+	transactions = make([]model.Transaction, 0)
 
 	for _, internalTransaction := range internalTransactionMap {
 		transactions = append(transactions, internalTransaction)
@@ -83,13 +84,13 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	return transactions, nil
 }
 
-func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.Message) (transactions []model.Transaction, err error) {
 	tracer := otel.Tracer("blockscout_datasource")
 	_, trace := tracer.Start(ctx, "blockscout_datasource:handleTransactions")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, message, transactions, err)
 
-	transactions := make([]model.Transaction, 0)
+	transactions = make([]model.Transaction, 0)
 
 	// Use a different Client for different networks
 	blockscoutClient := d.blockscoutClientMap[message.Network]
@@ -148,13 +149,13 @@ func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.M
 	return transactions, nil
 }
 
-func (d *Datasource) handleTokenTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, error) {
+func (d *Datasource) handleTokenTransfers(ctx context.Context, message *protocol.Message) (transfers []model.Transfer, err error) {
 	tracer := otel.Tracer("blockscout_datasource")
 	_, trace := tracer.Start(ctx, "blockscout_datasource:handleTokenTransfers")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, message, transfers, err)
 
-	transfers := make([]model.Transfer, 0)
+	transfers = make([]model.Transfer, 0)
 
 	// Use a different Client for different networks
 	blockscoutClient := d.blockscoutClientMap[message.Network]

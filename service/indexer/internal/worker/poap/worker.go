@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"go.opentelemetry.io/otel"
 
@@ -41,11 +42,11 @@ func (s *service) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("poap_worker")
 	_, trace := tracer.Start(ctx, "poap_worker:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
 

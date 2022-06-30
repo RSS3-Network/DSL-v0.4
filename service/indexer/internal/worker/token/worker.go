@@ -6,14 +6,18 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/blockscout"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	moralisx "github.com/naturalselectionlabs/pregod/common/moralis"
 	"github.com/naturalselectionlabs/pregod/common/nft"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/zksync"
@@ -137,11 +141,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 }
 
 // handle crossbell / XDAI NFT (link list / profile)
-func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("token_worker")
 	_, trace := tracer.Start(ctx, "token_worker:handleCrossbellAndXDAI")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -194,7 +198,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 					if sourceData.ContractAddress != "" {
 						coinInfo, err = coinmarketcap.CachedGetCoinInfo(ctx, message.Network, sourceData.ContractAddress)
 					} else {
-						coinInfo, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, message.Network)
+						coinInfo, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, message.Network, transfer.Index)
 					}
 					if err != nil {
 						logrus.Error(err)
@@ -250,11 +254,11 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 	return internalTransactions, nil
 }
 
-func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("token_worker")
 	_, trace := tracer.Start(ctx, "token_worker:handleEthereum")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -340,7 +344,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
 				// check for exchange transaction
-				if err := s.checkExchangeWallet(strings.ToLower(message.Address), &transfer, &wallet); err != nil {
+				if err := s.checkExchangeWallet(ctx, strings.ToLower(message.Address), &transfer, &wallet); err != nil {
 					return nil, err
 				}
 			} else {
@@ -360,7 +364,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				}
 
 				// get info from coinmarketcap
-				coinInfo, err := coinmarketcap.CachedGetCoinInfoByNetwork(ctx, message.Network)
+				coinInfo, err := coinmarketcap.CachedGetCoinInfoByNetwork(ctx, message.Network, transfer.Index)
 				if err != nil {
 					return nil, err
 				}
@@ -377,7 +381,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
 				// check for exchange transaction
-				if err := s.checkExchangeWallet(strings.ToLower(message.Address), &transfer, &wallet); err != nil {
+				if err := s.checkExchangeWallet(ctx, strings.ToLower(message.Address), &transfer, &wallet); err != nil {
 					return nil, err
 				}
 			}
@@ -418,11 +422,11 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	return internalTransactions, nil
 }
 
-func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("token_worker")
 	_, trace := tracer.Start(ctx, "token_worker:handleZkSync")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -516,10 +520,40 @@ func (s *service) Jobs() []worker.Job {
 	return nil
 }
 
-func (s *service) checkExchangeWallet(address string, transfer *model.Transfer, wallet *model.ExchangeWallet) error {
-	if err := s.databaseClient.Model((*model.ExchangeWallet)(nil)).
-		Where("wallet_address = ?", strings.ToLower(transfer.AddressTo)).Or("wallet_address = ?", strings.ToLower(transfer.AddressFrom)).First(&wallet).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+func keyOfCheckExchangeWallet(address string) string {
+	return fmt.Sprintf("check_exchange_wallet.%s", address)
+}
+
+// Check address (from / to) is a WalletAddress. If true, update transfer
+func (s *service) checkExchangeWallet(ctx context.Context, address string, transfer *model.Transfer, wallet *model.ExchangeWallet) error {
+	// get from redis cache (to)
+	exists, err := cache.GetMsgPack(ctx, keyOfCheckExchangeWallet(transfer.AddressTo), wallet)
+	if err != nil {
 		return err
+	}
+	if !exists { // get from redis cache (from)
+		if exists, err = cache.GetMsgPack(ctx, keyOfCheckExchangeWallet(transfer.AddressFrom), wallet); err != nil {
+			return nil
+		}
+	}
+
+	if !exists {
+		err := s.databaseClient.Model((*model.ExchangeWallet)(nil)).Where("wallet_address = ?", strings.ToLower(transfer.AddressTo)).Or("wallet_address = ?", strings.ToLower(transfer.AddressFrom)).First(&wallet).Error
+		switch {
+		case err == nil: // exists, set WalletAddress' cache
+			if err := cache.SetMsgPack(ctx, keyOfCheckExchangeWallet(wallet.WalletAddress), wallet, 7*24*time.Hour); err != nil {
+				return err
+			}
+		case errors.Is(err, gorm.ErrRecordNotFound): // not exists, set `from` and `to` address' cache (empty)
+			if err := cache.SetMsgPack(ctx, keyOfCheckExchangeWallet(transfer.AddressFrom), wallet, 7*24*time.Hour); err != nil {
+				return err
+			}
+			if err := cache.SetMsgPack(ctx, keyOfCheckExchangeWallet(transfer.AddressTo), wallet, 7*24*time.Hour); err != nil {
+				return err
+			}
+		default: // other err
+			return err
+		}
 	}
 
 	if wallet.Name != "" {

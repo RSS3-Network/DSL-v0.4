@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/errorx"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/shedlock"
@@ -98,11 +101,11 @@ func (s *service) Initialize(ctx context.Context) error {
 	})
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("swap_worker")
 	_, trace := tracer.Start(ctx, "swap_worker:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	switch message.Network {
 	case protocol.NetworkZkSync:
@@ -112,11 +115,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	}
 }
 
-func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("swap_worker")
 	_, trace := tracer.Start(ctx, "swap_worker:handleEthereum")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -183,11 +186,11 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	return internalTransactions, nil
 }
 
-func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.Message, transfer model.Transfer, swapRouterAddress string) (*model.Transfer, error) {
+func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.Message, transfer model.Transfer, swapRouterAddress string) (data *model.Transfer, err error) {
 	tracer := otel.Tracer("swap_worker")
 	_, trace := tracer.Start(ctx, "swap_worker:handleEthereumTransfer")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transfer, data, err)
 
 	var metadataModel metadata.Metadata
 
@@ -225,21 +228,35 @@ func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.
 	return &transfer, nil
 }
 
+func keyOfHandleSwapPool(contractAddress, network string) string {
+	return fmt.Sprintf("handleEthereumTransferSwapPool.%s.%s", contractAddress, network)
+}
+
 func (s *service) handleEthereumTransferSwapPool(ctx context.Context, message *protocol.Message, transfer *model.Transfer, swapPoolAddress string) error {
 	var swapPoolModel model.SwapPool
 
-	if err := s.databaseClient.
-		Model((*model.SwapPool)(nil)).
-		Where(map[string]interface{}{
-			"contract_address": swapPoolAddress,
-			"network":          message.Network,
-		}).
-		First(&swapPoolModel).
-		Error; err != nil {
+	// get from redis cache
+	key := keyOfHandleSwapPool(swapPoolAddress, message.Network)
+	exists, err := cache.GetMsgPack(ctx, key, &swapPoolModel)
+	if err != nil {
 		return err
 	}
 
-	var err error
+	if !exists {
+		if err := s.databaseClient.
+			Model((*model.SwapPool)(nil)).
+			Where(map[string]interface{}{
+				"contract_address": swapPoolAddress,
+				"network":          message.Network,
+			}).
+			First(&swapPoolModel).
+			Error; err != nil {
+			return err
+		}
+		if err := cache.SetMsgPack(ctx, key, swapPoolModel, 7*24*time.Hour); err != nil {
+			return err
+		}
+	}
 
 	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.SwapPool{
 		Name:     swapPoolModel.Source,

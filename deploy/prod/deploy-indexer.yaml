@@ -4,7 +4,7 @@ metadata:
   name: pregod2-indexer
   namespace: pregod
 spec:
-  replicas: 5
+  replicas: 4
   selector:
     matchLabels:
       app: pregod2-indexer
@@ -27,5 +27,5 @@ spec:
               memory: "200Mi"
               cpu: "100m"
             limits:
-              memory: "500Mi"
-              cpu: "500m"
+              memory: "800Mi"
+              cpu: "800m"
