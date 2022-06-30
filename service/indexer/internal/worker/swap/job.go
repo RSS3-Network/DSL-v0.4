@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/dexpools"
+	"github.com/naturalselectionlabs/pregod/common/exchange"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
@@ -32,38 +32,39 @@ func (j *Job) Timeout() time.Duration {
 }
 
 func (j *Job) Run(renewal worker.RenewalFunc) error {
-	poolClient := dexpools.NewClient()
+	poolClient := exchange.NewClient()
+	lop.ForEach(exchange.SwapProviders, func(provider exchange.SwapProvider, k int) {
+		lop.ForEach(provider.SwapPools, func(pool exchange.SwapPool, i int) {
+			result, err := poolClient.GetSwapPools(context.Background(), provider.Name, pool)
+			if err != nil {
+				logrus.Errorln(provider.Name, err)
+			} else {
+				pools := make([]model.SwapPool, 0)
 
-	lop.ForEach(dexpools.SwapPools, func(dex dexpools.SwapPool, i int) {
-		result, err := poolClient.GetSwapPools(context.Background(), dex)
-		if err != nil {
-			logrus.Errorln(dex.Name, err)
-		} else {
-			pools := make([]model.SwapPool, 0)
+				for _, pair := range result {
+					pools = append(pools, model.SwapPool{
+						Source:          provider.Name,
+						Network:         pool.Network,
+						ContractAddress: string(pair.ID),
+						Protocol:        pool.Protocol,
+						Token0:          string(pair.Token0.Symbol),
+						Token1:          string(pair.Token1.Symbol),
+					})
+				}
 
-			for _, pair := range result {
-				pools = append(pools, model.SwapPool{
-					Source:          dex.Name,
-					Network:         dex.Network,
-					ContractAddress: string(pair.ID),
-					Protocol:        dex.Protocol,
-					Token0:          string(pair.Token0.Symbol),
-					Token1:          string(pair.Token1.Symbol),
-				})
-			}
-
-			if len(pools) > 0 {
-				if err := j.databaseClient.
-					Model((*model.SwapPool)(nil)).
-					Clauses(clause.OnConflict{
-						DoNothing: true,
-					}).
-					Create(pools).
-					Error; err != nil {
-					logrus.Errorln(err)
+				if len(pools) > 0 {
+					if err := j.databaseClient.
+						Model((*model.SwapPool)(nil)).
+						Clauses(clause.OnConflict{
+							DoNothing: true,
+						}).
+						Create(pools).
+						Error; err != nil {
+						logrus.Errorln(err)
+					}
 				}
 			}
-		}
+		})
 	})
 
 	return nil

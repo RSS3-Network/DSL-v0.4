@@ -1,4 +1,4 @@
-package dexpools
+package exchange
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/hasura/go-graphql-client"
-	graphqlx "github.com/naturalselectionlabs/pregod/common/dexpools/graphql"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/exchange/graphql"
 )
 
 type Client struct {
@@ -19,7 +19,7 @@ type Client struct {
 type GetQueryFun func() interface{}
 
 // GetSwapPools returns all pools from a DEX
-func (c *Client) GetSwapPools(ctx context.Context, swap SwapPool) ([]graphqlx.Pair, error) {
+func (c *Client) GetSwapPools(ctx context.Context, provider string, swap SwapPool) ([]graphqlx.Pair, error) {
 	// set the default limit to 6000
 	if swap.Limit == 0 {
 		swap.Limit = 6000
@@ -36,7 +36,7 @@ func (c *Client) GetSwapPools(ctx context.Context, swap SwapPool) ([]graphqlx.Pa
 		}()
 
 		// case by case handling of the response
-		if strings.HasPrefix(swap.Name, "1inch") {
+		if strings.HasPrefix(provider, "1inch") {
 			type OneInch struct {
 				Id     string `json:"pair"`
 				Token0 struct {
