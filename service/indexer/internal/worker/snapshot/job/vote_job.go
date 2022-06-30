@@ -68,7 +68,7 @@ func (job *SnapshotVoteJob) InnerJobRun() (status PullInfoStatus, err error) {
 	tracer := otel.Tracer("snapshot_vote_job")
 	ctx, trace := tracer.Start(context.Background(), "snapshot_vote_job:InnerJobRun")
 
-	defer opentelemetry.Log(trace, nil, status, err)
+	defer func() { opentelemetry.Log(trace, nil, status, err) }()
 
 	var statusStroge StatusStroge
 
@@ -153,7 +153,7 @@ func (job *SnapshotVoteJob) setVoteInDB(ctx context.Context, graphqlVotes []grap
 	tracer := otel.Tracer("snapshot_vote_job")
 	_, trace := tracer.Start(ctx, "snapshot_vote_job:setVoteInDB")
 
-	defer opentelemetry.Log(trace, graphqlVotes, nil, err)
+	defer func() { opentelemetry.Log(trace, graphqlVotes, nil, err) }()
 
 	votes := []model.SnapshotVote{}
 

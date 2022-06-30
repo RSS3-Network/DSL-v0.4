@@ -44,7 +44,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	tracer := otel.Tracer("zksync_datasource")
 	_, trace := tracer.Start(ctx, "zksync_datasource:Handle")
 
-	defer opentelemetry.Log(trace, message, transactions, err)
+	defer func() { opentelemetry.Log(trace, message, transactions, err) }()
 
 	transactions = make([]model.Transaction, 0)
 

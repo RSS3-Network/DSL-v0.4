@@ -45,7 +45,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	tracer := otel.Tracer("mirror_worker")
 	_, trace := tracer.Start(ctx, "mirror_worker:Handle")
 
-	defer opentelemetry.Log(trace, transactions, data, err)
+	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
 	internalTransactionMap := make(map[string]model.Transaction)
 

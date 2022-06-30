@@ -59,7 +59,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	tracer := otel.Tracer("lens_worker")
 	_, trace := tracer.Start(ctx, "lens_worker:Handle")
 
-	defer opentelemetry.Log(trace, transactions, data, err)
+	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
 	// read the last cursor value from the database
 	var lensCursor model.LensCursor

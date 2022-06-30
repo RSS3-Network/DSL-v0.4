@@ -43,7 +43,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	tracer := otel.Tracer("blockscout_datasource")
 	_, trace := tracer.Start(ctx, "blockscout_datasource:Handle")
 
-	defer opentelemetry.Log(trace, message, transactions, err)
+	defer func() { opentelemetry.Log(trace, message, transactions, err) }()
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -88,7 +88,7 @@ func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.M
 	tracer := otel.Tracer("blockscout_datasource")
 	_, trace := tracer.Start(ctx, "blockscout_datasource:handleTransactions")
 
-	defer opentelemetry.Log(trace, message, transactions, err)
+	defer func() { opentelemetry.Log(trace, message, transactions, err) }()
 
 	transactions = make([]model.Transaction, 0)
 
@@ -153,7 +153,7 @@ func (d *Datasource) handleTokenTransfers(ctx context.Context, message *protocol
 	tracer := otel.Tracer("blockscout_datasource")
 	_, trace := tracer.Start(ctx, "blockscout_datasource:handleTokenTransfers")
 
-	defer opentelemetry.Log(trace, message, transfers, err)
+	defer func() { opentelemetry.Log(trace, message, transfers, err) }()
 
 	transfers = make([]model.Transfer, 0)
 

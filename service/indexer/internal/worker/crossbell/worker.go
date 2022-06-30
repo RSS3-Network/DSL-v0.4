@@ -75,7 +75,7 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 	tracer := otel.Tracer("crossbell_worker")
 	_, trace := tracer.Start(ctx, "crossbell_worker:Handle")
 
-	defer opentelemetry.Log(trace, message, internalTransactions, err)
+	defer func() { opentelemetry.Log(trace, message, internalTransactions, err) }()
 
 	internalTransactions = make([]model.Transaction, 0)
 

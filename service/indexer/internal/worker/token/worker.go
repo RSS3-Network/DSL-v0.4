@@ -145,7 +145,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 	tracer := otel.Tracer("token_worker")
 	_, trace := tracer.Start(ctx, "token_worker:handleCrossbellAndXDAI")
 
-	defer opentelemetry.Log(trace, transactions, data, err)
+	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -426,7 +426,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 	tracer := otel.Tracer("token_worker")
 	_, trace := tracer.Start(ctx, "token_worker:handleZkSync")
 
-	defer opentelemetry.Log(trace, transactions, data, err)
+	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
 	internalTransactionMap := make(map[string]model.Transaction)
 

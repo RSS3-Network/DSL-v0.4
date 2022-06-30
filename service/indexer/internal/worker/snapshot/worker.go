@@ -119,7 +119,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	tracer := otel.Tracer("snapshot_worker")
 	_, trace := tracer.Start(ctx, "snapshot_worker:Handle")
 
-	defer opentelemetry.Log(trace, transactions, data, err)
+	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
 	// Only some mainnets are currently supported
 	snapshotNetworkNum := snapshotNetworkNumMap[message.Network]
@@ -287,7 +287,7 @@ func (s *service) getSnapshotVotes(ctx context.Context, address string, timestam
 	tracer := otel.Tracer("snapshot_worker")
 	_, trace := tracer.Start(ctx, "snapshot_worker:getSnapshotVotes")
 
-	defer opentelemetry.Log(trace, address, snapshotVotes, err)
+	defer func() { opentelemetry.Log(trace, address, snapshotVotes, err) }()
 
 	// from db
 	if err := s.databaseClient.
@@ -305,7 +305,7 @@ func (s *service) getSnapshotProposals(ctx context.Context, proposals []string) 
 	tracer := otel.Tracer("snapshot_worker")
 	_, trace := tracer.Start(ctx, "snapshot_worker:getSnapshotProposals")
 
-	defer opentelemetry.Log(trace, proposals, snapshotProposalMap, err)
+	defer func() { opentelemetry.Log(trace, proposals, snapshotProposalMap, err) }()
 
 	var snapshotProposals []model.SnapshotProposal
 	snapshotProposalMap = make(map[string]model.SnapshotProposal)
@@ -329,7 +329,7 @@ func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networ
 	tracer := otel.Tracer("snapshot_worker")
 	_, trace := tracer.Start(ctx, "snapshot_worker:getSnapshotSpaces")
 
-	defer opentelemetry.Log(trace, spaces, snapshotSpaceMap, err)
+	defer func() { opentelemetry.Log(trace, spaces, snapshotSpaceMap, err) }()
 
 	var snapshotSpaces []model.SnapshotSpace
 	snapshotSpaceMap = make(map[string]model.SnapshotSpace)
@@ -354,7 +354,7 @@ func (s *service) getProposalsByAuthor(ctx context.Context, author string, times
 	tracer := otel.Tracer("snapshot_worker")
 	_, trace := tracer.Start(ctx, "snapshot_worker:getProposalsByAuthor")
 
-	defer opentelemetry.Log(trace, author, snapshotProposalMap, err)
+	defer func() { opentelemetry.Log(trace, author, snapshotProposalMap, err) }()
 
 	var snapshotProposals []model.SnapshotProposal
 	snapshotProposalMap = make(map[string]model.SnapshotProposal)

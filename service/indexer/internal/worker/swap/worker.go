@@ -105,7 +105,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	tracer := otel.Tracer("swap_worker")
 	_, trace := tracer.Start(ctx, "swap_worker:Handle")
 
-	defer opentelemetry.Log(trace, transactions, data, err)
+	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
 	switch message.Network {
 	case protocol.NetworkZkSync:
@@ -119,7 +119,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	tracer := otel.Tracer("swap_worker")
 	_, trace := tracer.Start(ctx, "swap_worker:handleEthereum")
 
-	defer opentelemetry.Log(trace, transactions, data, err)
+	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -190,7 +190,7 @@ func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.
 	tracer := otel.Tracer("swap_worker")
 	_, trace := tracer.Start(ctx, "swap_worker:handleEthereumTransfer")
 
-	defer opentelemetry.Log(trace, transfer, data, err)
+	defer func() { opentelemetry.Log(trace, transfer, data, err) }()
 
 	var metadataModel metadata.Metadata
 

@@ -42,7 +42,7 @@ func (h *handler) Handle(ctx context.Context, transaction model.Transaction, tra
 	tracer := otel.Tracer("crossbell_handle")
 	_, trace := tracer.Start(ctx, "crossbell_handle:Handle")
 
-	defer opentelemetry.Log(trace, transfer, result, err)
+	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
 
 	// Transfer type actions should be handled by the token worker
 	if transfer.Source != protocol.SourceOrigin {
