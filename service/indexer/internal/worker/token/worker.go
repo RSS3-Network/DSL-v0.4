@@ -86,14 +86,14 @@ func (s *service) Initialize(ctx context.Context) error {
 
 		file.Close()
 
-		wallentModels := make([]model.ExchangeWallet, 0)
+		wallentModels := make([]model.CexWallet, 0)
 
 		for i, record := range records {
 			if i == 0 {
 				continue
 			}
 
-			wallentModels = append(wallentModels, model.ExchangeWallet{
+			wallentModels = append(wallentModels, model.CexWallet{
 				WalletAddress: record[0],
 				Name:          record[1],
 				Source:        record[2],
@@ -106,7 +106,7 @@ func (s *service) Initialize(ctx context.Context) error {
 		}
 
 		if err := s.databaseClient.
-			Model((*model.ExchangeWallet)(nil)).
+			Model((*model.CexWallet)(nil)).
 			Clauses(clause.OnConflict{
 				DoNothing: true,
 			}).
@@ -334,7 +334,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 		for _, transfer := range transaction.Transfers {
 			sourceDataMap := make(map[string]interface{})
 
-			var wallet model.ExchangeWallet
+			var wallet model.CexWallet
 
 			if err := json.Unmarshal(transfer.SourceData, &sourceDataMap); err != nil {
 				return nil, err
@@ -384,7 +384,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
 				// check for exchange transaction
-				if err := s.checkExchangeWallet(ctx, strings.ToLower(message.Address), &transfer, &wallet); err != nil {
+				if err := s.checkCexWallet(ctx, strings.ToLower(message.Address), &transfer, &wallet); err != nil {
 					return nil, err
 				}
 			} else {
@@ -421,7 +421,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
 				// check for exchange transaction
-				if err := s.checkExchangeWallet(ctx, strings.ToLower(message.Address), &transfer, &wallet); err != nil {
+				if err := s.checkCexWallet(ctx, strings.ToLower(message.Address), &transfer, &wallet); err != nil {
 					return nil, err
 				}
 			}
@@ -560,35 +560,35 @@ func (s *service) Jobs() []worker.Job {
 	return nil
 }
 
-func keyOfCheckExchangeWallet(address string) string {
+func keyOfCheckCexWallet(address string) string {
 	return fmt.Sprintf("check_exchange_wallet.%s", address)
 }
 
 // Check address (from / to) is a WalletAddress. If true, update transfer
-func (s *service) checkExchangeWallet(ctx context.Context, address string, transfer *model.Transfer, wallet *model.ExchangeWallet) error {
+func (s *service) checkCexWallet(ctx context.Context, address string, transfer *model.Transfer, wallet *model.CexWallet) error {
 	// get from redis cache (to)
-	exists, err := cache.GetMsgPack(ctx, keyOfCheckExchangeWallet(transfer.AddressTo), wallet)
+	exists, err := cache.GetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressTo), wallet)
 	if err != nil {
 		return err
 	}
 	if !exists { // get from redis cache (from)
-		if exists, err = cache.GetMsgPack(ctx, keyOfCheckExchangeWallet(transfer.AddressFrom), wallet); err != nil {
+		if exists, err = cache.GetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressFrom), wallet); err != nil {
 			return nil
 		}
 	}
 
 	if !exists {
-		err := s.databaseClient.Model((*model.ExchangeWallet)(nil)).Where("wallet_address = ?", strings.ToLower(transfer.AddressTo)).Or("wallet_address = ?", strings.ToLower(transfer.AddressFrom)).First(&wallet).Error
+		err := s.databaseClient.Model((*model.CexWallet)(nil)).Where("wallet_address = ?", strings.ToLower(transfer.AddressTo)).Or("wallet_address = ?", strings.ToLower(transfer.AddressFrom)).First(&wallet).Error
 		switch {
 		case err == nil: // exists, set WalletAddress' cache
-			if err := cache.SetMsgPack(ctx, keyOfCheckExchangeWallet(wallet.WalletAddress), wallet, 7*24*time.Hour); err != nil {
+			if err := cache.SetMsgPack(ctx, keyOfCheckCexWallet(wallet.WalletAddress), wallet, 7*24*time.Hour); err != nil {
 				return err
 			}
 		case errors.Is(err, gorm.ErrRecordNotFound): // not exists, set `from` and `to` address' cache (empty)
-			if err := cache.SetMsgPack(ctx, keyOfCheckExchangeWallet(transfer.AddressFrom), wallet, 7*24*time.Hour); err != nil {
+			if err := cache.SetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressFrom), wallet, 7*24*time.Hour); err != nil {
 				return err
 			}
-			if err := cache.SetMsgPack(ctx, keyOfCheckExchangeWallet(transfer.AddressTo), wallet, 7*24*time.Hour); err != nil {
+			if err := cache.SetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressTo), wallet, 7*24*time.Hour); err != nil {
 				return err
 			}
 		default: // other err

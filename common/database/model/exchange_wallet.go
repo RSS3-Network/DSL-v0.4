@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type ExchangeWallet struct {
+type CexWallet struct {
 	WalletAddress string    `gorm:"column:wallet_address;primaryKey"`
 	Name          string    `gorm:"column:name"`
 	Network       string    `gorm:"column:network;primaryKey"`

@@ -10,7 +10,7 @@ var tables = []any{
 	&model.Transaction{},
 	&model.Transfer{},
 	&model.SwapPool{},
-	&model.ExchangeWallet{},
+	&model.CexWallet{},
 	&model.Token{},
 	&model.GetTokenInfo{},
 	&model.GetNFTTokenInfo{},
