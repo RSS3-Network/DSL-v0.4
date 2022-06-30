@@ -62,7 +62,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 				return
 			}
 
-			if err := h.RabbitmqChannel.Publish(protocol.ExchangeJob, "", false, false, rabbitmq.Publishing{
+			if err := h.RabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
 				ContentType: protocol.ContentTypeJSON,
 				Body:        messageData,
 			}); err != nil {
