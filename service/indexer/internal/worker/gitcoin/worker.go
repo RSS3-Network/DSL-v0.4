@@ -91,6 +91,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				continue
 			}
 
+			if metadataModel.Token != nil &&
+				metadataModel.Token.TokenStandard != protocol.TokenStandardERC20 &&
+				metadataModel.Token.TokenStandard != protocol.TokenStandardNative {
+				continue
+			}
+
 			metadataModel.Gitcoin = &metadata.Gitcoin{
 				ID:          project.ID,
 				Slug:        project.Slug,
