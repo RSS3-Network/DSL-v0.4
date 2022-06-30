@@ -31,9 +31,9 @@ func (e *Employer) AddJob(name, spec string, timeout time.Duration, cmd cron.Job
 	_, err := e.crontab.AddFunc(spec, func() {
 		if e.DoLock(name, timeout) {
 			defer func() {
-				_ = e.UnLock(name)
-
 				cmd.Run()
+
+				_ = e.UnLock(name)
 			}()
 		}
 	})
