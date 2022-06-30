@@ -23,6 +23,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
+	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -147,16 +148,46 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 
 	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
+	// nft.GetMetadata start
+	bsTransactions := []blockscout.Transaction{}
+	for _, transaction := range transactions {
+		for _, transfer := range transaction.Transfers {
+			sourceData := blockscout.Transaction{}
+			if err := json.Unmarshal(transfer.SourceData, &sourceData); err != nil {
+				return nil, err
+			}
+			if transfer.Source == "blockscout" && message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress != "" {
+				bsTransactions = append(bsTransactions, sourceData)
+			}
+		}
+	}
+	nftMetadata := lop.Map(bsTransactions, func(sourceData blockscout.Transaction, i int) metadata.Token {
+		nftMetadata, err := nft.GetMetadata(
+			message.Network,
+			common.HexToAddress(sourceData.ContractAddress),
+			sourceData.TokenID.BigInt(),
+		)
+		if err != nil { // print err but no return
+			logrus.Errorf("%s: %v", message.Network, err)
+		}
+		return metadata.Token{
+			TokenAddress:  sourceData.ContractAddress,
+			TokenStandard: protocol.TokenStandardERC721,
+			TokenID:       &sourceData.TokenID,
+			TokenValue:    &sourceData.Value,
+			NFTMetadata:   nftMetadata,
+		}
+	})
+	// nft.GetMetadata end
+
 	internalTransactionMap := make(map[string]model.Transaction)
+	nftMetadataIndex := 0
 
 	for _, transaction := range transactions {
 		for _, transfer := range transaction.Transfers {
 			if transfer.Source == "blockscout" {
 				sourceData := blockscout.Transaction{}
 				metadataModel := metadata.Metadata{}
-				if err := json.Unmarshal(transfer.SourceData, &sourceData); err != nil {
-					return nil, err
-				}
 				if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
 					return nil, err
 				}
@@ -174,22 +205,9 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 
 					transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress != "":
-					nftMetadata, err := nft.GetMetadata(
-						message.Network,
-						common.HexToAddress(sourceData.ContractAddress),
-						sourceData.TokenID.BigInt(),
-					)
-					if err != nil { // print err but no return
-						logrus.Errorf("%s: %v", message.Network, err)
-					}
-
-					metadataModel.Token = &metadata.Token{
-						TokenAddress:  sourceData.ContractAddress,
-						TokenStandard: protocol.TokenStandardERC721,
-						TokenID:       &sourceData.TokenID,
-						TokenValue:    &sourceData.Value,
-						NFTMetadata:   nftMetadata,
-					}
+					md := nftMetadata[nftMetadataIndex]
+					nftMetadataIndex += 1
+					metadataModel.Token = &md
 
 					transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 				case message.Network == protocol.NetworkXDAI:
@@ -260,7 +278,57 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
+	// nft.GetMetadata start
+	nftTransfers := []model.Transfer{}
+	for _, transaction := range transactions {
+		for _, transfer := range transaction.Transfers {
+			sourceDataMap := make(map[string]interface{})
+			if err := json.Unmarshal(transfer.SourceData, &sourceDataMap); err != nil {
+				return nil, err
+			}
+			if _, exist := sourceDataMap["contract_type"]; exist {
+				nftTransfers = append(nftTransfers, transfer)
+			}
+		}
+	}
+	nftMetadata := lop.Map(nftTransfers, func(transfer model.Transfer, i int) metadata.Token {
+		// NFT transfer
+		nftTransfer := moralisx.NFTTransfer{}
+		if err := json.Unmarshal(transfer.SourceData, &nftTransfer); err != nil {
+			return metadata.Token{}
+		}
+
+		tokenID, err := decimal.NewFromString(nftTransfer.TokenId)
+		if err != nil {
+			return metadata.Token{}
+		}
+
+		nftMetadata, err := nft.GetMetadata(
+			message.Network,
+			common.HexToAddress(nftTransfer.TokenAddress),
+			tokenID.BigInt(),
+		)
+		if err != nil { // print err but no return
+			logrus.Errorf("%s: %v", message.Network, err)
+		}
+
+		tokenValue, err := decimal.NewFromString(nftTransfer.Amount)
+		if err != nil {
+			logrus.Error(err)
+		}
+
+		return metadata.Token{
+			TokenAddress:  nftTransfer.TokenAddress,
+			TokenStandard: strings.ToUpper(nftTransfer.ContractType),
+			TokenID:       &tokenID,
+			TokenValue:    &tokenValue,
+			NFTMetadata:   nftMetadata,
+		}
+	})
+	// nft.GetMetadata end
+
 	internalTransactionMap := make(map[string]model.Transaction)
+	nftMetadataIndex := 0
 
 	for _, transaction := range transactions {
 		for _, transfer := range transaction.Transfers {
@@ -280,37 +348,9 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 			if _, exist := sourceDataMap["contract_type"]; exist {
 				// NFT transfer
-				nftTransfer := moralisx.NFTTransfer{}
-				if err := json.Unmarshal(transfer.SourceData, &nftTransfer); err != nil {
-					return nil, err
-				}
-
-				tokenID, err := decimal.NewFromString(nftTransfer.TokenId)
-				if err != nil {
-					return nil, err
-				}
-
-				nftMetadata, err := nft.GetMetadata(
-					message.Network,
-					common.HexToAddress(nftTransfer.TokenAddress),
-					tokenID.BigInt(),
-				)
-				if err != nil { // print err but no return
-					logrus.Errorf("%s: %v", message.Network, err)
-				}
-
-				tokenValue, err := decimal.NewFromString(nftTransfer.Amount)
-				if err != nil {
-					logrus.Error(err)
-				}
-
-				metadataModel.Token = &metadata.Token{
-					TokenAddress:  nftTransfer.TokenAddress,
-					TokenStandard: strings.ToUpper(nftTransfer.ContractType),
-					TokenID:       &tokenID,
-					TokenValue:    &tokenValue,
-					NFTMetadata:   nftMetadata,
-				}
+				md := nftMetadata[nftMetadataIndex]
+				nftMetadataIndex += 1
+				metadataModel.Token = &md
 
 				transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 			} else if _, exist = sourceDataMap["address"]; exist {
