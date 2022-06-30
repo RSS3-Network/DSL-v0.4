@@ -29,7 +29,7 @@ func (job *SnapshotVoteJob) Spec() string {
 }
 
 func (job *SnapshotVoteJob) Timeout() time.Duration {
-	return time.Minute
+	return 10 * time.Minute
 }
 
 func (job *SnapshotVoteJob) Run(renewal worker.RenewalFunc) error {
@@ -50,7 +50,7 @@ func (job *SnapshotVoteJob) Run(renewal worker.RenewalFunc) error {
 			sleepTime = job.HighUpdateTime
 		}
 
-		if err = renewal(context.Background(), time.Minute); err != nil {
+		if err = renewal(context.Background(), job.Timeout()); err != nil {
 			return err
 		}
 
