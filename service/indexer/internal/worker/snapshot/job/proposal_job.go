@@ -70,7 +70,7 @@ func (job *SnapshotProposalJob) InnerJobRun() (status PullInfoStatus, err error)
 	tracer := otel.Tracer("snapshot_proposal_job")
 	ctx, trace := tracer.Start(context.Background(), "snapshot_proposal_job:InnerJobRun")
 
-	defer opentelemetry.Log(trace, nil, status, err)
+	defer func() { opentelemetry.Log(trace, nil, status, err) }()
 
 	var statusStroge StatusStroge
 
@@ -153,7 +153,7 @@ func (job *SnapshotProposalJob) setProposalsInDB(ctx context.Context, graphqlpro
 	tracer := otel.Tracer("snapshot_proposal_job")
 	_, trace := tracer.Start(ctx, "snapshot_proposal_job:setProposalsInDB")
 
-	defer opentelemetry.Log(trace, graphqlproposals, nil, err)
+	defer func() { opentelemetry.Log(trace, graphqlproposals, nil, err) }()
 
 	proposals := []model.SnapshotProposal{}
 

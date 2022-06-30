@@ -59,7 +59,7 @@ func (p *profile) Handle(ctx context.Context, transaction model.Transaction, tra
 	tracer := otel.Tracer("crossbell_handle_profile")
 	ctx, trace := tracer.Start(ctx, "crossbell_handle_profile:Handler")
 
-	defer opentelemetry.Log(trace, transaction, result, err)
+	defer func() { opentelemetry.Log(trace, transaction, result, err) }()
 
 	var log types.Log
 
@@ -93,7 +93,7 @@ func (p *profile) handleProfileCreated(ctx context.Context, transfer model.Trans
 	tracer := otel.Tracer("crossbell_handle_profile")
 	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleProfileCreated")
 
-	defer opentelemetry.Log(trace, transfer, result, err)
+	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
 
 	profileCreated := contract.ProfileCreated{}
 
@@ -132,7 +132,7 @@ func (p *profile) handleSetHandle(ctx context.Context, transfer model.Transfer, 
 	tracer := otel.Tracer("crossbell_handle_profile")
 	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleSetHandle")
 
-	defer opentelemetry.Log(trace, transfer, result, err)
+	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
 
 	profileID := big.NewInt(0)
 	profileID.SetString(log.Topics[2].Hex(), 0)
@@ -167,7 +167,7 @@ func (p *profile) handleLinkProfile(ctx context.Context, transfer model.Transfer
 	tracer := otel.Tracer("crossbell_handle_profile")
 	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleLinkProfile")
 
-	defer opentelemetry.Log(trace, transfer, result, err)
+	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
 
 	tokenIDFrom := big.NewInt(0)
 	tokenIDFrom.SetString(log.Topics[2].Hex(), 0)
@@ -211,7 +211,7 @@ func (p *profile) handleUnlinkProfile(ctx context.Context, transfer model.Transf
 	tracer := otel.Tracer("crossbell_handle_profile")
 	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleUnlinkProfile")
 
-	defer opentelemetry.Log(trace, transfer, result, err)
+	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
 
 	tokenIDFrom := big.NewInt(0)
 	tokenIDFrom.SetString(log.Topics[2].Hex(), 0)
@@ -255,7 +255,7 @@ func (p *profile) handlePostNote(ctx context.Context, transfer model.Transfer, l
 	tracer := otel.Tracer("crossbell_handle_profile")
 	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handlePostNote")
 
-	defer opentelemetry.Log(trace, transfer, result, err)
+	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
 
 	profileID := big.NewInt(0)
 	profileID.SetString(log.Topics[1].Hex(), 0)
@@ -293,7 +293,7 @@ func (p *profile) handleSetPrimaryProfileId(ctx context.Context, transfer model.
 	tracer := otel.Tracer("crossbell_handle_profile")
 	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleSetPrimaryProfileId")
 
-	defer opentelemetry.Log(trace, transfer, result, err)
+	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
 
 	transfer.Type = EventNameSetPrimaryProfileId
 
@@ -331,7 +331,7 @@ func (p *profile) handleAttachLinkList(ctx context.Context, transfer model.Trans
 	tracer := otel.Tracer("crossbell_handle_profile")
 	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleAttachLinkList")
 
-	defer opentelemetry.Log(trace, transfer, result, err)
+	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
 
 	transfer.Type = EventNameAttachLinklist
 
@@ -366,7 +366,7 @@ func (p *profile) handleSetProfileUri(ctx context.Context, transfer model.Transf
 	tracer := otel.Tracer("crossbell_handle_profile")
 	_, trace := tracer.Start(ctx, "crossbell_handle_profile:handleSetProfileUri")
 
-	defer opentelemetry.Log(trace, transfer, result, err)
+	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
 
 	transfer.Type = EventNameSetProfileUri
 

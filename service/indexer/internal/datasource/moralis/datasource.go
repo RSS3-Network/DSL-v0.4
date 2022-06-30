@@ -46,7 +46,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	tracer := otel.Tracer("moralis_datasource")
 	_, trace := tracer.Start(ctx, "moralis_datasource:Handle")
 
-	defer opentelemetry.Log(trace, message, transactions, err)
+	defer func() { opentelemetry.Log(trace, message, transactions, err) }()
 
 	switch message.Network {
 	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain:
@@ -60,7 +60,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 	tracer := otel.Tracer("moralis_datasource")
 	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereum")
 
-	defer opentelemetry.Log(trace, message, transactions, err)
+	defer func() { opentelemetry.Log(trace, message, transactions, err) }()
 
 	transactionMap := make(map[string]model.Transaction)
 
@@ -175,7 +175,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 	tracer := otel.Tracer("moralis_datasource")
 	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereumTransactions")
 
-	defer opentelemetry.Log(trace, message, transactions, err)
+	defer func() { opentelemetry.Log(trace, message, transactions, err) }()
 
 	address := common.HexToAddress(message.Address)
 
@@ -272,7 +272,7 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 	tracer := otel.Tracer("moralis_datasource")
 	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereumTokenTransfers")
 
-	defer opentelemetry.Log(trace, message, transfers, err)
+	defer func() { opentelemetry.Log(trace, message, transfers, err) }()
 
 	address := common.HexToAddress(message.Address)
 
@@ -338,7 +338,7 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 	tracer := otel.Tracer("moralis_datasource")
 	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereumNFTTransfers")
 
-	defer opentelemetry.Log(trace, message, transfers, err)
+	defer func() { opentelemetry.Log(trace, message, transfers, err) }()
 
 	address := common.HexToAddress(message.Address)
 

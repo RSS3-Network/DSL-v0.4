@@ -42,7 +42,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	tracer := otel.Tracer("arweave_datasource")
 	_, trace := tracer.Start(ctx, "arweave_datasource:Handle")
 
-	defer opentelemetry.Log(trace, message, transactions, err)
+	defer func() { opentelemetry.Log(trace, message, transactions, err) }()
 
 	address := common.NewMixedcaseAddress(common.HexToAddress(message.Address))
 

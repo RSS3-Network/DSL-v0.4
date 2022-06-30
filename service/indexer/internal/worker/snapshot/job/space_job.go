@@ -69,7 +69,7 @@ func (job *SnapshotSpaceJob) InnerJobRun() (status PullInfoStatus, err error) {
 	tracer := otel.Tracer("snapshot_space_job")
 	ctx, trace := tracer.Start(context.Background(), "snapshot_space_job:Handle")
 
-	defer opentelemetry.Log(trace, nil, status, err)
+	defer func() { opentelemetry.Log(trace, nil, status, err) }()
 
 	var statusStroge StatusStroge
 
@@ -153,7 +153,7 @@ func (job *SnapshotSpaceJob) setSpaceInDB(ctx context.Context, graphqlSpaces []g
 	tracer := otel.Tracer("snapshot_space_job")
 	_, trace := tracer.Start(ctx, "snapshot_space_job:setSpaceInDB")
 
-	defer opentelemetry.Log(trace, graphqlSpaces, nil, err)
+	defer func() { opentelemetry.Log(trace, graphqlSpaces, nil, err) }()
 
 	spaces := []model.SnapshotSpace{}
 

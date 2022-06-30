@@ -58,7 +58,7 @@ func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (statusS
 	tracer := otel.Tracer("snapshot_job")
 	_, trace := tracer.Start(ctx, "snapshot_job:GetLastStatusFromCache")
 
-	defer opentelemetry.Log(trace, nil, statusStroge, err)
+	defer func() { opentelemetry.Log(trace, nil, statusStroge, err) }()
 
 	if job.Name == "" {
 		return StatusStroge{}, fmt.Errorf("job name is empty")

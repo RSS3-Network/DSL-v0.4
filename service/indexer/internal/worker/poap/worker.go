@@ -46,7 +46,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	tracer := otel.Tracer("poap_worker")
 	_, trace := tracer.Start(ctx, "poap_worker:Handle")
 
-	defer opentelemetry.Log(trace, transactions, data, err)
+	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
 	internalTransactionMap := make(map[string]model.Transaction)
 

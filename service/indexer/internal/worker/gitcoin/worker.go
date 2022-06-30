@@ -58,7 +58,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	tracer := otel.Tracer("gitcoin_worker")
 	_, trace := tracer.Start(ctx, "gitcoin_worker:Handle")
 
-	defer opentelemetry.Log(trace, transactions, internalTransactions, err)
+	defer func() { opentelemetry.Log(trace, transactions, internalTransactions, err) }()
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
