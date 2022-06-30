@@ -5,14 +5,15 @@ import (
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract/linklist"
 )
 
-var _ Interface = (*linkList)(nil)
+var _ Interface = (*linkListHandler)(nil)
 
-type linkList struct {
-	contract any
+type linkListHandler struct {
+	linkListContract *linklist.LinkList
 }
 
-func (l *linkList) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+func (l *linkListHandler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
 	return nil, contract.ErrorUnknownUnknownEvent
 }

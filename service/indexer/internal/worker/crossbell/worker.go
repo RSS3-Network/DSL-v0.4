@@ -19,8 +19,6 @@ import (
 	"go.uber.org/zap"
 )
 
-//go:generate abigen --abi ./contract/erc721.abi --pkg contract --type ERC721 --out ./contract/erc721.go
-
 const (
 	Name = "crossbell"
 
@@ -49,7 +47,9 @@ func (s *service) Initialize(ctx context.Context) (err error) {
 		return err
 	}
 
-	s.handler = handler.New(s.ethereumClient)
+	if s.handler, err = handler.New(s.ethereumClient); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -134,7 +134,13 @@ func (s *service) handleReceipt(ctx context.Context, message *protocol.Message, 
 		internalTransfer, err := s.handler.Handle(ctx, transaction, transfer)
 		if err != nil {
 			if !errors.Is(err, contract.ErrorUnknownUnknownEvent) {
-				logger.Global().Error("handle crossbell transfer failed", zap.Error(err))
+				logger.Global().Warn(
+					"handle crossbell transfer failed",
+					zap.Error(err),
+					zap.String("worker", s.Name()),
+					zap.String("network", message.Network),
+					zap.String("address", message.Address),
+				)
 			}
 
 			continue

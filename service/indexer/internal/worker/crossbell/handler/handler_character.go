@@ -5,14 +5,17 @@ import (
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract/character"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract/periphery"
 )
 
-var _ Interface = (*character)(nil)
+var _ Interface = (*characterHandler)(nil)
 
-type character struct {
-	contract any
+type characterHandler struct {
+	characterContract *character.Character
+	peripheryContract *periphery.Periphery
 }
 
-func (c *character) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+func (c *characterHandler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
 	return nil, contract.ErrorUnknownUnknownEvent
 }
