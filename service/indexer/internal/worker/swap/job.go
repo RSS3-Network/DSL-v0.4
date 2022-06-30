@@ -35,7 +35,7 @@ func (j *Job) Run(renewal worker.RenewalFunc) error {
 	poolClient := exchange.NewClient()
 	lop.ForEach(exchange.SwapProviders, func(provider exchange.SwapProvider, k int) {
 		lop.ForEach(provider.SwapPools, func(pool exchange.SwapPool, i int) {
-			result, err := poolClient.GetSwapPools(context.Background(), provider.Name, pool)
+			result, err := poolClient.GetSwapPairs(context.Background(), provider.Name, pool)
 			if err != nil {
 				logrus.Errorln(provider.Name, err)
 			} else {

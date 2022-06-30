@@ -12,14 +12,14 @@ import (
 )
 
 type Client struct {
-	httpClient    *http.Client
-	graphqlClient *graphql.Client
+	httpClient *http.Client
+	// graphqlClient *graphql.Client
 }
 
 type GetQueryFun func() interface{}
 
-// GetSwapPools returns all pools from a DEX
-func (c *Client) GetSwapPools(ctx context.Context, provider string, swap SwapPool) ([]graphqlx.Pair, error) {
+// GetSwapPairs returns all pools from a DEX
+func (c *Client) GetSwapPairs(ctx context.Context, provider string, swap SwapPool) ([]graphqlx.Pair, error) {
 	// set the default limit to 6000
 	if swap.Limit == 0 {
 		swap.Limit = 6000
@@ -68,7 +68,9 @@ func (c *Client) GetSwapPools(ctx context.Context, provider string, swap SwapPoo
 			return result, nil
 		}
 	} else {
-		c.graphqlClient = graphql.NewClient(swap.Endpoint, c.httpClient)
+		// race condition here
+		// c.graphqlClient = graphql.NewClient(swap.Endpoint, c.httpClient)
+		graphqlClient := graphql.NewClient(swap.Endpoint, c.httpClient)
 		switch swap.Protocol {
 		case UniSwapV2:
 			// nolint:gocritic // cannot dynamically create a new struct with different graphql tags
@@ -81,7 +83,7 @@ func (c *Client) GetSwapPools(ctx context.Context, provider string, swap SwapPoo
 					return &query
 				}
 
-				return c.GetGraphQLResult(ctx, getQueryFun, swap.Limit)
+				return c.GetGraphQLResult(ctx, graphqlClient, getQueryFun, swap.Limit)
 			} else {
 				getQueryFun := func() interface{} {
 					var query struct {
@@ -91,7 +93,7 @@ func (c *Client) GetSwapPools(ctx context.Context, provider string, swap SwapPoo
 					return &query
 				}
 
-				return c.GetGraphQLResult(ctx, getQueryFun, swap.Limit)
+				return c.GetGraphQLResult(ctx, graphqlClient, getQueryFun, swap.Limit)
 			}
 
 		case UniSwapV3:
@@ -105,7 +107,7 @@ func (c *Client) GetSwapPools(ctx context.Context, provider string, swap SwapPoo
 					return &query
 				}
 
-				return c.GetGraphQLResult(ctx, getQueryFun, swap.Limit)
+				return c.GetGraphQLResult(ctx, graphqlClient, getQueryFun, swap.Limit)
 			} else {
 				getQueryFun := func() interface{} {
 					var query struct {
@@ -115,7 +117,7 @@ func (c *Client) GetSwapPools(ctx context.Context, provider string, swap SwapPoo
 					return &query
 				}
 
-				return c.GetGraphQLResult(ctx, getQueryFun, swap.Limit)
+				return c.GetGraphQLResult(ctx, graphqlClient, getQueryFun, swap.Limit)
 			}
 
 		}
@@ -126,7 +128,7 @@ func (c *Client) GetSwapPools(ctx context.Context, provider string, swap SwapPoo
 }
 
 // GetGraphQLResult executes a GraphQL query and returns the result
-func (c *Client) GetGraphQLResult(ctx context.Context, queryFun GetQueryFun, limit int) ([]graphqlx.Pair, error) {
+func (c *Client) GetGraphQLResult(ctx context.Context, graphqlClient *graphql.Client, queryFun GetQueryFun, limit int) ([]graphqlx.Pair, error) {
 	result := make([]graphqlx.Pair, 0)
 	firstQuery := true
 
@@ -142,7 +144,7 @@ func (c *Client) GetGraphQLResult(ctx context.Context, queryFun GetQueryFun, lim
 
 		firstQuery = false
 
-		if err := c.graphqlClient.Query(ctx, query, variableMap); err != nil {
+		if err := graphqlClient.Query(ctx, query, variableMap); err != nil {
 			return nil, err
 		}
 
