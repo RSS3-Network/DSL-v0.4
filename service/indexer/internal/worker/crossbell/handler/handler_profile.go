@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
@@ -44,7 +46,7 @@ func (p *profileHandler) Handle(ctx context.Context, transaction model.Transacti
 	case contract.EventHashPostNote:
 		return p.handlePostNote(ctx, transaction, transfer, log)
 	default:
-		return nil, contract.ErrorUnknownUnknownEvent
+		return nil, contract.ErrorUnknownEvent
 	}
 }
 
@@ -61,12 +63,14 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	}
 
 	// Self-hosted IPFS files may be out of date
-	nftMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.ProfileId)
+	profileMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.ProfileId)
 
 	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
-		Event:    contract.EventNameProfileCreated,
-		TokenID:  event.ProfileId,
-		Metadata: nftMetadata,
+		Event: contract.EventNameProfileCreated,
+		Profile: &metadata.CrossbellProfile{
+			ID:       event.ProfileId,
+			Metadata: profileMetadata,
+		},
 	}); err != nil {
 		return nil, err
 	}
@@ -90,8 +94,46 @@ func (p *profileHandler) handlePostNote(ctx context.Context, transaction model.T
 
 	logrus.Infof("%+v", event)
 
+	note, err := p.profileContract.GetNote(&bind.CallOpts{}, event.ProfileId, event.NoteId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Self-hosted IPFS files may be out of date
+	contentData, _ := ipfs.GetFileByURL(ctx, note.ContentUri)
+
+	logrus.Infof("%+v", contentData)
+
+	var noteMetadata json.RawMessage
+
+	if err := json.Unmarshal(contentData, &noteMetadata); err != nil {
+		return nil, err
+	}
+
+	logrus.Infof("%+v", noteMetadata)
+
+	uri, err := p.peripheryContract.GetLinkingAnyUri(&bind.CallOpts{}, event.LinkKey)
+	if err != nil {
+		return nil, err
+	}
+
+	logrus.Infof("%+v", uri)
+
 	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
 		Event: contract.EventNamePostNote,
+		Note: &metadata.CrossbellNote{
+			ID:           event.NoteId,
+			LinkItemType: note.LinkItemType,
+			LinkKey:      note.LinkKey,
+			Link:         uri,
+			ContentURI:   note.ContentUri,
+			LinkModule:   note.LinkModule,
+			MintModule:   note.MintModule,
+			MintNFT:      note.MintNFT,
+			Deleted:      note.Deleted,
+			Locked:       note.Locked,
+			Metadata:     noteMetadata,
+		},
 	}); err != nil {
 		return nil, err
 	}

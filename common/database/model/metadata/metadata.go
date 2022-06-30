@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 )
@@ -97,20 +98,28 @@ type SnapShot struct {
 }
 
 type Crossbell struct {
-	Event   string   `json:"event"`
-	TokenID *big.Int `json:"token_id,omitempty"`
-	//TokenIDFrom   *big.Int        `json:"token_id_from,omitempty"`
-	//TokenIDTo     *big.Int        `json:"token_id_to,omitempty"`
-	//LinkListID    *big.Int        `json:"linklist_id,omitempty"`
-	//ProfileID     *big.Int        `json:"profile_id,omitempty"`
-	//ProfileIDFrom *big.Int        `json:"profile_id_from,omitempty"`
-	//ProfileIDTo   *big.Int        `json:"profile_id_to,omitempty"`
-	//LinkType      string          `json:"link_type,omitempty"`
-	//URI           string          `json:"uri,omitempty"`
-	//Handle        string          `json:"handle,omitempty"`
-	Metadata json.RawMessage `json:"metadata,omitempty"`
-	//MetadataFrom  json.RawMessage `json:"metadata_from,omitempty"`
-	//MetadataTo    json.RawMessage `json:"metadata_to,omitempty"`
+	Event   string            `json:"event"`
+	Profile *CrossbellProfile `json:"profile,omitempty"`
+	Note    *CrossbellNote    `json:"note,omitempty"`
+}
+
+type CrossbellProfile struct {
+	ID       *big.Int        `json:"id"`
+	Metadata json.RawMessage `json:"metadata"`
+}
+
+type CrossbellNote struct {
+	ID           *big.Int        `json:"id"`
+	LinkItemType common.Hash     `json:"link_item_type"`
+	LinkKey      common.Hash     `json:"link_key"`
+	Link         any             `json:"link"`
+	ContentURI   string          `json:"content_uri"`
+	LinkModule   common.Address  `json:"link_module"`
+	MintModule   common.Address  `json:"mint_module"`
+	MintNFT      common.Address  `json:"mint_nft"`
+	Deleted      bool            `json:"deleted"`
+	Locked       bool            `json:"locked"`
+	Metadata     json.RawMessage `json:"metadata"`
 }
 
 type Lens struct {

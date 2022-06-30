@@ -30,6 +30,8 @@ var (
 	EventHashProfileCreated = common.BytesToHash(crypto.Keccak256([]byte("ProfileCreated(uint256,address,address,string,uint256)")))
 	EventHashPostNote       = common.BytesToHash(crypto.Keccak256([]byte("PostNote(uint256,uint256,bytes32,bytes32,bytes)")))
 
+	LinkItemTypeAnyUri = common.BytesToHash(common.RightPadBytes([]byte("AnyUri"), common.HashLength))
+
 	LinkTypeFollow  = "follow"
 	LinkTypeLike    = "like"
 	LinkTypeComment = "comment"
@@ -42,6 +44,6 @@ var (
 )
 
 var (
-	ErrorUnknownUnknownEvent    = errors.New("unknown event")
+	ErrorUnknownEvent           = errors.New("unknown event")
 	ErrorUnknownContractAddress = errors.New("unknown contract address")
 )

@@ -17,5 +17,5 @@ type characterHandler struct {
 }
 
 func (c *characterHandler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
-	return nil, contract.ErrorUnknownUnknownEvent
+	return nil, contract.ErrorUnknownEvent
 }

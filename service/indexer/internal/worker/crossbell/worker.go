@@ -133,7 +133,7 @@ func (s *service) handleReceipt(ctx context.Context, message *protocol.Message, 
 
 		internalTransfer, err := s.handler.Handle(ctx, transaction, transfer)
 		if err != nil {
-			if !errors.Is(err, contract.ErrorUnknownUnknownEvent) {
+			if !errors.Is(err, contract.ErrorUnknownEvent) {
 				logger.Global().Warn(
 					"handle crossbell transfer failed",
 					zap.Error(err),
