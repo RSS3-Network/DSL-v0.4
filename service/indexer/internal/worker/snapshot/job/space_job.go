@@ -8,6 +8,7 @@ import (
 
 	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/snapshot"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/snapshot/graphql"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -59,8 +60,8 @@ func (job *SnapshotSpaceJob) Run(renewal worker.RenewalFunc) error {
 	}
 }
 
-func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
-	err := job.Check()
+func (job *SnapshotSpaceJob) InnerJobRun() (status PullInfoStatus, err error) {
+	err = job.Check()
 	if err != nil {
 		return PullInfoStatusNotLatest, fmt.Errorf("[snapshot space job] check error: %v", err)
 	}
@@ -68,7 +69,7 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 	tracer := otel.Tracer("snapshot_space_job")
 	ctx, trace := tracer.Start(context.Background(), "snapshot_space_job:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, nil, status, err)
 
 	var statusStroge StatusStroge
 
@@ -135,11 +136,6 @@ func (job *SnapshotSpaceJob) InnerJobRun() (PullInfoStatus, error) {
 }
 
 func (job *SnapshotSpaceJob) getSpaceTotalFromDB(ctx context.Context) (int32, error) {
-	tracer := otel.Tracer("snapshot_space_job")
-	_, trace := tracer.Start(ctx, "snapshot_space_job:getSpaceTotalFromDB")
-
-	defer trace.End()
-
 	var count int64
 
 	if err := job.DatabaseClient.
@@ -153,11 +149,11 @@ func (job *SnapshotSpaceJob) getSpaceTotalFromDB(ctx context.Context) (int32, er
 	return int32(count), nil
 }
 
-func (job *SnapshotSpaceJob) setSpaceInDB(ctx context.Context, graphqlSpaces []graphqlx.Space) error {
+func (job *SnapshotSpaceJob) setSpaceInDB(ctx context.Context, graphqlSpaces []graphqlx.Space) (err error) {
 	tracer := otel.Tracer("snapshot_space_job")
 	_, trace := tracer.Start(ctx, "snapshot_space_job:setSpaceInDB")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, graphqlSpaces, nil, err)
 
 	spaces := []model.SnapshotSpace{}
 

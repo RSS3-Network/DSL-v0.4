@@ -8,6 +8,7 @@ import (
 
 	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/snapshot"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/snapshot/graphql"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -58,8 +59,8 @@ func (job *SnapshotVoteJob) Run(renewal worker.RenewalFunc) error {
 	}
 }
 
-func (job *SnapshotVoteJob) InnerJobRun() (PullInfoStatus, error) {
-	err := job.Check()
+func (job *SnapshotVoteJob) InnerJobRun() (status PullInfoStatus, err error) {
+	err = job.Check()
 	if err != nil {
 		return PullInfoStatusNotLatest, fmt.Errorf("[snapshot vote job] check error: %v", err)
 	}
@@ -67,7 +68,7 @@ func (job *SnapshotVoteJob) InnerJobRun() (PullInfoStatus, error) {
 	tracer := otel.Tracer("snapshot_vote_job")
 	ctx, trace := tracer.Start(context.Background(), "snapshot_vote_job:InnerJobRun")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, nil, status, err)
 
 	var statusStroge StatusStroge
 
@@ -135,11 +136,6 @@ func (job *SnapshotVoteJob) InnerJobRun() (PullInfoStatus, error) {
 }
 
 func (job *SnapshotVoteJob) getVoteTotalFromDB(ctx context.Context) (int32, error) {
-	tracer := otel.Tracer("snapshot_vote_job")
-	_, trace := tracer.Start(ctx, "snapshot_vote_job:getVoteTotalFromDB")
-
-	defer trace.End()
-
 	var count int64
 
 	if err := job.DatabaseClient.
@@ -153,11 +149,11 @@ func (job *SnapshotVoteJob) getVoteTotalFromDB(ctx context.Context) (int32, erro
 	return int32(count), nil
 }
 
-func (job *SnapshotVoteJob) setVoteInDB(ctx context.Context, graphqlVotes []graphqlx.Vote) error {
+func (job *SnapshotVoteJob) setVoteInDB(ctx context.Context, graphqlVotes []graphqlx.Vote) (err error) {
 	tracer := otel.Tracer("snapshot_vote_job")
 	_, trace := tracer.Start(ctx, "snapshot_vote_job:setVoteInDB")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, graphqlVotes, nil, err)
 
 	votes := []model.SnapshotVote{}
 

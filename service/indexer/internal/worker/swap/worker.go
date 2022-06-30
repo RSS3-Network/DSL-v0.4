@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/errorx"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/shedlock"
@@ -98,11 +99,11 @@ func (s *service) Initialize(ctx context.Context) error {
 	})
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("swap_worker")
 	_, trace := tracer.Start(ctx, "swap_worker:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	switch message.Network {
 	case protocol.NetworkZkSync:
@@ -112,11 +113,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	}
 }
 
-func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("swap_worker")
 	_, trace := tracer.Start(ctx, "swap_worker:handleEthereum")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -183,11 +184,11 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	return internalTransactions, nil
 }
 
-func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.Message, transfer model.Transfer, swapRouterAddress string) (*model.Transfer, error) {
+func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.Message, transfer model.Transfer, swapRouterAddress string) (data *model.Transfer, err error) {
 	tracer := otel.Tracer("swap_worker")
 	_, trace := tracer.Start(ctx, "swap_worker:handleEthereumTransfer")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transfer, data, err)
 
 	var metadataModel metadata.Metadata
 

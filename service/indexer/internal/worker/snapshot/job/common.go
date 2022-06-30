@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/snapshot"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
@@ -53,11 +54,11 @@ func (job *SnapshotJobBase) Check() error {
 	return nil
 }
 
-func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (StatusStroge, error) {
+func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (statusStroge StatusStroge, err error) {
 	tracer := otel.Tracer("snapshot_job")
 	_, trace := tracer.Start(ctx, "snapshot_job:GetLastStatusFromCache")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, nil, statusStroge, err)
 
 	if job.Name == "" {
 		return StatusStroge{}, fmt.Errorf("job name is empty")
@@ -68,7 +69,7 @@ func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (StatusS
 	}
 
 	statusKey := job.Name + "_status"
-	statusStroge := StatusStroge{
+	statusStroge = StatusStroge{
 		Pos:    0,
 		Status: PullInfoStatusNotLatest,
 	}

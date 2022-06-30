@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
 	"go.opentelemetry.io/otel"
@@ -37,11 +38,11 @@ type handler struct {
 	linkListHandler Interface
 }
 
-func (h *handler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+func (h *handler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (result *model.Transfer, err error) {
 	tracer := otel.Tracer("crossbell_handle")
 	_, trace := tracer.Start(ctx, "crossbell_handle:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transfer, result, err)
 
 	// Transfer type actions should be handled by the token worker
 	if transfer.Source != protocol.SourceOrigin {

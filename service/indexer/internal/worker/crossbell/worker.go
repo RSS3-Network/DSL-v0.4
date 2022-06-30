@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/handler"
@@ -70,13 +71,13 @@ func (w *Worker) Initialize(ctx context.Context) (err error) {
 	return nil
 }
 
-func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (internalTransactions []model.Transaction, err error) {
 	tracer := otel.Tracer("crossbell_worker")
 	_, trace := tracer.Start(ctx, "crossbell_worker:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, message, internalTransactions, err)
 
-	internalTransactions := make([]model.Transaction, 0)
+	internalTransactions = make([]model.Transaction, 0)
 
 	for _, transaction := range transactions {
 		addressTo := common.HexToAddress(transaction.AddressTo)

@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
@@ -39,13 +40,13 @@ func (d *Datasource) Networks() []string {
 	}
 }
 
-func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (transactions []model.Transaction, err error) {
 	tracer := otel.Tracer("zksync_datasource")
 	_, trace := tracer.Start(ctx, "zksync_datasource:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, message, transactions, err)
 
-	transactions := make([]model.Transaction, 0)
+	transactions = make([]model.Transaction, 0)
 
 	address := common.HexToAddress(message.Address)
 
