@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/lens"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -54,11 +55,11 @@ func (s *service) Jobs() []worker.Job {
 	return nil
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("lens_worker")
 	_, trace := tracer.Start(ctx, "lens_worker:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	// read the last cursor value from the database
 	var lensCursor model.LensCursor

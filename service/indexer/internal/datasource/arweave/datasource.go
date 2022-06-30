@@ -12,6 +12,7 @@ import (
 	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"go.opentelemetry.io/otel"
@@ -37,15 +38,15 @@ func (d *Datasource) Networks() []string {
 	}
 }
 
-func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (transactions []model.Transaction, err error) {
 	tracer := otel.Tracer("arweave_datasource")
 	_, trace := tracer.Start(ctx, "arweave_datasource:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, message, transactions, err)
 
 	address := common.NewMixedcaseAddress(common.HexToAddress(message.Address))
 
-	transactions := make([]model.Transaction, 0)
+	transactions = make([]model.Transaction, 0)
 
 	var query struct {
 		TransactionConnection graphqlx.TransactionConnection `graphql:"transactions(owners: $owners, tags: $tags)"`

@@ -8,6 +8,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -53,11 +54,11 @@ func (s *service) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (internalTransactions []model.Transaction, err error) {
 	tracer := otel.Tracer("gitcoin_worker")
 	_, trace := tracer.Start(ctx, "gitcoin_worker:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, internalTransactions, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -130,7 +131,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		}
 	}
 
-	internalTransactions := make([]model.Transaction, 0)
+	internalTransactions = make([]model.Transaction, 0)
 
 	for _, internalTransaction := range internalTransactionMap {
 		internalTransaction.Platform = Name

@@ -9,6 +9,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/moralis"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
@@ -41,11 +42,11 @@ func (d *Datasource) Networks() []string {
 	}
 }
 
-func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (transactions []model.Transaction, err error) {
 	tracer := otel.Tracer("moralis_datasource")
 	_, trace := tracer.Start(ctx, "moralis_datasource:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, message, transactions, err)
 
 	switch message.Network {
 	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain:
@@ -55,11 +56,11 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	}
 }
 
-func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Message) (transactions []model.Transaction, err error) {
 	tracer := otel.Tracer("moralis_datasource")
 	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereum")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, message, transactions, err)
 
 	transactionMap := make(map[string]model.Transaction)
 
@@ -161,7 +162,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 	}
 
 	// Lay the map flat
-	transactions := make([]model.Transaction, 0)
+	transactions = make([]model.Transaction, 0)
 
 	for _, transaction := range transactionMap {
 		transactions = append(transactions, transaction)
@@ -170,11 +171,11 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 	return transactions, nil
 }
 
-func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *protocol.Message) (transactions []model.Transaction, err error) {
 	tracer := otel.Tracer("moralis_datasource")
 	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereumTransactions")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, message, transactions, err)
 
 	address := common.HexToAddress(message.Address)
 
@@ -203,7 +204,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 		}
 	}
 
-	transactions := make([]model.Transaction, 0)
+	transactions = make([]model.Transaction, 0)
 
 	for _, internalTransaction := range internalTransactions {
 		blockNumber, err := decimal.NewFromString(internalTransaction.BlockNumber)
@@ -267,11 +268,11 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 	return transactions, nil
 }
 
-func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, map[string]moralis.TokenTransfer, error) {
+func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *protocol.Message) (transfers []model.Transfer, moralisTokenTransferMap map[string]moralis.TokenTransfer, err error) {
 	tracer := otel.Tracer("moralis_datasource")
 	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereumTokenTransfers")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, message, transfers, err)
 
 	address := common.HexToAddress(message.Address)
 
@@ -299,8 +300,8 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 		internalTokenTransfers = append(internalTokenTransfers, nextInternalTokenTransfers...)
 	}
 
-	transfers := make([]model.Transfer, 0)
-	moralisTokenTransferMap := map[string]moralis.TokenTransfer{}
+	transfers = make([]model.Transfer, 0)
+	moralisTokenTransferMap = map[string]moralis.TokenTransfer{}
 
 	for i, internalTokenTransfer := range internalTokenTransfers {
 		moralisTokenTransferMap[internalTokenTransfer.TransactionHash] = internalTokenTransfer
@@ -333,11 +334,11 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 	return transfers, moralisTokenTransferMap, nil
 }
 
-func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *protocol.Message) ([]model.Transfer, map[string]moralis.NFTTransfer, error) {
+func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *protocol.Message) (transfers []model.Transfer, moralisNFTTransferMap map[string]moralis.NFTTransfer, err error) {
 	tracer := otel.Tracer("moralis_datasource")
 	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereumNFTTransfers")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, message, transfers, err)
 
 	address := common.HexToAddress(message.Address)
 
@@ -367,7 +368,7 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 
 	// Moralis may return duplicate transfers data
 	internalTransfersMap := make(map[string]map[int64]model.Transfer)
-	moralisNFTTransferMap := make(map[string]moralis.NFTTransfer)
+	moralisNFTTransferMap = make(map[string]moralis.NFTTransfer)
 
 	for _, internalNFTTransfer := range internalNFTTransfers {
 		moralisNFTTransferMap[internalNFTTransfer.TransactionHash] = internalNFTTransfer
@@ -407,7 +408,7 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 		}
 	}
 
-	transfers := make([]model.Transfer, 0)
+	transfers = make([]model.Transfer, 0)
 
 	for _, internalTransfers := range internalTransfersMap {
 		for _, internalTransfer := range internalTransfers {

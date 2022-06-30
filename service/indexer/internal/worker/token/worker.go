@@ -17,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	moralisx "github.com/naturalselectionlabs/pregod/common/moralis"
 	"github.com/naturalselectionlabs/pregod/common/nft"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/zksync"
@@ -140,11 +141,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 }
 
 // handle crossbell / XDAI NFT (link list / profile)
-func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("token_worker")
 	_, trace := tracer.Start(ctx, "token_worker:handleCrossbellAndXDAI")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -253,11 +254,11 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 	return internalTransactions, nil
 }
 
-func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("token_worker")
 	_, trace := tracer.Start(ctx, "token_worker:handleEthereum")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
@@ -421,11 +422,11 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	return internalTransactions, nil
 }
 
-func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("token_worker")
 	_, trace := tracer.Start(ctx, "token_worker:handleZkSync")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
 

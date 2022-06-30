@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/snapshot/graphql"
 	"github.com/shopspring/decimal"
 
@@ -114,11 +115,11 @@ func (s *service) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
 	tracer := otel.Tracer("snapshot_worker")
 	_, trace := tracer.Start(ctx, "snapshot_worker:Handle")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, transactions, data, err)
 
 	// Only some mainnets are currently supported
 	snapshotNetworkNum := snapshotNetworkNumMap[message.Network]
@@ -282,13 +283,11 @@ func (s *service) getLatestTimestamp(message *protocol.Message) (time.Time, erro
 	return timestamp, nil
 }
 
-func (s *service) getSnapshotVotes(ctx context.Context, address string, timestamp time.Time) ([]model.SnapshotVote, error) {
+func (s *service) getSnapshotVotes(ctx context.Context, address string, timestamp time.Time) (snapshotVotes []model.SnapshotVote, err error) {
 	tracer := otel.Tracer("snapshot_worker")
 	_, trace := tracer.Start(ctx, "snapshot_worker:getSnapshotVotes")
 
-	defer trace.End()
-
-	var snapshotVotes []model.SnapshotVote
+	defer opentelemetry.Log(trace, address, snapshotVotes, err)
 
 	// from db
 	if err := s.databaseClient.
@@ -302,14 +301,14 @@ func (s *service) getSnapshotVotes(ctx context.Context, address string, timestam
 	return snapshotVotes, nil
 }
 
-func (s *service) getSnapshotProposals(ctx context.Context, proposals []string) (map[string]model.SnapshotProposal, error) {
+func (s *service) getSnapshotProposals(ctx context.Context, proposals []string) (snapshotProposalMap map[string]model.SnapshotProposal, err error) {
 	tracer := otel.Tracer("snapshot_worker")
 	_, trace := tracer.Start(ctx, "snapshot_worker:getSnapshotProposals")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, proposals, snapshotProposalMap, err)
 
 	var snapshotProposals []model.SnapshotProposal
-	snapshotProposalMap := make(map[string]model.SnapshotProposal)
+	snapshotProposalMap = make(map[string]model.SnapshotProposal)
 
 	// from db
 	if err := s.databaseClient.
@@ -326,14 +325,14 @@ func (s *service) getSnapshotProposals(ctx context.Context, proposals []string) 
 	return snapshotProposalMap, nil
 }
 
-func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networkNum string) (map[string]model.SnapshotSpace, error) {
+func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networkNum string) (snapshotSpaceMap map[string]model.SnapshotSpace, err error) {
 	tracer := otel.Tracer("snapshot_worker")
 	_, trace := tracer.Start(ctx, "snapshot_worker:getSnapshotSpaces")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, spaces, snapshotSpaceMap, err)
 
 	var snapshotSpaces []model.SnapshotSpace
-	snapshotSpaceMap := make(map[string]model.SnapshotSpace)
+	snapshotSpaceMap = make(map[string]model.SnapshotSpace)
 
 	// from db
 	if err := s.databaseClient.
@@ -351,14 +350,14 @@ func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networ
 	return snapshotSpaceMap, nil
 }
 
-func (s *service) getProposalsByAuthor(ctx context.Context, author string, timestamp time.Time) (map[string]model.SnapshotProposal, error) {
+func (s *service) getProposalsByAuthor(ctx context.Context, author string, timestamp time.Time) (snapshotProposalMap map[string]model.SnapshotProposal, err error) {
 	tracer := otel.Tracer("snapshot_worker")
 	_, trace := tracer.Start(ctx, "snapshot_worker:getProposalsByAuthor")
 
-	defer trace.End()
+	defer opentelemetry.Log(trace, author, snapshotProposalMap, err)
 
 	var snapshotProposals []model.SnapshotProposal
-	snapshotProposalMap := make(map[string]model.SnapshotProposal)
+	snapshotProposalMap = make(map[string]model.SnapshotProposal)
 
 	// from db
 	if err := s.databaseClient.
