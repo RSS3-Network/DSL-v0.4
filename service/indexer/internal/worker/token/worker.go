@@ -258,7 +258,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	tracer := otel.Tracer("token_worker")
 	_, trace := tracer.Start(ctx, "token_worker:handleEthereum")
 
-	defer opentelemetry.Log(trace, transactions, data, err)
+	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
 	internalTransactionMap := make(map[string]model.Transaction)
 
