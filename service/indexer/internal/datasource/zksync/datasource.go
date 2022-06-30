@@ -9,6 +9,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/common/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"go.opentelemetry.io/otel"
@@ -110,6 +111,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 						Network:         message.Network,
 						Source:          d.Name(),
 						SourceData:      sourceData,
+						RelatedUrls:     []string{utils.GetTxHashURL(protocol.NetworkZkSync, internalTransaction.TransactionHash)},
 					},
 				},
 			})
