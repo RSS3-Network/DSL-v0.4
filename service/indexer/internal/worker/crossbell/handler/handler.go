@@ -2,27 +2,19 @@ package handler
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract/character"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract/linklist"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract/periphery"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract/profile"
 	"go.opentelemetry.io/otel"
-)
-
-var (
-	AddressGenesis            = common.HexToAddress("0x0000000000000000000000000000000000000000")
-	AddressProfileProxy       = common.HexToAddress("0xa6f969045641Cf486a747A2688F3a5A6d43cd0D8")
-	AddressLinkListTokenProxy = common.HexToAddress("0xFc8C75bD5c26F50798758f387B698f207a016b6A")
-
-	EventNameTransfer = "Transfer"
-
-	ErrorUnknownUnknownEvent    = errors.New("unknown event")
-	ErrorUnknownContractAddress = errors.New("unknown contract address")
 )
 
 type Interface interface {
@@ -32,59 +24,69 @@ type Interface interface {
 var _ Interface = (*handler)(nil)
 
 type handler struct {
-	ethereumClient *ethclient.Client
-
-	profileHandler  Interface
-	linkListHandler Interface
+	characterHandler Interface
+	linkListHandler  Interface
 }
 
-func (h *handler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (result *model.Transfer, err error) {
-	tracer := otel.Tracer("crossbell_handle")
-	_, trace := tracer.Start(ctx, "crossbell_handle:Handle")
+func (h *handler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+	tracer := otel.Tracer("worker_crossbell_handle")
 
-	defer func() { opentelemetry.Log(trace, transfer, result, err) }()
+	_, span := tracer.Start(ctx, "worker_crossbell_handle:Handle")
+
+	defer span.End()
 
 	// Transfer type actions should be handled by the token worker
 	if transfer.Source != protocol.SourceOrigin {
-		return h.handleTransfer(ctx, transaction, transfer)
+		return &transfer, nil
+	}
+
+	var log types.Log
+
+	if err := json.Unmarshal(transfer.SourceData, &log); err != nil {
+		return nil, err
 	}
 
 	switch common.HexToAddress(transaction.AddressTo) {
-	case AddressProfileProxy:
-		return h.profileHandler.Handle(ctx, transaction, transfer)
-	case AddressLinkListTokenProxy:
+	case contract.AddressCharacter:
+		return h.characterHandler.Handle(ctx, transaction, transfer)
+	case contract.AddressLinkList:
 		return h.linkListHandler.Handle(ctx, transaction, transfer)
 	default:
-		return nil, ErrorUnknownContractAddress
+		return nil, contract.ErrorUnknownContractAddress
 	}
 }
 
-func (h *handler) handleTransfer(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
-	transfer.Type = EventNameTransfer
-
-	return &transfer, nil
-}
-
-func New(ethereumClient *ethclient.Client, abi abi.ABI) (Interface, error) {
-	profileContract, err := contract.NewERC721(AddressProfileProxy, ethereumClient)
+func New(ethereumClient *ethclient.Client) (Interface, error) {
+	profileContract, err := profile.NewProfile(contract.AddressCharacter, ethereumClient)
 	if err != nil {
 		return nil, err
 	}
 
-	linkListContract, err := contract.NewERC721(AddressLinkListTokenProxy, ethereumClient)
+	characterContract, err := character.NewCharacter(contract.AddressCharacter, ethereumClient)
+	if err != nil {
+		return nil, err
+	}
+
+	peripheryContract, err := periphery.NewPeriphery(contract.AddressPeriphery, ethereumClient)
+	if err != nil {
+		return nil, err
+	}
+
+	linkListContract, err := linklist.NewLinkList(contract.AddressLinkList, ethereumClient)
 	if err != nil {
 		return nil, err
 	}
 
 	return &handler{
-		ethereumClient: ethereumClient,
-		profileHandler: &profile{
-			contract: profileContract,
-			abi:      abi,
+		characterHandler: &characterHandler{
+			characterContract: characterContract,
+			peripheryContract: peripheryContract,
+			profileHandler: &profileHandler{
+				profileContract: profileContract,
+			},
 		},
-		linkListHandler: &linkList{
-			contract: linkListContract,
-			abi:      abi,
+		linkListHandler: &linkListHandler{
+			linkListContract: linkListContract,
 		},
 	}, nil
 }

@@ -3,18 +3,17 @@ package handler
 import (
 	"context"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract/linklist"
 )
 
-var _ Interface = (*linkList)(nil)
+var _ Interface = (*linkListHandler)(nil)
 
-type linkList struct {
-	contract *contract.ERC721
-	abi      abi.ABI
+type linkListHandler struct {
+	linkListContract *linklist.LinkList
 }
 
-func (l *linkList) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
-	return nil, ErrorUnknownUnknownEvent
+func (l *linkListHandler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+	return nil, contract.ErrorUnknownEvent
 }

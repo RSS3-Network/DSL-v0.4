@@ -2,92 +2,77 @@ package crossbell
 
 import (
 	"context"
-	"embed"
 	"encoding/json"
 	"errors"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/logger"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/handler"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 )
-
-//go:generate abigen --abi ./contract/erc721.abi --pkg contract --type ERC721 --out ./contract/erc721.go
 
 const (
-	Name = protocol.PlatfromCrossbell
+	Name = "crossbell"
 
 	Endpoint = "https://rpc.crossbell.io"
-
-	ABINameWeb3EntryProfile = "contract/event.abi"
 )
 
-//go:embed contract/event.abi
-var ContractABIFileSystem embed.FS
+var _ worker.Worker = (*service)(nil)
 
-var _ worker.Worker = (*Worker)(nil)
-
-type Worker struct {
-	ethereumClient      *ethclient.Client
-	abiWeb3EntryProfile abi.ABI
-	handler             handler.Interface
+type service struct {
+	ethereumClient *ethclient.Client
+	handler        handler.Interface
 }
 
-func (w *Worker) Name() string {
+func (s *service) Name() string {
 	return Name
 }
 
-func (w *Worker) Networks() []string {
+func (s *service) Networks() []string {
 	return []string{
 		protocol.NetworkCrossbell,
 	}
 }
 
-func (w *Worker) Initialize(ctx context.Context) (err error) {
-	if w.ethereumClient, err = ethclient.Dial(Endpoint); err != nil {
+func (s *service) Initialize(ctx context.Context) (err error) {
+	if s.ethereumClient, err = ethclient.Dial(Endpoint); err != nil {
 		return err
 	}
 
-	web3EntryProfileABIFile, err := ContractABIFileSystem.Open(ABINameWeb3EntryProfile)
-	if err != nil {
-		return err
-	}
-
-	if w.abiWeb3EntryProfile, err = abi.JSON(web3EntryProfileABIFile); err != nil {
-		return err
-	}
-
-	if w.handler, err = handler.New(w.ethereumClient, w.abiWeb3EntryProfile); err != nil {
+	if s.handler, err = handler.New(s.ethereumClient); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (internalTransactions []model.Transaction, err error) {
-	tracer := otel.Tracer("crossbell_worker")
-	_, trace := tracer.Start(ctx, "crossbell_worker:Handle")
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
+	tracer := otel.Tracer("worker_crossbell")
 
-	defer func() { opentelemetry.Log(trace, message, internalTransactions, err) }()
+	_, snap := tracer.Start(ctx, "worker_crossbell:Handle")
 
-	internalTransactions = make([]model.Transaction, 0)
+	defer snap.End()
+
+	internalTransactions := make([]model.Transaction, 0)
 
 	for _, transaction := range transactions {
 		addressTo := common.HexToAddress(transaction.AddressTo)
 
 		// Processing of transactions for contracts Profile and LinkList only
-		if addressTo != handler.AddressProfileProxy && addressTo != handler.AddressLinkListTokenProxy {
+		if addressTo != contract.AddressCharacter && addressTo != contract.AddressLinkList {
 			continue
 		}
 
-		transaction.Platform = Name
+		transaction.Platform = s.Name()
 
 		// Retain the action model of the transfer type
 		transferMap := make(map[int64]model.Transfer)
@@ -98,50 +83,23 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 
 		// Empty transfer data to avoid data duplication
 		transaction.Transfers = make([]model.Transfer, 0)
+		transaction.Transfers = append(transaction.Transfers, transferMap[protocol.IndexVirtual])
 
 		// Get the raw data directly via Ethereum RPC node
-		receipt, err := w.ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
+		receipt, err := s.ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
 		if err != nil {
 			return nil, err
 		}
 
-		for _, log := range receipt.Logs {
-			logIndex := int64(log.Index)
+		internalTransfers, err := s.handleReceipt(ctx, message, transaction, receipt, transferMap)
+		if err != nil {
+			return nil, err
+		}
 
-			transfer, exist := transferMap[logIndex]
-			if !exist {
-				sourceData, err := json.Marshal(log)
-				if err != nil {
-					return nil, err
-				}
+		transaction.Transfers = append(transaction.Transfers, internalTransfers...)
 
-				// Virtual transfer
-				transfer = model.Transfer{
-					TransactionHash: transaction.Hash,
-					Timestamp:       transaction.Timestamp,
-					Index:           logIndex,
-					AddressFrom:     transaction.AddressFrom,
-					Metadata:        metadata.Default,
-					Network:         message.Network,
-					Source:          protocol.SourceOrigin,
-					SourceData:      sourceData,
-				}
-			}
-
-			internalTransfer, err := w.handler.Handle(ctx, transaction, transfer)
-			if err != nil {
-				if errors.Is(err, handler.ErrorUnknownUnknownEvent) {
-					continue
-				}
-
-				logrus.Error(err)
-
-				continue
-			}
-
-			transfer.Platform = Name
-
-			transaction.Transfers = append(transaction.Transfers, *internalTransfer)
+		for _, transfer := range transaction.Transfers {
+			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 
 		internalTransactions = append(internalTransactions, transaction)
@@ -150,10 +108,65 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 	return internalTransactions, nil
 }
 
-func (w *Worker) Jobs() []worker.Job {
+func (s *service) handleReceipt(ctx context.Context, message *protocol.Message, transaction model.Transaction, receipt *types.Receipt, transferMap map[int64]model.Transfer) ([]model.Transfer, error) {
+	tracer := otel.Tracer("worker_crossbell")
+
+	_, snap := tracer.Start(ctx, "worker_crossbell:handleReceipt")
+
+	defer snap.End()
+
+	internalTransfers := make([]model.Transfer, 0)
+
+	for _, log := range receipt.Logs {
+		logIndex := int64(log.Index)
+
+		transfer, exist := transferMap[logIndex]
+		if !exist {
+			sourceData, err := json.Marshal(log)
+			if err != nil {
+				return nil, err
+			}
+
+			// Virtual transfer
+			transfer = model.Transfer{
+				TransactionHash: transaction.Hash,
+				Timestamp:       transaction.Timestamp,
+				Index:           logIndex,
+				AddressFrom:     transaction.AddressFrom,
+				Metadata:        metadata.Default,
+				Network:         message.Network,
+				Source:          protocol.SourceOrigin,
+				SourceData:      sourceData,
+			}
+		}
+
+		internalTransfer, err := s.handler.Handle(ctx, transaction, transfer)
+		if err != nil {
+			if !errors.Is(err, contract.ErrorUnknownEvent) {
+				logger.Global().Warn(
+					"handle crossbell transfer failed",
+					zap.Error(err),
+					zap.String("worker", s.Name()),
+					zap.String("network", message.Network),
+					zap.String("address", message.Address),
+				)
+			}
+
+			continue
+		}
+
+		internalTransfer.Platform = s.Name()
+		internalTransfer.Tag = filter.UpdateTag(internalTransfer.Tag, transfer.Tag)
+		internalTransfers = append(internalTransfers, *internalTransfer)
+	}
+
+	return internalTransfers, nil
+}
+
+func (s *service) Jobs() []worker.Job {
 	return nil
 }
 
 func New() worker.Worker {
-	return &Worker{}
+	return &service{}
 }
