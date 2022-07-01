@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
+	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -109,7 +111,7 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
 			"status":        "ok",
-			"version":       version,
+			"version":       fmt.Sprintf("%s-%s", version, constant.Version),
 			"documentation": "https://docs.rss3.io/PreGod/" + version + "/api/",
 		})
 	})
