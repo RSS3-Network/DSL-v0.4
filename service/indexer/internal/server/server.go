@@ -24,6 +24,13 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
+	lensworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/lens"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
+	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
@@ -118,14 +125,14 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
+		token.New(s.databaseClient),
+		swap.New(s.employer, s.databaseClient),
+		mirror.New(),
+		poapworker.New(),
+		gitcoin.New(s.databaseClient, s.redisClient),
 		crossbell.New(),
-		//token.New(s.databaseClient),
-		//swap.New(s.employer, s.databaseClient),
-		//mirror.New(),
-		//poapworker.New(),
-		//gitcoin.New(s.databaseClient, s.redisClient),
-		//snapshot.New(s.databaseClient, s.redisClient),
-		//lensworker.New(s.databaseClient),
+		snapshot.New(s.databaseClient, s.redisClient),
+		lensworker.New(s.databaseClient),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
@@ -173,7 +180,7 @@ func (s *Server) Run() error {
 
 		go func() {
 			if err := s.handle(context.Background(), &message); err != nil {
-				logrus.Errorf("message.Address:%v, message.Network:%v, err:%v", message.Address, message.Network, err)
+				logrus.Errorf("message.Address: %v, message.Network: %v, err: %v", message.Address, message.Network, err)
 			}
 		}()
 	}
@@ -183,7 +190,9 @@ func (s *Server) Run() error {
 
 func (s *Server) handle(ctx context.Context, message *protocol.Message) (err error) {
 	tracer := otel.Tracer("indexer")
+
 	ctx, handlerSpan := tracer.Start(ctx, "indexer:handler")
+
 	handlerSpan.SetAttributes(
 		attribute.String("network", message.Network),
 	)
@@ -299,7 +308,7 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 
 	for _, transaction := range transactions {
 		if len(transaction.Transfers) == 0 {
-			return nil
+			continue
 		}
 
 		if err := s.databaseClient.

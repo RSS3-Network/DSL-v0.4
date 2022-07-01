@@ -23,12 +23,23 @@ var (
 	AddressLinkList  = common.HexToAddress("0xFc8C75bD5c26F50798758f387B698f207a016b6A")
 	AddressPeriphery = common.HexToAddress("0x96e96b7AF62D628cE7eb2016D2c1D2786614eA73")
 
-	EventNameTransfer       = "Transfer"
-	EventNameProfileCreated = "ProfileCreated"
-	EventNamePostNote       = "PostNote"
+	EventNameTransfer         = "Transfer"
+	EventNameSetHandle        = "SetHandle"
+	EventNameCharacterCreated = "CharacterCreated"
+	EventNamePostNote         = "PostNote"
+	EventNameLinkCharacter    = "LinkCharacter"
+	EventNameUnlinkCharacter  = "UnlinkCharacter"
 
-	EventHashProfileCreated = common.BytesToHash(crypto.Keccak256([]byte("ProfileCreated(uint256,address,address,string,uint256)")))
-	EventHashPostNote       = common.BytesToHash(crypto.Keccak256([]byte("PostNote(uint256,uint256,bytes32,bytes32,bytes)")))
+	EventHashProfileCreated        = common.BytesToHash(crypto.Keccak256([]byte("ProfileCreated(uint256,address,address,string,uint256)")))
+	EventHashCharacterCreated      = common.BytesToHash(crypto.Keccak256([]byte("CharacterCreated(uint256,address,address,string,uint256)")))
+	EventHashSetHandle             = common.BytesToHash(crypto.Keccak256([]byte("SetHandle(address,uint256,string)")))
+	EventHashSetPrimaryProfileId   = common.BytesToHash(crypto.Keccak256([]byte("SetPrimaryProfileId(address,uint256)")))
+	EventHashSetPrimaryCharacterId = common.BytesToHash(crypto.Keccak256([]byte("SetPrimaryCharacterId(address,uint256)")))
+	EventHashPostNote              = common.BytesToHash(crypto.Keccak256([]byte("PostNote(uint256,uint256,bytes32,bytes32,bytes)")))
+	EventHashLinkProfile           = common.BytesToHash(crypto.Keccak256([]byte("LinkProfile(address,uint256,uint256,bytes32,uint256)")))
+	EventHashLinkCharacter         = common.BytesToHash(crypto.Keccak256([]byte("LinkCharacter(address,uint256,uint256,bytes32,uint256)")))
+	EventHashUnlinkProfile         = common.BytesToHash(crypto.Keccak256([]byte("UnlinkProfile(address,uint256,uint256,bytes32)")))
+	EventHashUnlinkCharacter       = common.BytesToHash(crypto.Keccak256([]byte("UnlinkCharacter(address,uint256,uint256,bytes32)")))
 
 	LinkItemTypeAnyUri = common.BytesToHash(common.RightPadBytes([]byte("AnyUri"), common.HashLength))
 

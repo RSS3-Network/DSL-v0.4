@@ -98,12 +98,19 @@ type SnapShot struct {
 }
 
 type Crossbell struct {
-	Event   string            `json:"event"`
-	Profile *CrossbellProfile `json:"profile,omitempty"`
-	Note    *CrossbellNote    `json:"note,omitempty"`
+	Event     string              `json:"event"`
+	Link      *CrossbellLink      `json:"link,omitempty"`
+	Character *CrossbellCharacter `json:"character,omitempty"`
+	Note      *CrossbellNote      `json:"note,omitempty"`
 }
 
-type CrossbellProfile struct {
+type CrossbellLink struct {
+	Type string `json:"type"`
+	From any    `json:"from"`
+	To   any    `json:"to"`
+}
+
+type CrossbellCharacter struct {
 	ID       *big.Int        `json:"id"`
 	Metadata json.RawMessage `json:"metadata"`
 }

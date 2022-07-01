@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/logger"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/handler"
@@ -82,6 +83,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 		// Empty transfer data to avoid data duplication
 		transaction.Transfers = make([]model.Transfer, 0)
+		transaction.Transfers = append(transaction.Transfers, transferMap[protocol.IndexVirtual])
 
 		// Get the raw data directly via Ethereum RPC node
 		receipt, err := s.ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
@@ -89,8 +91,15 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			return nil, err
 		}
 
-		if transaction.Transfers, err = s.handleReceipt(ctx, message, transaction, receipt, transferMap); err != nil {
+		internalTransfers, err := s.handleReceipt(ctx, message, transaction, receipt, transferMap)
+		if err != nil {
 			return nil, err
+		}
+
+		transaction.Transfers = append(transaction.Transfers, internalTransfers...)
+
+		for _, transfer := range transaction.Transfers {
+			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 
 		internalTransactions = append(internalTransactions, transaction)
@@ -147,6 +156,7 @@ func (s *service) handleReceipt(ctx context.Context, message *protocol.Message, 
 		}
 
 		internalTransfer.Platform = s.Name()
+		internalTransfer.Tag = filter.UpdateTag(internalTransfer.Tag, transfer.Tag)
 		internalTransfers = append(internalTransfers, *internalTransfer)
 	}
 

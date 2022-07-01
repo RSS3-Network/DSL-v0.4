@@ -2,11 +2,12 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell/contract/character"
@@ -24,7 +25,6 @@ var _ Interface = (*handler)(nil)
 
 type handler struct {
 	characterHandler Interface
-	profileHandler   Interface
 	linkListHandler  Interface
 }
 
@@ -40,14 +40,15 @@ func (h *handler) Handle(ctx context.Context, transaction model.Transaction, tra
 		return &transfer, nil
 	}
 
+	var log types.Log
+
+	if err := json.Unmarshal(transfer.SourceData, &log); err != nil {
+		return nil, err
+	}
+
 	switch common.HexToAddress(transaction.AddressTo) {
 	case contract.AddressCharacter:
-		// Broken change
-		if transaction.BlockNumber >= contract.BrokenBlockNumber {
-			return h.characterHandler.Handle(ctx, transaction, transfer)
-		}
-
-		return h.profileHandler.Handle(ctx, transaction, transfer)
+		return h.characterHandler.Handle(ctx, transaction, transfer)
 	case contract.AddressLinkList:
 		return h.linkListHandler.Handle(ctx, transaction, transfer)
 	default:
@@ -80,11 +81,9 @@ func New(ethereumClient *ethclient.Client) (Interface, error) {
 		characterHandler: &characterHandler{
 			characterContract: characterContract,
 			peripheryContract: peripheryContract,
-		},
-		profileHandler: &profileHandler{
-			profileContract:   profileContract,
-			characterContract: characterContract,
-			peripheryContract: peripheryContract,
+			profileHandler: &profileHandler{
+				profileContract: profileContract,
+			},
 		},
 		linkListHandler: &linkListHandler{
 			linkListContract: linkListContract,
