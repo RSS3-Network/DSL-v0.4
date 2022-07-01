@@ -13,7 +13,7 @@ type Transaction struct {
 	AddressFrom string          `gorm:"column:address_from;index" json:"address_from"`
 	AddressTo   string          `gorm:"column:address_to;index" json:"address_to,omitempty"`
 	Network     string          `gorm:"column:network;primaryKey" json:"network"`
-	Platform    string          `gorm:"column:platform;index" json:"platform"`
+	Platform    string          `gorm:"column:platform;index" json:"platform,omitempty"`
 	Source      string          `gorm:"column:source;primaryKey" json:"-"`
 	Tag         string          `gorm:"column:tag;index" json:"tag"`
 	Success     *bool           `gorm:"column:success;default:true" json:"success"`

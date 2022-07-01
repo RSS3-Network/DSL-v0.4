@@ -88,7 +88,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 					AddressFrom:     strings.ToLower(string(edge.Node.Owner.Address)),
 					AddressTo:       addressTo,
 					Metadata:        metadata.Default,
-					Platform:        message.Network,
 					Network:         message.Network,
 					Source:          Source,
 					SourceData:      sourceData,

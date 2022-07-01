@@ -155,7 +155,10 @@ func (s *service) handleReceipt(ctx context.Context, message *protocol.Message, 
 			continue
 		}
 
-		internalTransfer.Platform = s.Name()
+		if transfer.Platform != "" {
+			internalTransfer.Platform = transfer.Platform
+		}
+
 		internalTransfer.Tag = filter.UpdateTag(internalTransfer.Tag, transfer.Tag)
 		internalTransfers = append(internalTransfers, *internalTransfer)
 	}
