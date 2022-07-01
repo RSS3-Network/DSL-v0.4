@@ -5,22 +5,26 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 )
 
 type GetActionListRequest struct {
-	Address  string   `param:"address"`
-	Limit    int      `query:"limit"`
-	Cursor   string   `query:"cursor"`
-	Type     []string `query:"type"`
-	Tag      string   `query:"tag"`
-	Network  []string `query:"network"`
-	Platform []string `query:"platform"`
+	Address   string    `param:"address"`
+	Limit     int       `query:"limit"`
+	Cursor    string    `query:"cursor"`
+	Type      []string  `query:"type"`
+	Tag       string    `query:"tag"`
+	Network   []string  `query:"network"`
+	Platform  []string  `query:"platform"`
+	Timestamp time.Time `query:"timestamp"`
+	Hash      string    `query:"hash"`
 }
 
 // GetActionListFunc HTTP handler for action API
@@ -39,6 +43,21 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
 		request.Limit = DefaultLimit
 	}
+
+	types := []string{}
+	for _, t := range request.Type {
+		if filter.CheckTypeValid(request.Tag, t) {
+			types = append(types, t)
+		}
+	}
+
+	if len(request.Type) > 0 && len(types) == 0 {
+		return c.JSON(http.StatusOK, &Response{
+			Result: make([]model.Transaction, 0),
+		})
+	}
+
+	request.Type = types
 
 	go func() {
 		// create a rabbitmq job to index the latest user data
@@ -139,6 +158,10 @@ func (h *Handler) getTransactionListDatabse(c context.Context, request GetAction
 		sql = sql.Where("timestamp < ? OR (timestamp = ? AND index < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)
 	}
 
+	if len(request.Hash) > 0 {
+		sql = sql.Where("hash = ?", request.Hash)
+	}
+
 	if len(request.Tag) > 0 {
 		sql = sql.Where("tag = ?", request.Tag)
 	}
@@ -149,6 +172,10 @@ func (h *Handler) getTransactionListDatabse(c context.Context, request GetAction
 
 	if len(request.Platform) > 0 {
 		sql = sql.Where("platform IN ?", request.Platform)
+	}
+
+	if len(request.Timestamp.String()) > 0 {
+		sql = sql.Where("timestamp > ?", request.Timestamp)
 	}
 
 	if err := sql.Count(&total).Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactionList).Error; err != nil {
