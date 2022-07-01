@@ -242,7 +242,7 @@ func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.
 				transfer.Metadata = rawMetadata
 			}
 
-			transaction, transfer = s.updateType(ctx, transaction, transfer)
+			transaction, transfer = s.updateType(transaction, transfer)
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
@@ -433,7 +433,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 
 			transfer.Metadata = rawMetadata
 
-			transaction, transfer = s.updateType(ctx, transaction, transfer)
+			transaction, transfer = s.updateType(transaction, transfer)
 
 			// Copy the transaction to map
 			value, exist := internalTransactionMap[transaction.Hash]
@@ -520,7 +520,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 			}
 
-			transaction, transfer = s.updateType(ctx, transaction, transfer)
+			transaction, transfer = s.updateType(transaction, transfer)
 
 			rawMetadata, err := json.Marshal(metadataModel)
 			if err != nil {
@@ -610,7 +610,7 @@ func (s *service) checkCexWallet(ctx context.Context, address string, transfer *
 	return nil
 }
 
-func (s *service) updateType(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (model.Transaction, model.Transfer) {
+func (s *service) updateType(transaction model.Transaction, transfer model.Transfer) (model.Transaction, model.Transfer) {
 	switch {
 	case transfer.AddressFrom == AddressGenesis:
 		transfer.Type = filter.TransactionMint

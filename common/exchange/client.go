@@ -68,8 +68,6 @@ func (c *Client) GetSwapPairs(ctx context.Context, provider string, swap SwapPoo
 			return result, nil
 		}
 	} else {
-		// race condition here
-		// c.graphqlClient = graphql.NewClient(swap.Endpoint, c.httpClient)
 		graphqlClient := graphql.NewClient(swap.Endpoint, c.httpClient)
 		switch swap.Protocol {
 		case UniSwapV2:

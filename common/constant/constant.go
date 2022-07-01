@@ -1,5 +1,3 @@
 package constant
 
-var (
-	Version = "0000000"
-)
+var Version = "0000000"
