@@ -158,3 +158,36 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 
 	return &transfer, nil
 }
+
+func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("worker_crossbell_handler")
+
+	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleSetProfileUri")
+
+	defer snap.End()
+
+	event, err := p.profileContract.ParseSetProfileUri(log)
+	if err != nil {
+		return nil, err
+	}
+
+	profileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ProfileId)
+
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+		Event: contract.EventNameSetCharacterUri,
+		Character: &metadata.CrossbellCharacter{
+			ID:       event.ProfileId,
+			URI:      event.NewUri,
+			Metadata: profileMetadata,
+		},
+	}); err != nil {
+		return nil, err
+	}
+
+	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
+	if transfer.Tag == filter.TagSocial {
+		transfer.Type = filter.SocialProfile
+	}
+
+	return &transfer, nil
+}

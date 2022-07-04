@@ -273,7 +273,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			}
 
 			if len(internalTransfers) > 0 {
-				transaction.Transfers = internalTransfers
+				transaction.Transfers = append(transaction.Transfers, internalTransfers...)
 			}
 		}
 
@@ -397,27 +397,30 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 			return nil, nil, err
 		}
 
+		t := model.Transfer{
+			TransactionHash: internalNFTTransfer.TransactionHash,
+			Timestamp:       timestamp,
+			Index:           internalNFTTransfer.LogIndex.IntPart(),
+			AddressFrom:     internalNFTTransfer.FromAddress,
+			AddressTo:       internalNFTTransfer.ToAddress,
+			Metadata:        metadata.Default,
+			Network:         message.Network,
+			Source:          d.Name(),
+			SourceData:      sourceData,
+			RelatedUrls:     []string{utils.GetTxHashURL(message.Network, internalNFTTransfer.TransactionHash)},
+		}
+
 		// Data deduplication
 		value, exist := internalTransfersMap[internalNFTTransfer.BlockHash]
 		if exist {
 			if _, exist := value[internalNFTTransfer.LogIndex.IntPart()]; exist {
 				continue
 			}
-		}
-
-		internalTransfersMap[internalNFTTransfer.BlockHash] = map[int64]model.Transfer{
-			internalNFTTransfer.LogIndex.IntPart(): {
-				TransactionHash: internalNFTTransfer.TransactionHash,
-				Timestamp:       timestamp,
-				Index:           internalNFTTransfer.LogIndex.IntPart(),
-				AddressFrom:     internalNFTTransfer.FromAddress,
-				AddressTo:       internalNFTTransfer.ToAddress,
-				Metadata:        metadata.Default,
-				Network:         message.Network,
-				Source:          d.Name(),
-				SourceData:      sourceData,
-				RelatedUrls:     []string{utils.GetTxHashURL(message.Network, internalNFTTransfer.TransactionHash)},
-			},
+			internalTransfersMap[internalNFTTransfer.BlockHash][internalNFTTransfer.LogIndex.IntPart()] = t
+		} else {
+			internalTransfersMap[internalNFTTransfer.BlockHash] = map[int64]model.Transfer{
+				internalNFTTransfer.LogIndex.IntPart(): t,
+			}
 		}
 	}
 
@@ -515,6 +518,11 @@ func (d *Datasource) handleMRC20Transfers(ctx context.Context, virtualTransfer m
 	}
 
 	contract, err := mrc20.NewMRC20(mrc20.LogTransferContractAddress, d.ethereumClient)
+	if err != nil {
+		zap.Error(err)
+
+		return nil, err
+	}
 
 	for _, log := range receipt.Logs {
 		logIndex := int64(log.Index)
