@@ -2,7 +2,6 @@ package contract
 
 import (
 	"errors"
-	"math"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -15,7 +14,7 @@ import (
 
 const (
 	// BrokenBlockNumber is the block height of the contract non-compatible upgrade
-	BrokenBlockNumber = math.MaxInt64
+	BrokenBlockNumber = 6552927
 )
 
 var (
@@ -29,6 +28,8 @@ var (
 	EventNamePostNote         = "PostNote"
 	EventNameLinkCharacter    = "LinkCharacter"
 	EventNameUnlinkCharacter  = "UnlinkCharacter"
+	EventNameSetProfileUri    = "SetProfileUri"
+	EventNameSetCharacterUri  = "SetCharacterUri"
 
 	EventHashProfileCreated        = common.BytesToHash(crypto.Keccak256([]byte("ProfileCreated(uint256,address,address,string,uint256)")))
 	EventHashCharacterCreated      = common.BytesToHash(crypto.Keccak256([]byte("CharacterCreated(uint256,address,address,string,uint256)")))
@@ -40,6 +41,8 @@ var (
 	EventHashLinkCharacter         = common.BytesToHash(crypto.Keccak256([]byte("LinkCharacter(address,uint256,uint256,bytes32,uint256)")))
 	EventHashUnlinkProfile         = common.BytesToHash(crypto.Keccak256([]byte("UnlinkProfile(address,uint256,uint256,bytes32)")))
 	EventHashUnlinkCharacter       = common.BytesToHash(crypto.Keccak256([]byte("UnlinkCharacter(address,uint256,uint256,bytes32)")))
+	EventHashSetProfileUri         = common.BytesToHash(crypto.Keccak256([]byte("SetProfileUri(uint256,string)")))
+	EventHashSetCharacterUri       = common.BytesToHash(crypto.Keccak256([]byte("SetCharacterUri(uint256,string)")))
 
 	LinkItemTypeAnyUri = common.BytesToHash(common.RightPadBytes([]byte("AnyUri"), common.HashLength))
 

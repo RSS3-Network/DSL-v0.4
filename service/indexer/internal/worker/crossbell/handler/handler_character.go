@@ -59,6 +59,13 @@ func (c *characterHandler) Handle(ctx context.Context, transaction model.Transac
 		}
 
 		return c.profileHandler.handleUnLinkProfile(ctx, transaction, transfer, log)
+	case contract.EventHashSetCharacterUri, contract.EventHashSetProfileUri:
+		// Broken change
+		if transaction.BlockNumber >= contract.BrokenBlockNumber {
+			return c.handleSetCharacterUri(ctx, transaction, transfer, log)
+		}
+
+		return c.profileHandler.handleSetProfileUri(ctx, transaction, transfer, log)
 	default:
 		return nil, contract.ErrorUnknownEvent
 	}
@@ -264,6 +271,39 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
 	if transfer.Tag == filter.TagSocial {
 		transfer.Type = filter.SocialUnfollow
+	}
+
+	return &transfer, nil
+}
+
+func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("worker_crossbell_handler")
+
+	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleSetCharacterUri")
+
+	defer snap.End()
+
+	event, err := c.characterContract.ParseSetCharacterUri(log)
+	if err != nil {
+		return nil, err
+	}
+
+	characterMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.CharacterId)
+
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+		Event: contract.EventNameSetCharacterUri,
+		Character: &metadata.CrossbellCharacter{
+			ID:       event.CharacterId,
+			URI:      event.NewUri,
+			Metadata: characterMetadata,
+		},
+	}); err != nil {
+		return nil, err
+	}
+
+	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
+	if transfer.Tag == filter.TagSocial {
+		transfer.Type = filter.SocialProfile
 	}
 
 	return &transfer, nil

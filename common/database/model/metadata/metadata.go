@@ -112,6 +112,7 @@ type CrossbellLink struct {
 
 type CrossbellCharacter struct {
 	ID       *big.Int        `json:"id"`
+	URI      string          `json:"uri,omitempty"`
 	Metadata json.RawMessage `json:"metadata"`
 }
 
