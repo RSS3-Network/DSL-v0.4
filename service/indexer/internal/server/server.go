@@ -241,7 +241,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 				message.Timestamp = timestamp
 
 				internalTransactions, err := datasource.Handle(ctx, message)
-
 				// Avoid blocking indexed workers
 				if err != nil {
 					logger.Global().Error("datasource handle failed", zap.Error(err))
