@@ -18,8 +18,6 @@ type GetExchangeListRequest struct {
 	Network []string `query:"network"`
 }
 
-var pageLimit = 1000
-
 func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 	tracer := otel.Tracer("GetExchangeListFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
@@ -95,10 +93,10 @@ func (h *Handler) getCexListDatabase(c context.Context, request GetExchangeListR
 	}
 
 	if request.Cursor > 0 {
-		sql = sql.Offset(request.Cursor * pageLimit)
+		sql = sql.Offset(request.Cursor * DefaultLimit)
 	}
 
-	if err := sql.Count(&total).Limit(pageLimit).Find(&dbResult).Error; err != nil {
+	if err := sql.Count(&total).Limit(DefaultLimit).Find(&dbResult).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -125,7 +123,7 @@ func (h *Handler) getDexListDatabase(c context.Context, request GetExchangeListR
 
 	defer postgresSnap.End()
 
-	dbResult := make([]model.SwapPool, pageLimit)
+	dbResult := make([]model.SwapPool, DefaultLimit)
 	total := int64(0)
 	sql := h.DatabaseClient.
 		Model(&model.SwapPool{})
@@ -144,7 +142,7 @@ func (h *Handler) getDexListDatabase(c context.Context, request GetExchangeListR
 	sql.Count(&total)
 
 	if request.Cursor > 0 {
-		offset := request.Cursor * pageLimit
+		offset := request.Cursor * DefaultLimit
 
 		if int64(offset) < total {
 			total -= int64(offset)
@@ -152,7 +150,7 @@ func (h *Handler) getDexListDatabase(c context.Context, request GetExchangeListR
 		sql = sql.Offset(offset)
 	}
 
-	if err := sql.Limit(pageLimit).Find(&dbResult).Error; err != nil {
+	if err := sql.Limit(DefaultLimit).Find(&dbResult).Error; err != nil {
 		return nil, 0, err
 	}
 
