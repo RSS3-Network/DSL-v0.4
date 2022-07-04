@@ -9,7 +9,6 @@ import (
 	"github.com/labstack/echo/v4"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	sModel "github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"go.opentelemetry.io/otel"
 )
 
@@ -19,7 +18,7 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := sModel.GetRequest{}
+	request := GetRequest{}
 
 	request.Address = c.Param("address")
 
@@ -47,7 +46,7 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 }
 
 // getTransferListDatabase get transfer data from database
-func (h *Handler) getProfileListDatabase(c context.Context, request sModel.GetRequest) ([]dbModel.Transfer, int64, error) {
+func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) ([]dbModel.Transfer, int64, error) {
 	tracer := otel.Tracer("getProfileListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 

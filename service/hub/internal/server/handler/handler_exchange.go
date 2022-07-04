@@ -8,7 +8,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
-	sModel "github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"go.opentelemetry.io/otel"
 )
 
@@ -18,7 +17,7 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := sModel.GetExchangeRequest{}
+	request := GetExchangeRequest{}
 	if err := c.Bind(&request); err != nil {
 		return err
 	}
@@ -71,7 +70,7 @@ type CexResult struct {
 	Network string `json:"network"`
 }
 
-func (h *Handler) getCexListDatabase(c context.Context, request sModel.GetExchangeRequest) ([]CexResult, int64, error) {
+func (h *Handler) getCexListDatabase(c context.Context, request GetExchangeRequest) ([]CexResult, int64, error) {
 	tracer := otel.Tracer("getCexListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
@@ -111,7 +110,7 @@ type DexResult struct {
 	Pair    string `json:"pair"`
 }
 
-func (h *Handler) getDexListDatabase(c context.Context, request sModel.GetExchangeRequest) ([]DexResult, int64, error) {
+func (h *Handler) getDexListDatabase(c context.Context, request GetExchangeRequest) ([]DexResult, int64, error) {
 	tracer := otel.Tracer("getDexListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 

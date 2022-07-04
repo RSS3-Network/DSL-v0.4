@@ -10,7 +10,6 @@ import (
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	sModel "github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 )
@@ -23,7 +22,7 @@ func (h *Handler) GetNoteListFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := sModel.GetRequest{}
+	request := GetRequest{}
 	if err := c.Bind(&request); err != nil {
 		return err
 	}
@@ -121,7 +120,7 @@ func (h *Handler) GetNoteListFunc(c echo.Context) error {
 }
 
 // getTransactionListDatabase get transaction data from database
-func (h *Handler) getTransactionListDatabase(c context.Context, request sModel.GetRequest) ([]dbModel.Transaction, int64, error) {
+func (h *Handler) getTransactionListDatabase(c context.Context, request GetRequest) ([]dbModel.Transaction, int64, error) {
 	tracer := otel.Tracer("getNoteListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
@@ -174,7 +173,7 @@ func (h *Handler) getTransactionListDatabase(c context.Context, request sModel.G
 }
 
 // getTransferListDatabase get transfer data from database
-func (h *Handler) getTransferListDatabase(c context.Context, transactionHashList []string, request sModel.GetRequest) ([]dbModel.Transfer, error) {
+func (h *Handler) getTransferListDatabase(c context.Context, transactionHashList []string, request GetRequest) ([]dbModel.Transfer, error) {
 	tracer := otel.Tracer("getNoteListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
