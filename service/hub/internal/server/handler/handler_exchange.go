@@ -11,6 +11,10 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
+// GetExchangeListFunc supported filter:
+// - network
+// - name: string, the exchange name
+// - exchange_type: string, `cex` or `dex`
 func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 	tracer := otel.Tracer("GetExchangeListFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")

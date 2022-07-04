@@ -12,6 +12,10 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
+// GetProfileListFunc supported filter:
+// - address
+// - network
+// - platform
 func (h *Handler) GetProfileListFunc(c echo.Context) error {
 	tracer := otel.Tracer("GetProfileListFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
