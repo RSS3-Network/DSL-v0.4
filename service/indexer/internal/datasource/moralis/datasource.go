@@ -16,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis/mrc20"
 	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -269,7 +270,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 		if message.Network == protocol.NetworkPolygon {
 			internalTransfers, err := d.handleMRC20Transfers(ctx, transaction.Transfers[0])
 			if err != nil {
-				zap.Error(err)
+				logrus.Errorf("[datasource] handleMRC20Transfers error: %v", err)
 			}
 
 			if len(internalTransfers) > 0 {
@@ -495,7 +496,7 @@ func New(key string) datasource.Datasource {
 
 	ethereumClient, err := ethclient.Dial(Endpoint)
 	if err != nil {
-		zap.Error(err)
+		logrus.Errorf("[datasource] ethereum client error: %v", err)
 	}
 
 	return &Datasource{
@@ -512,14 +513,14 @@ func (d *Datasource) handleMRC20Transfers(ctx context.Context, virtualTransfer m
 
 	receipt, err := d.ethereumClient.TransactionReceipt(ctx, common.HexToHash(virtualTransfer.TransactionHash))
 	if err != nil {
-		zap.Error(err)
+		logrus.Errorf("[datasource] ethereum client TransactionReceipt error: %v", err)
 
 		return nil, err
 	}
 
 	contract, err := mrc20.NewMRC20(mrc20.LogTransferContractAddress, d.ethereumClient)
 	if err != nil {
-		zap.Error(err)
+		logrus.Errorf("[datasource] mrc20 NewMRC20 error: %v", err)
 
 		return nil, err
 	}
