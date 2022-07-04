@@ -13,7 +13,7 @@ import (
 
 type GetExchangeListRequest struct {
 	Type    string   `param:"type"`
-	Cursor  int      `param:"cursor"`
+	Cursor  int      `query:"cursor"`
 	Name    []string `query:"name"`
 	Network []string `query:"network"`
 }
@@ -130,9 +130,6 @@ func (h *Handler) getDexListDatabase(c context.Context, request GetExchangeListR
 	sql := h.DatabaseClient.
 		Model(&model.SwapPool{})
 
-	h.DatabaseClient.
-		Model(&model.SwapPool{}).Count(&total)
-
 	if len(request.Network) > 0 {
 		sql = sql.Where("network IN ?", request.Network)
 	}
@@ -144,9 +141,14 @@ func (h *Handler) getDexListDatabase(c context.Context, request GetExchangeListR
 		sql = sql.Where("LOWER(source) IN ?", request.Name)
 	}
 
+	sql.Count(&total)
+
 	if request.Cursor > 0 {
 		offset := request.Cursor * pageLimit
-		total -= int64(offset)
+
+		if int64(offset) < total {
+			total -= int64(offset)
+		}
 		sql = sql.Offset(offset)
 	}
 
