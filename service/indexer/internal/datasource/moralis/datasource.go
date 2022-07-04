@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/moralis"
@@ -13,8 +14,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis/mrc20"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 )
 
 const (
@@ -24,12 +27,15 @@ const (
 
 	StatusFailed  = "0"
 	StatusSuccess = "1"
+
+	Endpoint = "https://rpc.crossbell.io"
 )
 
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
-	moralisClient *moralis.Client
+	moralisClient  *moralis.Client
+	ethereumClient *ethclient.Client
 }
 
 func (d *Datasource) Name() string {
@@ -232,7 +238,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			success = false
 		}
 
-		transactions = append(transactions, model.Transaction{
+		transaction := model.Transaction{
 			BlockNumber: blockNumber.IntPart(),
 			Timestamp:   timestamp,
 			Hash:        internalTransaction.Hash,
@@ -244,8 +250,8 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			Source:      d.Name(),
 			SourceData:  sourceData,
 			Transfers: []model.Transfer{
-				// This is a virtual transfer
 				{
+					// This is a virtual transfer
 					TransactionHash: internalTransaction.Hash,
 					Timestamp:       timestamp,
 					Index:           protocol.IndexVirtual,
@@ -258,7 +264,20 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 					RelatedUrls:     []string{GetTxHashURL(message.Network, internalTransaction.Hash)},
 				},
 			},
-		})
+		}
+
+		if message.Network == protocol.NetworkPolygon {
+			internalTransfers, err := d.handleMRC20Transfers(ctx, transaction.Transfers[0])
+			if err != nil {
+				zap.Error(err)
+			}
+
+			if len(internalTransfers) > 0 {
+				transaction.Transfers = internalTransfers
+			}
+		}
+
+		transactions = append(transactions, transaction)
 	}
 
 	return transactions, nil
@@ -471,7 +490,52 @@ func GetTxHashURL(
 func New(key string) datasource.Datasource {
 	moralisClient := moralis.NewClient(key)
 
-	return &Datasource{
-		moralisClient: moralisClient,
+	ethereumClient, err := ethclient.Dial(Endpoint)
+	if err != nil {
+		zap.Error(err)
 	}
+
+	return &Datasource{
+		moralisClient:  moralisClient,
+		ethereumClient: ethereumClient,
+	}
+}
+
+func (d *Datasource) handleMRC20Transfers(ctx context.Context, virtualTransfer model.Transfer) (transfers []model.Transfer, err error) {
+	tracer := otel.Tracer("worker_crossbell")
+	_, trace := tracer.Start(ctx, "worker_crossbell:handleReceipt")
+
+	defer func() { opentelemetry.Log(trace, virtualTransfer.TransactionHash, transfers, err) }()
+
+	receipt, err := d.ethereumClient.TransactionReceipt(ctx, common.HexToHash(virtualTransfer.TransactionHash))
+	if err != nil {
+		zap.Error(err)
+
+		return nil, err
+	}
+
+	contract, err := mrc20.NewMRC20(mrc20.LogTransferContractAddress, d.ethereumClient)
+
+	for _, log := range receipt.Logs {
+		logIndex := int64(log.Index)
+
+		transfer := virtualTransfer
+
+		if log.Topics[0] == mrc20.EventLogTransfer {
+			event, err := contract.ParseLogTransfer(*log)
+			if err != nil {
+				zap.Error(err)
+
+				return nil, err
+			}
+
+			transfer.AddressFrom = event.From.String()
+			transfer.AddressTo = event.To.String()
+			transfer.Index = logIndex
+		}
+
+		transfers = append(transfers, transfer)
+	}
+
+	return transfers, nil
 }
