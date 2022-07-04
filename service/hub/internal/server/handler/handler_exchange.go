@@ -26,6 +26,7 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 		return err
 	}
 
+	var cursor string
 	switch request.ExchangeType {
 	case "cex":
 		result, total, err := h.getCexListDatabase(ctx, request)
@@ -37,10 +38,13 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 				Result: make([]interface{}, 0),
 			})
 		}
+		if total > int64(DefaultLimit) {
+			cursor = strconv.Itoa(request.Cursor + 1)
+		}
 
 		return c.JSON(http.StatusOK, &Response{
 			Total:  total,
-			Cursor: strconv.Itoa(request.Cursor),
+			Cursor: cursor,
 			Result: result,
 		})
 
@@ -54,10 +58,13 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 				Result: make([]interface{}, 0),
 			})
 		}
+		if total > int64(DefaultLimit) {
+			cursor = strconv.Itoa(request.Cursor + 1)
+		}
 
 		return c.JSON(http.StatusOK, &Response{
 			Total:  total,
-			Cursor: strconv.Itoa(request.Cursor),
+			Cursor: cursor,
 			Result: result,
 		})
 	}
