@@ -44,7 +44,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		request.Limit = DefaultLimit
 	}
 
-	types := []string{}
+	var types []string
 	for _, t := range request.Type {
 		if filter.CheckTypeValid(request.Tag, t) {
 			types = append(types, t)
@@ -90,7 +90,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		}
 	}()
 
-	transactionList, total, err := h.getTransactionListDatabse(ctx, request)
+	transactionList, total, err := h.getTransactionListDatabase(ctx, request)
 	if err != nil {
 		return err
 	}
@@ -132,8 +132,8 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 	})
 }
 
-// getTransactionListDatabse get transaction data from database
-func (h *Handler) getTransactionListDatabse(c context.Context, request GetActionListRequest) ([]model.Transaction, int64, error) {
+// getTransactionListDatabase get transaction data from database
+func (h *Handler) getTransactionListDatabase(c context.Context, request GetActionListRequest) ([]model.Transaction, int64, error) {
 	tracer := otel.Tracer("getActionListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 

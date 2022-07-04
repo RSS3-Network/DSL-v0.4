@@ -112,11 +112,12 @@ func (s *Server) Initialize() (err error) {
 		return c.JSON(http.StatusOK, map[string]string{
 			"status":        "ok",
 			"version":       fmt.Sprintf("%s-%s", version, constant.Version),
-			"documentation": "https://docs.rss3.io/PreGod/" + version + "/api/",
+			"documentation": "https://docs.rss3.io/PreGod/api/",
 		})
 	})
 
 	s.httpServer.GET("/notes/:address", s.httpHandler.GetActionListFunc)
+	s.httpServer.GET("/exchange/:type", s.httpHandler.GetExchangeListFunc)
 
 	return nil
 }
