@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/logger"
 	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -39,6 +40,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -54,6 +56,7 @@ type Server struct {
 	redisClient        *redis.Client
 	datasources        []datasource.Datasource
 	workers            []worker.Worker
+	indexedWorker      []worker.Worker
 	employer           *shedlock.Employer
 }
 
@@ -122,6 +125,11 @@ func (s *Server) Initialize() (err error) {
 
 	s.datasources = []datasource.Datasource{
 		moralis.New(s.config.Moralis.Key), arweave.New(), blockscout.New(), zksync.New(),
+	}
+
+	s.indexedWorker = []worker.Worker{
+		lensworker.New(s.databaseClient),
+		snapshot.New(s.databaseClient, s.redisClient),
 	}
 
 	s.workers = []worker.Worker{
@@ -204,6 +212,8 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	// Get data from datasources
 	var transactions []model.Transaction
 
+	var datasourceError error
+
 	for _, datasource := range s.datasources {
 		for _, network := range datasource.Networks() {
 			if network == message.Network {
@@ -231,8 +241,27 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 				message.Timestamp = timestamp
 
 				internalTransactions, err := datasource.Handle(ctx, message)
+				// Avoid blocking indexed workers
 				if err != nil {
-					return err
+					logger.Global().Error("datasource handle failed", zap.Error(err))
+
+					datasourceError = err
+
+					transactions = append(transactions, model.Transaction{
+						AddressFrom: message.Address,
+						AddressTo:   message.Address,
+						Network:     network,
+						Transfers: []model.Transfer{
+							{
+								Index:       0,
+								AddressFrom: message.Address,
+								AddressTo:   message.Address,
+								Network:     message.Network,
+							},
+						},
+					})
+
+					continue
 				}
 
 				transactions = append(transactions, internalTransactions...)
@@ -242,35 +271,15 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	transactionsMap := getTransactionsMap(transactions)
 
-	// Using workers to clean data
-	for _, worker := range s.workers {
-		for _, network := range worker.Networks() {
-			if network == message.Network {
-				internalTransactions, err := worker.Handle(ctx, message, transactions)
-				if err != nil {
-					logrus.Error(worker.Name(), message.Network, err)
-					return err
-				}
-
-				if len(internalTransactions) == 0 {
-					continue
-				}
-
-				newTransactionMap := getTransactionsMap(internalTransactions)
-				for _, t := range newTransactionMap {
-					transactionsMap[t.Hash] = t
-				}
-
-				transactions = transactionsMap2Array(transactionsMap)
-			}
+	if datasourceError != nil {
+		if s.handleIndexedWorkers(ctx, message, transactions, transactionsMap) != nil {
+			return err
 		}
+
+		return datasourceError
 	}
 
-	if err := s.upsertTransactions(ctx, transactions); err != nil {
-		return err
-	}
-
-	return nil
+	return s.handleWorkers(ctx, message, transactions, transactionsMap)
 }
 
 func getTransactionsMap(transactions []model.Transaction) map[string]model.Transaction {
@@ -322,6 +331,63 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 	}
 
 	return nil
+}
+
+func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction, transactionsMap map[string]model.Transaction) error {
+	// Using workers to clean data
+	for _, worker := range s.workers {
+		for _, network := range worker.Networks() {
+			if network == message.Network {
+				internalTransactions, err := worker.Handle(ctx, message, transactions)
+				if err != nil {
+					logrus.Error(worker.Name(), message.Network, err)
+
+					return err
+				}
+
+				if len(internalTransactions) == 0 {
+					continue
+				}
+
+				newTransactionMap := getTransactionsMap(internalTransactions)
+				for _, t := range newTransactionMap {
+					transactionsMap[t.Hash] = t
+				}
+
+				transactions = transactionsMap2Array(transactionsMap)
+			}
+		}
+	}
+
+	return s.upsertTransactions(ctx, transactions)
+}
+
+func (s *Server) handleIndexedWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction, transactionsMap map[string]model.Transaction) error {
+	for _, worker := range s.indexedWorker {
+		for _, network := range worker.Networks() {
+			if network == message.Network {
+				internalTransactions, err := worker.Handle(ctx, message, transactions)
+				if err != nil {
+					logrus.Error(worker.Name(), message.Network, err)
+
+					return err
+				}
+
+				if len(internalTransactions) == 0 {
+					continue
+				}
+
+				newTransactionMap := getTransactionsMap(internalTransactions)
+				for _, t := range newTransactionMap {
+					transactionsMap[t.Hash] = t
+				}
+
+				transactions = transactionsMap2Array(transactionsMap)
+			}
+		}
+	}
+
+	return s.upsertTransactions(ctx, transactions)
 }
 
 func New(config *config.Config) *Server {
