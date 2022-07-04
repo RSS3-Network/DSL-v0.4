@@ -120,7 +120,7 @@ type CrossbellNote struct {
 	ID           *big.Int        `json:"id"`
 	LinkItemType common.Hash     `json:"link_item_type"`
 	LinkKey      common.Hash     `json:"link_key"`
-	Link         any             `json:"link"`
+	Link         any             `json:"link,omitempty"`
 	ContentURI   string          `json:"content_uri"`
 	LinkModule   common.Address  `json:"link_module"`
 	MintModule   common.Address  `json:"mint_module"`

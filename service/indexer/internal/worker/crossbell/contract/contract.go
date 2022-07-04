@@ -30,6 +30,7 @@ var (
 	EventNameUnlinkCharacter  = "UnlinkCharacter"
 	EventNameSetProfileUri    = "SetProfileUri"
 	EventNameSetCharacterUri  = "SetCharacterUri"
+	EventNameSetNoteUri       = "SetNoteUri"
 
 	EventHashProfileCreated        = common.BytesToHash(crypto.Keccak256([]byte("ProfileCreated(uint256,address,address,string,uint256)")))
 	EventHashCharacterCreated      = common.BytesToHash(crypto.Keccak256([]byte("CharacterCreated(uint256,address,address,string,uint256)")))
@@ -43,6 +44,7 @@ var (
 	EventHashUnlinkCharacter       = common.BytesToHash(crypto.Keccak256([]byte("UnlinkCharacter(address,uint256,uint256,bytes32)")))
 	EventHashSetProfileUri         = common.BytesToHash(crypto.Keccak256([]byte("SetProfileUri(uint256,string)")))
 	EventHashSetCharacterUri       = common.BytesToHash(crypto.Keccak256([]byte("SetCharacterUri(uint256,string)")))
+	EventHashSetNoteUri            = common.BytesToHash(crypto.Keccak256([]byte("SetNoteUri(uint256,uint256,string)")))
 
 	LinkItemTypeAnyUri = common.BytesToHash(common.RightPadBytes([]byte("AnyUri"), common.HashLength))
 

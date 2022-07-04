@@ -66,6 +66,8 @@ func (c *characterHandler) Handle(ctx context.Context, transaction model.Transac
 		}
 
 		return c.profileHandler.handleSetProfileUri(ctx, transaction, transfer, log)
+	case contract.EventHashSetNoteUri:
+		return c.handleSetNoteUri(ctx, transaction, transfer, log)
 	default:
 		return nil, contract.ErrorUnknownEvent
 	}
@@ -169,8 +171,14 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 		return nil, err
 	}
 
+	characterMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.NoteId)
+
 	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
 		Event: contract.EventNamePostNote,
+		Character: &metadata.CrossbellCharacter{
+			ID:       event.CharacterId,
+			Metadata: characterMetadata,
+		},
 		Note: &metadata.CrossbellNote{
 			ID:           event.NoteId,
 			LinkItemType: note.LinkItemType,
@@ -304,6 +312,66 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
 	if transfer.Tag == filter.TagSocial {
 		transfer.Type = filter.SocialProfile
+	}
+
+	return &transfer, nil
+}
+
+func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("worker_crossbell_handler")
+
+	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleSetNoteUri")
+
+	defer snap.End()
+
+	var err error
+
+	event, err := c.characterContract.ParseSetNoteUri(log)
+	if err != nil {
+		return nil, err
+	}
+
+	note, err := c.characterContract.GetNote(&bind.CallOpts{}, event.CharacterId, event.NoteId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Self-hosted IPFS files may be out of date
+	contentData, _ := ipfs.GetFileByURL(ctx, note.ContentUri)
+
+	var noteMetadata json.RawMessage
+
+	if err := json.Unmarshal(contentData, &noteMetadata); err != nil {
+		return nil, err
+	}
+
+	uri, err := c.peripheryContract.GetLinkingAnyUri(&bind.CallOpts{}, note.LinkKey)
+	if err != nil {
+		return nil, err
+	}
+
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+		Event: contract.EventNameSetNoteUri,
+		Note: &metadata.CrossbellNote{
+			ID:           event.NoteId,
+			LinkItemType: note.LinkItemType,
+			LinkKey:      note.LinkKey,
+			Link:         uri,
+			ContentURI:   note.ContentUri,
+			LinkModule:   note.LinkModule,
+			MintModule:   note.MintModule,
+			MintNFT:      note.MintNFT,
+			Deleted:      note.Deleted,
+			Locked:       note.Locked,
+			Metadata:     noteMetadata,
+		},
+	}); err != nil {
+		return nil, err
+	}
+
+	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
+	if transfer.Tag == filter.TagSocial {
+		transfer.Type = filter.SocialPost
 	}
 
 	return &transfer, nil
