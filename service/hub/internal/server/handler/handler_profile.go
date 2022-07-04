@@ -20,7 +20,9 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 
 	request := GetRequest{}
 
-	request.Address = c.Param("address")
+	if err := c.Bind(&request); err != nil {
+		return err
+	}
 
 	profileList, total, err := h.getProfileListDatabase(ctx, request)
 	if err != nil {
@@ -68,6 +70,14 @@ func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) 
 		if cursorInt > 0 {
 			sql = sql.Offset(cursorInt * DefaultLimit)
 		}
+	}
+
+	if len(request.Network) > 0 {
+		sql = sql.Where("network IN ?", request.Network)
+	}
+
+	if len(request.Platform) > 0 {
+		sql = sql.Where("platform IN ?", request.Platform)
 	}
 
 	sql = sql.Where("tag = ?", filter.TagSocial)
