@@ -54,7 +54,8 @@ func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) 
 
 	dbResult := make([]dbModel.Transfer, 0)
 	total := int64(0)
-	sql := h.DatabaseClient.Model(&dbModel.Transfer{}).Where("LOWER(address_from) = ?",
+	sql := h.DatabaseClient.Model(&dbModel.Transfer{}).Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
+		strings.ToLower(request.Address),
 		strings.ToLower(request.Address),
 	)
 
