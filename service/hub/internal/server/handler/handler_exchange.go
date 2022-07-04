@@ -7,16 +7,10 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
-	"github.com/naturalselectionlabs/pregod/common/database/model"
+	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
+	sModel "github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"go.opentelemetry.io/otel"
 )
-
-type GetExchangeListRequest struct {
-	Type    string   `param:"type"`
-	Cursor  int      `query:"cursor"`
-	Name    []string `query:"name"`
-	Network []string `query:"network"`
-}
 
 func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 	tracer := otel.Tracer("GetExchangeListFunc")
@@ -24,12 +18,12 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := GetExchangeListRequest{}
+	request := sModel.GetExchangeRequest{}
 	if err := c.Bind(&request); err != nil {
 		return err
 	}
 
-	switch request.Type {
+	switch request.ExchangeType {
 	case "cex":
 		result, total, err := h.getCexListDatabase(ctx, request)
 		if err != nil {
@@ -77,16 +71,16 @@ type CexResult struct {
 	Network string `json:"network"`
 }
 
-func (h *Handler) getCexListDatabase(c context.Context, request GetExchangeListRequest) ([]CexResult, int64, error) {
+func (h *Handler) getCexListDatabase(c context.Context, request sModel.GetExchangeRequest) ([]CexResult, int64, error) {
 	tracer := otel.Tracer("getCexListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
-	dbResult := make([]model.CexWallet, 0)
+	dbResult := make([]dbModel.CexWallet, 0)
 	total := int64(0)
 	sql := h.DatabaseClient.
-		Model(&model.CexWallet{})
+		Model(&dbModel.CexWallet{})
 
 	if len(request.Network) > 0 {
 		sql = sql.Where("network IN ?", request.Network)
@@ -117,16 +111,16 @@ type DexResult struct {
 	Pair    string `json:"pair"`
 }
 
-func (h *Handler) getDexListDatabase(c context.Context, request GetExchangeListRequest) ([]DexResult, int64, error) {
-	tracer := otel.Tracer("getCexListDatabase")
+func (h *Handler) getDexListDatabase(c context.Context, request sModel.GetExchangeRequest) ([]DexResult, int64, error) {
+	tracer := otel.Tracer("getDexListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
-	dbResult := make([]model.SwapPool, DefaultLimit)
+	dbResult := make([]dbModel.SwapPool, DefaultLimit)
 	total := int64(0)
 	sql := h.DatabaseClient.
-		Model(&model.SwapPool{})
+		Model(&dbModel.SwapPool{})
 
 	if len(request.Network) > 0 {
 		sql = sql.Where("network IN ?", request.Network)

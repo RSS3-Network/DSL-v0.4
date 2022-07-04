@@ -5,37 +5,25 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/naturalselectionlabs/pregod/common/database/model"
+	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	sModel "github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 )
 
-type GetActionListRequest struct {
-	Address   string    `param:"address"`
-	Limit     int       `query:"limit"`
-	Cursor    string    `query:"cursor"`
-	Type      []string  `query:"type"`
-	Tag       string    `query:"tag"`
-	Network   []string  `query:"network"`
-	Platform  []string  `query:"platform"`
-	Timestamp time.Time `query:"timestamp"`
-	Hash      string    `query:"hash"`
-}
-
-// GetActionListFunc HTTP handler for action API
+// GetNoteListFunc HTTP handler for action API
 // parse query parameters, query and assemble data
-func (h *Handler) GetActionListFunc(c echo.Context) error {
+func (h *Handler) GetNoteListFunc(c echo.Context) error {
 	tracer := otel.Tracer("GetActionListFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
 	defer httpSnap.End()
 
-	request := GetActionListRequest{}
+	request := sModel.GetRequest{}
 	if err := c.Bind(&request); err != nil {
 		return err
 	}
@@ -53,7 +41,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 
 	if len(request.Type) > 0 && len(types) == 0 {
 		return c.JSON(http.StatusOK, &Response{
-			Result: make([]model.Transaction, 0),
+			Result: make([]dbModel.Transaction, 0),
 		})
 	}
 
@@ -97,7 +85,7 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 
 	if len(transactionList) == 0 {
 		return c.JSON(http.StatusOK, &Response{
-			Result: make([]model.Transaction, 0),
+			Result: make([]dbModel.Transaction, 0),
 		})
 	}
 
@@ -106,12 +94,12 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 		transactionHashList = append(transactionHashList, transactionHash.Hash)
 	}
 
-	transferList, err := h.getActionListDatabase(ctx, transactionHashList, request)
+	transferList, err := h.getTransferListDatabase(ctx, transactionHashList, request)
 	if err != nil {
 		return err
 	}
 
-	transferMap := make(map[string][]model.Transfer)
+	transferMap := make(map[string][]dbModel.Transfer)
 	for _, transfer := range transferList {
 		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
 	}
@@ -133,23 +121,23 @@ func (h *Handler) GetActionListFunc(c echo.Context) error {
 }
 
 // getTransactionListDatabase get transaction data from database
-func (h *Handler) getTransactionListDatabase(c context.Context, request GetActionListRequest) ([]model.Transaction, int64, error) {
-	tracer := otel.Tracer("getActionListDatabase")
+func (h *Handler) getTransactionListDatabase(c context.Context, request sModel.GetRequest) ([]dbModel.Transaction, int64, error) {
+	tracer := otel.Tracer("getNoteListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
-	transactionList := make([]model.Transaction, 0)
+	transactionList := make([]dbModel.Transaction, 0)
 	total := int64(0)
 	sql := h.DatabaseClient.
-		Model(&model.Transaction{}).
+		Model(&dbModel.Transaction{}).
 		Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
 			strings.ToLower(request.Address),
 			strings.ToLower(request.Address),
 		)
 
 	if len(request.Cursor) > 0 {
-		var lastItem model.Transaction
+		var lastItem dbModel.Transaction
 
 		if err := h.DatabaseClient.Where("hash = ?", strings.ToLower(request.Cursor)).First(&lastItem).Error; err != nil {
 			return nil, 0, err
@@ -185,16 +173,16 @@ func (h *Handler) getTransactionListDatabase(c context.Context, request GetActio
 	return transactionList, total, nil
 }
 
-// getActionListDatabase get transfer data from database
-func (h *Handler) getActionListDatabase(c context.Context, transactionHashList []string, request GetActionListRequest) ([]model.Transfer, error) {
-	tracer := otel.Tracer("getActionListDatabase")
+// getTransferListDatabase get transfer data from database
+func (h *Handler) getTransferListDatabase(c context.Context, transactionHashList []string, request sModel.GetRequest) ([]dbModel.Transfer, error) {
+	tracer := otel.Tracer("getNoteListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
-	transfers := make([]model.Transfer, 0)
+	transfers := make([]dbModel.Transfer, 0)
 
-	sql := h.DatabaseClient.Model(&model.Transfer{}).Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
+	sql := h.DatabaseClient.Model(&dbModel.Transfer{}).Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
 		strings.ToLower(request.Address),
 		strings.ToLower(request.Address),
 	)

@@ -112,8 +112,9 @@ func (s *Server) Initialize() (err error) {
 		})
 	})
 
-	s.httpServer.GET("/notes/:address", s.httpHandler.GetActionListFunc)
-	s.httpServer.GET("/exchange/:type", s.httpHandler.GetExchangeListFunc)
+	s.httpServer.GET("/notes/:address", s.httpHandler.GetNoteListFunc)
+	s.httpServer.GET("/exchange/:exchange_type", s.httpHandler.GetExchangeListFunc)
+	s.httpServer.GET("/profile/:address", s.httpHandler.GetProfileListFunc)
 
 	return nil
 }
