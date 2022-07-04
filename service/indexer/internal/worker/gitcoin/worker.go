@@ -19,7 +19,9 @@ import (
 )
 
 const (
-	Name = protocol.PlatfromGitcoin
+	Name                   = protocol.PlatfromGitcoin
+	ContractAddressPolygon = "0xb99080b9407436ebb2b8fe56d45ffa47e9bb8877"
+	ContractAddressEth     = "0x7d655c57f71464b6f83811c55d84009cd9f5221c"
 )
 
 var _ worker.Worker = (*service)(nil)
@@ -63,6 +65,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
+		if transaction.AddressTo != ContractAddressPolygon && transaction.AddressTo != ContractAddressEth {
+			continue
+		}
+
 		for _, transfer := range transaction.Transfers {
 			if transfer.AddressTo == "" ||
 				transfer.AddressTo == "0x0" ||
@@ -88,12 +94,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
 				logrus.Errorf("[gitcoin handle] json unmarshal transfer metadata error: %v", err)
-				continue
-			}
-
-			if metadataModel.Token != nil &&
-				metadataModel.Token.TokenStandard != protocol.TokenStandardERC20 &&
-				metadataModel.Token.TokenStandard != protocol.TokenStandardNative {
 				continue
 			}
 
