@@ -13,4 +13,5 @@ type Config struct {
 	Redis         *configx.Redis         `mapstructure:"redis"`
 	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
 	Infura        *configx.Infura        `mapstructure:"infura"`
+	RPC           *configx.RPC           `mapstructure:"rpc"`
 }
