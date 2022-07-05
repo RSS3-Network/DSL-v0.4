@@ -18,7 +18,6 @@ var tables = []any{
 	&model.SnapshotSpace{},
 	&model.SnapshotProposal{},
 	&model.SnapshotVote{},
-	&model.LensCursor{},
 }
 
 var Client *gorm.DB

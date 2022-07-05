@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
+	"fmt"
 
 	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -16,7 +16,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 const (
@@ -62,26 +61,27 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
 	// read the last cursor value from the database
-	var lensCursor model.LensCursor
+	var lastLens model.Transaction
+	var cursor string
 
-	if err := s.databaseClient.Model((*model.LensCursor)(nil)).
+	if err := s.databaseClient.Model((*model.Transaction)(nil)).
 		Where(map[string]interface{}{
-			"address": strings.ToLower(message.Address),
-		}).First(&lensCursor).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			"address_from": message.Address,
+			"source":       Name,
+		}).Order("timestamp DESC").First(&lastLens).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 
 	// if it's a new address, the cursor will be empty
-	if lensCursor.Address == "" {
-		lensCursor = model.LensCursor{
-			Address: strings.ToLower(message.Address),
-			Cursor:  "{}",
-		}
+	if len(lastLens.Hash) == 0 {
+		cursor = "{}"
+	} else {
+		cursor = fmt.Sprintf(`{"entityIdentifier":"%s","timestamp":%d,"cursorDirection":"BEFORE"}`, lastLens.Hash, lastLens.Timestamp.Unix())
 	}
 
 	options := lens.Options{
-		Address: graphql.String(strings.ToLower(message.Address)),
-		Cursor:  graphql.String(lensCursor.Cursor),
+		Address: graphql.String(message.Address),
+		Cursor:  graphql.String(cursor),
 	}
 
 	// handle publications
@@ -150,18 +150,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				},
 			},
 		})
-	}
-
-	// update the latest cursor value in the database
-	lensCursor.Cursor = string(options.Cursor)
-
-	if err := s.databaseClient.Model((*model.LensCursor)(nil)).
-		Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "address"}},
-			DoUpdates: clause.AssignmentColumns([]string{"cursor"}),
-		}).
-		Create(lensCursor).Error; err != nil {
-		return nil, err
 	}
 
 	return transactions, nil
