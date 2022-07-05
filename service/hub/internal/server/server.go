@@ -12,7 +12,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
-	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -27,10 +26,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	_       command.Interface = &Server{}
-	version                   = "v1.0.0"
-)
+var _ command.Interface = &Server{}
 
 type Server struct {
 	config             *config.Config
@@ -66,7 +62,7 @@ func (s *Server) Initialize() (err error) {
 		trace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceNameKey.String("pregod-hub"),
-			semconv.ServiceVersionKey.String(version),
+			semconv.ServiceVersionKey.String(protocol.Version),
 		)),
 	))
 
@@ -111,13 +107,14 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
 			"status":        "ok",
-			"version":       fmt.Sprintf("%s-%s", version, constant.Version),
+			"version":       fmt.Sprintf("%s-%s", protocol.Version, protocol.Build),
 			"documentation": "https://docs.rss3.io/PreGod/api/",
 		})
 	})
 
-	s.httpServer.GET("/notes/:address", s.httpHandler.GetActionListFunc)
-	s.httpServer.GET("/exchange/:type", s.httpHandler.GetExchangeListFunc)
+	s.httpServer.GET("/notes/:address", s.httpHandler.GetNoteListFunc)
+	s.httpServer.GET("/exchange/:exchange_type", s.httpHandler.GetExchangeListFunc)
+	s.httpServer.GET("/profile/:address", s.httpHandler.GetProfileListFunc)
 
 	return nil
 }

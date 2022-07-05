@@ -7,29 +7,27 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
-	"github.com/naturalselectionlabs/pregod/common/database/model"
+	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"go.opentelemetry.io/otel"
 )
 
-type GetExchangeListRequest struct {
-	Type    string   `param:"type"`
-	Cursor  int      `query:"cursor"`
-	Name    []string `query:"name"`
-	Network []string `query:"network"`
-}
-
+// GetExchangeListFunc supported filter:
+// - network
+// - name: string, the exchange name
+// - exchange_type: string, `cex` or `dex`
 func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 	tracer := otel.Tracer("GetExchangeListFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
 	defer httpSnap.End()
 
-	request := GetExchangeListRequest{}
+	request := GetExchangeRequest{}
 	if err := c.Bind(&request); err != nil {
 		return err
 	}
 
-	switch request.Type {
+	var cursor string
+	switch request.ExchangeType {
 	case "cex":
 		result, total, err := h.getCexListDatabase(ctx, request)
 		if err != nil {
@@ -40,10 +38,13 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 				Result: make([]interface{}, 0),
 			})
 		}
+		if total > int64(DefaultLimit) {
+			cursor = strconv.Itoa(request.Cursor + 1)
+		}
 
 		return c.JSON(http.StatusOK, &Response{
 			Total:  total,
-			Cursor: strconv.Itoa(request.Cursor),
+			Cursor: cursor,
 			Result: result,
 		})
 
@@ -57,10 +58,13 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 				Result: make([]interface{}, 0),
 			})
 		}
+		if total > int64(DefaultLimit) {
+			cursor = strconv.Itoa(request.Cursor + 1)
+		}
 
 		return c.JSON(http.StatusOK, &Response{
 			Total:  total,
-			Cursor: strconv.Itoa(request.Cursor),
+			Cursor: cursor,
 			Result: result,
 		})
 	}
@@ -77,16 +81,16 @@ type CexResult struct {
 	Network string `json:"network"`
 }
 
-func (h *Handler) getCexListDatabase(c context.Context, request GetExchangeListRequest) ([]CexResult, int64, error) {
+func (h *Handler) getCexListDatabase(c context.Context, request GetExchangeRequest) ([]CexResult, int64, error) {
 	tracer := otel.Tracer("getCexListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
-	dbResult := make([]model.CexWallet, 0)
+	dbResult := make([]dbModel.CexWallet, 0)
 	total := int64(0)
 	sql := h.DatabaseClient.
-		Model(&model.CexWallet{})
+		Model(&dbModel.CexWallet{})
 
 	if len(request.Network) > 0 {
 		sql = sql.Where("network IN ?", request.Network)
@@ -117,16 +121,16 @@ type DexResult struct {
 	Pair    string `json:"pair"`
 }
 
-func (h *Handler) getDexListDatabase(c context.Context, request GetExchangeListRequest) ([]DexResult, int64, error) {
-	tracer := otel.Tracer("getCexListDatabase")
+func (h *Handler) getDexListDatabase(c context.Context, request GetExchangeRequest) ([]DexResult, int64, error) {
+	tracer := otel.Tracer("getDexListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
-	dbResult := make([]model.SwapPool, DefaultLimit)
+	dbResult := make([]dbModel.SwapPool, DefaultLimit)
 	total := int64(0)
 	sql := h.DatabaseClient.
-		Model(&model.SwapPool{})
+		Model(&dbModel.SwapPool{})
 
 	if len(request.Network) > 0 {
 		sql = sql.Where("network IN ?", request.Network)
