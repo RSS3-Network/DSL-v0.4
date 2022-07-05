@@ -124,7 +124,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
-		address := strings.ToLower(message.Address)
+		address := message.Address
 
 		// Exclude transfers to self
 		if transaction.AddressTo == address {
@@ -204,7 +204,7 @@ func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.
 
 	var swapPoolAddress string
 
-	switch strings.ToLower(message.Address) {
+	switch message.Address {
 	case transfer.AddressFrom:
 		swapPoolAddress = transfer.AddressTo
 	case transfer.AddressTo:

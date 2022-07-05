@@ -269,7 +269,7 @@ func (s *service) getLatestTimestamp(message *protocol.Message) (time.Time, erro
 		Model((*model.Transaction)(nil)).
 		Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp").
 		Where(map[string]interface{}{
-			"address_from": strings.ToLower(message.Address),
+			"address_from": message.Address,
 			"network":      message.Network,
 			"source":       s.Name(),
 		}).
@@ -427,7 +427,7 @@ func (s *service) cleaningVote(
 	}
 
 	relatedUrl := "https://snapshot.org/#/" + vote.SpaceID + "/proposal/" + vote.ProposalID
-	lowerAddress := strings.ToLower(message.Address)
+	lowerAddress := message.Address
 
 	currTransaction := model.Transaction{
 		Hash:        vote.ID,
@@ -502,7 +502,7 @@ func (s *service) cleaningProposalsByAuthor(
 	}
 
 	relatedUrl := "https://snapshot.org/#/" + proposal.SpaceID + "/proposal/" + proposal.ID
-	lowerAddress := strings.ToLower(message.Address)
+	lowerAddress := message.Address
 
 	currTransaction := model.Transaction{
 		Hash:        proposal.ID,

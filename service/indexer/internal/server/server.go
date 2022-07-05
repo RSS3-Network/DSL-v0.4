@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -197,6 +198,8 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) handle(ctx context.Context, message *protocol.Message) (err error) {
+	// convert address to lowercase
+	message.Address = strings.ToLower(message.Address)
 	tracer := otel.Tracer("indexer")
 
 	ctx, handlerSpan := tracer.Start(ctx, "indexer:handler")
@@ -207,7 +210,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	defer handlerSpan.End()
 
-	logrus.Info(message.Address, message.Network)
+	logrus.Info(message.Address, " ", message.Network)
 
 	// Get data from datasources
 	var transactions []model.Transaction
