@@ -14,9 +14,9 @@ import (
 
 func setup() {
 	_, _ = cache.Dial(&configx.Redis{
-		Addr: "127.0.0.1:6379",
+		Addr:     "127.0.0.1:6379",
 		Password: "",
-		DB: 0,
+		DB:       0,
 	})
 	_ = cache.Clear(context.Background())
 
@@ -96,7 +96,6 @@ func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
 	assert.EqualValues(t, "ETH", info.Symbol)
 	assert.EqualValues(t, 18, info.Decimals)
 	assert.EqualValues(t, "coin", info.Category)
-
 
 	// BSC
 	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "binance_smart_chain", 10086)
