@@ -105,7 +105,7 @@ func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) 
 	sql = sql.Where("\"type\" IN ? ", []string{filter.SocialProfile})
 	sql = sql.Limit(DefaultLimit)
 
-	if err := sql.Find(&dbResult).Error; err != nil {
+	if err := sql.Count(&total).Find(&dbResult).Error; err != nil {
 		return nil, total, err
 	}
 
