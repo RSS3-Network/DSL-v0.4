@@ -2,19 +2,22 @@ package alchemy
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/naturalselectionlabs/pregod/common/alchemy"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -86,9 +89,50 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		internalTransactionMap[transaction.Hash] = transaction
 	}
 
+	ethereumClient, exist := d.ethereumClientMap[message.Network]
+	if !exist {
+		return nil, ErrorUnsupportedNetwork
+	}
+
+	blockMap := make(map[int64]*types.Block)
+
 	// Get transaction data from the chain
 	for _, transaction := range internalTransactionMap {
-		logrus.Print(transaction.Hash)
+		block, exist := blockMap[transaction.BlockNumber]
+		if !exist {
+			block, err = ethereumClient.BlockByNumber(ctx, big.NewInt(transaction.BlockNumber))
+			if err != nil {
+				return nil, err
+			}
+
+			blockMap[transaction.BlockNumber] = block
+		}
+
+		internalTransaction, _, err := ethereumClient.TransactionByHash(ctx, common.HexToHash(transaction.Hash))
+		if err != nil {
+			return nil, err
+		}
+
+		receipt, err := ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
+		if err != nil {
+			return nil, err
+		}
+
+		transactionSourceData, err := ethereum.ConvertTransaction(*internalTransaction, *block)
+		if err != nil {
+			return nil, err
+		}
+
+		sourceData, err := json.Marshal(ethereum.SourceData{
+			Transaction: transactionSourceData,
+			Receipt:     receipt,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		transaction.SourceData = sourceData
+		internalTransactionMap[transaction.Hash] = transaction
 	}
 
 	internalTransactions = make([]model.Transaction, 0)
