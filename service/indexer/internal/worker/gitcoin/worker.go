@@ -66,56 +66,15 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	for _, transaction := range transactions {
 		if transaction.AddressTo != ContractAddressPolygon && transaction.AddressTo != ContractAddressEth {
+			internalTransactionMap[transaction.Hash] = transaction
+
 			continue
 		}
 
 		for _, transfer := range transaction.Transfers {
-			if transfer.AddressTo == "" ||
-				transfer.AddressTo == "0x0" ||
-				transfer.AddressTo == "0x0000000000000000000000000000000000000000" {
-				continue
-			}
-
-			projectStr, err := s.redisClient.HGet(ctx, s.gitcoinProjectCacheKey, transfer.AddressTo).Result()
-			if err != nil || len(projectStr) == 0 {
-				continue
-			}
-
-			project := &model.GitcoinProject{}
-			if err := json.Unmarshal([]byte(projectStr), &project); err != nil {
-				logrus.Errorf("[gitcoin handle] json unmarshal project error: %v", err)
-				continue
-			}
-
-			transfer.RelatedUrls = append(transfer.RelatedUrls, "https://gitcoin.co/grants"+strconv.Itoa(project.ID)+"/"+project.Slug)
-
-			// format metadata
-			var metadataModel metadata.Metadata
-
-			if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-				logrus.Errorf("[gitcoin handle] json unmarshal transfer metadata error: %v", err)
-				continue
-			}
-
-			metadataModel.Gitcoin = &metadata.Gitcoin{
-				ID:          project.ID,
-				Slug:        project.Slug,
-				Title:       project.Title,
-				Description: project.Description,
-				Logo:        project.Logo,
-			}
-
-			metadata, err := json.Marshal(metadataModel)
+			transfer, err = s.handleGitcoin(ctx, transfer)
 			if err != nil {
-				continue
-			}
-
-			transfer.Platform = Name
-			transfer.Metadata = metadata
-			transfer.Tag = filter.UpdateTag(filter.TagDonation, transfer.Tag)
-
-			if transfer.Tag == filter.TagDonation {
-				transfer.Type = filter.DonationDonate
+				logrus.Errorf("[gitcoin worker] Handle: handleGitcoin error, %v", err)
 			}
 
 			// Copy the transaction to map
@@ -131,9 +90,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			value.Transfers = append(value.Transfers, transfer)
 
 			internalTransactionMap[transaction.Hash] = value
-
-			// transaction tag
-			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 	}
 
@@ -146,6 +102,63 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	}
 
 	return internalTransactions, nil
+}
+
+func (s *service) handleGitcoin(ctx context.Context, transfer model.Transfer) (data model.Transfer, err error) {
+	tracer := otel.Tracer("gitcoin_worker")
+	_, trace := tracer.Start(ctx, "gitcoin_worker:handleGitcoin")
+
+	defer func() { opentelemetry.Log(trace, transfer, data, err) }()
+
+	if transfer.AddressTo == "" ||
+		transfer.AddressTo == "0x0" ||
+		transfer.AddressTo == "0x0000000000000000000000000000000000000000" {
+		return transfer, err
+	}
+
+	projectStr, err := s.redisClient.HGet(ctx, s.gitcoinProjectCacheKey, transfer.AddressTo).Result()
+	if err != nil || len(projectStr) == 0 {
+		return transfer, err
+	}
+
+	project := &model.GitcoinProject{}
+	if err := json.Unmarshal([]byte(projectStr), &project); err != nil {
+		logrus.Errorf("[gitcoin handle] json unmarshal project error: %v", err)
+		return transfer, err
+	}
+
+	transfer.RelatedUrls = append(transfer.RelatedUrls, "https://gitcoin.co/grants"+strconv.Itoa(project.ID)+"/"+project.Slug)
+
+	// format metadata
+	var metadataModel metadata.Metadata
+
+	if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
+		logrus.Errorf("[gitcoin handle] json unmarshal transfer metadata error: %v", err)
+		return transfer, err
+	}
+
+	metadataModel.Gitcoin = &metadata.Gitcoin{
+		ID:          project.ID,
+		Slug:        project.Slug,
+		Title:       project.Title,
+		Description: project.Description,
+		Logo:        project.Logo,
+	}
+
+	metadata, err := json.Marshal(metadataModel)
+	if err != nil {
+		return transfer, err
+	}
+
+	transfer.Platform = Name
+	transfer.Metadata = metadata
+	transfer.Tag = filter.UpdateTag(filter.TagDonation, transfer.Tag)
+
+	if transfer.Tag == filter.TagDonation {
+		transfer.Type = filter.DonationDonate
+	}
+
+	return transfer, nil
 }
 
 func (s *service) Jobs() []worker.Job {
