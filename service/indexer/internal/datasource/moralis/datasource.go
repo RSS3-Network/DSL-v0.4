@@ -170,6 +170,17 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 	transactions = make([]model.Transaction, 0)
 
 	for _, transaction := range transactionMap {
+		if message.Network == protocol.NetworkPolygon && len(transaction.Transfers) == 0 {
+			internalTransfers, err := d.handleMRC20Transfers(ctx, transaction.Transfers[0])
+			if err != nil {
+				logrus.Errorf("[datasource] handleMRC20Transfers error: %v", err)
+			}
+
+			if len(internalTransfers) > 0 {
+				transaction.Transfers = append(transaction.Transfers, internalTransfers...)
+			}
+		}
+
 		transactions = append(transactions, transaction)
 	}
 
@@ -239,7 +250,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			success = false
 		}
 
-		transaction := model.Transaction{
+		transactions = append(transactions, model.Transaction{
 			BlockNumber: blockNumber.IntPart(),
 			Timestamp:   timestamp,
 			Hash:        internalTransaction.Hash,
@@ -265,20 +276,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 					RelatedUrls:     []string{GetTxHashURL(message.Network, internalTransaction.Hash)},
 				},
 			},
-		}
-
-		if message.Network == protocol.NetworkPolygon {
-			internalTransfers, err := d.handleMRC20Transfers(ctx, transaction.Transfers[0])
-			if err != nil {
-				logrus.Errorf("[datasource] handleMRC20Transfers error: %v", err)
-			}
-
-			if len(internalTransfers) > 0 {
-				transaction.Transfers = append(transaction.Transfers, internalTransfers...)
-			}
-		}
-
-		transactions = append(transactions, transaction)
+		})
 	}
 
 	return transactions, nil
@@ -541,9 +539,9 @@ func (d *Datasource) handleMRC20Transfers(ctx context.Context, virtualTransfer m
 			transfer.AddressFrom = event.From.String()
 			transfer.AddressTo = event.To.String()
 			transfer.Index = logIndex
-		}
 
-		transfers = append(transfers, transfer)
+			transfers = append(transfers, transfer)
+		}
 	}
 
 	return transfers, nil
