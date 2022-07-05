@@ -34,6 +34,7 @@ test: $(DIR_TEST)
 	# remove auto generate code
 	sed -i '/\/worker\/token\/contract\/erc20\.go/d' $(FILE_COVERAGE)
 	sed -i '/indexer\/internal\/worker\/crossbell\/contract/d' $(FILE_COVERAGE)
+	sed -i '/internal\/datasource\/moralis\/mrc20/d' $(FILE_COVERAGE)
 
 # Open up a browser to view coverage report
 coverage: test
