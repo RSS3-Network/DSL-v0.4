@@ -124,7 +124,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.datasources = []datasource.Datasource{
-		moralis.New(s.config.Moralis.Key), arweave.New(), blockscout.New(), zksync.New(),
+		moralis.New(s.config.Moralis.Key, s.config.Infura.ProjectID), arweave.New(), blockscout.New(), zksync.New(),
 	}
 
 	s.indexedWorker = []worker.Worker{
