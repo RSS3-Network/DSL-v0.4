@@ -77,15 +77,18 @@ func (job *GitcoinProjectJob) SetCache() {
 	projectList := []*model.GitcoinProject{}
 	if err := job.DatabaseClient.
 		Model(&model.GitcoinProject{}).
-		Order("id DESC").
+		Order("id").
 		Find(&projectList).Error; err != nil {
 		logrus.Errorf("[gitcoin job] get gitcoin grants, db error: %v", err)
 		return
 	}
 
 	for _, project := range projectList {
-		projectByte, _ := json.Marshal(project)
+		if !project.Active {
+			continue
+		}
 
+		projectByte, _ := json.Marshal(project)
 		// set redis
 		if err := job.RedisClient.HSet(
 			context.Background(),
