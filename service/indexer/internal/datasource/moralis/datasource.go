@@ -29,7 +29,7 @@ const (
 	StatusFailed  = "0"
 	StatusSuccess = "1"
 
-	Endpoint = "https://rpc.crossbell.io"
+	Endpoint = "https://polygon-mainnet.infura.io/v3/"
 )
 
 var _ datasource.Datasource = &Datasource{}
@@ -491,10 +491,10 @@ func GetTxHashURL(
 	}
 }
 
-func New(key string) datasource.Datasource {
-	moralisClient := moralis.NewClient(key)
+func New(moralisKey, infuraID string) datasource.Datasource {
+	moralisClient := moralis.NewClient(moralisKey)
 
-	ethereumClient, err := ethclient.Dial(Endpoint)
+	ethereumClient, err := ethclient.Dial(Endpoint + infuraID)
 	if err != nil {
 		logrus.Errorf("[datasource] ethereum client error: %v", err)
 	}
