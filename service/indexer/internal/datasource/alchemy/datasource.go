@@ -77,7 +77,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 	// Get the transactions received at this address
 	parameter.FromAddress = ""
-	parameter.ToBlock = strings.ToLower(message.Address)
+	parameter.ToAddress = strings.ToLower(message.Address)
 
 	internalTransactions, err = d.getAssetTransfers(ctx, message, parameter)
 	if err != nil {
@@ -122,6 +122,13 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		if err != nil {
 			return nil, err
 		}
+
+		transaction.BlockNumber = block.Number().Int64()
+		transaction.AddressFrom = strings.ToLower(transactionSourceData.From.String())
+		transaction.AddressTo = strings.ToLower(transactionSourceData.To.String())
+		transaction.Index = int64(transactionSourceData.Index)
+		transactionSuccess := receipt.Status == types.ReceiptStatusSuccessful
+		transaction.Success = &transactionSuccess
 
 		sourceData, err := json.Marshal(ethereum.SourceData{
 			Transaction: transactionSourceData,
@@ -173,6 +180,7 @@ func (d *Datasource) getAssetTransfers(ctx context.Context, message *protocol.Me
 				BlockNumber: blockNumber.Int64(),
 				Hash:        transfer.Hash,
 				Network:     message.Network,
+				Source:      d.Name(),
 				Transfers:   make([]model.Transfer, 0),
 			})
 		}
