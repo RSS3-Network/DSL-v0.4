@@ -130,7 +130,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			AddressTo:   "",
 			Tag:         filter.TagSocial,
 			Network:     message.Network,
-			Platform:    Name,
+			Platform:    string(publication.Platform),
 			Source:      s.Name(),
 			SourceData:  sourceData,
 			Transfers: []model.Transfer{
