@@ -9,9 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-var (
-	ErrorUnsupportedTransactionType = errors.New("unsupported transaction type")
-)
+var ErrorUnsupportedTransactionType = errors.New("unsupported transaction type")
 
 type SourceData struct {
 	Transaction *Transaction   `json:"transaction,omitempty"`
