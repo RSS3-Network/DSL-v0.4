@@ -38,6 +38,7 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 	if err := c.Bind(&request); err != nil {
 		return err
 	}
+	request.Address = strings.ToLower(request.Address)
 
 	profileList, total, err := h.getProfileListDatabase(ctx, request)
 	if err != nil {
@@ -77,8 +78,8 @@ func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) 
 	dbResult := make([]dbModel.Transfer, 0)
 	total := int64(0)
 	sql := h.DatabaseClient.Model(&dbModel.Transfer{}).Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
-		strings.ToLower(request.Address),
-		strings.ToLower(request.Address),
+		request.Address,
+		request.Address,
 	)
 
 	if len(request.Cursor) > 0 {
