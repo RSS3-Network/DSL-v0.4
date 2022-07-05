@@ -181,10 +181,7 @@ func (h *Handler) getTransferListDatabase(c context.Context, transactionHashList
 
 	transfers := make([]dbModel.Transfer, 0)
 
-	sql := h.DatabaseClient.Model(&dbModel.Transfer{}).Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
-		strings.ToLower(request.Address),
-		strings.ToLower(request.Address),
-	)
+	sql := h.DatabaseClient.Model(&dbModel.Transfer{})
 
 	if len(request.Tag) > 0 && len(request.Type) > 0 {
 		sql = sql.Where("\"type\" IN ? ", request.Type)

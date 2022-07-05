@@ -3,6 +3,7 @@ package moralis
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -29,7 +30,7 @@ const (
 	StatusFailed  = "0"
 	StatusSuccess = "1"
 
-	Endpoint = "https://rpc.crossbell.io"
+	Endpoint = "https://polygon-mainnet.infura.io/v3/"
 )
 
 var _ datasource.Datasource = &Datasource{}
@@ -170,6 +171,17 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 	transactions = make([]model.Transaction, 0)
 
 	for _, transaction := range transactionMap {
+		if message.Network == protocol.NetworkPolygon && len(transaction.Transfers) == 1 {
+			internalTransfers, err := d.handleMRC20Transfers(ctx, transaction.Transfers[0])
+			if err != nil {
+				logrus.Errorf("[datasource] handleMRC20Transfers error: %v", err)
+			}
+
+			if len(internalTransfers) > 0 {
+				transaction.Transfers = append(transaction.Transfers, internalTransfers...)
+			}
+		}
+
 		transactions = append(transactions, transaction)
 	}
 
@@ -239,7 +251,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			success = false
 		}
 
-		transaction := model.Transaction{
+		transactions = append(transactions, model.Transaction{
 			BlockNumber: blockNumber.IntPart(),
 			Timestamp:   timestamp,
 			Hash:        internalTransaction.Hash,
@@ -265,20 +277,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 					RelatedUrls:     []string{GetTxHashURL(message.Network, internalTransaction.Hash)},
 				},
 			},
-		}
-
-		if message.Network == protocol.NetworkPolygon {
-			internalTransfers, err := d.handleMRC20Transfers(ctx, transaction.Transfers[0])
-			if err != nil {
-				logrus.Errorf("[datasource] handleMRC20Transfers error: %v", err)
-			}
-
-			if len(internalTransfers) > 0 {
-				transaction.Transfers = append(transaction.Transfers, internalTransfers...)
-			}
-		}
-
-		transactions = append(transactions, transaction)
+		})
 	}
 
 	return transactions, nil
@@ -491,10 +490,10 @@ func GetTxHashURL(
 	}
 }
 
-func New(key string) datasource.Datasource {
-	moralisClient := moralis.NewClient(key)
+func New(moralisKey, infuraID string) datasource.Datasource {
+	moralisClient := moralis.NewClient(moralisKey)
 
-	ethereumClient, err := ethclient.Dial(Endpoint)
+	ethereumClient, err := ethclient.Dial(Endpoint + infuraID)
 	if err != nil {
 		logrus.Errorf("[datasource] ethereum client error: %v", err)
 	}
@@ -538,12 +537,12 @@ func (d *Datasource) handleMRC20Transfers(ctx context.Context, virtualTransfer m
 				return nil, err
 			}
 
-			transfer.AddressFrom = event.From.String()
-			transfer.AddressTo = event.To.String()
+			transfer.AddressFrom = strings.ToLower(event.From.String())
+			transfer.AddressTo = strings.ToLower(event.To.String())
 			transfer.Index = logIndex
-		}
 
-		transfers = append(transfers, transfer)
+			transfers = append(transfers, transfer)
+		}
 	}
 
 	return transfers, nil
