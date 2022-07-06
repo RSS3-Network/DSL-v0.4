@@ -70,15 +70,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		transactions = append(transactions, &internalTransaction)
 	}
 
-	blocks, err := lop.MapWithError(transactions, func(transaction *model.Transaction, i int) (*types.Block, error) {
-		block, err := ethereumClient.BlockByNumber(ctx, big.NewInt(transaction.BlockNumber))
-
-		if err != nil {
-			return nil, err
-		}
-
-		return block, nil
-	}, lop.NewOption().WithConcurrency(MaxConcurrency))
+	blocks, err := lop.MapWithError(transactions, d.handleBlockFunc(ctx, message, ethereumClient), lop.NewOption().WithConcurrency(MaxConcurrency))
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +80,33 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		blockMap[block.Number().Int64()] = block
 	}
 
-	transactions, err = lop.MapWithError(transactions, func(transaction *model.Transaction, i int) (*model.Transaction, error) {
+	transactions, err = lop.MapWithError(transactions, d.handleTransactionFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
+
+	internalTransactions := make([]model.Transaction, 0)
+
+	for _, transaction := range transactions {
+		if transaction != nil {
+			internalTransactions = append(internalTransactions, *transaction)
+		}
+	}
+
+	return internalTransactions, nil
+}
+
+func (d *Datasource) handleBlockFunc(ctx context.Context, message *protocol.Message, ethereumClient *ethclient.Client) func(transaction *model.Transaction, i int) (*types.Block, error) {
+	return func(transaction *model.Transaction, i int) (*types.Block, error) {
+		block, err := ethereumClient.BlockByNumber(ctx, big.NewInt(transaction.BlockNumber))
+
+		if err != nil {
+			return nil, err
+		}
+
+		return block, nil
+	}
+}
+
+func (d *Datasource) handleTransactionFunc(ctx context.Context, message *protocol.Message, ethereumClient *ethclient.Client, blockMap map[int64]*types.Block) func(transaction *model.Transaction, i int) (*model.Transaction, error) {
+	return func(transaction *model.Transaction, i int) (*model.Transaction, error) {
 		block := blockMap[transaction.BlockNumber]
 
 		transaction.Timestamp = time.Unix(int64(block.Time()), 0)
@@ -141,17 +159,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		}
 
 		return transaction, nil
-	}, lop.NewOption().WithConcurrency(MaxConcurrency))
-
-	internalTransactions := make([]model.Transaction, 0)
-
-	for _, transaction := range transactions {
-		if transaction != nil {
-			internalTransactions = append(internalTransactions, *transaction)
-		}
 	}
-
-	return internalTransactions, nil
 }
 
 func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *protocol.Message) (map[string]model.Transaction, error) {
