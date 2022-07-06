@@ -85,9 +85,8 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		blockMap[block.Number().Int64()] = block
 	}
 
-	if transactions, err = lop.MapWithError(transactions, d.handleTransactionFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency)); err != nil {
-		return nil, err
-	}
+	// Error topic/field count mismatch
+	transactions, _ = lop.MapWithError(transactions, d.handleTransactionFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
 
 	internalTransactions := make([]model.Transaction, 0)
 
