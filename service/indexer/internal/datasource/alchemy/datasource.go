@@ -19,10 +19,13 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	lop "github.com/samber/lo/parallel"
 )
 
 const (
 	Source = "alchemy"
+
+	MaxConcurrency = 200
 )
 
 var (
@@ -49,6 +52,109 @@ func (d *Datasource) Networks() []string {
 }
 
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	ethereumClient, exist := d.ethereumClientMap[message.Network]
+	if !exist {
+		return nil, ErrorUnsupportedNetwork
+	}
+
+	transactionMap, err := d.getAllAssetTransferHashes(ctx, message)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all block and transaction data
+	transactions := make([]*model.Transaction, 0)
+	for _, transaction := range transactionMap {
+		internalTransaction := transaction
+
+		transactions = append(transactions, &internalTransaction)
+	}
+
+	blocks, err := lop.MapWithError(transactions, func(transaction *model.Transaction, i int) (*types.Block, error) {
+		block, err := ethereumClient.BlockByNumber(ctx, big.NewInt(transaction.BlockNumber))
+
+		if err != nil {
+			return nil, err
+		}
+
+		return block, nil
+	}, lop.NewOption().WithConcurrency(MaxConcurrency))
+	if err != nil {
+		return nil, err
+	}
+
+	blockMap := make(map[int64]*types.Block)
+	for _, block := range blocks {
+		blockMap[block.Number().Int64()] = block
+	}
+
+	transactions, err = lop.MapWithError(transactions, func(transaction *model.Transaction, i int) (*model.Transaction, error) {
+		block := blockMap[transaction.BlockNumber]
+
+		transaction.Timestamp = time.Unix(int64(block.Time()), 0)
+
+		for index, blockTransaction := range block.Transactions() {
+			if blockTransaction.Hash().String() == transaction.Hash {
+				transaction.Index = int64(index)
+
+				break
+			}
+		}
+
+		internalTransaction, _, err := ethereumClient.TransactionByHash(ctx, common.HexToHash(transaction.Hash))
+		if err != nil {
+			return nil, err
+		}
+
+		var transactionMessage types.Message
+
+		switch internalTransaction.Type() {
+		case types.LegacyTxType:
+			transactionMessage, err = internalTransaction.AsMessage(types.NewEIP155Signer(internalTransaction.ChainId()), nil)
+		case types.DynamicFeeTxType:
+			transactionMessage, err = internalTransaction.AsMessage(types.LatestSignerForChainID(internalTransaction.ChainId()), nil)
+		default:
+			err = ethereum.ErrorUnsupportedTransactionType
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		transaction.AddressFrom = strings.ToLower(transactionMessage.From().String())
+		transaction.AddressTo = strings.ToLower(transactionMessage.To().String())
+
+		receipt, err := ethereumClient.TransactionReceipt(ctx, internalTransaction.Hash())
+		if err != nil {
+			return nil, err
+		}
+
+		transactionSuccess := receipt.Status == types.ReceiptStatusSuccessful
+		transaction.Success = &transactionSuccess
+
+		transaction.SourceData, err = json.Marshal(&ethereum.SourceData{
+			Transaction: internalTransaction,
+			Receipt:     receipt,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return transaction, nil
+	}, lop.NewOption().WithConcurrency(MaxConcurrency))
+
+	internalTransactions := make([]model.Transaction, 0)
+
+	for _, transaction := range transactions {
+		if transaction != nil {
+			internalTransactions = append(internalTransactions, *transaction)
+		}
+	}
+
+	return internalTransactions, nil
+}
+
+func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *protocol.Message) (map[string]model.Transaction, error) {
 	category := []string{
 		alchemy.CategoryExternal, alchemy.CategoryERC20, alchemy.CategoryERC721, alchemy.CategoryERC1155,
 	}
@@ -67,7 +173,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	// Get the transactions sent from this address
-	internalTransactions, err := d.getAssetTransfers(ctx, message, parameter)
+	internalTransactions, err := d.getAssetTransactionHashes(ctx, message, parameter)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +186,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	parameter.FromAddress = ""
 	parameter.ToAddress = strings.ToLower(message.Address)
 
-	internalTransactions, err = d.getAssetTransfers(ctx, message, parameter)
+	internalTransactions, err = d.getAssetTransactionHashes(ctx, message, parameter)
 	if err != nil {
 		return nil, err
 	}
@@ -90,71 +196,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		internalTransactionMap[transaction.Hash] = transaction
 	}
 
-	ethereumClient, exist := d.ethereumClientMap[message.Network]
-	if !exist {
-		return nil, ErrorUnsupportedNetwork
-	}
-
-	blockMap := make(map[int64]*types.Block)
-
-	// Get transaction data from the chain
-	for _, transaction := range internalTransactionMap {
-		block, exist := blockMap[transaction.BlockNumber]
-		if !exist {
-			block, err = ethereumClient.BlockByNumber(ctx, big.NewInt(transaction.BlockNumber))
-			if err != nil {
-				return nil, err
-			}
-
-			blockMap[transaction.BlockNumber] = block
-		}
-
-		internalTransaction, _, err := ethereumClient.TransactionByHash(ctx, common.HexToHash(transaction.Hash))
-		if err != nil {
-			return nil, err
-		}
-
-		receipt, err := ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
-		if err != nil {
-			return nil, err
-		}
-
-		transactionSourceData, err := ethereum.ConvertTransaction(*internalTransaction, *block)
-		if err != nil {
-			return nil, err
-		}
-
-		// Fill transaction information
-		transaction.Timestamp = time.Unix(int64(block.Time()), 0)
-		transaction.BlockNumber = block.Number().Int64()
-		transaction.AddressFrom = strings.ToLower(transactionSourceData.From.String())
-		transaction.AddressTo = strings.ToLower(transactionSourceData.To.String())
-		transaction.Index = int64(transactionSourceData.Index)
-		transactionSuccess := receipt.Status == types.ReceiptStatusSuccessful
-		transaction.Success = &transactionSuccess
-
-		sourceData, err := json.Marshal(ethereum.SourceData{
-			Transaction: transactionSourceData,
-			Receipt:     receipt,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		transaction.SourceData = sourceData
-		internalTransactionMap[transaction.Hash] = transaction
-	}
-
-	internalTransactions = make([]model.Transaction, 0)
-
-	for _, transaction := range internalTransactionMap {
-		internalTransactions = append(internalTransactions, transaction)
-	}
-
-	return internalTransactions, nil
+	return internalTransactionMap, nil
 }
 
-func (d *Datasource) getAssetTransfers(ctx context.Context, message *protocol.Message, parameter alchemy.GetAssetTransfersParameter) ([]model.Transaction, error) {
+func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *protocol.Message, parameter alchemy.GetAssetTransfersParameter) ([]model.Transaction, error) {
 	rpcClient, exist := d.rpcClientMap[message.Network]
 	if !exist {
 		return nil, ErrorUnsupportedNetwork
