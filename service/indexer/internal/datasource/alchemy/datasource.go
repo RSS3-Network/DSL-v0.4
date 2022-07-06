@@ -145,7 +145,14 @@ func (d *Datasource) handleTransactionFunc(ctx context.Context, message *protoco
 		}
 
 		transaction.AddressFrom = strings.ToLower(transactionMessage.From().String())
-		transaction.AddressTo = strings.ToLower(transactionMessage.To().String())
+
+		addressTo := ethereum.AddressGenesis.String()
+
+		if internalTransaction.To() != nil {
+			addressTo = internalTransaction.To().String()
+		}
+
+		transaction.AddressTo = strings.ToLower(addressTo)
 
 		receipt, err := ethereumClient.TransactionReceipt(ctx, internalTransaction.Hash())
 		if err != nil {
@@ -242,7 +249,9 @@ func (d *Datasource) handleLog(ctx context.Context, message *protocol.Message, t
 		return nil, ErrorUnsupportedEvent
 	}
 
-	if !(transfer.AddressTo == message.Address || transfer.AddressFrom == message.Address) {
+	address := strings.ToLower(message.Address)
+
+	if !(transfer.AddressTo == address || transfer.AddressFrom == address) {
 		return nil, ErrorUnrelatedEvent
 	}
 
