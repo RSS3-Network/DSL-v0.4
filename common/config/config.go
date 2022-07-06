@@ -87,3 +87,20 @@ type Infura struct {
 type Gateway struct {
 	EthEndpoint string `mapstructure:"ethendpoint"`
 }
+
+type RPC struct {
+	General RPCNetwork `mapstructure:"general"`
+	Alchemy RPCNetwork `mapstructure:"alchemy"`
+}
+
+type RPCNetwork struct {
+	Ethereum          RPCEndpoint `mapstructure:"ethereum"`
+	Polygon           RPCEndpoint `mapstructure:"polygon"`
+	BinanceSmartChain RPCEndpoint `mapstructure:"binance-smart-chain"`
+	Crossbell         RPCEndpoint `mapstructure:"crossbell"`
+}
+
+type RPCEndpoint struct {
+	HTTP      string `mapstructure:"http"`
+	WebSocket string `mapstructure:"websocket"`
+}

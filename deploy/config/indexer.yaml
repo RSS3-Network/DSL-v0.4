@@ -34,3 +34,19 @@ coinmarketcap:
 
 infura:
   projectid: ""
+
+rpc:
+  general:
+    ethereum:
+      http: ''
+      websocket: ''
+    polygon:
+      http: ''
+      websocket: ''
+  alchemy:
+    ethereum:
+      http: ''
+      websocket: ''
+    polygon:
+      http: ''
+      websocket: ''
