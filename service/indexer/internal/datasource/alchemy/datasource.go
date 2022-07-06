@@ -17,6 +17,8 @@ import (
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc20"
+	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	lop "github.com/samber/lo/parallel"
@@ -30,6 +32,7 @@ const (
 
 var (
 	ErrorUnsupportedNetwork       = errors.New("unsupported network")
+	ErrorUnsupportedEvent         = errors.New("unsupported event")
 	ErrorFailedToParseBlockNumber = errors.New("failed to parse block number")
 )
 
@@ -150,16 +153,74 @@ func (d *Datasource) handleTransactionFunc(ctx context.Context, message *protoco
 		transactionSuccess := receipt.Status == types.ReceiptStatusSuccessful
 		transaction.Success = &transactionSuccess
 
-		transaction.SourceData, err = json.Marshal(&ethereum.SourceData{
+		if transaction.SourceData, err = json.Marshal(&ethereum.SourceData{
 			Transaction: internalTransaction,
 			Receipt:     receipt,
-		})
-		if err != nil {
+		}); err != nil {
+			return nil, err
+		}
+
+		if transaction.Transfers, err = d.handleReceipt(ctx, transaction, receipt); err != nil {
 			return nil, err
 		}
 
 		return transaction, nil
 	}
+}
+
+func (d *Datasource) handleReceipt(ctx context.Context, transaction *model.Transaction, receipt *types.Receipt) ([]model.Transfer, error) {
+	transfers := make([]model.Transfer, 0)
+
+	for _, log := range receipt.Logs {
+		transfer, err := d.handleLog(ctx, transaction, *log)
+		if err != nil {
+			if errors.Is(err, ErrorUnsupportedEvent) {
+				continue
+			}
+
+			return nil, err
+		}
+
+		transfers = append(transfers, *transfer)
+	}
+
+	return transfers, nil
+}
+
+func (d *Datasource) handleLog(ctx context.Context, transaction *model.Transaction, log types.Log) (*model.Transfer, error) {
+	transfer := model.Transfer{
+		TransactionHash: transaction.Hash,
+		Timestamp:       transaction.Timestamp,
+		Index:           int64(log.Index),
+		Network:         transaction.Network,
+		Source:          d.Name(),
+	}
+
+	switch log.Topics[0] {
+	case erc20.EventHashTransfer, erc721.EventHashTransfer:
+		filterer, err := erc20.NewERC20Filterer(log.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		event, err := filterer.ParseTransfer(log)
+		if err != nil {
+			return nil, err
+		}
+
+		transfer.AddressFrom = event.From.String()
+		transfer.AddressTo = event.To.String()
+	default:
+		return nil, ErrorUnsupportedEvent
+	}
+
+	var err error
+
+	if transfer.SourceData, err = json.Marshal(log); err != nil {
+		return nil, err
+	}
+
+	return &transfer, nil
 }
 
 func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *protocol.Message) (map[string]model.Transaction, error) {
