@@ -33,6 +33,7 @@ const (
 var (
 	ErrorUnsupportedNetwork       = errors.New("unsupported network")
 	ErrorUnsupportedEvent         = errors.New("unsupported event")
+	ErrorUnrelatedEvent           = errors.New("unrelated event")
 	ErrorFailedToParseBlockNumber = errors.New("failed to parse block number")
 )
 
@@ -160,7 +161,7 @@ func (d *Datasource) handleTransactionFunc(ctx context.Context, message *protoco
 			return nil, err
 		}
 
-		if transaction.Transfers, err = d.handleReceipt(ctx, transaction, receipt); err != nil {
+		if transaction.Transfers, err = d.handleReceipt(ctx, message, transaction, receipt); err != nil {
 			return nil, err
 		}
 
@@ -168,13 +169,13 @@ func (d *Datasource) handleTransactionFunc(ctx context.Context, message *protoco
 	}
 }
 
-func (d *Datasource) handleReceipt(ctx context.Context, transaction *model.Transaction, receipt *types.Receipt) ([]model.Transfer, error) {
+func (d *Datasource) handleReceipt(ctx context.Context, message *protocol.Message, transaction *model.Transaction, receipt *types.Receipt) ([]model.Transfer, error) {
 	transfers := make([]model.Transfer, 0)
 
 	for _, log := range receipt.Logs {
-		transfer, err := d.handleLog(ctx, transaction, *log)
+		transfer, err := d.handleLog(ctx, message, transaction, *log)
 		if err != nil {
-			if errors.Is(err, ErrorUnsupportedEvent) {
+			if errors.Is(err, ErrorUnsupportedEvent) || errors.Is(err, ErrorUnrelatedEvent) {
 				continue
 			}
 
@@ -187,7 +188,7 @@ func (d *Datasource) handleReceipt(ctx context.Context, transaction *model.Trans
 	return transfers, nil
 }
 
-func (d *Datasource) handleLog(ctx context.Context, transaction *model.Transaction, log types.Log) (*model.Transfer, error) {
+func (d *Datasource) handleLog(ctx context.Context, message *protocol.Message, transaction *model.Transaction, log types.Log) (*model.Transfer, error) {
 	transfer := model.Transfer{
 		TransactionHash: transaction.Hash,
 		Timestamp:       transaction.Timestamp,
@@ -208,8 +209,12 @@ func (d *Datasource) handleLog(ctx context.Context, transaction *model.Transacti
 			return nil, err
 		}
 
-		transfer.AddressFrom = event.From.String()
-		transfer.AddressTo = event.To.String()
+		transfer.AddressFrom = strings.ToLower(event.From.String())
+		transfer.AddressTo = strings.ToLower(event.To.String())
+
+		if !(transfer.AddressTo == message.Address || transfer.AddressFrom == message.Address) {
+			return nil, ErrorUnrelatedEvent
+		}
 	default:
 		return nil, ErrorUnsupportedEvent
 	}
