@@ -6,6 +6,7 @@ import (
 	"errors"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -58,9 +59,9 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	}
 
 	parameter := alchemy.GetAssetTransfersParameter{
-		ToAddress: strings.ToLower(message.Address),
-		MaxCount:  hexutil.EncodeBig(big.NewInt(alchemy.MaxCount)),
-		Category:  category,
+		FromAddress: strings.ToLower(message.Address),
+		MaxCount:    hexutil.EncodeBig(big.NewInt(alchemy.MaxCount)),
+		Category:    category,
 	}
 
 	internalTransactionMap := make(map[string]model.Transaction)
@@ -123,6 +124,8 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			return nil, err
 		}
 
+		// Fill transaction information
+		transaction.Timestamp = time.Unix(int64(block.Time()), 0)
 		transaction.BlockNumber = block.Number().Int64()
 		transaction.AddressFrom = strings.ToLower(transactionSourceData.From.String())
 		transaction.AddressTo = strings.ToLower(transactionSourceData.To.String())
