@@ -2,15 +2,26 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 
 	"github.com/labstack/echo/v4"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"go.opentelemetry.io/otel"
 )
+
+type ProfileResult struct {
+	Hash       string          `json:"hash"`
+	Network    string          `json:"network"`
+	Platform   string          `json:"platform"`
+	ProfileURL string          `json:"profile_url"`
+	Metadata   json.RawMessage `json:"metadata"`
+}
 
 // GetProfileListFunc supported filter:
 // - address
@@ -27,6 +38,7 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 	if err := c.Bind(&request); err != nil {
 		return err
 	}
+	request.Address = strings.ToLower(request.Address)
 
 	profileList, total, err := h.getProfileListDatabase(ctx, request)
 	if err != nil {
@@ -35,7 +47,7 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 
 	if len(profileList) == 0 {
 		return c.JSON(http.StatusOK, &Response{
-			Result: make([]interface{}, 0),
+			Result: make([]dbModel.Transfer, 0),
 		})
 	}
 
@@ -44,10 +56,15 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 		cursor = profileList[len(profileList)-1].TransactionHash
 	}
 
+	result, err := formatProfileResult(profileList)
+	if err != nil {
+		return err
+	}
+
 	return c.JSON(http.StatusOK, &Response{
 		Total:  total,
 		Cursor: cursor,
-		Result: profileList,
+		Result: result,
 	})
 }
 
@@ -61,8 +78,8 @@ func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) 
 	dbResult := make([]dbModel.Transfer, 0)
 	total := int64(0)
 	sql := h.DatabaseClient.Model(&dbModel.Transfer{}).Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
-		strings.ToLower(request.Address),
-		strings.ToLower(request.Address),
+		request.Address,
+		request.Address,
 	)
 
 	if len(request.Cursor) > 0 {
@@ -88,9 +105,53 @@ func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) 
 	sql = sql.Where("\"type\" IN ? ", []string{filter.SocialProfile})
 	sql = sql.Limit(DefaultLimit)
 
-	if err := sql.Find(&dbResult).Error; err != nil {
+	if err := sql.Count(&total).Find(&dbResult).Error; err != nil {
 		return nil, total, err
 	}
 
 	return dbResult, total, nil
+}
+
+type CrossbellProfilestruct struct {
+	Crossbell struct {
+		Event     string `json:"event"`
+		Character struct {
+			Id       int    `json:"id"`
+			Uri      string `json:"uri"`
+			Metadata struct {
+				Bio              string   `json:"bio"`
+				Name             string   `json:"name"`
+				Type             string   `json:"type"`
+				Avatars          []string `json:"avatars"`
+				ConnectedAvatars []string `json:"connected_avatars"`
+			} `json:"metadata"`
+		} `json:"character"`
+	} `json:"crossbell"`
+}
+
+// formatProfileResult format profile result by extracting ProfileURL from metadata
+func formatProfileResult(profileList []dbModel.Transfer) ([]ProfileResult, error) {
+	result := make([]ProfileResult, 0)
+	for _, profile := range profileList {
+
+		temp := ProfileResult{
+			Hash:     profile.TransactionHash,
+			Network:  profile.Network,
+			Platform: profile.Platform,
+			Metadata: profile.Metadata,
+		}
+
+		switch profile.Network {
+		case protocol.NetworkCrossbell:
+			tempStructure := &CrossbellProfilestruct{}
+			if err := json.Unmarshal(profile.Metadata, &tempStructure); err != nil {
+				return nil, err
+			}
+			temp.ProfileURL = tempStructure.Crossbell.Character.Metadata.Avatars[0]
+		default:
+		}
+
+		result = append(result, temp)
+	}
+	return result, nil
 }

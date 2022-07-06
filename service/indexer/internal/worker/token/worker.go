@@ -384,7 +384,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
 				// check for exchange transaction
-				if err := s.checkCexWallet(ctx, strings.ToLower(message.Address), &transfer, &wallet); err != nil {
+				if err := s.checkCexWallet(ctx, message.Address, &transfer, &wallet); err != nil {
 					return nil, err
 				}
 			} else {
@@ -421,7 +421,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
 				// check for exchange transaction
-				if err := s.checkCexWallet(ctx, strings.ToLower(message.Address), &transfer, &wallet); err != nil {
+				if err := s.checkCexWallet(ctx, message.Address, &transfer, &wallet); err != nil {
 					return nil, err
 				}
 			}

@@ -130,7 +130,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		return nil, err
 	}
 
-	currTansactions := transactions
+	currTransactions := transactions
 
 	isVoteError := false
 	votes, err := s.getSnapshotVotes(ctx, message.Address, timeStamp)
@@ -155,9 +155,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	}
 
 	proposalIDSet := mapset.NewSet()
-	proposalIDs := []string{}
+	var proposalIDs []string
 	spaceIDSet := mapset.NewSet()
-	spaceIDs := []string{}
+	var spaceIDs []string
 
 	for _, vote := range votes {
 		proposalIDSet.Add(vote.ProposalID)
@@ -197,31 +197,31 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	if !isVoteError {
 		for _, vote := range votes {
-			newTansaction, err := s.cleaningVote(vote, proposalMap, spaceMap, message)
+			newTransaction, err := s.cleaningVote(vote, proposalMap, spaceMap, message)
 			if err != nil {
 				logrus.Errorf("failed to cleaning vote: %s", err)
 				continue
 			}
-			if newTansaction != nil {
-				currTansactions = append(currTansactions, *newTansaction)
+			if newTransaction != nil {
+				currTransactions = append(currTransactions, *newTransaction)
 			}
 		}
 	}
 
 	if !isProposalsByAuthorError {
 		for _, proposal := range proposalsByAuthorMap {
-			newTansaction, err := s.cleaningProposalsByAuthor(proposal, spaceMap, message)
+			newTransaction, err := s.cleaningProposalsByAuthor(proposal, spaceMap, message)
 			if err != nil {
 				logrus.Errorf("failed to cleaning proposal: %s", err)
 				continue
 			}
-			if newTansaction != nil {
-				currTansactions = append(currTansactions, *newTansaction)
+			if newTransaction != nil {
+				currTransactions = append(currTransactions, *newTransaction)
 			}
 		}
 	}
 
-	return currTansactions, nil
+	return currTransactions, nil
 }
 
 func (s *service) Jobs() []worker.Job {
@@ -269,7 +269,7 @@ func (s *service) getLatestTimestamp(message *protocol.Message) (time.Time, erro
 		Model((*model.Transaction)(nil)).
 		Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp").
 		Where(map[string]interface{}{
-			"address_from": strings.ToLower(message.Address),
+			"address_from": message.Address,
 			"network":      message.Network,
 			"source":       s.Name(),
 		}).
@@ -420,14 +420,14 @@ func (s *service) cleaningVote(
 		Choice:   vote.Choice,
 	}
 
-	rawSourcedata, err := json.Marshal(snapShotSourcedata)
+	rawSourceData, err := json.Marshal(snapShotSourcedata)
 	if err != nil {
 		logrus.Warnf("[snapshot worker] failed to marshal sourcedata:%v", err)
 		return nil, nil
 	}
 
 	relatedUrl := "https://snapshot.org/#/" + vote.SpaceID + "/proposal/" + vote.ProposalID
-	lowerAddress := strings.ToLower(message.Address)
+	lowerAddress := message.Address
 
 	currTransaction := model.Transaction{
 		Hash:        vote.ID,
@@ -436,7 +436,7 @@ func (s *service) cleaningVote(
 		Platform:    Name,
 		Network:     message.Network,
 		Source:      Name,
-		SourceData:  rawSourcedata,
+		SourceData:  rawSourceData,
 		Tag:         filter.TagGovernance,
 		Transfers: []model.Transfer{
 			{
@@ -450,7 +450,7 @@ func (s *service) cleaningVote(
 				Platform:        Name,
 				Network:         message.Network,
 				Source:          Name,
-				SourceData:      rawSourcedata,
+				SourceData:      rawSourceData,
 				RelatedUrls:     []string{relatedUrl},
 			},
 		},
@@ -495,14 +495,14 @@ func (s *service) cleaningProposalsByAuthor(
 		Space:    space.Metadata,
 	}
 
-	rawSourcedata, err := json.Marshal(snapShotSourcedata)
+	rawSourceData, err := json.Marshal(snapShotSourcedata)
 	if err != nil {
 		logrus.Warnf("[snapshot worker] failed to marshal sourcedata:%v", err)
 		return nil, nil
 	}
 
 	relatedUrl := "https://snapshot.org/#/" + proposal.SpaceID + "/proposal/" + proposal.ID
-	lowerAddress := strings.ToLower(message.Address)
+	lowerAddress := message.Address
 
 	currTransaction := model.Transaction{
 		Hash:        proposal.ID,
@@ -511,7 +511,7 @@ func (s *service) cleaningProposalsByAuthor(
 		Platform:    Name,
 		Network:     message.Network,
 		Source:      s.Name(),
-		SourceData:  rawSourcedata,
+		SourceData:  rawSourceData,
 		Tag:         filter.TagGovernance,
 		Transfers: []model.Transfer{
 			{
@@ -525,7 +525,7 @@ func (s *service) cleaningProposalsByAuthor(
 				Platform:        Name,
 				Network:         message.Network,
 				Source:          s.Name(),
-				SourceData:      rawSourcedata,
+				SourceData:      rawSourceData,
 				RelatedUrls:     []string{relatedUrl},
 			},
 		},

@@ -23,9 +23,12 @@ func (h *Handler) GetNoteListFunc(c echo.Context) error {
 	defer httpSnap.End()
 
 	request := GetRequest{}
+
 	if err := c.Bind(&request); err != nil {
 		return err
 	}
+
+	request.Address = strings.ToLower(request.Address)
 
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
 		request.Limit = DefaultLimit
@@ -131,8 +134,8 @@ func (h *Handler) getTransactionListDatabase(c context.Context, request GetReque
 	sql := h.DatabaseClient.
 		Model(&dbModel.Transaction{}).
 		Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
-			strings.ToLower(request.Address),
-			strings.ToLower(request.Address),
+			request.Address,
+			request.Address,
 		)
 
 	if len(request.Cursor) > 0 {
