@@ -89,6 +89,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
 
+			if value.Tag == filter.TagDonation {
+				value.Platform = Name
+			}
+
 			internalTransactionMap[transaction.Hash] = value
 		}
 	}
@@ -96,8 +100,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactions = make([]model.Transaction, 0)
 
 	for _, internalTransaction := range internalTransactionMap {
-		internalTransaction.Platform = Name
-
 		internalTransactions = append(internalTransactions, internalTransaction)
 	}
 
@@ -150,12 +152,12 @@ func (s *service) handleGitcoin(ctx context.Context, transfer model.Transfer) (d
 		return transfer, err
 	}
 
-	transfer.Platform = Name
 	transfer.Metadata = metadata
 	transfer.Tag = filter.UpdateTag(filter.TagDonation, transfer.Tag)
 
 	if transfer.Tag == filter.TagDonation {
 		transfer.Type = filter.DonationDonate
+		transfer.Platform = Name
 	}
 
 	return transfer, nil
