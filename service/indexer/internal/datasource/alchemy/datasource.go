@@ -85,7 +85,9 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		blockMap[block.Number().Int64()] = block
 	}
 
-	transactions, err = lop.MapWithError(transactions, d.handleTransactionFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
+	if transactions, err = lop.MapWithError(transactions, d.handleTransactionFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency)); err != nil {
+		return nil, err
+	}
 
 	internalTransactions := make([]model.Transaction, 0)
 
@@ -101,7 +103,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 func (d *Datasource) handleBlockFunc(ctx context.Context, message *protocol.Message, ethereumClient *ethclient.Client) func(transaction *model.Transaction, i int) (*types.Block, error) {
 	return func(transaction *model.Transaction, i int) (*types.Block, error) {
 		block, err := ethereumClient.BlockByNumber(ctx, big.NewInt(transaction.BlockNumber))
-
 		if err != nil {
 			return nil, err
 		}
