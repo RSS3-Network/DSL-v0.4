@@ -17,6 +17,7 @@ import (
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc1155"
 	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -211,12 +212,38 @@ func (d *Datasource) handleLog(ctx context.Context, message *protocol.Message, t
 
 		transfer.AddressFrom = strings.ToLower(event.From.String())
 		transfer.AddressTo = strings.ToLower(event.To.String())
-
-		if !(transfer.AddressTo == message.Address || transfer.AddressFrom == message.Address) {
-			return nil, ErrorUnrelatedEvent
+	case erc1155.EventHashTransferSingle:
+		filterer, err := erc1155.NewERC1155Filterer(log.Address, nil)
+		if err != nil {
+			return nil, err
 		}
+
+		event, err := filterer.ParseTransferSingle(log)
+		if err != nil {
+			return nil, err
+		}
+
+		transfer.AddressFrom = strings.ToLower(event.From.String())
+		transfer.AddressTo = strings.ToLower(event.To.String())
+	case erc1155.EventHashTransferBatch:
+		filterer, err := erc1155.NewERC1155Filterer(log.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		event, err := filterer.ParseTransferBatch(log)
+		if err != nil {
+			return nil, err
+		}
+
+		transfer.AddressFrom = strings.ToLower(event.From.String())
+		transfer.AddressTo = strings.ToLower(event.To.String())
 	default:
 		return nil, ErrorUnsupportedEvent
+	}
+
+	if !(transfer.AddressTo == message.Address || transfer.AddressFrom == message.Address) {
+		return nil, ErrorUnrelatedEvent
 	}
 
 	var err error
