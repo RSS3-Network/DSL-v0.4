@@ -21,9 +21,11 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc1155"
 	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc721"
+	"github.com/naturalselectionlabs/pregod/common/logger"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	lop "github.com/samber/lo/parallel"
+	"go.uber.org/zap"
 )
 
 const (
@@ -87,7 +89,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	}
 
 	// Error topic/field count mismatch
-	transactions, _ = lop.MapWithError(transactions, d.handleTransactionFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
+	transactions, err = lop.MapWithError(transactions, d.handleTransactionFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
+	if err != nil {
+		logger.Global().Error("failed to handle transaction", zap.Error(err))
+	}
 
 	internalTransactions := make([]model.Transaction, 0)
 
@@ -221,6 +226,9 @@ func (d *Datasource) handleLog(ctx context.Context, message *protocol.Message, t
 		Network:         transaction.Network,
 		Metadata:        metadata.Default,
 		Source:          d.Name(),
+		RelatedUrls: []string{
+			ethereum.BuildScanURL(message.Network, transaction.Hash),
+		},
 	}
 
 	switch log.Topics[0] {
