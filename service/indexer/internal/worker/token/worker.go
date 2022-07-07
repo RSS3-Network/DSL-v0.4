@@ -170,15 +170,7 @@ func (s *service) handleMoralis(ctx context.Context, message *protocol.Message, 
 
 	defer snap.End()
 
-	internalTransactions := make([]model.Transaction, 0)
-
-	for _, transaction := range transactions {
-		for _, transfer := range transaction.Transfers {
-			
-		}
-	}
-
-	return internalTransactions, nil
+	return make([]model.Transaction, 0), nil
 }
 
 func (s *service) handleBlockscout(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
@@ -187,15 +179,7 @@ func (s *service) handleBlockscout(ctx context.Context, message *protocol.Messag
 
 	defer snap.End()
 
-	internalTransactions := make([]model.Transaction, 0)
-
-	for _, transaction := range transactions {
-		for _, transfer := range transaction.Transfers {
-
-		}
-	}
-
-	return internalTransactions, nil
+	return make([]model.Transaction, 0), nil
 }
 
 func (s *service) handleArweave(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
