@@ -629,7 +629,7 @@ func (s *service) updateType(transaction model.Transaction, transfer model.Trans
 			transfer.Type = filter.CollectibleBurn
 		}
 	case transfer.AddressFrom == transfer.AddressTo:
-		transfer.Type = filter.TransactionCancel
+		transfer.Type = filter.TransactionSelf
 	case transfer.Tag == filter.TagExchange:
 		transaction.Platform = transfer.Platform
 	default:
