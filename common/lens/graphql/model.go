@@ -1,7 +1,6 @@
 package graphqlx
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/hasura/go-graphql-client"
@@ -10,13 +9,13 @@ import (
 // Publication is a custom type to hold Post, Comment, and Mirror.
 // Target is used to hold either CommentOn or MirrorOf
 type Publication struct {
-	Type       graphql.String  `json:"type"`
-	ID         graphql.String  `json:"id"`
-	RelatedURL graphql.String  `json:"related_urls"`
-	Platform   graphql.String  `json:"platform"`
-	CreatedAt  time.Time       `json:"createdAt"`
-	Metadata   Metadata        `json:"metadata"`
-	Target     json.RawMessage `json:"target"`
+	Type       graphql.String `json:"type"`
+	ID         graphql.String `json:"id"`
+	RelatedURL graphql.String `json:"related_urls"`
+	Platform   graphql.String `json:"platform"`
+	CreatedAt  time.Time      `json:"createdAt"`
+	Metadata   Metadata       `json:"metadata"`
+	Target     Post           `json:"target"`
 }
 
 // Post is the basic type

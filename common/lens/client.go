@@ -2,7 +2,6 @@ package lens
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/url"
 
@@ -129,19 +128,25 @@ func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graph
 }
 
 func assignTarget(item *graphqlx.Item, publication *graphqlx.Publication) error {
-	var target json.RawMessage
+	var target graphqlx.Post
 	var err error
 
 	// a target can either be a Post or a Comment
 	switch publication.Type {
 	case "Comment":
 		if item.Comment.CommentOn.Post.Type == "Post" {
-			target, err = json.Marshal(item.Comment.CommentOn.Post)
+			target.ID = item.Comment.CommentOn.Post.ID
+			target.Type = "Post"
+			target.Metadata = item.Comment.CommentOn.Post.Metadata
+			target.CreatedAt = item.Comment.CommentOn.Post.CreatedAt
 			if err != nil {
 				return err
 			}
 		} else {
-			target, err = json.Marshal(item.Comment.CommentOn.Comment)
+			target.ID = item.Comment.CommentOn.Comment.ID
+			target.Type = "Comment"
+			target.Metadata = item.Comment.CommentOn.Comment.Metadata
+			target.CreatedAt = item.Comment.CommentOn.Comment.CreatedAt
 			if err != nil {
 				return err
 			}
@@ -149,16 +154,20 @@ func assignTarget(item *graphqlx.Item, publication *graphqlx.Publication) error 
 
 	case "Mirror":
 		if item.Mirror.MirrorOf.Post.Type == "Post" {
-			target, err = json.Marshal(item.Mirror.MirrorOf.Post)
+			target.ID = item.Mirror.MirrorOf.Post.ID
+			target.Type = "Post"
+			target.Metadata = item.Mirror.MirrorOf.Post.Metadata
+			target.CreatedAt = item.Mirror.MirrorOf.Post.CreatedAt
 			if err != nil {
 				return err
 			}
 		} else {
-			{
-				target, err = json.Marshal(item.Mirror.MirrorOf.Comment)
-				if err != nil {
-					return err
-				}
+			target.ID = item.Mirror.MirrorOf.Comment.ID
+			target.Type = "Post"
+			target.Metadata = item.Mirror.MirrorOf.Comment.Metadata
+			target.CreatedAt = item.Mirror.MirrorOf.Comment.CreatedAt
+			if err != nil {
+				return err
 			}
 		}
 	}

@@ -235,7 +235,7 @@ func (h *Handler) batchGetTransactionListDatabase(ctx context.Context, request B
 	}
 
 	lop.ForEach(request.Filter, func(reqFilter Filter, i int) {
-		types := []string{}
+		var types []string
 		count := int64(0)
 		transactionList := make([]dbModel.Transaction, 0)
 

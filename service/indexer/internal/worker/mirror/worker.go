@@ -95,12 +95,17 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			if err = json.Unmarshal([]byte(content), &mirrorMetadata.Content); err != nil {
+			mirrorContent := metadata.MirrorContent{}
+
+			if err = json.Unmarshal(content, &mirrorContent); err != nil {
 				logrus.Errorf("[mirror_worker] Handle: json unmarshal error, %v", err)
 				return nil, err
 			}
 
-			metadataModel.Mirror = &mirrorMetadata
+			metadataModel.Content = &metadata.Content{
+				Title: mirrorContent.Content.Title,
+				Body:  mirrorContent.Content.Body,
+			}
 
 			rawMetadata, err := json.Marshal(metadataModel)
 			if err != nil {
@@ -108,10 +113,13 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			transfer.AddressTo = strings.ToLower(string(transactionEdge.Node.Owner.Address))
-			transfer.AddressFrom = strings.ToLower(metadataModel.Mirror.Contributor)
+			transfer.AddressFrom = strings.ToLower(mirrorMetadata.Contributor)
 			transfer.Metadata = rawMetadata
 			transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
-			transfer.RelatedUrls = append(transfer.RelatedUrls, fmt.Sprintf("https://mirror.xyz/%s/%s", transfer.AddressFrom, metadataModel.Mirror.ContentDigest))
+			transfer.RelatedUrls = append(
+				transfer.RelatedUrls,
+				fmt.Sprintf("https://mirror.xyz/%s/%s", transfer.AddressFrom, mirrorMetadata.ContentDigest),
+			)
 
 			if transfer.Tag == filter.TagSocial {
 				transfer.Type = filter.SocialPost
@@ -122,7 +130,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			if !exist {
 				value = transaction
 				value.AddressTo = strings.ToLower(string(transactionEdge.Node.Owner.Address))
-				value.AddressFrom = strings.ToLower(metadataModel.Mirror.Contributor)
+				value.AddressFrom = strings.ToLower(mirrorMetadata.Contributor)
 
 				// Ignore transfers data that will not be updated
 				value.Transfers = make([]model.Transfer, 0)
@@ -132,8 +140,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			value.Transfers = append(value.Transfers, transfer)
 
 			// parse timestamp
-			if mirrorMetadata.Content.Content.Timestamp.BigInt().Int64() > 0 {
-				value.Timestamp = time.Unix(mirrorMetadata.Content.Content.Timestamp.BigInt().Int64(), 0)
+			if mirrorContent.Content.Timestamp.BigInt().Int64() > 0 {
+				value.Timestamp = time.Unix(mirrorContent.Content.Timestamp.BigInt().Int64(), 0)
 			}
 
 			internalTransactionMap[transaction.Hash] = value
