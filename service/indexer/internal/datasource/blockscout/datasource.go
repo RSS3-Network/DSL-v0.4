@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	Name = "blockscout"
+	Source = "blockscout"
 
 	StatusFailed  = "0"
 	StatusSuccess = "1"
@@ -30,7 +30,7 @@ type Datasource struct {
 }
 
 func (d *Datasource) Name() string {
-	return Name
+	return Source
 }
 
 func (d *Datasource) Networks() []string {
