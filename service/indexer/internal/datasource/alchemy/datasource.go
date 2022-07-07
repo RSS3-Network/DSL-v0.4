@@ -16,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/alchemy"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc1155"
 	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc20"
@@ -173,6 +174,19 @@ func (d *Datasource) handleTransactionFunc(ctx context.Context, message *protoco
 			return nil, err
 		}
 
+		transaction.Transfers = append(transaction.Transfers, model.Transfer{
+			// This is a virtual transfer
+			TransactionHash: transaction.Hash,
+			Timestamp:       transaction.Timestamp,
+			Index:           protocol.IndexVirtual,
+			AddressFrom:     transaction.AddressFrom,
+			AddressTo:       transaction.AddressTo,
+			Metadata:        metadata.Default,
+			Network:         message.Network,
+			Source:          d.Name(),
+			SourceData:      transaction.SourceData,
+		})
+
 		return transaction, nil
 	}
 }
@@ -202,6 +216,7 @@ func (d *Datasource) handleLog(ctx context.Context, message *protocol.Message, t
 		Timestamp:       transaction.Timestamp,
 		Index:           int64(log.Index),
 		Network:         transaction.Network,
+		Metadata:        metadata.Default,
 		Source:          d.Name(),
 	}
 
