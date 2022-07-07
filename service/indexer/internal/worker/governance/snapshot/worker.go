@@ -12,7 +12,6 @@ import (
 
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/snapshot"
-	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/snapshot/graphql"
 	job2 "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot/job"
 
 	"github.com/shopspring/decimal"
@@ -67,33 +66,6 @@ type MetadataSpace struct {
 	Network string              `json:"network"`
 	Symbol  string              `json:"symbol"`
 	Filters MetadataSpaceFilter `json:"filters"`
-}
-
-func getFilterSnapshotMetadataSpaceJson(spaceJson json.RawMessage) ([]byte, error) {
-	space := graphqlx.Space{}
-
-	if err := json.Unmarshal(spaceJson, &space); err != nil {
-		return []byte{}, fmt.Errorf("failed to unmarshal space json: %w", err)
-	}
-
-	currSpace := MetadataSpace{
-		Id:      string(space.Id),
-		Name:    string(space.Name),
-		About:   string(space.About),
-		Network: string(space.Network),
-		Symbol:  string(space.Symbol),
-		Filters: MetadataSpaceFilter{
-			MinScore:    decimal.NewFromFloat(float64(space.Filters.MinScore)),
-			OnlyMembers: bool(space.Filters.OnlyMembers),
-		},
-	}
-
-	bytes, err := json.Marshal(currSpace)
-	if err != nil {
-		return []byte{}, fmt.Errorf("failed to marshal space json: %w", err)
-	}
-
-	return bytes, nil
 }
 
 func (s *service) Name() string {
@@ -200,9 +172,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	if !isVoteError {
 		for _, vote := range votes {
-			newTransaction, err := s.cleaningVote(vote, proposalMap, spaceMap, message)
+			newTransaction, err := s.getVote(vote, proposalMap, spaceMap, message)
 			if err != nil {
-				logrus.Errorf("failed to cleaning vote: %s", err)
+				logrus.Errorf("failed to format vote: %s", err)
 				continue
 			}
 			if newTransaction != nil {
@@ -213,9 +185,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	if !isProposalsByAuthorError {
 		for _, proposal := range proposalsByAuthorMap {
-			newTransaction, err := s.cleaningProposalsByAuthor(proposal, spaceMap, message)
+			newTransaction, err := s.getProposal(proposal, spaceMap, message)
 			if err != nil {
-				logrus.Errorf("failed to cleaning proposal: %s", err)
+				logrus.Errorf("failed to format proposal: %s", err)
 				continue
 			}
 			if newTransaction != nil {
@@ -378,7 +350,7 @@ func (s *service) getProposalsByAuthor(ctx context.Context, author string, times
 	return snapshotProposalMap, nil
 }
 
-func (s *service) cleaningVote(
+func (s *service) getVote(
 	vote governance.SnapshotVote,
 	proposalMap map[string]governance.SnapshotProposal,
 	spaceMap map[string]governance.SnapshotSpace,
@@ -398,18 +370,17 @@ func (s *service) cleaningVote(
 		return nil, nil
 	}
 
-	spaceMetadata, err := getFilterSnapshotMetadataSpaceJson(space.Metadata)
+	formattedProposal, err := s.formatProposal(&proposal, &space)
 	if err != nil {
-		logrus.Warnf("[snapshot worker] failed to get space metadata:%v, voteid:%s, voterid:%s", err, vote.ID, message.Address)
-		spaceMetadata = space.Metadata
+		logrus.Warnf("[snapshot worker] failed to format proposal:%v", proposal.ID)
+		return nil, nil
 	}
 
-	snapShotMetadata := metadata.SnapShot{
-		Proposal: proposal.Metadata,
-		Space:    spaceMetadata,
-		Choice:   vote.Choice,
+	metadataModel.Vote = &metadata.Vote{
+		TypeOnPlatform: filter.GovernanceVote,
+		Choice:         string(vote.Choice),
+		Proposal:       formattedProposal,
 	}
-	metadataModel.SnapShot = &snapShotMetadata
 
 	rawMetadata, err := json.Marshal(metadataModel)
 	if err != nil {
@@ -423,7 +394,7 @@ func (s *service) cleaningVote(
 		Choice:   vote.Choice,
 	}
 
-	rawSourceData, err := json.Marshal(snapShotSourcedata)
+	sourceData, err := json.Marshal(snapShotSourcedata)
 	if err != nil {
 		logrus.Warnf("[snapshot worker] failed to marshal sourcedata:%v", err)
 		return nil, nil
@@ -439,7 +410,7 @@ func (s *service) cleaningVote(
 		Platform:    Name,
 		Network:     message.Network,
 		Source:      Name,
-		SourceData:  rawSourceData,
+		SourceData:  sourceData,
 		Tag:         filter.TagGovernance,
 		Transfers: []model.Transfer{
 			{
@@ -453,7 +424,7 @@ func (s *service) cleaningVote(
 				Platform:        Name,
 				Network:         message.Network,
 				Source:          Name,
-				SourceData:      rawSourceData,
+				SourceData:      sourceData,
 				RelatedUrls:     []string{relatedUrl},
 			},
 		},
@@ -462,7 +433,7 @@ func (s *service) cleaningVote(
 	return &currTransaction, nil
 }
 
-func (s *service) cleaningProposalsByAuthor(
+func (s *service) getProposal(
 	proposal governance.SnapshotProposal,
 	spaceMap map[string]governance.SnapshotSpace,
 	message *protocol.Message,
@@ -475,17 +446,13 @@ func (s *service) cleaningProposalsByAuthor(
 		return nil, nil
 	}
 
-	spaceMetadata, err := getFilterSnapshotMetadataSpaceJson(space.Metadata)
+	formattedProposal, err := s.formatProposal(&proposal, &space)
 	if err != nil {
-		logrus.Warnf("[snapshot worker] failed to get space metadata:%v, proposalid:%s, authorid:%s", err, proposal.ID, message.Address)
-		spaceMetadata = space.Metadata
+		logrus.Warnf("[snapshot worker] failed to format proposal:%v", proposal.ID)
+		return nil, nil
 	}
 
-	snapShotMetadata := metadata.SnapShot{
-		Proposal: proposal.Metadata,
-		Space:    spaceMetadata,
-	}
-	metadataModel.SnapShot = &snapShotMetadata
+	metadataModel.Proposal = formattedProposal
 
 	rawMetadata, err := json.Marshal(metadataModel)
 	if err != nil {
@@ -498,23 +465,22 @@ func (s *service) cleaningProposalsByAuthor(
 		Space:    space.Metadata,
 	}
 
-	rawSourceData, err := json.Marshal(snapShotSourcedata)
+	sourceData, err := json.Marshal(snapShotSourcedata)
 	if err != nil {
 		logrus.Warnf("[snapshot worker] failed to marshal sourcedata:%v", err)
 		return nil, nil
 	}
 
 	relatedUrl := "https://snapshot.org/#/" + proposal.SpaceID + "/proposal/" + proposal.ID
-	lowerAddress := message.Address
 
 	currTransaction := model.Transaction{
 		Hash:        proposal.ID,
 		Timestamp:   proposal.DateCreated,
-		AddressFrom: lowerAddress,
+		AddressFrom: message.Address,
 		Platform:    Name,
 		Network:     message.Network,
 		Source:      s.Name(),
-		SourceData:  rawSourceData,
+		SourceData:  sourceData,
 		Tag:         filter.TagGovernance,
 		Transfers: []model.Transfer{
 			{
@@ -523,18 +489,51 @@ func (s *service) cleaningProposalsByAuthor(
 				Type:            filter.GovernancePropose,
 				Timestamp:       proposal.DateCreated,
 				Index:           protocol.IndexVirtual,
-				AddressFrom:     lowerAddress,
+				AddressFrom:     message.Address,
 				Metadata:        rawMetadata,
 				Platform:        Name,
 				Network:         message.Network,
 				Source:          s.Name(),
-				SourceData:      rawSourceData,
+				SourceData:      sourceData,
 				RelatedUrls:     []string{relatedUrl},
 			},
 		},
 	}
 
 	return &currTransaction, nil
+}
+
+// formatProposal format governance.SnapshotProposal into metadata.Proposal
+func (s *service) formatProposal(
+	proposal *governance.SnapshotProposal, space *governance.SnapshotSpace,
+) (*metadata.Proposal, error) {
+	var proposalDetail Proposal
+
+	err := json.Unmarshal(proposal.Metadata, &proposalDetail)
+	if err != nil {
+		return nil, err
+	}
+
+	var spaceDetail Space
+
+	err = json.Unmarshal(space.Metadata, &spaceDetail)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metadata.Proposal{
+		Id:      proposalDetail.Id,
+		Title:   proposalDetail.Title,
+		Body:    proposalDetail.Body,
+		Options: proposalDetail.Choices,
+		StartAt: time.Unix(int64(proposalDetail.Start), 0),
+		EndAt:   time.Unix(int64(proposalDetail.End), 0),
+		Organization: &metadata.Organization{
+			Id:    spaceDetail.Id,
+			Name:  spaceDetail.Name,
+			About: spaceDetail.About,
+		},
+	}, nil
 }
 
 func New(

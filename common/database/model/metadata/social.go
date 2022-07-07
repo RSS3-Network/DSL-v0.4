@@ -1,12 +1,12 @@
-package social
+package metadata
 
 import "encoding/json"
 
-// Content used for Post,Comment,Share
-type Content struct {
+// Post used for Post,Comment,Share
+type Post struct {
 	TypeOnPlatform string          `json:"type_on_platform,omitempty"`
 	Title          string          `json:"title,omitempty"`
 	Body           string          `json:"body"`
 	Media          json.RawMessage `json:"media,omitempty"`
-	Target         *Content        `json:"target,omitempty"`
+	Target         *Post           `json:"target,omitempty"`
 }

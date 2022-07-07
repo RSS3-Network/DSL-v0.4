@@ -10,7 +10,6 @@ import (
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -103,7 +102,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			metadataModel.Content = &social.Content{
+			metadataModel.Post = &metadata.Post{
 				Title: mirrorContent.Content.Title,
 				Body:  mirrorContent.Content.Body,
 			}

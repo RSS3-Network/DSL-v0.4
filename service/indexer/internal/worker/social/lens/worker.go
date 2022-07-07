@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/naturalselectionlabs/pregod/common/database/model/social"
-
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	lens2 "github.com/naturalselectionlabs/pregod/common/worker/lens"
 
@@ -111,7 +109,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			return nil, err
 		}
 
-		metadataModel.Content = &social.Content{
+		metadataModel.Post = &metadata.Post{
 			TypeOnPlatform: string(publication.Type),
 			Body:           string(publication.Metadata.Description),
 			Media:          media,
@@ -123,13 +121,13 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			targetContent := social.Content{
+			targetContent := metadata.Post{
 				TypeOnPlatform: string(publication.Target.Type),
 				Body:           string(publication.Target.Metadata.Description),
 				Media:          media,
 			}
 
-			metadataModel.Content.Target = &targetContent
+			metadataModel.Post.Target = &targetContent
 		}
 
 		rawMetadata, err := json.Marshal(metadataModel)
