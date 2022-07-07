@@ -62,10 +62,16 @@ jobs:
         with:
           path: $GOPATH/pkg/mod
           key: ${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - run: |
+          mkdir ~/.pregod
+          cp deploy/config/* ~/.pregod
+      - uses: sljeff/secrets2env@main
+        with:
+          secrets-json: ${{ toJson(secrets) }}
       - name: Run tests
         env:
-          CONFIG_ENV_POSTGRES_HOST: pgsql
-          CONFIG_ENV_RABBITMQ_HOST: rabbitmq
+          CONFIG_ENV_POSTGRES_HOST: localhost
+          CONFIG_ENV_RABBITMQ_HOST: localhost
         run: |
           go install github.com/wadey/gocovmerge@latest
           make coverage_fail

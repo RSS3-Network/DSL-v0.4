@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,7 +20,9 @@ import (
 var tokenWorker worker.Worker
 
 func init() {
-	db, err := database.Dial("postgres://postgres:password@127.0.0.1:5432/pregod2", true)
+	config.Initialize()
+
+	db, err := database.Dial(config.ConfigIndexer.Postgres.String(), true)
 	if err != nil {
 		panic(err)
 	}
