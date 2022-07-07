@@ -8,24 +8,30 @@ import (
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
 	"github.com/stretchr/testify/assert"
 )
 
+var coinmarketcapKey string
+
 func setup() {
+	config.Initialize()
+
 	_, _ = cache.Dial(&configx.Redis{
-		Addr:     "127.0.0.1:6379",
-		Password: "",
-		DB:       0,
+		Addr:     config.ConfigIndexer.Redis.Addr,
+		Password: config.ConfigIndexer.Redis.Password,
+		DB:       config.ConfigIndexer.Redis.DB,
 	})
 	_ = cache.Clear(context.Background())
 
-	db, _ := database.Dial("postgres://postgres:password@127.0.0.1:5432/pregod2", true)
+	db, _ := database.Dial(config.ConfigIndexer.Postgres.String(), true)
 	db.Delete(model.GetNFTTokenInfo{})
 	db.Delete(model.GetTokenInfo{})
 	db.Delete(model.CoinMarketCapCoinInfo{})
 
-	coinmarketcap.Init("11f16fe7-7036-42c7-8155-1524d74b05eb")
+	coinmarketcapKey = config.ConfigIndexer.CoinMarketCap.APIKey
+	coinmarketcap.Init(coinmarketcapKey)
 }
 
 func teardown() {
@@ -63,7 +69,7 @@ func Test_CachedGetCoinInfo(t *testing.T) {
 	assert.EqualValues(t, "RSS3", info.Name)
 
 	// ETH address (on BSC)
-	coinmarketcap.Init("11f16fe7-7036-42c7-8155-1524d74b05eb")
+	coinmarketcap.Init(coinmarketcapKey)
 	ethBNBAddress := "0x2170ed0880ac9a755fd29b2688956bd959f933f8"
 	info, err = coinmarketcap.CachedGetCoinInfo(ctx, "binance_smart_chain", ethBNBAddress)
 	assert.Nil(t, err)
