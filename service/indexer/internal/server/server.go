@@ -216,7 +216,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	defer handlerSpan.End()
 
-	logrus.Info(message.Address, " ", message.Network)
+	logger.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
 	// Get data from datasources
 	var transactions []model.Transaction
@@ -287,6 +287,18 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 		return datasourceError
 	}
+
+	defer func() {
+		transfers := 0
+
+		for _, transaction := range transactions {
+			for range transaction.Transfers {
+				transfers++
+			}
+		}
+
+		logger.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
+	}()
 
 	return s.handleWorkers(ctx, message, transactions, transactionsMap)
 }

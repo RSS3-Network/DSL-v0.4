@@ -185,6 +185,9 @@ func (d *Datasource) handleTransactionFunc(ctx context.Context, message *protoco
 			Network:         message.Network,
 			Source:          d.Name(),
 			SourceData:      transaction.SourceData,
+			RelatedUrls: []string{
+				ethereum.BuildScanURL(message.Network, transaction.Hash),
+			},
 		})
 
 		return transaction, nil

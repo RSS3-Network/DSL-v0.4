@@ -34,4 +34,12 @@ var NativeTokenMap = map[string]model.Token{
 		Standard: protocol.TokenStandardNative,
 		Network:  protocol.NetworkCrossbell,
 	},
+	protocol.NetworkXDAI: {
+		Name:     "xDAI",
+		Symbol:   "XDAI",
+		Decimal:  18,
+		Standard: protocol.TokenStandardNative,
+		Network:  protocol.NetworkXDAI,
+		Source:   "",
+	},
 }

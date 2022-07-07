@@ -7,13 +7,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	blockscoutx "github.com/naturalselectionlabs/pregod/common/blockscout"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/logger"
+	moralisx "github.com/naturalselectionlabs/pregod/common/moralis"
+	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/zksync"
@@ -65,7 +69,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	defer handlerSpan.End()
 
 	switch message.Network {
-	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.PlatfromCrossbell:
+	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkCrossbell:
 		return s.handleEthereum(ctx, message, transactions)
 	case protocol.NetworkZkSync:
 		return s.handleZkSync(ctx, message, transactions)
@@ -115,7 +119,7 @@ func (s *service) handleAlchemy(ctx context.Context, message *protocol.Message, 
 
 				internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transfer, nil, sourceData.Transaction.Value())
 				if err != nil {
-					return nil, err
+					continue
 				}
 
 				transfer = *internalTransfer
@@ -170,7 +174,45 @@ func (s *service) handleMoralis(ctx context.Context, message *protocol.Message, 
 
 	defer snap.End()
 
-	return make([]model.Transaction, 0), nil
+	internalTransactions := make([]model.Transaction, 0)
+
+	for _, transaction := range transactions {
+		internalTransaction := transaction
+		internalTransaction.Transfers = make([]model.Transfer, 0)
+
+		for _, transfer := range transaction.Transfers {
+			if transfer.Index == protocol.IndexVirtual {
+				var sourceData moralisx.Transaction
+
+				if err := json.Unmarshal(transfer.SourceData, &sourceData); err != nil {
+					logger.Global().Error("failed to unmarshal source data", zap.Error(err), zap.String("source_data", string(transfer.SourceData)))
+
+					return nil, err
+				}
+
+				tokenValue, err := decimal.NewFromString(sourceData.Value)
+				if err != nil {
+					return nil, err
+				}
+
+				internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transfer, nil, tokenValue.BigInt())
+				if err != nil {
+					return nil, err
+				}
+
+				transfer = *internalTransfer
+			}
+
+			internalTransaction, transfer = s.buildType(internalTransaction, transfer)
+			internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+		}
+
+		if len(internalTransaction.Transfers) > 0 {
+			internalTransactions = append(internalTransactions, internalTransaction)
+		}
+	}
+
+	return internalTransactions, nil
 }
 
 func (s *service) handleBlockscout(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
@@ -179,7 +221,44 @@ func (s *service) handleBlockscout(ctx context.Context, message *protocol.Messag
 
 	defer snap.End()
 
-	return make([]model.Transaction, 0), nil
+	internalTransactions := make([]model.Transaction, 0)
+
+	for _, transaction := range transactions {
+		internalTransaction := transaction
+		internalTransaction.Transfers = make([]model.Transfer, 0)
+
+		for _, transfer := range transaction.Transfers {
+			if transfer.Index == protocol.IndexVirtual {
+				var sourceData blockscoutx.Transaction
+
+				if err := json.Unmarshal(transfer.SourceData, &sourceData); err != nil {
+					logger.Global().Error("failed to unmarshal source data", zap.Error(err), zap.String("source_data", string(transfer.SourceData)))
+
+					return nil, err
+				}
+
+				internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transfer, nil, sourceData.Value.BigInt())
+				if err != nil {
+					logger.Global().Error("failed to build internal transfer", zap.Error(err))
+
+					return nil, err
+				}
+
+				transfer = *internalTransfer
+			} else {
+				// TODO NFT
+			}
+
+			internalTransaction, transfer = s.buildType(internalTransaction, transfer)
+			internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+		}
+
+		if len(internalTransaction.Transfers) > 0 {
+			internalTransactions = append(internalTransactions, internalTransaction)
+		}
+	}
+
+	return internalTransactions, nil
 }
 
 func (s *service) handleArweave(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
@@ -267,18 +346,24 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 	} else {
 		// ERC-20 / ERC-721 / ERC-1155
 		tokenInfo, err := coinmarketcap.CachedGetCoinInfo(ctx, message.Network, *tokenAddress)
-		if err != nil {
-			logger.Global().Warn("failed to get token info from coinmarketcap", zap.Error(err), zap.String("token_address", *tokenAddress))
+		if err == nil {
+			tokenMetadata.Name = tokenInfo.Name
+			tokenMetadata.Symbol = tokenInfo.Symbol
+			tokenMetadata.Logo = tokenInfo.Logo
+			tokenMetadata.Decimals = tokenInfo.Decimals
+		} else {
+			nftMetadata, err := nft.GetMetadata(message.Network, common.HexToAddress(*tokenAddress), value)
+			if err != nil {
+				return nil, err
+			}
 
-			return nil, err
+			tokenMetadata.NFTMetadata = nftMetadata
+			tokenID := decimal.NewFromBigInt(value, 0)
+			tokenMetadata.TokenID = &tokenID
+			tokenValue := decimal.NewFromInt(1)
+			tokenMetadata.TokenValue = &tokenValue
 		}
 
-		// TODO NFT
-
-		tokenMetadata.Name = tokenInfo.Name
-		tokenMetadata.Symbol = tokenInfo.Symbol
-		tokenMetadata.Logo = tokenInfo.Logo
-		tokenMetadata.Decimals = tokenInfo.Decimals
 		tokenMetadata.TokenAddress = *tokenAddress
 		tokenMetadata.TokenStandard = protocol.TokenStandardERC20
 
