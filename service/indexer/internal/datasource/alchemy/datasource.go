@@ -51,8 +51,8 @@ func (d *Datasource) Name() string {
 
 func (d *Datasource) Networks() []string {
 	return []string{
-		protocol.NetworkEthereum,
-		protocol.NetworkPolygon,
+		// protocol.NetworkEthereum,
+		// protocol.NetworkPolygon,
 	}
 }
 
