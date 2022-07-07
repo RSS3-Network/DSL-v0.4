@@ -2,6 +2,10 @@ module github.com/naturalselectionlabs/pregod
 
 go 1.18
 
+// https://github.com/samber/lo/pull/43
+// https://github.com/samber/lo/pull/81
+replace github.com/samber/lo v1.25.0 => github.com/kallydev/lo v1.26.0-alpha.1
+
 require (
 	github.com/deckarep/golang-set v1.8.0
 	github.com/ethereum/go-ethereum v1.10.18
@@ -13,7 +17,7 @@ require (
 	github.com/lib/pq v1.10.6
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/robfig/cron/v3 v3.0.0
-	github.com/samber/lo v1.21.0
+	github.com/samber/lo v1.25.0
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0

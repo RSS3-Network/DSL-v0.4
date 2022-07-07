@@ -15,7 +15,7 @@ const (
 	EndpointHost   = "api.lens.dev"
 	EndpointPath   = "/graphql"
 	// EndpointLimit : the maximum number of items that can be returned in a single query
-	EndpointLimit = 25
+	EndpointLimit = 50
 )
 
 var PublicationType = []PublicationTypes{"POST", "COMMENT", "MIRROR"}
@@ -67,6 +67,7 @@ type (
 		ProfileId        graphql.String     `json:"profileId"`
 		PublicationTypes []PublicationTypes `json:"publicationTypes"`
 		Cursor           graphql.String     `json:"cursor"`
+		Limit            graphql.Int        `json:"limit"`
 	}
 )
 
@@ -75,6 +76,7 @@ func (c *Client) GetPublications(ctx context.Context, options *Options) ([]graph
 		ProfileId:        options.Profile,
 		PublicationTypes: PublicationType,
 		Cursor:           options.Cursor,
+		Limit:            graphql.Int(EndpointLimit),
 	}
 
 	if err := c.GetPublicationPageInfo(ctx, options); err != nil {
@@ -176,6 +178,7 @@ func (c *Client) GetPublicationPageInfo(ctx context.Context, options *Options) e
 		ProfileId:        options.Profile,
 		PublicationTypes: PublicationType,
 		Cursor:           graphql.String("{}"),
+		Limit:            graphql.Int(EndpointLimit),
 	}
 
 	variableMap := map[string]interface{}{

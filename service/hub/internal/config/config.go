@@ -1,7 +1,11 @@
 package config
 
 import (
+	"strings"
+
 	configx "github.com/naturalselectionlabs/pregod/common/config"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 type Config struct {
@@ -12,4 +16,26 @@ type Config struct {
 	Postgres      *configx.Postgres      `mapstructure:"postgres"`
 	Redis         *configx.Redis         `mapstructure:"redis"`
 	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
+}
+
+var ConfigHub Config
+
+func Initialize() {
+	viper.SetConfigName("hub")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("/etc/pregod/")
+	viper.AddConfigPath("$HOME/.pregod/")
+	viper.AddConfigPath("./deploy/config/")
+	// `opentelemetry.host` -> `CONFIG_ENV_OPENTELEMETRY_HOST`
+	viper.SetEnvPrefix("CONFIG_ENV")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
+
+	if err := viper.ReadInConfig(); err != nil {
+		logrus.Fatalln(err)
+	}
+
+	if err := viper.Unmarshal(&ConfigHub); err != nil {
+		logrus.Fatalln(err)
+	}
 }
