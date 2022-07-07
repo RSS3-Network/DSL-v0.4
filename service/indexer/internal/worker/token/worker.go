@@ -245,9 +245,9 @@ func (s *service) handleBlockscout(ctx context.Context, message *protocol.Messag
 				}
 
 				transfer = *internalTransfer
-			} else {
-				// TODO NFT
 			}
+
+			// TODO NFT
 
 			internalTransaction, transfer = s.buildType(internalTransaction, transfer)
 			internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
@@ -305,7 +305,6 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 
 				transfer = *internalTransfer
 			} else {
-				//tokenMetadata
 				erc20Token, _, err := s.zksyncClient.GetToken(ctx, uint(data.Transaction.Operation.Token))
 				if err != nil {
 					return nil, err
