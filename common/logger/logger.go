@@ -2,6 +2,7 @@ package logger
 
 import (
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -20,7 +21,10 @@ func Initialize(mode string) (err error) {
 	case ModeDevelopment:
 		fallthrough
 	default:
-		if logger, err = zap.NewDevelopment(); err != nil {
+		config := zap.NewDevelopmentConfig()
+		config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+
+		if logger, err = config.Build(); err != nil {
 			return err
 		}
 	}
