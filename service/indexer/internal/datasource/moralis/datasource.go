@@ -46,7 +46,7 @@ func (d *Datasource) Name() string {
 
 func (d *Datasource) Networks() []string {
 	return []string{
-		protocol.NetworkBinanceSmartChain,
+		protocol.NetworkBinanceSmartChain, protocol.NetworkEthereum, protocol.NetworkPolygon,
 	}
 }
 
