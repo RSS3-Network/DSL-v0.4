@@ -3,8 +3,10 @@ package mirror
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/arweave"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
@@ -14,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 )
 
@@ -85,10 +88,15 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				}
 			}
 
-			var err error
-
 			// Get the article text content
-			if mirrorMetadata.Content, err = s.getContent(ctx, transactionEdge.Node.ID.(string)); err != nil {
+			content, err := s.getContent(ctx, transactionEdge.Node.ID.(string))
+			if err != nil {
+				logrus.Errorf("[mirror_worker] Handle: getContent error, %v", err)
+				return nil, err
+			}
+
+			if err = json.Unmarshal([]byte(content), &mirrorMetadata.Content); err != nil {
+				logrus.Errorf("[mirror_worker] Handle: json unmarshal error, %v", err)
 				return nil, err
 			}
 
@@ -103,6 +111,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			transfer.AddressFrom = strings.ToLower(metadataModel.Mirror.Contributor)
 			transfer.Metadata = rawMetadata
 			transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
+			transfer.RelatedUrls = append(transfer.RelatedUrls, fmt.Sprintf("https://mirror.xyz/%s/%s", transfer.AddressFrom, metadataModel.Mirror.ContentDigest))
 
 			if transfer.Tag == filter.TagSocial {
 				transfer.Type = filter.SocialPost
@@ -121,6 +130,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
 			value.Transfers = append(value.Transfers, transfer)
+
+			// parse timestamp
+			if mirrorMetadata.Content.Content.Timestamp.BigInt().Int64() > 0 {
+				value.Timestamp = time.Unix(mirrorMetadata.Content.Content.Timestamp.BigInt().Int64(), 0)
+			}
 
 			internalTransactionMap[transaction.Hash] = value
 		}
