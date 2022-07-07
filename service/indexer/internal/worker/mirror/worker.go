@@ -73,7 +73,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			mirrorMetadata := metadata.Mirror{}
+			mirrorMetadata := Mirror{}
 
 			for _, tag := range transactionEdge.Node.Tags {
 				switch tag.Name {
@@ -95,7 +95,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			mirrorContent := metadata.MirrorContent{}
+			mirrorContent := MirrorContent{}
 
 			if err = json.Unmarshal(content, &mirrorContent); err != nil {
 				logrus.Errorf("[mirror_worker] Handle: json unmarshal error, %v", err)
