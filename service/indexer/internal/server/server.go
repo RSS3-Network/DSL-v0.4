@@ -7,17 +7,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
+	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
+	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
+	lensworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
+
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/logger"
-	"github.com/naturalselectionlabs/pregod/common/nft"
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
@@ -26,15 +34,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
-	lensworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/lens"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
-	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/coinmarketcap"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -140,7 +141,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		token.New(s.databaseClient),
+		transaction.New(s.databaseClient),
 		swap.New(s.employer, s.databaseClient),
 		mirror.New(),
 		poapworker.New(),

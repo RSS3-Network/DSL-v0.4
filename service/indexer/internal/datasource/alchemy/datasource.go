@@ -8,18 +8,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/datasource/alchemy"
+	ethereum2 "github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	erc11552 "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
+	erc202 "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/naturalselectionlabs/pregod/common/alchemy"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc1155"
-	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc20"
-	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	lop "github.com/samber/lo/parallel"
@@ -137,7 +138,7 @@ func (d *Datasource) handleTransactionFunc(ctx context.Context, message *protoco
 		case types.DynamicFeeTxType:
 			transactionMessage, err = internalTransaction.AsMessage(types.LatestSignerForChainID(internalTransaction.ChainId()), nil)
 		default:
-			err = ethereum.ErrorUnsupportedTransactionType
+			err = ethereum2.ErrorUnsupportedTransactionType
 		}
 
 		if err != nil {
@@ -146,7 +147,7 @@ func (d *Datasource) handleTransactionFunc(ctx context.Context, message *protoco
 
 		transaction.AddressFrom = strings.ToLower(transactionMessage.From().String())
 
-		addressTo := ethereum.AddressGenesis.String()
+		addressTo := ethereum2.AddressGenesis.String()
 
 		if internalTransaction.To() != nil {
 			addressTo = internalTransaction.To().String()
@@ -162,7 +163,7 @@ func (d *Datasource) handleTransactionFunc(ctx context.Context, message *protoco
 		transactionSuccess := receipt.Status == types.ReceiptStatusSuccessful
 		transaction.Success = &transactionSuccess
 
-		if transaction.SourceData, err = json.Marshal(&ethereum.SourceData{
+		if transaction.SourceData, err = json.Marshal(&ethereum2.SourceData{
 			Transaction: internalTransaction,
 			Receipt:     receipt,
 		}); err != nil {
@@ -206,8 +207,8 @@ func (d *Datasource) handleLog(ctx context.Context, message *protocol.Message, t
 	}
 
 	switch log.Topics[0] {
-	case erc20.EventHashTransfer, erc721.EventHashTransfer:
-		filterer, err := erc20.NewERC20Filterer(log.Address, nil)
+	case erc202.EventHashTransfer, erc721.EventHashTransfer:
+		filterer, err := erc202.NewERC20Filterer(log.Address, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -219,8 +220,8 @@ func (d *Datasource) handleLog(ctx context.Context, message *protocol.Message, t
 
 		transfer.AddressFrom = strings.ToLower(event.From.String())
 		transfer.AddressTo = strings.ToLower(event.To.String())
-	case erc1155.EventHashTransferSingle:
-		filterer, err := erc1155.NewERC1155Filterer(log.Address, nil)
+	case erc11552.EventHashTransferSingle:
+		filterer, err := erc11552.NewERC1155Filterer(log.Address, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -232,8 +233,8 @@ func (d *Datasource) handleLog(ctx context.Context, message *protocol.Message, t
 
 		transfer.AddressFrom = strings.ToLower(event.From.String())
 		transfer.AddressTo = strings.ToLower(event.To.String())
-	case erc1155.EventHashTransferBatch:
-		filterer, err := erc1155.NewERC1155Filterer(log.Address, nil)
+	case erc11552.EventHashTransferBatch:
+		filterer, err := erc11552.NewERC1155Filterer(log.Address, nil)
 		if err != nil {
 			return nil, err
 		}

@@ -1,5 +1,5 @@
 /*
-Cache token info from api.zksync.io
+Cache transaction info from api.zksync.io
 */
 package model
 

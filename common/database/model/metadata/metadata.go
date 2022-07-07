@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 )
@@ -21,13 +22,13 @@ func init() {
 }
 
 type Metadata struct {
-	Token     *Token     `json:"token,omitempty"`
-	Swap      *SwapPool  `json:"swap,omitempty"`
-	POAP      *POAP      `json:"poap,omitempty"`
-	Gitcoin   *Gitcoin   `json:"gitcoin,omitempty"`
-	SnapShot  *SnapShot  `json:"snapshot,omitempty"`
-	Crossbell *Crossbell `json:"crossbell,omitempty"`
-	Content   *Content   `json:"content,omitempty"`
+	Token     *Token          `json:"transaction,omitempty"`
+	Swap      *SwapPool       `json:"swap,omitempty"`
+	POAP      *POAP           `json:"poap,omitempty"`
+	Gitcoin   *Gitcoin        `json:"gitcoin,omitempty"`
+	SnapShot  *SnapShot       `json:"snapshot,omitempty"`
+	Crossbell *Crossbell      `json:"crossbell,omitempty"`
+	Content   *social.Content `json:"content,omitempty"`
 }
 
 type Token struct {
@@ -139,7 +140,7 @@ func BuildMetadataRawMessage(metadataRawMessage json.RawMessage, metadataModel a
 		internalMetadataModel.Gitcoin = model
 	case *Crossbell:
 		internalMetadataModel.Crossbell = model
-	case *Content:
+	case *social.Content:
 		internalMetadataModel.Content = model
 	default:
 		return nil, ErrorUnsupportedType

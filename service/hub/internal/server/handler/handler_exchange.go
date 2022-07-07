@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
+
 	"github.com/labstack/echo/v4"
-	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"go.opentelemetry.io/otel"
 )
 
@@ -87,10 +88,10 @@ func (h *Handler) getCexListDatabase(c context.Context, request GetExchangeReque
 
 	defer postgresSnap.End()
 
-	dbResult := make([]dbModel.CexWallet, 0)
+	dbResult := make([]exchange.CexWallet, 0)
 	total := int64(0)
 	sql := h.DatabaseClient.
-		Model(&dbModel.CexWallet{})
+		Model(&exchange.CexWallet{})
 
 	if len(request.Network) > 0 {
 		sql = sql.Where("network IN ?", request.Network)
@@ -127,10 +128,10 @@ func (h *Handler) getDexListDatabase(c context.Context, request GetExchangeReque
 
 	defer postgresSnap.End()
 
-	dbResult := make([]dbModel.SwapPool, DefaultLimit)
+	dbResult := make([]exchange.SwapPool, DefaultLimit)
 	total := int64(0)
 	sql := h.DatabaseClient.
-		Model(&dbModel.SwapPool{})
+		Model(&exchange.SwapPool{})
 
 	if len(request.Network) > 0 {
 		sql = sql.Where("network IN ?", request.Network)

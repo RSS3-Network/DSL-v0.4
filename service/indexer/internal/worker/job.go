@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/shedlock"
+	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
