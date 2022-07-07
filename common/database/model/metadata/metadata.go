@@ -23,12 +23,11 @@ func init() {
 type Metadata struct {
 	Token     *Token     `json:"token,omitempty"`
 	Swap      *SwapPool  `json:"swap,omitempty"`
-	Mirror    *Mirror    `json:"mirror,omitempty"`
 	POAP      *POAP      `json:"poap,omitempty"`
 	Gitcoin   *Gitcoin   `json:"gitcoin,omitempty"`
 	SnapShot  *SnapShot  `json:"snapshot,omitempty"`
 	Crossbell *Crossbell `json:"crossbell,omitempty"`
-	Lens      *Lens      `json:"lens,omitempty"`
+	Content   *Content   `json:"content,omitempty"`
 }
 
 type Token struct {
@@ -43,28 +42,6 @@ type Token struct {
 	Symbol   string `json:"symbol,omitempty"`
 
 	NFTMetadata json.RawMessage `json:"nft_metadata,omitempty"`
-}
-
-type Mirror struct {
-	ContentType           string        `json:"content_type"`
-	Contributor           string        `json:"contributor"`
-	ContentDigest         string        `json:"content_digest"`
-	OriginalContentDigest string        `json:"original_content_digest,omitempty"`
-	Content               MirrorContent `json:"content"`
-}
-
-type MirrorContent struct {
-	Nft     json.RawMessage `json:"nft"`
-	Wnft    json.RawMessage `json:"wnft"`
-	Digest  string          `json:"digest"`
-	Content struct {
-		Body      string          `json:"body"`
-		Title     string          `json:"title"`
-		Timestamp decimal.Decimal `json:"timestamp"`
-	} `json:"content"`
-	Version        string          `json:"version"`
-	Authorship     json.RawMessage `json:"authorship"`
-	OriginalDigest string          `json:"originalDigest"`
 }
 
 const (
@@ -144,13 +121,6 @@ type CrossbellNote struct {
 	Metadata     json.RawMessage `json:"metadata"`
 }
 
-type Lens struct {
-	Type    string          `json:"type"`
-	Content string          `json:"content"`
-	Media   json.RawMessage `json:"media"`
-	Target  json.RawMessage `json:"target,omitempty"`
-}
-
 func BuildMetadataRawMessage(metadataRawMessage json.RawMessage, metadataModel any) (json.RawMessage, error) {
 	var internalMetadataModel Metadata
 
@@ -163,16 +133,14 @@ func BuildMetadataRawMessage(metadataRawMessage json.RawMessage, metadataModel a
 		internalMetadataModel.Token = model
 	case *SwapPool:
 		internalMetadataModel.Swap = model
-	case *Mirror:
-		internalMetadataModel.Mirror = model
 	case *POAP:
 		internalMetadataModel.POAP = model
 	case *Gitcoin:
 		internalMetadataModel.Gitcoin = model
 	case *Crossbell:
 		internalMetadataModel.Crossbell = model
-	case *Lens:
-		internalMetadataModel.Lens = model
+	case *Content:
+		internalMetadataModel.Content = model
 	default:
 		return nil, ErrorUnsupportedType
 	}

@@ -108,14 +108,25 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			return nil, err
 		}
 
-		metadataModel.Lens = &metadata.Lens{
-			Type:    string(publication.Type),
-			Content: string(publication.Metadata.Description),
-			Media:   media,
+		metadataModel.Content = &metadata.Content{
+			TypeOnPlatform: string(publication.Type),
+			Body:           string(publication.Metadata.Description),
+			Media:          media,
 		}
 
 		if publication.Type != "Post" {
-			metadataModel.Lens.Target = publication.Target
+			media, err := json.Marshal(publication.Target.Metadata.Media)
+			if err != nil {
+				return nil, err
+			}
+
+			targetContent := metadata.Content{
+				TypeOnPlatform: string(publication.Target.Type),
+				Body:           string(publication.Target.Metadata.Description),
+				Media:          media,
+			}
+
+			metadataModel.Content.Target = &targetContent
 		}
 
 		rawMetadata, err := json.Marshal(metadataModel)
