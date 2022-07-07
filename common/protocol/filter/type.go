@@ -47,7 +47,7 @@ var ValidTypeMap = map[string][]string{
 
 func CheckTypeValid(tag string, transferType string) bool {
 	if len(tag) == 0 {
-		return true
+		return false
 	}
 
 	validTypeList := ValidTypeMap[tag]
