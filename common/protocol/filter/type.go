@@ -20,6 +20,7 @@ const (
 
 	// social types: post | comment | share (retweet) | profile | follow | unfollow | like
 	SocialPost     = "post"
+	SocialRevise   = "revise"
 	SocialComment  = "comment"
 	SocialShare    = "share"
 	SocialProfile  = "profile"

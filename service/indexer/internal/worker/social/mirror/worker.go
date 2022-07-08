@@ -70,7 +70,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			var metadataModel metadata.Metadata
 
 			if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-				return nil, err
+				continue
 			}
 
 			mirrorMetadata := Mirror{}
@@ -86,6 +86,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				case "Original-Content-Digest":
 					mirrorMetadata.OriginalContentDigest = string(tag.Value)
 				}
+			}
+
+			if len(mirrorMetadata.OriginalContentDigest) == 0 {
+				continue
 			}
 
 			// Get the article text content
@@ -118,11 +122,16 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
 			transfer.RelatedUrls = append(
 				transfer.RelatedUrls,
-				fmt.Sprintf("https://mirror.xyz/%s/%s", transfer.AddressFrom, mirrorMetadata.ContentDigest),
+				fmt.Sprintf("https://mirror.xyz/%s/%s", transfer.AddressFrom, mirrorMetadata.OriginalContentDigest),
 			)
 
 			if transfer.Tag == filter.TagSocial {
-				transfer.Type = filter.SocialPost
+				switch {
+				case mirrorMetadata.ContentDigest == mirrorMetadata.OriginalContentDigest:
+					transfer.Type = filter.SocialPost
+				default:
+					transfer.Type = filter.SocialRevise
+				}
 			}
 
 			// Copy the transaction to map
