@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pregod2-indexer
+  name: pregod-1-1-indexer
   namespace: pregod
 spec:
-  replicas: 4
+  replicas: 3
   selector:
     matchLabels:
-      app: pregod2-indexer
+      app: pregod-1-1-indexer
   template:
     metadata:
       labels:
-        app: pregod2-indexer
+        app: pregod-1-1-indexer
     spec:
       containers:
         - image: $IMAGE_TAG_RELEASE
           imagePullPolicy: Always
-          name: pregod2
+          name: pregod-1-1
           envFrom:
             - secretRef:
-                name: pregod2
+                name: pregod-1-1
           command:
             - indexer
           resources:
