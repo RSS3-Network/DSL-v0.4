@@ -50,7 +50,7 @@ type BatchGetNoteListRequest struct {
 	Limit     int       `json:"limit"`
 	Cursor    string    `json:"cursor"`
 	Cache     bool      `json:"cache"`
-	Filter    []Filter  `json:"filter"`
+	List      []Filter  `json:"list"`
 }
 
 type Filter struct {

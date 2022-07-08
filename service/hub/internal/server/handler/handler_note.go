@@ -187,8 +187,8 @@ func (h *Handler) BatchGetNoteListFunc(c echo.Context) error {
 		request.Limit = DefaultLimit
 	}
 
-	if len(request.Filter) > DefaultBatchGetLimit {
-		request.Filter = request.Filter[:DefaultBatchGetLimit]
+	if len(request.List) > DefaultBatchGetLimit {
+		request.List = request.List[:DefaultBatchGetLimit]
 	}
 
 	transactionList, total, err := h.batchGetTransactionListDatabase(ctx, request)
@@ -220,11 +220,11 @@ func (h *Handler) batchGetTransactionListDatabase(ctx context.Context, request B
 
 	defer postgresSnap.End()
 
-	if len(request.Filter) == 0 {
+	if len(request.List) == 0 {
 		return nil, 0, nil
 	}
 
-	results := make([][]dbModel.Transaction, len(request.Filter))
+	results := make([][]dbModel.Transaction, len(request.List))
 	total := int64(0)
 	lastItem := dbModel.Transaction{}
 
@@ -234,7 +234,7 @@ func (h *Handler) batchGetTransactionListDatabase(ctx context.Context, request B
 		}
 	}
 
-	lop.ForEach(request.Filter, func(reqFilter Filter, i int) {
+	lop.ForEach(request.List, func(reqFilter Filter, i int) {
 		types := []string{}
 		count := int64(0)
 		transactionList := make([]dbModel.Transaction, 0)
