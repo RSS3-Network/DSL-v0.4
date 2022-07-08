@@ -233,18 +233,36 @@ func (d *Datasource) handleLog(ctx context.Context, message *protocol.Message, t
 
 	switch log.Topics[0] {
 	case erc20.EventHashTransfer, erc721.EventHashTransfer:
-		filterer, err := erc20.NewERC20Filterer(log.Address, nil)
-		if err != nil {
-			return nil, err
-		}
+		switch len(log.Topics) {
+		case 3:
+			filterer, err := erc20.NewERC20Filterer(log.Address, nil)
+			if err != nil {
+				return nil, err
+			}
 
-		event, err := filterer.ParseTransfer(log)
-		if err != nil {
-			return nil, err
-		}
+			event, err := filterer.ParseTransfer(log)
+			if err != nil {
+				return nil, err
+			}
 
-		transfer.AddressFrom = strings.ToLower(event.From.String())
-		transfer.AddressTo = strings.ToLower(event.To.String())
+			transfer.AddressFrom = strings.ToLower(event.From.String())
+			transfer.AddressTo = strings.ToLower(event.To.String())
+		case 4:
+			filterer, err := erc721.NewERC721Filterer(log.Address, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			event, err := filterer.ParseTransfer(log)
+			if err != nil {
+				return nil, err
+			}
+
+			transfer.AddressFrom = strings.ToLower(event.From.String())
+			transfer.AddressTo = strings.ToLower(event.To.String())
+		default:
+			return nil, ErrorUnsupportedEvent
+		}
 	case erc1155.EventHashTransferSingle:
 		filterer, err := erc1155.NewERC1155Filterer(log.Address, nil)
 		if err != nil {

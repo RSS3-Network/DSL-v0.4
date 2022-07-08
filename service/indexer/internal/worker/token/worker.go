@@ -138,17 +138,36 @@ func (s *service) handleAlchemy(ctx context.Context, message *protocol.Message, 
 
 				tokenAddress := sourceData.Address.String()
 
-				erc20Filterer, err := erc20.NewERC20Filterer(sourceData.Address, nil)
-				if err != nil {
-					return nil, err
+				var value *big.Int
+
+				switch len(sourceData.Topics) {
+				case 3:
+					filterer, err := erc20.NewERC20Filterer(sourceData.Address, nil)
+					if err != nil {
+						return nil, err
+					}
+
+					event, err := filterer.ParseTransfer(sourceData)
+					if err != nil {
+						return nil, err
+					}
+
+					value = event.Value
+				case 4:
+					filterer, err := erc721.NewERC721Filterer(sourceData.Address, nil)
+					if err != nil {
+						return nil, err
+					}
+
+					event, err := filterer.ParseTransfer(sourceData)
+					if err != nil {
+						return nil, err
+					}
+
+					value = event.TokenId
 				}
 
-				event, err := erc20Filterer.ParseTransfer(sourceData)
-				if err != nil {
-					return nil, err
-				}
-
-				internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transfer, &tokenAddress, event.Value)
+				internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transfer, &tokenAddress, value)
 				if err != nil {
 					return nil, err
 				}
@@ -345,15 +364,20 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 	} else {
 		// ERC-20 / ERC-721 / ERC-1155
 		tokenInfo, err := coinmarketcap.CachedGetCoinInfo(ctx, message.Network, *tokenAddress)
-		if err == nil {
+		if err == nil && tokenInfo.Symbol != "" {
 			tokenMetadata.Name = tokenInfo.Name
 			tokenMetadata.Symbol = tokenInfo.Symbol
 			tokenMetadata.Logo = tokenInfo.Logo
 			tokenMetadata.Decimals = tokenInfo.Decimals
+			tokenMetadata.TokenStandard = protocol.TokenStandardERC20
+			tokenValue := decimal.NewFromBigInt(value, 0)
+			tokenMetadata.TokenValue = &tokenValue
+
+			transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 		} else {
 			nftMetadata, err := nft.GetMetadata(message.Network, common.HexToAddress(*tokenAddress), value)
 			if err != nil {
-				return nil, err
+				return &transfer, nil
 			}
 
 			tokenMetadata.NFTMetadata = nftMetadata
@@ -361,16 +385,15 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenMetadata.TokenID = &tokenID
 			tokenValue := decimal.NewFromInt(1)
 			tokenMetadata.TokenValue = &tokenValue
+
+			// TODO ERC1155
+			tokenMetadata.TokenStandard = protocol.TokenStandardERC721
+
+			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 		}
 
 		tokenMetadata.TokenAddress = *tokenAddress
-		tokenMetadata.TokenStandard = protocol.TokenStandardERC20
-
-		transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 	}
-
-	tokenValue := decimal.NewFromBigInt(value, 0)
-	tokenMetadata.TokenValue = &tokenValue
 
 	var err error
 	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &tokenMetadata); err != nil {
