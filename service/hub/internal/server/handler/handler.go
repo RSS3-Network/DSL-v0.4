@@ -35,7 +35,7 @@ type GetRequest struct {
 	Platform  []string  `query:"platform"`
 	Timestamp time.Time `query:"timestamp"`
 	Hash      string    `query:"hash"`
-	Cache     bool      `query:"cache"`
+	Refresh   bool      `query:"refresh"`
 }
 
 type GetExchangeRequest struct {
@@ -49,7 +49,7 @@ type BatchGetNoteListRequest struct {
 	Timestamp time.Time `json:"timestamp"`
 	Limit     int       `json:"limit"`
 	Cursor    string    `json:"cursor"`
-	Cache     bool      `json:"cache"`
+	Refresh   bool      `json:"refresh"`
 	Filter    []Filter  `json:"filter"`
 }
 

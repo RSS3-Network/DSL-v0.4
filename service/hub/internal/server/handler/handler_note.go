@@ -46,14 +46,14 @@ func (h *Handler) GetNoteListFunc(c echo.Context) error {
 
 	request.Type = types
 
-	// publish mq message
-	if !request.Cache {
-		go h.publishIndexerMessage(ctx, request.Address)
-	}
-
 	transactionList, total, err := h.getTransactionListDatabase(ctx, request)
 	if err != nil {
 		return err
+	}
+
+	// publish mq message
+	if request.Refresh || len(transactionList) == 0 {
+		go h.publishIndexerMessage(ctx, request.Address)
 	}
 
 	if len(transactionList) == 0 {
@@ -247,11 +247,6 @@ func (h *Handler) batchGetTransactionListDatabase(ctx context.Context, request B
 		}
 		reqFilter.Type = types
 
-		// publish mq message
-		if !request.Cache {
-			go h.publishIndexerMessage(ctx, reqFilter.Address)
-		}
-
 		// query transaction
 		sql := h.DatabaseClient.Model(&dbModel.Transaction{}).
 			Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
@@ -303,6 +298,11 @@ func (h *Handler) batchGetTransactionListDatabase(ctx context.Context, request B
 
 		for index := range transactionList {
 			transactionList[index].Transfers = transferMap[transactionList[index].Hash]
+		}
+
+		// publish mq message
+		if request.Refresh || len(transactionHashList) == 0 {
+			go h.publishIndexerMessage(ctx, reqFilter.Address)
 		}
 
 		results[i] = transactionList
