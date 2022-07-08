@@ -3,8 +3,8 @@ package main
 import (
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/logger"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/server"
 	"github.com/sirupsen/logrus"

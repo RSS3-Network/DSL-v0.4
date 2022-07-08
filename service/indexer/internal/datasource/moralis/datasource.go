@@ -10,10 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/moralis"
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
+	moralis2 "github.com/naturalselectionlabs/pregod/common/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis/mrc20"
 	"github.com/shopspring/decimal"
@@ -36,7 +36,7 @@ const (
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
-	moralisClient  *moralis.Client
+	moralisClient  *moralis2.Client
 	ethereumClient *ethclient.Client
 }
 
@@ -83,13 +83,13 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 		transactionMap[internalTransaction.Hash] = internalTransaction
 	}
 
-	// Get token transfer for this address
+	// Get transaction transfer for this address
 	internalTokenTransfers, moralisTokenTransferMap, err := d.handleEthereumTokenTransfers(ctx, message)
 	if err != nil {
 		return nil, err
 	}
 
-	// Put token transfers into map
+	// Put transaction transfers into map
 	for _, tokenTransfer := range internalTokenTransfers {
 		transaction, exist := transactionMap[tokenTransfer.TransactionHash]
 		if !exist {
@@ -197,7 +197,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 	address := common.HexToAddress(message.Address)
 
 	// Get transactions from Moralis
-	internalTransactions, response, err := d.moralisClient.GetTransactions(ctx, address, &moralis.GetTransactionsOption{
+	internalTransactions, response, err := d.moralisClient.GetTransactions(ctx, address, &moralis2.GetTransactionsOption{
 		Chain: protocol.NetworkToID(message.Network),
 	})
 	if err != nil {
@@ -206,9 +206,9 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 
 	// Iterate through the next page of data
 	for i := 0; int64(len(internalTransactions)) < response.Total && i < MaxPage; i++ {
-		var nextInternalTransactions []moralis.Transaction
+		var nextInternalTransactions []moralis2.Transaction
 
-		nextInternalTransactions, response, err = d.moralisClient.GetTransactions(ctx, address, &moralis.GetTransactionsOption{
+		nextInternalTransactions, response, err = d.moralisClient.GetTransactions(ctx, address, &moralis2.GetTransactionsOption{
 			Chain:  protocol.NetworkToID(message.Network),
 			Cursor: response.Cursor,
 		})
@@ -283,7 +283,7 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 	return transactions, nil
 }
 
-func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *protocol.Message) (transfers []model.Transfer, moralisTokenTransferMap map[string]moralis.TokenTransfer, err error) {
+func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *protocol.Message) (transfers []model.Transfer, moralisTokenTransferMap map[string]moralis2.TokenTransfer, err error) {
 	tracer := otel.Tracer("moralis_datasource")
 	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereumTokenTransfers")
 
@@ -291,8 +291,8 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 
 	address := common.HexToAddress(message.Address)
 
-	// Get token transfers from Moralis
-	internalTokenTransfers, response, err := d.moralisClient.GetTokenTransfers(ctx, address, &moralis.GetTokenTransfersOption{
+	// Get transaction transfers from Moralis
+	internalTokenTransfers, response, err := d.moralisClient.GetTokenTransfers(ctx, address, &moralis2.GetTokenTransfersOption{
 		Chain: protocol.NetworkToID(message.Network),
 	})
 	if err != nil {
@@ -301,9 +301,9 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 
 	// Iterate through the next page of data
 	for i := 0; int64(len(internalTokenTransfers)) < response.Total && i < MaxPage; i++ {
-		var nextInternalTokenTransfers []moralis.TokenTransfer
+		var nextInternalTokenTransfers []moralis2.TokenTransfer
 
-		nextInternalTokenTransfers, response, err = d.moralisClient.GetTokenTransfers(ctx, address, &moralis.GetTokenTransfersOption{
+		nextInternalTokenTransfers, response, err = d.moralisClient.GetTokenTransfers(ctx, address, &moralis2.GetTokenTransfersOption{
 			Chain:  protocol.NetworkToID(message.Network),
 			Cursor: response.Cursor,
 		})
@@ -316,7 +316,7 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 	}
 
 	transfers = make([]model.Transfer, 0)
-	moralisTokenTransferMap = map[string]moralis.TokenTransfer{}
+	moralisTokenTransferMap = map[string]moralis2.TokenTransfer{}
 
 	for i, internalTokenTransfer := range internalTokenTransfers {
 		moralisTokenTransferMap[internalTokenTransfer.TransactionHash] = internalTokenTransfer
@@ -348,7 +348,7 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 	return transfers, moralisTokenTransferMap, nil
 }
 
-func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *protocol.Message) (transfers []model.Transfer, moralisNFTTransferMap map[string]moralis.NFTTransfer, err error) {
+func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *protocol.Message) (transfers []model.Transfer, moralisNFTTransferMap map[string]moralis2.NFTTransfer, err error) {
 	tracer := otel.Tracer("moralis_datasource")
 	_, trace := tracer.Start(ctx, "moralis_datasource:handleEthereumNFTTransfers")
 
@@ -357,7 +357,7 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 	address := common.HexToAddress(message.Address)
 
 	// Get nft transfers from Moralis
-	internalNFTTransfers, response, err := d.moralisClient.GetNFTTransfers(ctx, address, &moralis.GetNFTTransfersOption{
+	internalNFTTransfers, response, err := d.moralisClient.GetNFTTransfers(ctx, address, &moralis2.GetNFTTransfersOption{
 		Chain: protocol.NetworkToID(message.Network),
 	})
 	if err != nil {
@@ -366,9 +366,9 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 
 	// Iterate through the next page of data
 	for i := 0; int64(len(internalNFTTransfers)) < response.Total && i < MaxPage; i++ {
-		var nextInternalNFTTransfers []moralis.NFTTransfer
+		var nextInternalNFTTransfers []moralis2.NFTTransfer
 
-		nextInternalNFTTransfers, response, err = d.moralisClient.GetNFTTransfers(ctx, address, &moralis.GetNFTTransfersOption{
+		nextInternalNFTTransfers, response, err = d.moralisClient.GetNFTTransfers(ctx, address, &moralis2.GetNFTTransfersOption{
 			Chain:  protocol.NetworkToID(message.Network),
 			Cursor: response.Cursor,
 		})
@@ -382,7 +382,7 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 
 	// Moralis may return duplicate transfers data
 	internalTransfersMap := make(map[string]map[int64]model.Transfer)
-	moralisNFTTransferMap = make(map[string]moralis.NFTTransfer)
+	moralisNFTTransferMap = make(map[string]moralis2.NFTTransfer)
 
 	for _, internalNFTTransfer := range internalNFTTransfers {
 		moralisNFTTransferMap[internalNFTTransfer.TransactionHash] = internalNFTTransfer
@@ -491,11 +491,11 @@ func GetTxHashURL(
 }
 
 func New(moralisKey, infuraID string) datasource.Datasource {
-	moralisClient := moralis.NewClient(moralisKey)
+	moralisClient := moralis2.NewClient(moralisKey)
 
 	ethereumClient, err := ethclient.Dial(Endpoint + infuraID)
 	if err != nil {
-		logrus.Errorf("[datasource] ethereum client error: %v", err)
+		logrus.Errorf("[datasource] ethereum worker error: %v", err)
 	}
 
 	return &Datasource{
@@ -512,7 +512,7 @@ func (d *Datasource) handleMRC20Transfers(ctx context.Context, virtualTransfer m
 
 	receipt, err := d.ethereumClient.TransactionReceipt(ctx, common.HexToHash(virtualTransfer.TransactionHash))
 	if err != nil {
-		logrus.Errorf("[datasource] ethereum client TransactionReceipt error: %v", err)
+		logrus.Errorf("[datasource] ethereum worker TransactionReceipt error: %v", err)
 
 		return nil, err
 	}

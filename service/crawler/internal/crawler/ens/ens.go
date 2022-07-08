@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/shedlock"
+	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens/contract"
