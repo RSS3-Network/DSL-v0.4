@@ -72,7 +72,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		transactions = append(transactions, model.Transaction{
 			BlockNumber: int64(edge.Node.Block.Height),
 			Timestamp:   timestamp,
-			Hash:        strings.ToLower(edge.Node.ID.(string)),
+			Hash:        edge.Node.ID.(string),
 			AddressFrom: strings.ToLower(string(edge.Node.Owner.Address)),
 			AddressTo:   addressTo,
 			Platform:    message.Network,
@@ -82,7 +82,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{
-					TransactionHash: strings.ToLower(edge.Node.ID.(string)),
+					TransactionHash: edge.Node.ID.(string),
 					Timestamp:       timestamp,
 					Index:           protocol.IndexVirtual,
 					AddressFrom:     strings.ToLower(string(edge.Node.Owner.Address)),
