@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -205,6 +206,14 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) handle(ctx context.Context, message *protocol.Message) (err error) {
+	lockKey := fmt.Sprintf("indexer:%v:%v", message.Address, message.Network)
+
+	if s.employer.DoLock(lockKey, 2*time.Minute) {
+		return fmt.Errorf("%v lock", lockKey)
+	}
+
+	defer s.employer.UnLock(lockKey)
+
 	// convert address to lowercase
 	message.Address = strings.ToLower(message.Address)
 	tracer := otel.Tracer("indexer")
