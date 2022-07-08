@@ -133,7 +133,7 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 			var (
 				tokenValue   *big.Int
 				tokenID      *big.Int
-				tokenAddress = sourceData.Address.String()
+				tokenAddress = strings.ToLower(sourceData.Address.String())
 			)
 
 			switch sourceData.Topics[0] {
@@ -203,6 +203,7 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 
 		internalTransaction, transfer = s.buildType(internalTransaction, transfer)
 		internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+		internalTransaction.Tag = filter.UpdateTag(transfer.Tag, internalTransaction.Tag)
 	}
 
 	return &internalTransaction, nil
