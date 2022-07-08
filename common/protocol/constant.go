@@ -1,7 +1,7 @@
 package protocol
 
 const (
-	Version               = "v1.0.0"
+	Version               = "v1.1.0"
 	Build                 = "100"
 	ExchangeJob           = "pregod2.jobs"
 	IndexerWorkQueue      = "pregod2.indexer.work"
