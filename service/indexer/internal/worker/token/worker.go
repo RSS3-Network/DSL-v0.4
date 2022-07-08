@@ -2,13 +2,19 @@ package token
 
 import (
 	"context"
+	"embed"
+	"encoding/csv"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/ethereum"
@@ -29,6 +35,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -36,6 +43,9 @@ const (
 )
 
 var _ worker.Worker = (*service)(nil)
+
+//go:embed asset/*
+var asseFS embed.FS
 
 type service struct {
 	databaseClient *gorm.DB
@@ -58,6 +68,57 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) error {
+	dir := "asset/cex_wallet"
+	files, err := asseFS.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, path := range files {
+		file, err := asseFS.Open(dir + "/" + path.Name())
+		if err != nil {
+			return err
+		}
+
+		reader := csv.NewReader(file)
+
+		records, err := reader.ReadAll()
+		if err != nil {
+			return err
+		}
+
+		file.Close()
+
+		wallentModels := make([]model.CexWallet, 0)
+
+		for i, record := range records {
+			if i == 0 {
+				continue
+			}
+
+			wallentModels = append(wallentModels, model.CexWallet{
+				WalletAddress: record[0],
+				Name:          record[1],
+				Source:        record[2],
+				Network:       record[3],
+			})
+		}
+
+		if len(wallentModels) == 0 {
+			return nil
+		}
+
+		if err := s.databaseClient.
+			Model((*model.CexWallet)(nil)).
+			Clauses(clause.OnConflict{
+				DoNothing: true,
+			}).
+			Create(wallentModels).
+			Error; err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -107,6 +168,12 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 	internalTransaction.Transfers = make([]model.Transfer, 0)
 
 	for _, transfer := range transaction.Transfers {
+		var wallet model.CexWallet
+
+		if err := s.checkCexWallet(ctx, message.Address, &transfer, &wallet); err != nil {
+			return nil, err
+		}
+
 		if transfer.Index == protocol.IndexVirtual {
 			var sourceData ethereum.SourceData
 
@@ -298,6 +365,8 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 		tokenMetadata.Symbol = nativeToken.Symbol
 		tokenMetadata.Decimals = uint8(nativeToken.Decimal)
 		tokenMetadata.TokenStandard = nativeToken.Standard
+		tokenValue := decimal.NewFromBigInt(value, 0)
+		tokenMetadata.TokenValue = &tokenValue
 
 		transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 	} else {
@@ -447,6 +516,56 @@ func (s *service) buildType(transaction model.Transaction, transfer model.Transf
 
 func (s *service) Jobs() []worker.Job {
 	return nil
+}
+
+// Check address (from / to) is a WalletAddress. If true, update transfer
+func (s *service) checkCexWallet(ctx context.Context, address string, transfer *model.Transfer, wallet *model.CexWallet) error {
+	// get from redis cache (to)
+	exists, err := cache.GetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressTo), wallet)
+	if err != nil {
+		return err
+	}
+	if !exists { // get from redis cache (from)
+		if exists, err = cache.GetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressFrom), wallet); err != nil {
+			return nil
+		}
+	}
+
+	if !exists {
+		err := s.databaseClient.Model((*model.CexWallet)(nil)).Where("wallet_address = ?", strings.ToLower(transfer.AddressTo)).Or("wallet_address = ?", strings.ToLower(transfer.AddressFrom)).First(&wallet).Error
+		switch {
+		case err == nil: // exists, set WalletAddress' cache
+			if err := cache.SetMsgPack(ctx, keyOfCheckCexWallet(wallet.WalletAddress), wallet, 7*24*time.Hour); err != nil {
+				return err
+			}
+		case errors.Is(err, gorm.ErrRecordNotFound): // not exists, set `from` and `to` address' cache (empty)
+			if err := cache.SetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressFrom), wallet, 7*24*time.Hour); err != nil {
+				return err
+			}
+			if err := cache.SetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressTo), wallet, 7*24*time.Hour); err != nil {
+				return err
+			}
+		default: // other err
+			return err
+		}
+	}
+
+	if wallet.Name != "" {
+		transfer.Tag = filter.UpdateTag(filter.TagExchange, transfer.Tag)
+		transfer.Platform = wallet.Name
+
+		if transfer.AddressTo == address {
+			transfer.Type = filter.ExchangeWithdraw
+		} else if transfer.AddressFrom == address {
+			transfer.Type = filter.ExchangeDeposit
+		}
+	}
+
+	return nil
+}
+
+func keyOfCheckCexWallet(address string) string {
+	return fmt.Sprintf("check_exchange_wallet.%s", address)
 }
 
 func New(databaseClient *gorm.DB) worker.Worker {
