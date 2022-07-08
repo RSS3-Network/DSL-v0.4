@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/logger"
 	"github.com/naturalselectionlabs/pregod/common/nft"
 	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
@@ -130,8 +132,13 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	blockscoutDatasource, err := blockscout.New(s.config.RPC)
+	if err != nil {
+		return err
+	}
+
 	s.datasources = []datasource.Datasource{
-		alchemyDatasource, moralis.New(s.config.Moralis.Key, s.config.Infura.ProjectID), arweave.New(), blockscout.New(), zksync.New(),
+		alchemyDatasource, moralis.New(s.config.Moralis.Key, s.config.RPC), arweave.New(), blockscoutDatasource, zksync.New(),
 	}
 
 	s.indexedWorker = []worker.Worker{
@@ -188,14 +195,14 @@ func (s *Server) Run() error {
 	for delivery := range deliveryCh {
 		message := protocol.Message{}
 		if err := json.Unmarshal(delivery.Body, &message); err != nil {
-			logrus.Errorln(err)
+			logger.Global().Error("failed to unmarshal message", zap.Error(err))
 
 			continue
 		}
 
 		go func() {
 			if err := s.handle(context.Background(), &message); err != nil {
-				logrus.Errorf("message.Address: %v, message.Network: %v, err: %v", message.Address, message.Network, err)
+				logger.Global().Error("failed to handle message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
 			}
 		}()
 	}
@@ -341,6 +348,19 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 			continue
 		}
 
+		internalTransfers := transaction.Transfers
+		transaction.Transfers = make([]model.Transfer, 0)
+
+		for _, transfer := range internalTransfers {
+			if bytes.Equal(transfer.Metadata, metadata.Default) {
+				continue
+			}
+
+			for _, transfer := range internalTransfers {
+				transaction.Transfers = append(transaction.Transfers, transfer)
+			}
+		}
+
 		if err := s.databaseClient.
 			Clauses(clause.OnConflict{
 				UpdateAll: true,
@@ -361,7 +381,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 			if network == message.Network {
 				internalTransactions, err := worker.Handle(ctx, message, transactions)
 				if err != nil {
-					logrus.Error(worker.Name(), message.Network, err)
+					logger.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
 
 					return err
 				}

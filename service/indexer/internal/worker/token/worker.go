@@ -168,12 +168,6 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 	internalTransaction.Transfers = make([]model.Transfer, 0)
 
 	for _, transfer := range transaction.Transfers {
-		var wallet model.CexWallet
-
-		if err := s.checkCexWallet(ctx, message.Address, &transfer, &wallet); err != nil {
-			return nil, err
-		}
-
 		if transfer.Index == protocol.IndexVirtual {
 			var sourceData ethereum.SourceData
 
@@ -267,6 +261,16 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 			}
 
 			transfer = *internalTransfer
+		}
+
+		var wallet model.CexWallet
+
+		if err := s.checkCexWallet(ctx, message.Address, &transfer, &wallet); err != nil {
+			return nil, err
+		}
+
+		if transfer.Platform != "" {
+			logger.Global().Debug("worker_token:handleEthereumOrigin", zap.String("platform", transfer.Platform), zap.String("tag", transfer.Tag), zap.String("type", transfer.Type))
 		}
 
 		internalTransaction, transfer = s.buildType(internalTransaction, transfer)
@@ -521,12 +525,13 @@ func (s *service) Jobs() []worker.Job {
 // Check address (from / to) is a WalletAddress. If true, update transfer
 func (s *service) checkCexWallet(ctx context.Context, address string, transfer *model.Transfer, wallet *model.CexWallet) error {
 	// get from redis cache (to)
-	exists, err := cache.GetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressTo), wallet)
+	exists, err := cache.GetMsgPack(ctx, keyOfCheckCexWallet(strings.ToLower(transfer.AddressTo)), wallet)
 	if err != nil {
 		return err
 	}
+
 	if !exists { // get from redis cache (from)
-		if exists, err = cache.GetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressFrom), wallet); err != nil {
+		if exists, err = cache.GetMsgPack(ctx, keyOfCheckCexWallet(strings.ToLower(transfer.AddressFrom)), wallet); err != nil {
 			return nil
 		}
 	}
