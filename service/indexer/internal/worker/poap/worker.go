@@ -3,17 +3,18 @@ package poap
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"go.opentelemetry.io/otel"
-
-	"github.com/naturalselectionlabs/pregod/common/blockscout"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/ethereum/contract/erc721"
+	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/poap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -52,12 +53,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	for _, transaction := range transactions {
 		for _, transfer := range transaction.Transfers {
-			dataSource := blockscout.Transaction{}
+			dataSource := types.Log{}
 			if err := json.Unmarshal(transfer.SourceData, &dataSource); err != nil {
 				return nil, err
 			}
 
-			if dataSource.ContractAddress != ContractAddress {
+			if strings.ToLower(dataSource.Address.String()) != ContractAddress {
 				continue
 			}
 
@@ -72,7 +73,17 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			token, err := s.poapClient.GetToken(ctx, dataSource.TokenID.BigInt().Int64())
+			filterer, err := erc721.NewERC721Filterer(dataSource.Address, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			event, err := filterer.ParseTransfer(dataSource)
+			if err != nil {
+				return nil, err
+			}
+
+			token, err := s.poapClient.GetToken(ctx, event.TokenId.Int64())
 			if err != nil {
 				return nil, err
 			}

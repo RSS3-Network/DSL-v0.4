@@ -32,7 +32,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
 	lensworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
-	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
@@ -150,7 +149,6 @@ func (s *Server) Initialize() (err error) {
 		token.New(s.databaseClient),
 		swap.New(s.employer, s.databaseClient),
 		mirror.New(),
-		poapworker.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
 		crossbell.New(),
 		snapshot.New(s.databaseClient, s.redisClient),
@@ -344,21 +342,18 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 	}
 
 	for _, transaction := range transactions {
-		if len(transaction.Transfers) == 0 {
-			continue
-		}
+		internalTransfers := make([]model.Transfer, 0)
 
-		internalTransfers := transaction.Transfers
-		transaction.Transfers = make([]model.Transfer, 0)
-
-		for _, transfer := range internalTransfers {
+		for _, transfer := range transaction.Transfers {
 			if bytes.Equal(transfer.Metadata, metadata.Default) {
 				continue
 			}
 
-			for _, transfer := range internalTransfers {
-				transaction.Transfers = append(transaction.Transfers, transfer)
-			}
+			internalTransfers = append(internalTransfers, transfer)
+		}
+
+		if len(internalTransfers) == 0 {
+			continue
 		}
 
 		if err := s.databaseClient.
@@ -366,7 +361,9 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 				UpdateAll: true,
 				DoUpdates: clause.AssignmentColumns([]string{"metadata"}),
 			}).
-			Create(transaction.Transfers).Error; err != nil {
+			Create(internalTransfers).Error; err != nil {
+			logger.Global().Error("failed to upsert transfers", zap.Error(err), zap.String("network", transaction.Network))
+
 			return err
 		}
 	}

@@ -269,10 +269,6 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 			return nil, err
 		}
 
-		if transfer.Platform != "" {
-			logger.Global().Debug("worker_token:handleEthereumOrigin", zap.String("platform", transfer.Platform), zap.String("tag", transfer.Tag), zap.String("type", transfer.Type))
-		}
-
 		internalTransaction, transfer = s.buildType(internalTransaction, transfer)
 		internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
 		internalTransaction.Tag = filter.UpdateTag(transfer.Tag, internalTransaction.Tag)
