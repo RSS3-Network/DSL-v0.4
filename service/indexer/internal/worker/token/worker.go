@@ -343,6 +343,8 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenMetadata.TokenValue = &tokenValue
 
 			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
+
+			transfer.RelatedUrls = append(transfer.RelatedUrls, ethereum.BuildTokenURL(message.Network, *address, id.String()))
 		}
 
 		tokenMetadata.TokenAddress = *address
