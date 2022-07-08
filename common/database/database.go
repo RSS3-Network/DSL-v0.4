@@ -35,7 +35,7 @@ func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {
 			log.New(os.Stdout, "\r\n", log.LstdFlags),
 			logger.Config{
 				SlowThreshold:             time.Second * 3,
-				LogLevel:                  logger.Silent,
+				LogLevel:                  logger.Error,
 				IgnoreRecordNotFoundError: true,
 			},
 		),

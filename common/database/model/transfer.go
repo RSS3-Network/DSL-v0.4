@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"math/big"
 	"time"
 
 	"github.com/lib/pq"
@@ -10,6 +11,7 @@ import (
 type Transfer struct {
 	TransactionHash string          `gorm:"column:transaction_hash;primaryKey" json:"-"`
 	Timestamp       time.Time       `gorm:"column:timestamp" json:"-"`
+	BlockNumber     *big.Int        `gorm:"-:all" json:"-"`
 	Tag             string          `gorm:"column:tag;index" json:"tag"`
 	Type            string          `gorm:"column:type;index" json:"type"`
 	Index           int64           `gorm:"column:index;primaryKey" json:"index"`
