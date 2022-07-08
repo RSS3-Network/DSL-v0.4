@@ -40,6 +40,5 @@ var NativeTokenMap = map[string]model.Token{
 		Decimal:  18,
 		Standard: protocol.TokenStandardNative,
 		Network:  protocol.NetworkXDAI,
-		Source:   "",
 	},
 }

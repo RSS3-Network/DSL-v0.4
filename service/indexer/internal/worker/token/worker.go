@@ -52,6 +52,7 @@ func (s *service) Networks() []string {
 		protocol.NetworkPolygon,
 		protocol.NetworkBinanceSmartChain,
 		protocol.NetworkCrossbell,
+		protocol.NetworkXDAI,
 		protocol.NetworkZkSync,
 	}
 }
@@ -69,7 +70,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	var internalTransactions []*model.Transaction
 
 	switch message.Network {
-	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkCrossbell:
+	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkCrossbell, protocol.NetworkXDAI:
 		internalTransactions, err = lop.MapWithError(transactions, s.makeEthereumHandlerFunc(ctx, message, transactions))
 	case protocol.NetworkZkSync:
 		internalTransactions, err = lop.MapWithError(transactions, s.makeZkSyncHandlerFunc(ctx, message, transactions))
@@ -292,7 +293,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 
 	if address == nil {
 		// Native
-		nativeToken := NativeTokenMap[transfer.Network]
+		nativeToken := NativeTokenMap[message.Network]
 		tokenMetadata.Name = nativeToken.Name
 		tokenMetadata.Symbol = nativeToken.Symbol
 		tokenMetadata.Decimals = uint8(nativeToken.Decimal)
