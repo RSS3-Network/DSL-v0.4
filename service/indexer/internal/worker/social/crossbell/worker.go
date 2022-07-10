@@ -100,7 +100,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		transaction.Transfers = append(transaction.Transfers, internalTransfers...)
 
 		for _, transfer := range transaction.Transfers {
-			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
+			transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
 		}
 
 		internalTransactions = append(internalTransactions, transaction)
@@ -157,11 +157,11 @@ func (s *service) handleReceipt(ctx context.Context, message *protocol.Message, 
 			continue
 		}
 
-		if transfer.Platform != "" {
+		internalTransfer.Tag, internalTransfer.Type = filter.UpdateTagAndType(transfer.Tag, internalTransfer.Tag, transfer.Type, internalTransfer.Type)
+		if internalTransfer.Tag == transfer.Tag {
 			internalTransfer.Platform = transfer.Platform
 		}
 
-		internalTransfer.Tag = filter.UpdateTag(internalTransfer.Tag, transfer.Tag)
 		internalTransfers = append(internalTransfers, *internalTransfer)
 	}
 

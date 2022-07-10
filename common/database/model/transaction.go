@@ -16,6 +16,7 @@ type Transaction struct {
 	Platform    string          `gorm:"column:platform;index" json:"platform,omitempty"`
 	Source      string          `gorm:"column:source;primaryKey" json:"-"`
 	Tag         string          `gorm:"column:tag;index" json:"tag"`
+	Type        string          `gorm:"column:type;index" json:"type"`
 	Success     *bool           `gorm:"column:success;default:true" json:"success"`
 	SourceData  json.RawMessage `gorm:"column:source_data;type:jsonb" json:"-"`
 	CreatedAt   time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index" json:"-"`

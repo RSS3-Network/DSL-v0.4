@@ -127,6 +127,10 @@ func (h *Handler) getTransactionListDatabase(c context.Context, request GetReque
 		sql = sql.Where("tag = ?", request.Tag)
 	}
 
+	if len(request.Type) > 0 {
+		sql = sql.Where("\"type\" IN ?", request.Type)
+	}
+
 	if len(request.Network) > 0 {
 		sql = sql.Where("network IN ?", request.Network)
 	}
@@ -260,6 +264,10 @@ func (h *Handler) batchGetTransactionListDatabase(ctx context.Context, request B
 
 		if len(reqFilter.Tag) > 0 {
 			sql = sql.Where("tag = ?", reqFilter.Tag)
+		}
+
+		if len(reqFilter.Type) > 0 {
+			sql = sql.Where("\"type\" IN ?", reqFilter.Type)
 		}
 
 		if len(reqFilter.Network) > 0 {

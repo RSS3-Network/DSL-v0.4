@@ -72,10 +72,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 		return nil, err
 	}
 
-	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
-	if transfer.Tag == filter.TagSocial {
-		transfer.Type = filter.SocialProfile
-	}
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 
 	return &transfer, nil
 }
@@ -112,10 +109,7 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 		return nil, err
 	}
 
-	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
-	if transfer.Tag == filter.TagSocial {
-		transfer.Type = filter.SocialFollow
-	}
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialFollow, transfer.Type)
 
 	return &transfer, nil
 }
@@ -152,10 +146,7 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
-	if transfer.Tag == filter.TagSocial {
-		transfer.Type = filter.SocialUnfollow
-	}
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialUnfollow, transfer.Type)
 
 	return &transfer, nil
 }
@@ -185,10 +176,7 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
-	if transfer.Tag == filter.TagSocial {
-		transfer.Type = filter.SocialProfile
-	}
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 
 	return &transfer, nil
 }

@@ -119,19 +119,14 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			transfer.AddressTo = strings.ToLower(string(transactionEdge.Node.Owner.Address))
 			transfer.AddressFrom = strings.ToLower(mirrorMetadata.Contributor)
 			transfer.Metadata = rawMetadata
-			transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
+			transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
 			transfer.RelatedUrls = append(
 				transfer.RelatedUrls,
 				fmt.Sprintf("https://mirror.xyz/%s/%s", transfer.AddressFrom, mirrorMetadata.OriginalContentDigest),
 			)
 
-			if transfer.Tag == filter.TagSocial {
-				switch {
-				case mirrorMetadata.ContentDigest == mirrorMetadata.OriginalContentDigest:
-					transfer.Type = filter.SocialPost
-				default:
-					transfer.Type = filter.SocialRevise
-				}
+			if mirrorMetadata.ContentDigest != mirrorMetadata.OriginalContentDigest {
+				transfer.Type = filter.SocialRevise
 			}
 
 			// Copy the transaction to map
@@ -145,7 +140,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
-			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
+			value.Tag, value.Type = filter.UpdateTagAndType(transfer.Tag, value.Tag, transfer.Type, value.Type)
 			value.Transfers = append(value.Transfers, transfer)
 
 			// parse timestamp

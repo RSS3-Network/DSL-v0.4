@@ -95,29 +95,26 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			transfer.Platform = Name
 			transfer.Metadata = rawMetadata
-			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
-
+			transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagCollectible, transfer.Tag, filter.CollectiblePoap, transfer.Type)
 			if transfer.Tag == filter.TagCollectible {
-				transfer.Type = filter.CollectiblePoap
+				transfer.Platform = Name
 			}
 
-			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
+			value.Tag, value.Type = filter.UpdateTagAndType(transfer.Tag, value.Tag, transfer.Type, value.Type)
+			if value.Tag == transfer.Tag {
+				value.Platform = transfer.Platform
+			}
+
 			value.Transfers = append(value.Transfers, transfer)
 
 			internalTransactionMap[value.Hash] = value
-
-			// transaction tag
-			transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 		}
 	}
 
 	internalTransfers := make([]model.Transaction, 0)
 
 	for _, internalTransaction := range internalTransactionMap {
-		internalTransaction.Platform = Name
-
 		internalTransfers = append(internalTransfers, internalTransaction)
 	}
 

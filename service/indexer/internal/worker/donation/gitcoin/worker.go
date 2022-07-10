@@ -87,7 +87,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				value.Transfers = make([]model.Transfer, 0)
 			}
 
-			value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
+			value.Tag, value.Type = filter.UpdateTagAndType(transfer.Tag, value.Tag, transfer.Type, value.Type)
 			value.Transfers = append(value.Transfers, transfer)
 
 			if value.Tag == filter.TagDonation {
@@ -154,10 +154,9 @@ func (s *service) handleGitcoin(ctx context.Context, transfer model.Transfer) (d
 	}
 
 	transfer.Metadata = metadata
-	transfer.Tag = filter.UpdateTag(filter.TagDonation, transfer.Tag)
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagDonation, transfer.Tag, filter.DonationDonate, transfer.Type)
 
 	if transfer.Tag == filter.TagDonation {
-		transfer.Type = filter.DonationDonate
 		transfer.Platform = Name
 	}
 

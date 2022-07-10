@@ -99,10 +99,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 		return nil, err
 	}
 
-	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
-	if transfer.Tag == filter.TagSocial {
-		transfer.Type = filter.SocialProfile
-	}
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 
 	return &transfer, nil
 }
@@ -131,10 +128,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 		return nil, err
 	}
 
-	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
-	if transfer.Tag == filter.TagSocial {
-		transfer.Type = filter.SocialProfile
-	}
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 
 	return &transfer, nil
 }
@@ -197,10 +191,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 		return nil, err
 	}
 
-	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
-	if transfer.Tag == filter.TagSocial {
-		transfer.Type = filter.SocialPost
-	}
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
 
 	return &transfer, nil
 }
@@ -237,10 +228,7 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 		return nil, err
 	}
 
-	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
-	if transfer.Tag == filter.TagSocial {
-		transfer.Type = filter.SocialFollow
-	}
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialFollow, transfer.Type)
 
 	return &transfer, nil
 }
@@ -277,10 +265,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 		return nil, err
 	}
 
-	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
-	if transfer.Tag == filter.TagSocial {
-		transfer.Type = filter.SocialUnfollow
-	}
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialUnfollow, transfer.Type)
 
 	return &transfer, nil
 }
@@ -310,10 +295,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		return nil, err
 	}
 
-	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
-	if transfer.Tag == filter.TagSocial {
-		transfer.Type = filter.SocialProfile
-	}
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 
 	return &transfer, nil
 }
@@ -370,10 +352,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		return nil, err
 	}
 
-	transfer.Tag = filter.UpdateTag(filter.TagSocial, transfer.Tag)
-	if transfer.Tag == filter.TagSocial {
-		transfer.Type = filter.SocialPost
-	}
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
 
 	return &transfer, nil
 }
