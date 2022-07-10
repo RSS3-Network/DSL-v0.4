@@ -61,7 +61,7 @@ func (s *Server) Initialize() (err error) {
 		trace.WithBatcher(exporter),
 		trace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("pregod-hub"),
+			semconv.ServiceNameKey.String("pregod-1-1-hub"),
 			semconv.ServiceVersionKey.String(protocol.Version),
 		)),
 	))

@@ -55,8 +55,8 @@ func (s *Server) Initialize() (err error) {
 		trace.WithBatcher(exporter),
 		trace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("pregod-crawler"),
-			semconv.ServiceVersionKey.String("v1.0"),
+			semconv.ServiceNameKey.String("pregod-1-1-crawler"),
+			semconv.ServiceVersionKey.String(protocol.Version),
 		)),
 	))
 
