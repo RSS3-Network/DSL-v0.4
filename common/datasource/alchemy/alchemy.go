@@ -3,6 +3,8 @@ package alchemy
 import (
 	"context"
 
+	"github.com/naturalselectionlabs/pregod/common/protocol"
+
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -11,9 +13,9 @@ const (
 
 	CategoryExternal = "external"
 	CategoryInternal = "internal"
-	CategoryERC20    = "erc20"
-	CategoryERC721   = "erc721"
-	CategoryERC1155  = "erc1155"
+	CategoryERC20    = protocol.TokenStandardERC20
+	CategoryERC721   = protocol.TokenStandardERC721
+	CategoryERC1155  = protocol.TokenStandardERC1155
 
 	MaxCount = 255
 )
