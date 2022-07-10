@@ -97,10 +97,13 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			transfer.Metadata = rawMetadata
 			transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagCollectible, transfer.Tag, filter.CollectiblePoap, transfer.Type)
-			value.Tag, value.Type = filter.UpdateTagAndType(transfer.Tag, value.Tag, transfer.Type, value.Type)
+			if transfer.Tag == filter.TagCollectible {
+				transfer.Platform = Name
+			}
 
-			if value.Tag == filter.TagCollectible {
-				value.Platform = Name
+			value.Tag, value.Type = filter.UpdateTagAndType(transfer.Tag, value.Tag, transfer.Type, value.Type)
+			if value.Tag == transfer.Tag {
+				value.Platform = transfer.Platform
 			}
 
 			value.Transfers = append(value.Transfers, transfer)
@@ -112,8 +115,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransfers := make([]model.Transaction, 0)
 
 	for _, internalTransaction := range internalTransactionMap {
-		internalTransaction.Platform = Name
-
 		internalTransfers = append(internalTransfers, internalTransaction)
 	}
 
