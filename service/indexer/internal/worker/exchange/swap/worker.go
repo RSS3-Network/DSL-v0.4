@@ -150,10 +150,9 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 				continue
 			}
 
-			internalTransfer.Tag = filter.UpdateTag(filter.TagExchange, internalTransfer.Tag)
+			internalTransfer.Tag, internalTransfer.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransfer.Tag, filter.ExchangeSwap, internalTransfer.Type)
 
 			if internalTransfer.Tag == filter.TagExchange {
-				internalTransfer.Type = filter.ExchangeSwap
 				internalTransfer.Platform = router.Name
 			}
 
@@ -169,7 +168,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 			value.Transfers = append(value.Transfers, *internalTransfer)
 
 			// Update transaction tag
-			value.Tag = filter.UpdateTag(internalTransfer.Tag, transaction.Tag)
+			value.Tag, value.Type = filter.UpdateTagAndType(internalTransfer.Tag, value.Tag, internalTransfer.Type, value.Type)
 
 			if value.Tag == filter.TagExchange {
 				value.Platform = router.Name
