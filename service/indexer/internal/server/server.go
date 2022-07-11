@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,25 +9,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
-	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
-	poapworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
-	lensworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
-
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
@@ -35,6 +29,13 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
+	lensworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/coinmarketcap"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
@@ -132,8 +133,13 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	blockscoutDatasource, err := blockscout.New(s.config.RPC)
+	if err != nil {
+		return err
+	}
+
 	s.datasources = []datasource.Datasource{
-		alchemyDatasource, moralis.New(s.config.Moralis.Key, s.config.Infura.ProjectID), arweave.New(), blockscout.New(), zksync.New(),
+		alchemyDatasource, moralis.New(s.config.Moralis.Key, s.config.RPC), arweave.New(), blockscoutDatasource, zksync.New(),
 	}
 
 	s.indexedWorker = []worker.Worker{
@@ -144,8 +150,8 @@ func (s *Server) Initialize() (err error) {
 	s.workers = []worker.Worker{
 		transaction.New(s.databaseClient),
 		swap.New(s.employer, s.databaseClient),
+		poap.New(),
 		mirror.New(),
-		poapworker.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
 		crossbell.New(),
 		snapshot.New(s.databaseClient, s.redisClient),
@@ -190,14 +196,14 @@ func (s *Server) Run() error {
 	for delivery := range deliveryCh {
 		message := protocol.Message{}
 		if err := json.Unmarshal(delivery.Body, &message); err != nil {
-			logrus.Errorln(err)
+			logger.Global().Error("failed to unmarshal message", zap.Error(err))
 
 			continue
 		}
 
 		go func() {
 			if err := s.handle(context.Background(), &message); err != nil {
-				logrus.Errorf("message.Address: %v, message.Network: %v, err: %v", message.Address, message.Network, err)
+				logger.Global().Error("failed to handle message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
 			}
 		}()
 	}
@@ -226,7 +232,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	defer handlerSpan.End()
 
-	logrus.Info(message.Address, " ", message.Network)
+	logger.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
 	// Get data from datasources
 	var transactions []model.Transaction
@@ -298,6 +304,18 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		return datasourceError
 	}
 
+	defer func() {
+		transfers := 0
+
+		for _, transaction := range transactions {
+			for range transaction.Transfers {
+				transfers++
+			}
+		}
+
+		logger.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
+	}()
+
 	return s.handleWorkers(ctx, message, transactions, transactionsMap)
 }
 
@@ -335,7 +353,17 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 	}
 
 	for _, transaction := range transactions {
-		if len(transaction.Transfers) == 0 {
+		internalTransfers := make([]model.Transfer, 0)
+
+		for _, transfer := range transaction.Transfers {
+			if bytes.Equal(transfer.Metadata, metadata.Default) {
+				continue
+			}
+
+			internalTransfers = append(internalTransfers, transfer)
+		}
+
+		if len(internalTransfers) == 0 {
 			continue
 		}
 
@@ -344,7 +372,9 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 				UpdateAll: true,
 				DoUpdates: clause.AssignmentColumns([]string{"metadata"}),
 			}).
-			Create(transaction.Transfers).Error; err != nil {
+			Create(internalTransfers).Error; err != nil {
+			logger.Global().Error("failed to upsert transfers", zap.Error(err), zap.String("network", transaction.Network))
+
 			return err
 		}
 	}
@@ -359,7 +389,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 			if network == message.Network {
 				internalTransactions, err := worker.Handle(ctx, message, transactions)
 				if err != nil {
-					logrus.Error(worker.Name(), message.Network, err)
+					logger.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
 
 					return err
 				}

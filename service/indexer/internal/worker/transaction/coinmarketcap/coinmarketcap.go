@@ -13,8 +13,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model/transaction"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/contract"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -129,7 +129,7 @@ func getDecimals(ctx context.Context, network, addressHex string) (uint8, error)
 		return 0, err
 	}
 
-	contractCaller, err := contract.NewERC20(common.HexToAddress(addressHex), client)
+	contractCaller, err := erc20.NewERC20(common.HexToAddress(addressHex), client)
 	if err != nil {
 		return 0, err
 	}

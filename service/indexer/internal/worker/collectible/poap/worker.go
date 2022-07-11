@@ -4,24 +4,26 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/naturalselectionlabs/pregod/common/datasource/blockscout"
-	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/worker/poap"
-
-	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"go.opentelemetry.io/otel"
-
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/worker/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 )
 
 const (
-	Name = protocol.PlatfromPOAP
-
-	ContractAddress = "0x22c1f6050e56d2876009903609a2cc3fef83b415"
+	Name = "poap"
 )
+
+var ContractAddress = common.HexToAddress("0x22C1f6050E56d2876009903609a2cC3fEf83B415")
 
 var _ worker.Worker = (*service)(nil)
 
@@ -35,7 +37,7 @@ func (s *service) Name() string {
 
 func (s *service) Networks() []string {
 	return []string{
-		protocol.NetworkXDAI,
+		protocol.NetworkEthereum, protocol.NetworkXDAI,
 	}
 }
 
@@ -53,12 +55,18 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	for _, transaction := range transactions {
 		for _, transfer := range transaction.Transfers {
-			dataSource := blockscout.Transaction{}
+			if transfer.Index == protocol.IndexVirtual {
+				continue
+			}
+
+			dataSource := types.Log{}
 			if err := json.Unmarshal(transfer.SourceData, &dataSource); err != nil {
+				logger.Global().Error("failed to unmarshal source data", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("source_data", string(transfer.SourceData)))
+
 				return nil, err
 			}
 
-			if dataSource.ContractAddress != ContractAddress {
+			if dataSource.Address != ContractAddress {
 				continue
 			}
 
@@ -73,7 +81,17 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			token, err := s.poapClient.GetToken(ctx, dataSource.TokenID.BigInt().Int64())
+			erc721Filterer, err := erc721.NewERC721Filterer(dataSource.Address, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			event, err := erc721Filterer.ParseTransfer(dataSource)
+			if err != nil {
+				return nil, err
+			}
+
+			token, err := s.poapClient.GetToken(ctx, event.TokenId.Int64())
 			if err != nil {
 				return nil, err
 			}

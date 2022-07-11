@@ -7,49 +7,50 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/datasource/blockscout"
-	moralisx "github.com/naturalselectionlabs/pregod/common/datasource/moralis"
-	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
-	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	zksync2 "github.com/naturalselectionlabs/pregod/common/worker/zksync"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	transaction2 "github.com/naturalselectionlabs/pregod/common/database/model/transaction"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/mrc20"
+	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/coinmarketcap"
 	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 const (
-	Name = "transaction"
-
-	AddressGenesis = "0x0000000000000000000000000000000000000000"
+	Name = "token"
 )
 
-var (
-	_ worker.Worker = (*service)(nil)
+var _ worker.Worker = (*service)(nil)
 
-	//go:embed asset/*
-	asseFS embed.FS
-)
+//go:embed asset/*
+var asseFS embed.FS
 
 type service struct {
 	databaseClient *gorm.DB
-	zksyncClient   *zksync2.Client
+	zksyncClient   *zksync.Client
 }
 
 func (s *service) Name() string {
@@ -61,9 +62,9 @@ func (s *service) Networks() []string {
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon,
 		protocol.NetworkBinanceSmartChain,
-		protocol.NetworkZkSync,
 		protocol.NetworkCrossbell,
 		protocol.NetworkXDAI,
+		protocol.NetworkZkSync,
 	}
 }
 
@@ -122,451 +123,413 @@ func (s *service) Initialize(ctx context.Context) error {
 	return nil
 }
 
-func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
-	tracer := otel.Tracer("token_worker")
-	ctx, handlerSpan := tracer.Start(ctx, "token_worker:Handle")
+func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (transaction []model.Transaction, err error) {
+	tracer := otel.Tracer("worker_token")
+	ctx, handlerSpan := tracer.Start(ctx, "worker_token:Handle")
 
 	defer handlerSpan.End()
 
-	ctx, databaseSpan := tracer.Start(ctx, "database") //nolint:ineffassign,staticcheck
-
-	databaseSpan.End()
+	var internalTransactions []*model.Transaction
 
 	switch message.Network {
-	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain:
-		return s.handleEthereum(ctx, message, transactions)
+	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkCrossbell, protocol.NetworkXDAI:
+		internalTransactions, err = lop.MapWithError(transactions, s.makeEthereumHandlerFunc(ctx, message, transactions))
 	case protocol.NetworkZkSync:
-		return s.handleZkSync(ctx, message, transactions)
-	case protocol.NetworkCrossbell, protocol.NetworkXDAI:
-		return s.handleCrossbellAndXDAI(ctx, message, transactions)
+		internalTransactions, err = lop.MapWithError(transactions, s.makeZkSyncHandlerFunc(ctx, message, transactions))
+	case arweave.Source:
+		internalTransactions, err = lop.MapWithError(transactions, s.makeArweaveHandlerFunc(ctx, message, transactions))
 	}
 
-	return []model.Transaction{}, nil
+	if err != nil {
+		logger.Global().Error("worker_token:Handle", zap.Error(err))
+	}
+
+	transactions = make([]model.Transaction, 0)
+
+	for _, internalTransaction := range internalTransactions {
+		transactions = append(transactions, *internalTransaction)
+	}
+
+	return transactions, nil
 }
 
-// handle crossbell / XDAI NFT (link list / profile)
-func (s *service) handleCrossbellAndXDAI(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
-	tracer := otel.Tracer("token_worker")
-	_, trace := tracer.Start(ctx, "token_worker:handleCrossbellAndXDAI")
+func (s *service) makeEthereumHandlerFunc(ctx context.Context, message *protocol.Message, transactions []model.Transaction) func(transaction model.Transaction, i int) (*model.Transaction, error) {
+	return func(transaction model.Transaction, i int) (*model.Transaction, error) {
+		return s.handleEthereumOrigin(ctx, message, transaction)
+	}
+}
 
-	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
+func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Message, transaction model.Transaction) (*model.Transaction, error) {
+	tracer := otel.Tracer("worker_token")
+	_, snap := tracer.Start(ctx, "worker_token:handleEthereumOrigin")
 
-	// nft.GetMetadata start
-	bsTransactions := []blockscout.Transaction{}
-	for _, transaction := range transactions {
-		for _, transfer := range transaction.Transfers {
-			sourceData := blockscout.Transaction{}
+	defer snap.End()
+
+	internalTransaction := transaction
+	internalTransaction.Transfers = make([]model.Transfer, 0)
+
+	for _, transfer := range transaction.Transfers {
+		if transfer.Index == protocol.IndexVirtual {
+			var sourceData ethereum.SourceData
+
 			if err := json.Unmarshal(transfer.SourceData, &sourceData); err != nil {
+				logger.Global().Error("failed to unmarshal source data", zap.Error(err), zap.String("source_data", string(transfer.SourceData)))
+
 				return nil, err
 			}
-			if transfer.Source == "blockscout" && message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress != "" {
-				bsTransactions = append(bsTransactions, sourceData)
+
+			internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transfer, nil, nil, sourceData.Transaction.Value())
+			if err != nil {
+				continue
 			}
-		}
-	}
-	nftMetadata := lop.Map(bsTransactions, func(sourceData blockscout.Transaction, i int) metadata.Token {
-		nftMetadata, err := nft.GetMetadata(
-			message.Network,
-			common.HexToAddress(sourceData.ContractAddress),
-			sourceData.TokenID.BigInt(),
-		)
-		if err != nil { // print err but no return
-			logrus.Errorf("%s: %v", message.Network, err)
-		}
-		return metadata.Token{
-			TokenAddress:  sourceData.ContractAddress,
-			TokenStandard: protocol.TokenStandardERC721,
-			TokenID:       &sourceData.TokenID,
-			TokenValue:    &sourceData.Value,
-			NFTMetadata:   nftMetadata,
-		}
-	})
-	// nft.GetMetadata end
 
-	internalTransactionMap := make(map[string]model.Transaction)
-	nftMetadataIndex := 0
+			transfer = *internalTransfer
+		} else {
+			var sourceData types.Log
 
-	for _, transaction := range transactions {
-		for _, transfer := range transaction.Transfers {
-			if transfer.Source == "blockscout" {
-				sourceData := blockscout.Transaction{}
-				metadataModel := metadata.Metadata{}
-				if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-					return nil, err
-				}
+			if err := json.Unmarshal(transfer.SourceData, &sourceData); err != nil {
+				logger.Global().Error("failed to unmarshal source data", zap.Error(err), zap.String("source_data", string(transfer.SourceData)))
 
-				switch {
-				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress == "":
-					// crossbell empty: use CSB
-					metadataModel.Token = &metadata.Token{
-						TokenStandard: protocol.TokenStandardERC20,
-						Logo:          "https://scan.crossbell.io/images/csb-yellow-no-bg.svg",
-						Name:          "Crossbell",
-						Symbol:        "CSB",
-						Decimals:      18,
-					}
+				return nil, err
+			}
 
-					transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
-				case message.Network == protocol.NetworkCrossbell && sourceData.ContractAddress != "":
-					md := nftMetadata[nftMetadataIndex]
-					nftMetadataIndex += 1
-					metadataModel.Token = &md
+			var (
+				tokenValue   *big.Int
+				tokenID      *big.Int
+				tokenAddress = strings.ToLower(sourceData.Address.String())
+			)
 
-					transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
-				case message.Network == protocol.NetworkXDAI:
-					var coinInfo *transaction2.CoinMarketCapCoinInfo
-					var err error
-					if sourceData.ContractAddress != "" {
-						coinInfo, err = coinmarketcap.CachedGetCoinInfo(ctx, message.Network, sourceData.ContractAddress)
-					} else {
-						coinInfo, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, message.Network, transfer.Index)
-					}
+			switch sourceData.Topics[0] {
+			case erc20.EventHashTransfer, erc721.EventHashTransfer:
+				switch len(sourceData.Topics) {
+				case 3:
+					filterer, err := erc20.NewERC20Filterer(sourceData.Address, nil)
 					if err != nil {
-						logrus.Error(err)
-					} else {
-						metadataModel.Token = &metadata.Token{
-							TokenAddress:  sourceData.ContractAddress,
-							TokenStandard: protocol.TokenStandardERC20,
-							TokenValue:    &sourceData.Value,
-							Logo:          coinInfo.Logo,
-							Name:          coinInfo.Name,
-							Symbol:        coinInfo.Symbol,
-							Decimals:      coinInfo.Decimals,
-						}
-
-						transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
+						return nil, err
 					}
-				}
 
-				rawMetadata, err := json.Marshal(metadataModel)
+					event, err := filterer.ParseTransfer(sourceData)
+					if err != nil {
+						return nil, err
+					}
+
+					tokenValue = event.Value
+				case 4:
+					filterer, err := erc721.NewERC721Filterer(sourceData.Address, nil)
+					if err != nil {
+						return nil, err
+					}
+
+					event, err := filterer.ParseTransfer(sourceData)
+					if err != nil {
+						return nil, err
+					}
+
+					tokenID = event.TokenId
+				}
+			case mrc20.EventHashLogTransfer:
+				filterer, err := mrc20.NewMRC20Filterer(sourceData.Address, nil)
 				if err != nil {
 					return nil, err
 				}
-				transfer.Metadata = rawMetadata
+
+				event, err := filterer.ParseLogTransfer(sourceData)
+				if err != nil {
+					return nil, err
+				}
+
+				tokenValue = event.Amount
+			case erc1155.EventHashTransferSingle:
+				filterer, err := erc1155.NewERC1155Filterer(sourceData.Address, nil)
+				if err != nil {
+					return nil, err
+				}
+
+				event, err := filterer.ParseTransferSingle(sourceData)
+				if err != nil {
+					return nil, err
+				}
+
+				tokenID = event.Id
+				tokenValue = event.Value
+			default:
+				continue
 			}
 
-			transaction, transfer = s.updateType(transaction, transfer)
-
-			// Copy the transaction to map
-			value, exist := internalTransactionMap[transaction.Hash]
-			if !exist {
-				value = transaction
-
-				// Ignore transfers data that will not be updated
-				value.Transfers = make([]model.Transfer, 0)
+			internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transfer, &tokenAddress, tokenID, tokenValue)
+			if err != nil {
+				return nil, err
 			}
 
-			value.Tag, value.Type = filter.UpdateTagAndType(transfer.Tag, value.Tag, transfer.Type, value.Type)
-			value.Transfers = append(value.Transfers, transfer)
-
-			internalTransactionMap[transaction.Hash] = value
+			transfer = *internalTransfer
 		}
+
+		var wallet exchange.CexWallet
+
+		if err := s.checkCexWallet(ctx, message.Address, &transfer, &wallet); err != nil {
+			return nil, err
+		}
+
+		internalTransaction, transfer = s.buildType(internalTransaction, transfer)
+		internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+		internalTransaction.Tag = filter.UpdateTag(transfer.Tag, internalTransaction.Tag)
 	}
 
-	internalTransactions := make([]model.Transaction, 0)
-
-	for _, internalTransaction := range internalTransactionMap {
-		internalTransactions = append(internalTransactions, internalTransaction)
-	}
-
-	return internalTransactions, nil
+	return &internalTransaction, nil
 }
 
-func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
-	tracer := otel.Tracer("token_worker")
-	_, trace := tracer.Start(ctx, "token_worker:handleEthereum")
-
-	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
-
-	// nft.GetMetadata start
-	var nftTransfers []model.Transfer
-	for _, transaction := range transactions {
-		for _, transfer := range transaction.Transfers {
-			sourceDataMap := make(map[string]interface{})
-			if err := json.Unmarshal(transfer.SourceData, &sourceDataMap); err != nil {
-				return nil, err
-			}
-			if _, exist := sourceDataMap["contract_type"]; exist {
-				nftTransfers = append(nftTransfers, transfer)
-			}
-		}
+func (s *service) makeArweaveHandlerFunc(ctx context.Context, message *protocol.Message, transactions []model.Transaction) func(transaction model.Transaction, i int) (*model.Transaction, error) {
+	return func(transaction model.Transaction, i int) (*model.Transaction, error) {
+		return s.handleArweave(ctx, message, transaction)
 	}
-	nftMetadata := lop.Map(nftTransfers, func(transfer model.Transfer, i int) metadata.Token {
-		// NFT transfer
-		nftTransfer := moralisx.NFTTransfer{}
-		if err := json.Unmarshal(transfer.SourceData, &nftTransfer); err != nil {
-			return metadata.Token{}
+}
+
+func (s *service) handleArweave(ctx context.Context, message *protocol.Message, transaction model.Transaction) (*model.Transaction, error) {
+	tracer := otel.Tracer("worker_token")
+	_, snap := tracer.Start(ctx, "worker_token:handleArweave")
+
+	defer snap.End()
+
+	return &transaction, nil
+}
+
+func (s *service) makeZkSyncHandlerFunc(ctx context.Context, message *protocol.Message, transactions []model.Transaction) func(transaction model.Transaction, i int) (*model.Transaction, error) {
+	return func(transaction model.Transaction, i int) (*model.Transaction, error) {
+		return s.handleZkSync(ctx, message, transaction)
+	}
+}
+
+func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transaction model.Transaction) (*model.Transaction, error) {
+	tracer := otel.Tracer("worker_token")
+	_, snap := tracer.Start(ctx, "worker_token:handleZkSync")
+
+	defer snap.End()
+
+	internalTransaction := transaction
+	internalTransaction.Transfers = make([]model.Transfer, 0)
+
+	for _, transfer := range transaction.Transfers {
+		var data zksync.GetTransactionData
+
+		if err := json.Unmarshal(transfer.SourceData, &data); err != nil {
+			return nil, err
 		}
 
-		tokenID, err := decimal.NewFromString(nftTransfer.TokenId)
+		tokenInfo, _, err := s.zksyncClient.GetToken(ctx, uint(data.Transaction.Operation.Token))
 		if err != nil {
-			return metadata.Token{}
+			logger.Global().Error("failed to get token", zap.Error(err), zap.String("token_id", strconv.Itoa(int(data.Transaction.Operation.Token))))
+
+			return nil, err
 		}
 
-		nftMetadata, err := nft.GetMetadata(
-			message.Network,
-			common.HexToAddress(nftTransfer.TokenAddress),
-			tokenID.BigInt(),
-		)
-		if err != nil { // print err but no return
-			logrus.Errorf("%s: %v", message.Network, err)
-		}
-
-		tokenValue, err := decimal.NewFromString(nftTransfer.Amount)
-		if err != nil {
-			logrus.Error(err)
-		}
-
-		return metadata.Token{
-			TokenAddress:  nftTransfer.TokenAddress,
-			TokenStandard: strings.ToUpper(nftTransfer.ContractType),
-			TokenID:       &tokenID,
-			TokenValue:    &tokenValue,
-			NFTMetadata:   nftMetadata,
-		}
-	})
-	// nft.GetMetadata end
-
-	internalTransactionMap := make(map[string]model.Transaction)
-	nftMetadataIndex := 0
-
-	for _, transaction := range transactions {
-		for _, transfer := range transaction.Transfers {
-			sourceDataMap := make(map[string]interface{})
-
-			var wallet exchange.CexWallet
-
-			if err := json.Unmarshal(transfer.SourceData, &sourceDataMap); err != nil {
+		if strings.HasPrefix(tokenInfo.Symbol, "NFT") {
+			nftToken, _, err := s.zksyncClient.GetNFTToken(ctx, uint(data.Transaction.Operation.Token))
+			if err != nil {
 				return nil, err
 			}
 
-			var metadataModel metadata.Metadata
-
-			if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
+			// TODO ERC-1155
+			internalTransfer, err := s.buildZkSyncNFTMetadata(ctx, message, transfer, nftToken, strconv.Itoa(int(*tokenInfo.ID)), "1")
+			if err != nil {
 				return nil, err
 			}
 
-			if _, exist := sourceDataMap["contract_type"]; exist {
-				// NFT transfer
-				md := nftMetadata[nftMetadataIndex]
-				nftMetadataIndex += 1
-				metadataModel.Token = &md
+			transfer = *internalTransfer
+		} else {
+			erc20Token, _, err := s.zksyncClient.GetToken(ctx, uint(data.Transaction.Operation.Token))
+			if err != nil {
+				return nil, err
+			}
 
-				transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
-			} else if _, exist = sourceDataMap["address"]; exist {
-				// Token transfer
-				tokenTransfer := moralisx.TokenTransfer{}
-				if err := json.Unmarshal(transfer.SourceData, &tokenTransfer); err != nil {
-					return nil, err
-				}
+			internalTransfer, err := s.buildZkSyncTokenMetadata(ctx, message, transfer, erc20Token, data.Transaction.Operation.Amount)
+			if err != nil {
+				return nil, err
+			}
 
-				tokenValue, err := decimal.NewFromString(tokenTransfer.Value)
-				if err != nil {
-					return nil, err
-				}
+			transfer = *internalTransfer
+		}
 
-				// get info from coinmarketcap
-				coinInfo, err := coinmarketcap.CachedGetCoinInfo(ctx, message.Network, sourceDataMap["address"].(string))
-				if err != nil {
-					return nil, err
-				}
+		internalTransaction, transfer = s.buildType(internalTransaction, transfer)
+		internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+	}
 
-				metadataModel.Token = &metadata.Token{
-					TokenAddress:  tokenTransfer.Address,
-					TokenStandard: protocol.TokenStandardERC20,
-					TokenValue:    &tokenValue,
-					Logo:          coinInfo.Logo,
-					Name:          coinInfo.Name,
-					Symbol:        coinInfo.Symbol,
-					Decimals:      coinInfo.Decimals,
-				}
+	return &internalTransaction, nil
+}
 
-				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
+func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *protocol.Message, transfer model.Transfer, address *string, id *big.Int, value *big.Int) (*model.Transfer, error) {
+	var tokenMetadata metadata.Token
 
-				// check for exchange transaction
-				if err := s.checkCexWallet(ctx, message.Address, &transfer, &wallet); err != nil {
-					return nil, err
-				}
+	if address == nil {
+		// Native
+		nativeToken := NativeTokenMap[message.Network]
+		tokenMetadata.Name = nativeToken.Name
+		tokenMetadata.Symbol = nativeToken.Symbol
+		tokenMetadata.Decimals = uint8(nativeToken.Decimal)
+		tokenMetadata.TokenStandard = nativeToken.Standard
+		tokenValue := decimal.NewFromBigInt(value, 0)
+		tokenMetadata.TokenValue = &tokenValue
+
+		transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
+	} else {
+		tokenInfo, err := coinmarketcap.CachedGetCoinInfo(ctx, message.Network, *address)
+		if err == nil && tokenInfo.Symbol != "" {
+			// Common ERC-20
+			tokenMetadata.Name = tokenInfo.Name
+			tokenMetadata.Symbol = tokenInfo.Symbol
+			tokenMetadata.Logo = tokenInfo.Logo
+			tokenMetadata.Decimals = tokenInfo.Decimals
+			tokenMetadata.TokenStandard = protocol.TokenStandardERC20
+			tokenValue := decimal.NewFromBigInt(value, 0)
+			tokenMetadata.TokenValue = &tokenValue
+
+			transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
+		} else {
+			// Uncommon ERC-20
+			if id == nil {
+				return &transfer, nil
+			}
+
+			// ERC-721 / ERC-1155
+			nftMetadata, err := nft.GetMetadata(message.Network, common.HexToAddress(*address), id)
+			if err != nil {
+				return &transfer, nil
+			}
+
+			tokenMetadata.NFTMetadata = nftMetadata
+
+			tokenID := decimal.NewFromBigInt(id, 0)
+			tokenMetadata.TokenID = &tokenID
+
+			var tokenValue decimal.Decimal
+
+			if value == nil {
+				tokenValue = decimal.NewFromInt(1)
+				tokenMetadata.TokenStandard = protocol.TokenStandardERC721
 			} else {
-				// Native transfer
-				nativeTransfer := moralisx.Transaction{}
-				if err := json.Unmarshal(transfer.SourceData, &nativeTransfer); err != nil {
-					return nil, err
-				}
-
-				if len(nativeTransfer.Value) == 0 {
-					nativeTransfer.Value = "18"
-				}
-
-				tokenValue, err := decimal.NewFromString(nativeTransfer.Value)
-				if err != nil {
-					return nil, err
-				}
-
-				// get info from coinmarketcap
-				coinInfo, err := coinmarketcap.CachedGetCoinInfoByNetwork(ctx, message.Network, transfer.Index)
-				if err != nil {
-					return nil, err
-				}
-
-				metadataModel.Token = &metadata.Token{
-					TokenStandard: protocol.TokenStandardNative,
-					TokenValue:    &tokenValue,
-					Logo:          coinInfo.Logo,
-					Name:          coinInfo.Name,
-					Symbol:        coinInfo.Symbol,
-					Decimals:      coinInfo.Decimals,
-				}
-
-				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
-
-				// check for exchange transaction
-				if err := s.checkCexWallet(ctx, message.Address, &transfer, &wallet); err != nil {
-					return nil, err
-				}
+				tokenValue = decimal.NewFromBigInt(value, 0)
+				tokenMetadata.TokenStandard = protocol.TokenStandardERC1155
 			}
 
-			rawMetadata, err := json.Marshal(metadataModel)
-			if err != nil {
-				return nil, err
-			}
+			tokenMetadata.TokenValue = &tokenValue
 
-			transfer.Metadata = rawMetadata
+			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
-			transaction, transfer = s.updateType(transaction, transfer)
-
-			// Copy the transaction to map
-			value, exist := internalTransactionMap[transaction.Hash]
-			if !exist {
-				value = transaction
-				// Ignore transfers data that will not be updated
-				value.Transfers = make([]model.Transfer, 0)
-			}
-
-			value.Tag, value.Type = filter.UpdateTagAndType(transfer.Tag, value.Tag, transfer.Type, value.Type)
-			value.Transfers = append(value.Transfers, transfer)
-
-			internalTransactionMap[transaction.Hash] = value
+			transfer.RelatedUrls = append(transfer.RelatedUrls, ethereum.BuildTokenURL(message.Network, *address, id.String()))
 		}
+
+		tokenMetadata.TokenAddress = *address
 	}
 
-	internalTransactions := make([]model.Transaction, 0)
-
-	for _, internalTransaction := range internalTransactionMap {
-		internalTransactions = append(internalTransactions, internalTransaction)
+	var err error
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &tokenMetadata); err != nil {
+		return nil, err
 	}
 
-	return internalTransactions, nil
+	return &transfer, nil
 }
 
-func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
-	tracer := otel.Tracer("token_worker")
-	_, trace := tracer.Start(ctx, "token_worker:handleZkSync")
+func (s *service) buildZkSyncTokenMetadata(ctx context.Context, message *protocol.Message, transfer model.Transfer, erc20Token *model.GetTokenInfo, value string) (*model.Transfer, error) {
+	var tokenMetadata metadata.Token
 
-	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
+	tokenMetadata.Symbol = erc20Token.Symbol
+	tokenMetadata.Symbol = erc20Token.Symbol
+	tokenMetadata.Decimals = erc20Token.Decimals
+	tokenMetadata.TokenAddress = erc20Token.Address
+	tokenMetadata.TokenStandard = protocol.TokenStandardERC20
 
-	internalTransactionMap := make(map[string]model.Transaction)
+	tokenValue, err := decimal.NewFromString(value)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, transaction := range transactions {
-		for _, transfer := range transaction.Transfers {
-			data := zksync2.GetTransactionData{}
+	tokenMetadata.TokenValue = &tokenValue
 
-			if err := json.Unmarshal(transfer.SourceData, &data); err != nil {
-				logrus.Error(err)
+	transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
-				return nil, err
-			}
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &tokenMetadata); err != nil {
+		return nil, err
+	}
 
-			tokenInfo, _, err := s.zksyncClient.GetToken(ctx, uint(data.Transaction.Operation.Token))
-			if err != nil {
-				logrus.Error(err)
-			}
+	return &transfer, nil
+}
 
-			var metadataModel metadata.Metadata
-			amount, err := decimal.NewFromString(data.Transaction.Operation.Amount)
-			if err != nil {
-				logrus.Error(err)
-			}
+func (s *service) buildZkSyncNFTMetadata(ctx context.Context, message *protocol.Message, transfer model.Transfer, nftToken *model.GetNFTTokenInfo, id, value string) (*model.Transfer, error) {
+	var tokenMetadata metadata.Token
 
-			// e.g. NFT-387049
-			if strings.HasPrefix(tokenInfo.Symbol, "NFT") {
-				nftTokenInfo, _, err := s.zksyncClient.GetNFTToken(ctx, uint(data.Transaction.Operation.Token))
-				if err != nil {
-					logrus.Error(err)
-				}
-				tokenID := decimal.NewFromInt(*nftTokenInfo.ID)
-				metadataModel.Token = &metadata.Token{
-					TokenAddress:  nftTokenInfo.Address,
-					TokenStandard: protocol.TokenStandardERC721,
-					TokenID:       &tokenID,
-					TokenValue:    &amount,
-					Symbol:        nftTokenInfo.Symbol,
-					NFTMetadata:   nftTokenInfo.Bytes(),
-				}
+	tokenMetadata.Symbol = nftToken.Symbol
+	tokenMetadata.TokenAddress = nftToken.Address
+	tokenMetadata.NFTMetadata = nftToken.Bytes()
+	tokenID, err := decimal.NewFromString(id)
+	if err != nil {
+		return nil, err
+	}
 
-				transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
-			} else { // transaction
-				metadataModel.Token = &metadata.Token{
-					TokenAddress:  tokenInfo.Address,
-					TokenStandard: protocol.TokenStandardERC20,
-					TokenValue:    &amount,
-					Decimals:      tokenInfo.Decimals,
-					Symbol:        tokenInfo.Symbol,
-				}
+	tokenMetadata.TokenID = &tokenID
 
-				transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
-			}
+	// TODO ERC-1155
+	tokenMetadata.TokenStandard = protocol.TokenStandardERC721
 
-			transaction, transfer = s.updateType(transaction, transfer)
+	transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
-			rawMetadata, err := json.Marshal(metadataModel)
-			if err != nil {
-				return nil, err
-			}
+	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &tokenMetadata); err != nil {
+		return nil, err
+	}
 
-			transfer.Metadata = rawMetadata
+	return &transfer, nil
+}
 
-			// Copy the transaction to map
-			value, exist := internalTransactionMap[transaction.Hash]
-			if !exist {
-				value = transaction
-
-				// Ignore transfers data that will not be updated
-				value.Transfers = make([]model.Transfer, 0)
-			}
-
-			value.Tag, value.Type = filter.UpdateTagAndType(transfer.Tag, value.Tag, transfer.Type, value.Type)
-			value.Transfers = append(value.Transfers, transfer)
-			internalTransactionMap[transaction.Hash] = value
+func (s *service) buildType(transaction model.Transaction, transfer model.Transfer) (model.Transaction, model.Transfer) {
+	switch {
+	case transfer.AddressFrom == ethereum.AddressGenesis.String():
+		transfer.Type = filter.TransactionMint
+		switch transfer.Tag {
+		case filter.TagTransaction:
+			transfer.Type = filter.TransactionMint
+		case filter.TagCollectible:
+			transfer.Type = filter.CollectibleMint
+		}
+	case transfer.AddressTo == ethereum.AddressGenesis.String():
+		transfer.Type = filter.TransactionBurn
+		switch transfer.Tag {
+		case filter.TagTransaction:
+			transfer.Type = filter.TransactionBurn
+		case filter.TagCollectible:
+			transfer.Type = filter.CollectibleBurn
+		}
+	case transfer.AddressFrom == transfer.AddressTo:
+		transfer.Type = filter.TransactionSelf
+	case transfer.Tag == filter.TagExchange:
+		transaction.Platform = transfer.Platform
+	default:
+		transfer.Type = filter.TransactionTransfer
+		switch transfer.Tag {
+		case filter.TagTransaction:
+			transfer.Type = filter.TransactionTransfer
+		case filter.TagCollectible:
+			transfer.Type = filter.CollectibleTrade
 		}
 	}
 
-	internalTransactions := make([]model.Transaction, 0)
+	transaction.Type = transfer.Type
+	transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 
-	for _, internalTransaction := range internalTransactionMap {
-		internalTransactions = append(internalTransactions, internalTransaction)
-	}
-
-	return internalTransactions, nil
+	return transaction, transfer
 }
 
 func (s *service) Jobs() []worker.Job {
 	return nil
 }
 
-func keyOfCheckCexWallet(address string) string {
-	return fmt.Sprintf("check_exchange_wallet.%s", address)
-}
-
 // Check address (from / to) is a WalletAddress. If true, update transfer
 func (s *service) checkCexWallet(ctx context.Context, address string, transfer *model.Transfer, wallet *exchange.CexWallet) error {
 	// get from redis cache (to)
-	exists, err := cache.GetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressTo), wallet)
+	exists, err := cache.GetMsgPack(ctx, keyOfCheckCexWallet(strings.ToLower(transfer.AddressTo)), wallet)
 	if err != nil {
 		return err
 	}
+
 	if !exists { // get from redis cache (from)
-		if exists, err = cache.GetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressFrom), wallet); err != nil {
+		if exists, err = cache.GetMsgPack(ctx, keyOfCheckCexWallet(strings.ToLower(transfer.AddressFrom)), wallet); err != nil {
 			return nil
 		}
 	}
@@ -604,44 +567,13 @@ func (s *service) checkCexWallet(ctx context.Context, address string, transfer *
 	return nil
 }
 
-func (s *service) updateType(transaction model.Transaction, transfer model.Transfer) (model.Transaction, model.Transfer) {
-	switch {
-	case transfer.AddressFrom == AddressGenesis:
-		transfer.Type = filter.TransactionMint
-		switch transfer.Tag {
-		case filter.TagTransaction:
-			transfer.Type = filter.TransactionMint
-		case filter.TagCollectible:
-			transfer.Type = filter.CollectibleMint
-		}
-	case transfer.AddressTo == AddressGenesis:
-		transfer.Type = filter.TransactionBurn
-		switch transfer.Tag {
-		case filter.TagTransaction:
-			transfer.Type = filter.TransactionBurn
-		case filter.TagCollectible:
-			transfer.Type = filter.CollectibleBurn
-		}
-	case transfer.AddressFrom == transfer.AddressTo:
-		transfer.Type = filter.TransactionSelf
-	case transfer.Tag == filter.TagExchange:
-		transaction.Platform = transfer.Platform
-	default:
-		transfer.Type = filter.TransactionTransfer
-		switch transfer.Tag {
-		case filter.TagTransaction:
-			transfer.Type = filter.TransactionTransfer
-		case filter.TagCollectible:
-			transfer.Type = filter.CollectibleTrade
-		}
-	}
-
-	return transaction, transfer
+func keyOfCheckCexWallet(address string) string {
+	return fmt.Sprintf("check_exchange_wallet.%s", address)
 }
 
 func New(databaseClient *gorm.DB) worker.Worker {
 	return &service{
 		databaseClient: databaseClient,
-		zksyncClient:   zksync2.New(),
+		zksyncClient:   zksync.New(),
 	}
 }

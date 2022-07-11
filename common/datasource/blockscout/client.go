@@ -21,6 +21,9 @@ const (
 	NetworkEthereum        = "/eth/mainnet"
 	NetworkEthereumClassic = "/etc/mainnet"
 	NetworkCrossbell       = "" // Root path
+
+	StatusFailed  = "0"
+	StatusSuccess = "1"
 )
 
 type Client struct {

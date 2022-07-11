@@ -1,8 +1,9 @@
 package erc20_test
 
 import (
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"testing"
+
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 )
 
 func TestName(t *testing.T) {

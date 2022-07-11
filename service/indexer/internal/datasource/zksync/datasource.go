@@ -19,8 +19,8 @@ import (
 var _ datasource.Datasource = (*Datasource)(nil)
 
 const (
-	Name  = "zksync"
-	Limit = 100
+	Source = "zksync"
+	Limit  = 100
 
 	OperationTypeTransfer = "Transfer"
 
@@ -33,7 +33,7 @@ type Datasource struct {
 }
 
 func (d *Datasource) Name() string {
-	return Name
+	return Source
 }
 
 func (d *Datasource) Networks() []string {

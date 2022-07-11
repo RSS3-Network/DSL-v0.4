@@ -3,6 +3,7 @@ package gitcoin
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strconv"
 
 	"github.com/go-redis/redis/v8"
@@ -74,7 +75,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 		for _, transfer := range transaction.Transfers {
 			transfer, err = s.handleGitcoin(ctx, transfer)
-			if err != nil {
+			if err != nil && !errors.Is(err, redis.Nil) {
 				logrus.Errorf("[gitcoin worker] Handle: handleGitcoin error, %v", err)
 			}
 

@@ -97,6 +97,7 @@ type RPCNetwork struct {
 	Ethereum          RPCEndpoint `mapstructure:"ethereum"`
 	Polygon           RPCEndpoint `mapstructure:"polygon"`
 	BinanceSmartChain RPCEndpoint `mapstructure:"binance-smart-chain"`
+	XDAI              RPCEndpoint `mapstructure:"xdai"`
 	Crossbell         RPCEndpoint `mapstructure:"crossbell"`
 }
 

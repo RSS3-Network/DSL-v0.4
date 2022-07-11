@@ -2,13 +2,13 @@ package blockscout_test
 
 import (
 	"context"
-	"github.com/naturalselectionlabs/pregod/common/datasource/blockscout"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/datasource/blockscout"
 )
 
-var client = blockscout.New(blockscout.EndpointCrossbell, blockscout.NetworkCrossbell)
+var client = blockscout.New(blockscout.EndpointDefault, blockscout.NetworkXDAI)
 
 func TestGetTransactionList(t *testing.T) {
 	transactions, _, err := client.GetTransactionList(
@@ -26,16 +26,16 @@ func TestGetTransactionList(t *testing.T) {
 }
 
 func TestGetTokenTransactionList(t *testing.T) {
-	transactions, _, err := client.GetTransactionList(
+	transactions, _, err := client.GetTokenTransactionList(
 		context.Background(),
 		common.HexToAddress("0x000000A52a03835517E9d193B3c27626e1Bc96b1"),
-		&blockscout.GetTransactionListOption{},
+		&blockscout.GetTokenTransactionListOption{},
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for _, transaction := range transactions {
-		t.Log(transaction.From, transaction.To)
+		t.Log(transaction)
 	}
 }
