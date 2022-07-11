@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/naturalselectionlabs/pregod/common/blockscout"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/datasource/blockscout"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"go.opentelemetry.io/otel"
 )

@@ -8,12 +8,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/hasura/go-graphql-client"
-	"github.com/naturalselectionlabs/pregod/common/arweave"
-	graphqlx "github.com/naturalselectionlabs/pregod/common/arweave/graphql"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	arweave2 "github.com/naturalselectionlabs/pregod/common/worker/arweave"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/arweave/graphql"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"go.opentelemetry.io/otel"
 )
@@ -25,7 +25,7 @@ const (
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
-	arweaveClient *arweave.Client
+	arweaveClient *arweave2.Client
 }
 
 func (d *Datasource) Name() string {
@@ -72,7 +72,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		transactions = append(transactions, model.Transaction{
 			BlockNumber: int64(edge.Node.Block.Height),
 			Timestamp:   timestamp,
-			Hash:        strings.ToLower(edge.Node.ID.(string)),
+			Hash:        edge.Node.ID.(string),
 			AddressFrom: strings.ToLower(string(edge.Node.Owner.Address)),
 			AddressTo:   addressTo,
 			Platform:    message.Network,
@@ -82,7 +82,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{
-					TransactionHash: strings.ToLower(edge.Node.ID.(string)),
+					TransactionHash: edge.Node.ID.(string),
 					Timestamp:       timestamp,
 					Index:           protocol.IndexVirtual,
 					AddressFrom:     strings.ToLower(string(edge.Node.Owner.Address)),
@@ -99,10 +99,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	return transactions, nil
 }
 
-func (d *Datasource) buildGetTransactionsVariable(ctx context.Context, address string) arweave.GetTransactionsVariable {
-	return arweave.GetTransactionsVariable{
+func (d *Datasource) buildGetTransactionsVariable(ctx context.Context, address string) arweave2.GetTransactionsVariable {
+	return arweave2.GetTransactionsVariable{
 		Owners: []graphql.String{
-			arweave.AddressMirror,
+			arweave2.AddressMirror,
 		},
 		Tags: []graphqlx.TagFilter{
 			{
@@ -125,6 +125,6 @@ func (d *Datasource) buildGetTransactionsVariable(ctx context.Context, address s
 
 func New() datasource.Datasource {
 	return &Datasource{
-		arweaveClient: arweave.NewClient(),
+		arweaveClient: arweave2.NewClient(),
 	}
 }

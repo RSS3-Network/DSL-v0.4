@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: pregod2-hub-api
+  name: pregod-1-1-hub-api
   namespace: pregod
 spec:
   type: ClusterIP
   selector:
-    app: pregod2-hub
+    app: pregod-1-1-hub
     tier: api
   ports:
     - name: http

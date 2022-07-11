@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pregod2-hub
+  name: pregod-1-1-hub
   namespace: pregod
 spec:
-  replicas: 5
+  replicas: 2
   selector:
     matchLabels:
-      app: pregod2-hub
+      app: pregod-1-1-hub
       tier: api
   template:
     metadata:
       labels:
-        app: pregod2-hub
+        app: pregod-1-1-hub
         tier: api
     spec:
       containers:
         - image: $IMAGE_TAG_RELEASE
           imagePullPolicy: Always
-          name: pregod2
+          name: pregod-1-1
           envFrom:
             - secretRef:
-                name: pregod2
+                name: pregod-1-1
           command:
             - hub
           ports:

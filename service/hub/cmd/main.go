@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/naturalselectionlabs/pregod/common/logger"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server"
 	"github.com/sirupsen/logrus"

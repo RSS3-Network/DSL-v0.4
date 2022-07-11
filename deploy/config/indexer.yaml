@@ -5,7 +5,7 @@ postgres:
   port: 5432
   user: postgres
   password: password
-  database: pregod2
+  database: pregod11
 
 rabbitmq:
   tls: false

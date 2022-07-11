@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pregod2-crawler
+  name: pregod-1-1-crawler
   namespace: pregod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pregod2-crawler
+      app: pregod-1-1-crawler
   template:
     metadata:
       labels:
-        app: pregod2-crawler
+        app: pregod-1-1-crawler
     spec:
       containers:
         - image: $IMAGE_TAG_RELEASE
           imagePullPolicy: Always
-          name: pregod2
+          name: pregod1-1
           envFrom:
             - secretRef:
-                name: pregod2
+                name: pregod-1-1
           command:
             - crawler
           resources:

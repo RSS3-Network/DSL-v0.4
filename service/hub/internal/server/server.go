@@ -13,8 +13,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
@@ -61,7 +61,7 @@ func (s *Server) Initialize() (err error) {
 		trace.WithBatcher(exporter),
 		trace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("pregod-hub"),
+			semconv.ServiceNameKey.String("pregod-1-1-hub"),
 			semconv.ServiceVersionKey.String(protocol.Version),
 		)),
 	))
@@ -113,6 +113,7 @@ func (s *Server) Initialize() (err error) {
 	})
 
 	s.httpServer.GET("/notes/:address", s.httpHandler.GetNoteListFunc)
+	s.httpServer.POST("/notes", s.httpHandler.BatchGetNoteListFunc)
 	s.httpServer.GET("/exchange/:exchange_type", s.httpHandler.GetExchangeListFunc)
 	s.httpServer.GET("/profile/:address", s.httpHandler.GetProfileListFunc)
 

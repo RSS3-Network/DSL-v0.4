@@ -5,7 +5,7 @@ const (
 	TransactionTransfer = "transfer"
 	TransactionMint     = "mint"
 	TransactionBurn     = "burn"
-	TransactionCancel   = "cancel"
+	TransactionSelf     = "self"
 
 	// exchange types:  withdraw | deposit | swap
 	ExchangeWithdraw = "withdraw"
@@ -20,6 +20,7 @@ const (
 
 	// social types: post | comment | share (retweet) | profile | follow | unfollow | like
 	SocialPost     = "post"
+	SocialRevise   = "revise"
 	SocialComment  = "comment"
 	SocialShare    = "share"
 	SocialProfile  = "profile"
@@ -37,17 +38,17 @@ const (
 )
 
 var ValidTypeMap = map[string][]string{
-	TagTransaction: {TransactionTransfer, TransactionMint, TransactionBurn, TransactionCancel},
+	TagTransaction: {TransactionTransfer, TransactionMint, TransactionBurn, TransactionSelf},
 	TagExchange:    {ExchangeWithdraw, ExchangeDeposit, ExchangeSwap},
 	TagCollectible: {CollectibleTrade, CollectibleMint, CollectibleBurn, CollectiblePoap},
-	TagSocial:      {SocialPost, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike},
+	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike},
 	TagDonation:    {DonationLaunch, DonationDonate},
 	TagGovernance:  {GovernancePropose, GovernanceVote},
 }
 
 func CheckTypeValid(tag string, transferType string) bool {
 	if len(tag) == 0 {
-		return true
+		return false
 	}
 
 	validTypeList := ValidTypeMap[tag]

@@ -3,15 +3,16 @@ package moralis
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/moralis"
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
@@ -37,7 +38,7 @@ func (d *Datasource) Name() string {
 
 func (d *Datasource) Networks() []string {
 	return []string{
-		protocol.NetworkBinanceSmartChain,
+		protocol.NetworkBinanceSmartChain, protocol.NetworkEthereum, protocol.NetworkPolygon,
 	}
 }
 
@@ -301,7 +302,7 @@ func New(moralisKey string, config *configx.RPC) datasource.Datasource {
 
 	ethereumClient, err := ethclient.Dial(config.General.BinanceSmartChain.HTTP)
 	if err != nil {
-		logrus.Errorf("[datasource] ethereum client error: %v", err)
+		logrus.Errorf("[datasource] ethereum worker error: %v", err)
 	}
 
 	return &Datasource{

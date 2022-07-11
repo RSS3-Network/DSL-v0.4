@@ -10,9 +10,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/shedlock"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
@@ -55,8 +55,8 @@ func (s *Server) Initialize() (err error) {
 		trace.WithBatcher(exporter),
 		trace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("pregod-crawler"),
-			semconv.ServiceVersionKey.String("v1.0"),
+			semconv.ServiceNameKey.String("pregod-1-1-crawler"),
+			semconv.ServiceVersionKey.String(protocol.Version),
 		)),
 	))
 

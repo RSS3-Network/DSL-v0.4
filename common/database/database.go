@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
+	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
+	"github.com/naturalselectionlabs/pregod/common/database/model/transaction"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -14,15 +17,15 @@ import (
 var tables = []any{
 	&model.Transaction{},
 	&model.Transfer{},
-	&model.SwapPool{},
-	&model.CexWallet{},
-	&model.Token{},
+	&exchange.SwapPool{},
+	&exchange.CexWallet{},
+	&transaction.Token{},
 	&model.GetTokenInfo{},
 	&model.GetNFTTokenInfo{},
-	&model.CoinMarketCapCoinInfo{},
-	&model.SnapshotSpace{},
-	&model.SnapshotProposal{},
-	&model.SnapshotVote{},
+	&transaction.CoinMarketCapCoinInfo{},
+	&governance.SnapshotSpace{},
+	&governance.SnapshotProposal{},
+	&governance.SnapshotVote{},
 }
 
 var Client *gorm.DB

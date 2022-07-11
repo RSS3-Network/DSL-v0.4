@@ -9,10 +9,10 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/naturalselectionlabs/pregod/common/alchemy"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/alchemy"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 )
@@ -41,8 +41,8 @@ func (d *Datasource) Name() string {
 
 func (d *Datasource) Networks() []string {
 	return []string{
-		protocol.NetworkEthereum,
-		protocol.NetworkPolygon,
+		// protocol.NetworkEthereum,
+		// protocol.NetworkPolygon,
 	}
 }
 

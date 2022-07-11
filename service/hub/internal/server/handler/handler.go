@@ -3,12 +3,14 @@ package handler
 import (
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/database/model"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"gorm.io/gorm"
 )
 
 const (
-	DefaultLimit = 500
+	DefaultLimit         = 500
+	DefaultBatchGetLimit = 20
 )
 
 type Handler struct {
@@ -33,6 +35,7 @@ type GetRequest struct {
 	Platform  []string  `query:"platform"`
 	Timestamp time.Time `query:"timestamp"`
 	Hash      string    `query:"hash"`
+	Refresh   bool      `query:"refresh"`
 }
 
 type GetExchangeRequest struct {
@@ -40,4 +43,38 @@ type GetExchangeRequest struct {
 	Cursor       int      `query:"cursor"`
 	Name         []string `query:"name"`
 	Network      []string `query:"network"`
+}
+
+type BatchGetNoteListRequest struct {
+	Timestamp time.Time `json:"timestamp"`
+	Limit     int       `json:"limit"`
+	Cursor    string    `json:"cursor"`
+	Refresh   bool      `json:"refresh"`
+	List      []Filter  `json:"list"`
+}
+
+type Filter struct {
+	Address  string   `json:"address"`
+	Type     []string `json:"type"`
+	Tag      string   `json:"tag"`
+	Network  []string `json:"network"`
+	Platform []string `json:"platform"`
+}
+
+type Transactions []model.Transaction
+
+// Len()
+func (t Transactions) Len() int {
+	return len(t)
+}
+
+// Less()
+func (t Transactions) Less(i, j int) bool {
+	return t[i].Timestamp.Unix() > t[j].Timestamp.Unix() ||
+		(t[i].Timestamp.Unix() == t[j].Timestamp.Unix() && t[i].Index > t[j].Index)
+}
+
+// Swap()
+func (t Transactions) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
 }

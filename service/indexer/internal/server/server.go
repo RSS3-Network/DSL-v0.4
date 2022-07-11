@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -15,11 +16,11 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/logger"
-	"github.com/naturalselectionlabs/pregod/common/nft"
-	"github.com/naturalselectionlabs/pregod/common/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/shedlock"
+	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
@@ -28,14 +29,14 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/crossbell"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/gitcoin"
-	lensworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/lens"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/mirror"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/snapshot"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/swap"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/token/coinmarketcap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
+	lensworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/coinmarketcap"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -80,8 +81,8 @@ func (s *Server) Initialize() (err error) {
 		trace.WithBatcher(exporter),
 		trace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("pregod2-indexer"),
-			semconv.ServiceVersionKey.String("v1.0.0"),
+			semconv.ServiceNameKey.String("pregod-1-1-indexer"),
+			semconv.ServiceVersionKey.String(protocol.Version),
 		)),
 	))
 
@@ -146,7 +147,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		token.New(s.databaseClient),
+		transaction.New(s.databaseClient),
 		swap.New(s.employer, s.databaseClient),
 		mirror.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
@@ -209,6 +210,14 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) handle(ctx context.Context, message *protocol.Message) (err error) {
+	lockKey := fmt.Sprintf("indexer:%v:%v", message.Address, message.Network)
+
+	if s.employer.DoLock(lockKey, 2*time.Minute) {
+		return fmt.Errorf("%v lock", lockKey)
+	}
+
+	defer s.employer.UnLock(lockKey)
+
 	// convert address to lowercase
 	message.Address = strings.ToLower(message.Address)
 	tracer := otel.Tracer("indexer")
