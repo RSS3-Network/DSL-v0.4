@@ -24,7 +24,7 @@ type Metadata struct {
 	Token     *Token     `json:"transaction,omitempty"`
 	Swap      *SwapPool  `json:"swap,omitempty"`
 	POAP      *POAP      `json:"poap,omitempty"`
-	Gitcoin   *Gitcoin   `json:"gitcoin,omitempty"`
+	Donation  *Donation  `json:"donation,omitempty"`
 	SnapShot  *SnapShot  `json:"snapshot,omitempty"`
 	Crossbell *Crossbell `json:"crossbell,omitempty"`
 	Post      *Post      `json:"content,omitempty"`
@@ -60,7 +60,7 @@ type SwapPool struct {
 	Protocol string `json:"protocol"`
 }
 
-type Gitcoin struct {
+type Donation struct {
 	ID          int    `json:"id"`
 	Slug        string `json:"slug"`
 	Title       string `json:"title"`
@@ -137,8 +137,8 @@ func BuildMetadataRawMessage(metadataRawMessage json.RawMessage, metadataModel a
 		internalMetadataModel.Swap = model
 	case *POAP:
 		internalMetadataModel.POAP = model
-	case *Gitcoin:
-		internalMetadataModel.Gitcoin = model
+	case *Donation:
+		internalMetadataModel.Donation = model
 	case *Crossbell:
 		internalMetadataModel.Crossbell = model
 	// social

@@ -140,7 +140,7 @@ func (s *service) handleGitcoin(ctx context.Context, transfer model.Transfer) (d
 		return transfer, err
 	}
 
-	metadataModel.Gitcoin = &metadata.Gitcoin{
+	metadataModel.Donation = &metadata.Donation{
 		ID:          project.ID,
 		Slug:        project.Slug,
 		Title:       project.Title,
