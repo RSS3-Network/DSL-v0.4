@@ -510,6 +510,7 @@ func (s *service) buildType(transaction model.Transaction, transfer model.Transf
 		}
 	}
 
+	transaction.Type = transfer.Type
 	transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
 
 	return transaction, transfer

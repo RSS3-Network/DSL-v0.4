@@ -149,8 +149,8 @@ func (s *Server) Initialize() (err error) {
 
 	s.workers = []worker.Worker{
 		transaction.New(s.databaseClient),
-		poap.New(),
 		swap.New(s.employer, s.databaseClient),
+		poap.New(),
 		mirror.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
 		crossbell.New(),
