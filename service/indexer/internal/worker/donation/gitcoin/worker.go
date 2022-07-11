@@ -143,13 +143,13 @@ func (s *service) handleGitcoin(ctx context.Context, transfer model.Transfer) (d
 
 	metadataModel.Donation = &metadata.Donation{
 		ID:          project.ID,
-		Slug:        project.Slug,
 		Title:       project.Title,
 		Description: project.Description,
 		Logo:        project.Logo,
+		Platform:    protocol.PlatfromGitcoin,
 	}
 
-	metadata, err := json.Marshal(metadataModel)
+	metadata, err := json.Marshal(metadataModel.Donation)
 	if err != nil {
 		return transfer, err
 	}
