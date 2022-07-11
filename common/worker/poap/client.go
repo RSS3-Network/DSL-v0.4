@@ -35,7 +35,7 @@ func (c *Client) GetActions(address string) ([]Action, error) {
 }
 
 func (c *Client) GetToken(ctx context.Context, id int64) (*Token, error) {
-	response, err := c.httpClient.Get(fmt.Sprintf("%s/transaction/%d", Endpoint, id))
+	response, err := c.httpClient.Get(fmt.Sprintf("%s/token/%d", Endpoint, id))
 	if err != nil {
 		return nil, err
 	}
