@@ -16,7 +16,7 @@ const (
 	CollectibleTrade = "trade"
 	CollectibleMint  = "mint"
 	CollectibleBurn  = "burn"
-	CollectiblePoap  = "POAP"
+	CollectiblePoap  = "poap"
 
 	// social types: post | comment | share (retweet) | profile | follow | unfollow | like
 	SocialPost     = "post"
