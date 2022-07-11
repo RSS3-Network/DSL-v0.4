@@ -295,7 +295,7 @@ func (s *service) handleArweave(ctx context.Context, message *protocol.Message, 
 
 func (s *service) makeZkSyncHandlerFunc(ctx context.Context, message *protocol.Message, transactions []model.Transaction) func(transaction model.Transaction, i int) (*model.Transaction, error) {
 	return func(transaction model.Transaction, i int) (*model.Transaction, error) {
-		return s.handleArweave(ctx, message, transaction)
+		return s.handleZkSync(ctx, message, transaction)
 	}
 }
 
