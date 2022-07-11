@@ -28,7 +28,7 @@ func (h *Handler) GetNoteListFunc(c echo.Context) error {
 	request := GetRequest{}
 
 	if err := c.Bind(&request); err != nil {
-		return c.JSON(http.StatusBadRequest, "invalid request")
+		return c.JSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 	}
 
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
@@ -46,7 +46,7 @@ func (h *Handler) GetNoteListFunc(c echo.Context) error {
 
 	transactionList, total, err := h.getTransactionListDatabase(ctx, request)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, "logic error")
+		return c.JSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 	}
 
 	// publish mq message
@@ -67,7 +67,7 @@ func (h *Handler) GetNoteListFunc(c echo.Context) error {
 
 	transferList, err := h.getTransferListDatabase(ctx, transactionHashList, request.Type)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, "logic error")
+		return c.JSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 	}
 
 	transferMap := make(map[string][]dbModel.Transfer)
@@ -182,7 +182,7 @@ func (h *Handler) BatchGetNoteListFunc(c echo.Context) error {
 	request := BatchGetNoteListRequest{}
 
 	if err := c.Bind(&request); err != nil {
-		return err
+		return c.JSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 	}
 
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
@@ -195,7 +195,7 @@ func (h *Handler) BatchGetNoteListFunc(c echo.Context) error {
 
 	transactionList, total, err := h.batchGetTransactionListDatabase(ctx, request)
 	if err != nil {
-		return err
+		return c.JSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 	}
 
 	if total == 0 {
