@@ -29,6 +29,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
@@ -148,6 +149,7 @@ func (s *Server) Initialize() (err error) {
 
 	s.workers = []worker.Worker{
 		transaction.New(s.databaseClient),
+		poap.New(),
 		swap.New(s.employer, s.databaseClient),
 		mirror.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
