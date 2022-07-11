@@ -31,12 +31,15 @@ func (h *Handler) GetNoteListFunc(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 	}
 
+	request.Address = strings.ToLower(request.Address)
+
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
 		request.Limit = DefaultLimit
 	}
 
 	var types []string
 	for _, t := range request.Type {
+		t = strings.ToLower(t)
 		if filter.CheckTypeValid(request.Tag, t) {
 			types = append(types, t)
 		}
@@ -103,8 +106,9 @@ func (h *Handler) getTransactionListDatabase(c context.Context, request GetReque
 	sql := h.DatabaseClient.
 		Model(&dbModel.Transaction{}).
 		Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
-			strings.ToLower(request.Address),
-			strings.ToLower(request.Address),
+			// address was already converted to lowercase
+			request.Address,
+			request.Address,
 		)
 
 	if len(request.Cursor) > 0 {
@@ -118,22 +122,30 @@ func (h *Handler) getTransactionListDatabase(c context.Context, request GetReque
 	}
 
 	if len(request.Hash) > 0 {
-		sql = sql.Where("hash = ?", request.Hash)
+		sql = sql.Where("hash = ?", strings.ToLower(request.Hash))
 	}
 
 	if len(request.Tag) > 0 {
-		sql = sql.Where("tag = ?", request.Tag)
+		sql = sql.Where("tag = ?", strings.ToLower(request.Tag))
 	}
 
 	if len(request.Type) > 0 {
+		// type was already converted to lowercase
 		sql = sql.Where("\"type\" IN ?", request.Type)
 	}
 
 	if len(request.Network) > 0 {
+		for i, v := range request.Network {
+			request.Network[i] = strings.ToLower(v)
+		}
+
 		sql = sql.Where("network IN ?", request.Network)
 	}
 
 	if len(request.Platform) > 0 {
+		for i, v := range request.Platform {
+			request.Platform[i] = strings.ToLower(v)
+		}
 		sql = sql.Where("platform IN ?", request.Platform)
 	}
 
@@ -243,6 +255,7 @@ func (h *Handler) batchGetTransactionListDatabase(ctx context.Context, request B
 
 		// check type
 		for _, t := range reqFilter.Type {
+			t = strings.ToLower(t)
 			if filter.CheckTypeValid(reqFilter.Tag, t) {
 				types = append(types, t)
 			}

@@ -28,7 +28,7 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 	}
 
 	var cursor string
-	switch request.ExchangeType {
+	switch strings.ToLower(request.ExchangeType) {
 	case "cex":
 		result, total, err := h.getCexListDatabase(ctx, request)
 		if err != nil {
@@ -94,6 +94,9 @@ func (h *Handler) getCexListDatabase(c context.Context, request GetExchangeReque
 		Model(&exchange.CexWallet{})
 
 	if len(request.Network) > 0 {
+		for i, v := range request.Network {
+			request.Network[i] = strings.ToLower(v)
+		}
 		sql = sql.Where("network IN ?", request.Network)
 	}
 
@@ -134,6 +137,9 @@ func (h *Handler) getDexListDatabase(c context.Context, request GetExchangeReque
 		Model(&exchange.SwapPool{})
 
 	if len(request.Network) > 0 {
+		for i, v := range request.Network {
+			request.Network[i] = strings.ToLower(v)
+		}
 		sql = sql.Where("network IN ?", request.Network)
 	}
 

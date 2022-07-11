@@ -94,10 +94,16 @@ func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) 
 	}
 
 	if len(request.Network) > 0 {
+		for i, v := range request.Network {
+			request.Network[i] = strings.ToLower(v)
+		}
 		sql = sql.Where("network IN ?", request.Network)
 	}
 
 	if len(request.Platform) > 0 {
+		for i, v := range request.Platform {
+			request.Platform[i] = strings.ToLower(v)
+		}
 		sql = sql.Where("platform IN ?", request.Platform)
 	}
 
