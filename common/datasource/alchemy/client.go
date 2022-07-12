@@ -100,10 +100,52 @@ type GetAssetTransfersResult struct {
 	PageKey string `json:"pageKey"`
 }
 
+type GetNFTsParameter struct {
+	Owner             string   `json:"owner"`
+	PageKey           string   `json:"pageKey"`
+	ContractAddresses []string `json:"contractAddresses"`
+	WithMetadata      bool     `json:"withMetadata"`
+}
+
+type GetNFTsResult struct {
+	OwnedNFTs []struct {
+		Contract struct {
+			Address string `json:"address"`
+		} `json:"contract"`
+		ID struct {
+			TokenID       string `json:"tokenId"`
+			TokenMetadata struct {
+				TokenType string `json:"tokenType"`
+			} `json:"tokenMetadata"`
+		} `json:"id"`
+		Title       string      `json:"title"`
+		Description string      `json:"description"`
+		TokenURI    interface{} `json:"tokenUri"`
+		Media       []struct {
+			Raw     string `json:"raw"`
+			Gateway string `json:"gateway"`
+		} `json:"media"`
+		TimeLastUpdated string `json:"timeLastUpdated"`
+	} `json:"ownedNfts"`
+	PageKey    string `json:"pageKey"`
+	TotalCount int    `json:"totalCount"`
+	BlockHash  string `json:"blockHash"`
+}
+
 func (c *Client) GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter) (*GetAssetTransfersResult, error) {
 	result := GetAssetTransfersResult{}
 
 	if err := c.rpcClient.CallContext(ctx, &result, MethodGetAssetTransfers, parameter); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+func GetNFTs(ctx context.Context, rpcClient *rpc.Client, parameter GetNFTsParameter) (*GetNFTsResult, error) {
+	result := GetNFTsResult{}
+
+	if err := rpcClient.CallContext(ctx, &result, MethodGetNFTs, parameter); err != nil {
 		return nil, err
 	}
 
