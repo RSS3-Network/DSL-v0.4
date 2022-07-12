@@ -2,11 +2,9 @@ name: lint & test
 on:
   push:
     tags:
-      - v*
+      - v1.0.*
     branches:
-      - master
-      - main
-      - develop
+      - v1.0
   pull_request:
 
 permissions:
