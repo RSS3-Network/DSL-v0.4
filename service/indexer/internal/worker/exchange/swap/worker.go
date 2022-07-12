@@ -99,14 +99,27 @@ func (s *service) Initialize(ctx context.Context) error {
 		databaseClient: s.databaseClient,
 	}
 
+	var count int64
+
+	if err := s.databaseClient.
+		Model((*exchange.SwapPool)(nil)).
+		Count(&count).
+		Error; err != nil {
+		return err
+	}
+
+	if count > 0 {
+		return nil
+	}
+
 	return job.Run(func(ctx context.Context, duration time.Duration) error {
 		return s.employer.Renewal(ctx, job.Name(), duration)
 	})
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
-	tracer := otel.Tracer("swap_worker")
-	_, trace := tracer.Start(ctx, "swap_worker:Handle")
+	tracer := otel.Tracer("worker_swap")
+	_, trace := tracer.Start(ctx, "worker_swap:Handle")
 
 	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
@@ -119,8 +132,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 }
 
 func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
-	tracer := otel.Tracer("swap_worker")
-	_, trace := tracer.Start(ctx, "swap_worker:handleEthereum")
+	tracer := otel.Tracer("worker_swap")
+	_, trace := tracer.Start(ctx, "worker_swap:handleEthereum")
 
 	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
@@ -189,8 +202,8 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 }
 
 func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.Message, transfer model.Transfer, swapRouterAddress string) (data *model.Transfer, err error) {
-	tracer := otel.Tracer("swap_worker")
-	_, trace := tracer.Start(ctx, "swap_worker:handleEthereumTransfer")
+	tracer := otel.Tracer("worker_swap")
+	_, trace := tracer.Start(ctx, "worker_swap:handleEthereumTransfer")
 
 	defer func() { opentelemetry.Log(trace, transfer, data, err) }()
 
