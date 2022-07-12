@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/alchemy"
@@ -30,7 +29,7 @@ var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
 	ethereumClientMap map[string]*ethclient.Client // QuickNode
-	rpcClientMap      map[string]*rpc.Client       // Alchemy
+	rpcClientMap      map[string]*alchemy.Client   // Alchemy
 }
 
 func (d *Datasource) Name() string {
@@ -124,7 +123,7 @@ func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *pro
 }
 
 func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *protocol.Message, parameter alchemy.GetAssetTransfersParameter) ([]model.Transaction, error) {
-	rpcClient, exist := d.rpcClientMap[message.Network]
+	alchemyClient, exist := d.rpcClientMap[message.Network]
 	if !exist {
 		return nil, ErrorUnsupportedNetwork
 	}
@@ -132,7 +131,7 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 	internalTransactions := make([]model.Transaction, 0)
 
 	for {
-		result, err := alchemy.GetAssetTransfers(context.Background(), rpcClient, parameter)
+		result, err := alchemyClient.GetAssetTransfers(context.Background(), parameter)
 		if err != nil {
 			return nil, err
 		}
@@ -170,7 +169,7 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 func New(config *configx.RPC) (datasource.Datasource, error) {
 	internalDatasource := Datasource{
 		ethereumClientMap: map[string]*ethclient.Client{},
-		rpcClientMap:      map[string]*rpc.Client{},
+		rpcClientMap:      map[string]*alchemy.Client{},
 	}
 
 	var err error
@@ -183,10 +182,10 @@ func New(config *configx.RPC) (datasource.Datasource, error) {
 		return nil, err
 	}
 
-	if internalDatasource.rpcClientMap[protocol.NetworkEthereum], err = rpc.Dial(config.Alchemy.Ethereum.HTTP); err != nil {
+	if internalDatasource.rpcClientMap[protocol.NetworkEthereum], err = alchemy.NewClient(protocol.NetworkEthereum, config.Alchemy.Ethereum); err != nil {
 		return nil, err
 	}
-	if internalDatasource.rpcClientMap[protocol.NetworkPolygon], err = rpc.Dial(config.Alchemy.Polygon.HTTP); err != nil {
+	if internalDatasource.rpcClientMap[protocol.NetworkPolygon], err = alchemy.NewClient(protocol.NetworkPolygon, config.Alchemy.Polygon); err != nil {
 		return nil, err
 	}
 

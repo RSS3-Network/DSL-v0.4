@@ -89,8 +89,8 @@ type Gateway struct {
 }
 
 type RPC struct {
-	General RPCNetwork `mapstructure:"general"`
-	Alchemy RPCNetwork `mapstructure:"alchemy"`
+	General RPCNetwork     `mapstructure:"general"`
+	Alchemy AlchemyNetwork `mapstructure:"alchemy"`
 }
 
 type RPCNetwork struct {
@@ -104,4 +104,11 @@ type RPCNetwork struct {
 type RPCEndpoint struct {
 	HTTP      string `mapstructure:"http"`
 	WebSocket string `mapstructure:"websocket"`
+}
+
+type AlchemyNetwork struct {
+	Ethereum string `mapstructure:"ethereum"`
+	Polygon  string `mapstructure:"polygon"`
+	Arbitrum string `mapstructure:"arbitrum"`
+	Optimism string `mapstructure:"optimism"`
 }
