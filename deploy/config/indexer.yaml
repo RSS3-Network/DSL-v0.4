@@ -43,6 +43,15 @@ rpc:
     polygon:
       http: ''
       websocket: ''
+    bsc:
+      http: ''
+      websocket: ''
+    xdai:
+      http: ''
+      websocket: ''
+    crossbell:
+      http: ''
+      websocket: ''
   alchemy:
     ethereum:
       http: ''

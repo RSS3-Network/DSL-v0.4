@@ -55,7 +55,7 @@ func Test_CachedGetCoinInfo(t *testing.T) {
 	assert.EqualValues(t, "rss3", info.Slug)
 	assert.EqualValues(t, "RSS3", info.Symbol)
 	assert.EqualValues(t, 18, info.Decimals)
-	assert.EqualValues(t, "transaction", info.Category)
+	assert.EqualValues(t, "token", info.Category)
 
 	// cache exists
 	info = &transaction.CoinMarketCapCoinInfo{}
@@ -111,7 +111,7 @@ func Test_CachedGetCoinInfoByNetwork(t *testing.T) {
 	assert.EqualValues(t, "wbnb", info.Slug)
 	assert.EqualValues(t, 18, info.Decimals)
 	assert.EqualValues(t, "WBNB", info.Symbol)
-	assert.EqualValues(t, "transaction", info.Category)
+	assert.EqualValues(t, "token", info.Category)
 
 	// polygon
 	info, err = coinmarketcap.CachedGetCoinInfoByNetwork(ctx, "polygon", 10086)

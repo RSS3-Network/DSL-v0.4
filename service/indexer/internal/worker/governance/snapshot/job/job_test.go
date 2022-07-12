@@ -20,7 +20,7 @@ var (
 func init() {
 	var err error
 
-	databaseClient, err = database.Dial("postgres://postgres:password@127.0.0.1:5432/pregod2", true)
+	databaseClient, err = database.Dial("postgres://postgres:password@127.0.0.1:5432/pregod11", true)
 	if err != nil {
 		panic(err)
 	}

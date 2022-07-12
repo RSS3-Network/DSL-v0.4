@@ -61,9 +61,9 @@ func Test_service_Networks(t *testing.T) {
 				protocol.NetworkEthereum,
 				protocol.NetworkPolygon,
 				protocol.NetworkBinanceSmartChain,
-				protocol.NetworkZkSync,
 				protocol.NetworkCrossbell,
 				protocol.NetworkXDAI,
+				protocol.NetworkZkSync,
 			},
 		},
 	}
