@@ -33,7 +33,6 @@ var Client *gorm.DB
 func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {
 	var err error
 	Client, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		SkipDefaultTransaction: true,
 		Logger: logger.New(
 			log.New(os.Stdout, "\r\n", log.LstdFlags),
 			logger.Config{
