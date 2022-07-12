@@ -116,6 +116,7 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.POST("/notes", s.httpHandler.BatchGetNoteListFunc)
 	s.httpServer.GET("/exchange/:exchange_type", s.httpHandler.GetExchangeListFunc)
 	s.httpServer.GET("/profile/:address", s.httpHandler.GetProfileListFunc)
+	s.httpServer.GET("/ns/:address", s.httpHandler.GetENSResolve)
 
 	return nil
 }

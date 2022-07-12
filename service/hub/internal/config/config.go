@@ -16,6 +16,7 @@ type Config struct {
 	Postgres      *configx.Postgres      `mapstructure:"postgres"`
 	Redis         *configx.Redis         `mapstructure:"redis"`
 	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
+	RPC           *configx.RPC           `mapstructure:"rpc"`
 }
 
 var ConfigHub Config
