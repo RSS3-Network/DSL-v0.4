@@ -53,9 +53,5 @@ rpc:
       http: ''
       websocket: ''
   alchemy:
-    ethereum:
-      http: ''
-      websocket: ''
-    polygon:
-      http: ''
-      websocket: ''
+    ethereum: ''
+    polygon: ''
