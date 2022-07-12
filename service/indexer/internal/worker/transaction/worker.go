@@ -40,7 +40,7 @@ import (
 )
 
 const (
-	Name = "token"
+	Name = "transaction"
 )
 
 var _ worker.Worker = (*service)(nil)
@@ -147,7 +147,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	transactions = make([]model.Transaction, 0)
 
 	for _, internalTransaction := range internalTransactions {
-		transactions = append(transactions, *internalTransaction)
+		if internalTransaction != nil {
+			transactions = append(transactions, *internalTransaction)
+		}
 	}
 
 	return transactions, nil
