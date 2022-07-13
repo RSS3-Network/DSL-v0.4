@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -28,6 +29,25 @@ func NewClient(network, key string) (*Client, error) {
 	}
 
 	rpcURL, err := client.buildURL(false)
+	if err != nil {
+		return nil, err
+	}
+
+	if client.rpcClient, err = rpc.Dial(rpcURL.String()); err != nil {
+		return nil, err
+	}
+
+	return &client, nil
+}
+
+func NewNFTClient(network, key string) (*Client, error) {
+	client := Client{
+		network:    network,
+		key:        key,
+		httpClient: http.DefaultClient,
+	}
+
+	rpcURL, err := client.buildURL(true)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +145,7 @@ type GetNFTsResult struct {
 			Raw     string `json:"raw"`
 			Gateway string `json:"gateway"`
 		} `json:"media"`
-		TimeLastUpdated string `json:"timeLastUpdated"`
+		TimeLastUpdated time.Time `json:"timeLastUpdated"`
 	} `json:"ownedNfts"`
 	PageKey    string `json:"pageKey"`
 	TotalCount int    `json:"totalCount"`
@@ -142,10 +162,10 @@ func (c *Client) GetAssetTransfers(ctx context.Context, parameter GetAssetTransf
 	return &result, nil
 }
 
-func GetNFTs(ctx context.Context, rpcClient *rpc.Client, parameter GetNFTsParameter) (*GetNFTsResult, error) {
+func (c *Client) GetNFTs(ctx context.Context, parameter GetNFTsParameter) (*GetNFTsResult, error) {
 	result := GetNFTsResult{}
 
-	if err := rpcClient.CallContext(ctx, &result, MethodGetNFTs, parameter); err != nil {
+	if err := c.rpcClient.CallContext(ctx, &result, MethodGetNFTs, parameter); err != nil {
 		return nil, err
 	}
 
