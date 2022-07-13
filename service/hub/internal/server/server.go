@@ -117,6 +117,7 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.GET("/exchange/:exchange_type", s.httpHandler.GetExchangeListFunc)
 	s.httpServer.GET("/profile/:address", s.httpHandler.GetProfileListFunc)
 	s.httpServer.GET("/ns/:address", s.httpHandler.GetENSResolve)
+	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetListFunc)
 
 	return nil
 }

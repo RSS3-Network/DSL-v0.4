@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/google/go-querystring/query"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	http_utils "github.com/naturalselectionlabs/pregod/common/utils/http"
 )
 
 var ErrorUnsupportedNetwork = errors.New("unsupported network")
@@ -100,10 +103,72 @@ type GetAssetTransfersResult struct {
 	PageKey string `json:"pageKey"`
 }
 
+type GetNFTsParameter struct {
+	Owner             string   `url:"owner,omitempty"`
+	PageKey           string   `url:"pageKey,omitempty"`
+	ContractAddresses []string `url:"contractAddresses,omitempty"`
+	WithMetadata      bool     `url:"withMetadata"`
+}
+
+type GetNFTsResult struct {
+	OwnedNFTs []struct {
+		Contract struct {
+			Address string `json:"address"`
+		} `json:"contract"`
+		ID struct {
+			TokenID       string `json:"tokenId"`
+			TokenMetadata struct {
+				TokenType string `json:"tokenType"`
+			} `json:"tokenMetadata"`
+		} `json:"id"`
+		Title       string      `json:"title"`
+		Description string      `json:"description"`
+		TokenURI    interface{} `json:"tokenUri"`
+		Media       []struct {
+			Raw     string `json:"raw"`
+			Gateway string `json:"gateway"`
+		} `json:"media"`
+		TimeLastUpdated time.Time `json:"timeLastUpdated"`
+	} `json:"ownedNfts"`
+	PageKey    string `json:"pageKey"`
+	TotalCount int    `json:"totalCount"`
+	BlockHash  string `json:"blockHash"`
+}
+
 func (c *Client) GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter) (*GetAssetTransfersResult, error) {
 	result := GetAssetTransfersResult{}
 
 	if err := c.rpcClient.CallContext(ctx, &result, MethodGetAssetTransfers, parameter); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+func (c *Client) GetNFTs(ctx context.Context, parameter GetNFTsParameter) (*GetNFTsResult, error) {
+	values, err := query.Values(parameter)
+	if err != nil {
+		return nil, err
+	}
+
+	url, err := c.buildURL(true)
+	if err != nil {
+		return nil, err
+	}
+	url.Path += fmt.Sprintf("/%v", MethodGetNFTs)
+
+	url.RawQuery = values.Encode()
+
+	request, err := http_utils.NewRequest(http.MethodGet, url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(url.String())
+
+	result := GetNFTsResult{}
+
+	err = http_utils.DoRequest(ctx, c.httpClient, request, &result)
+	if err != nil {
 		return nil, err
 	}
 
