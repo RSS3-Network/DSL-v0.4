@@ -131,23 +131,23 @@ func Resolve(ethRPCEndpoint string, input string) (NameServiceResult, error) {
 	result := NameServiceResult{}
 
 	if strings.HasSuffix(input, ".eth") {
-		result.Address = input
-
-		ensDomain, err := client.GetResolvedAddress(input)
-		if err != nil {
-			return result, err
-		}
-
-		result.ENS = ensDomain
-	} else {
 		result.ENS = input
 
-		address, err := client.GetReverseResolve(input)
+		address, err := client.GetResolvedAddress(input)
 		if err != nil {
 			return result, err
 		}
 
 		result.Address = address
+	} else {
+		result.Address = input
+
+		ensDomain, err := client.GetReverseResolve(input)
+		if err != nil {
+			return result, err
+		}
+
+		result.ENS = ensDomain
 	}
 
 	return result, nil

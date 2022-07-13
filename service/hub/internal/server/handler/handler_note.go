@@ -31,8 +31,6 @@ func (h *Handler) GetNoteListFunc(c echo.Context) error {
 		return BadRequest(c)
 	}
 
-	request.Address = strings.ToLower(request.Address)
-
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
 		request.Limit = DefaultLimit
 	}

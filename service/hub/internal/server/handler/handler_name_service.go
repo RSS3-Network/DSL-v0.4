@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
@@ -23,9 +22,8 @@ func (h *Handler) GetENSResolve(c echo.Context) error {
 	}
 
 	if len(request.Address) == 0 {
-		return c.JSON(http.StatusBadRequest, &Response{})
+		return BadRequest(c)
 	}
-	request.Address = strings.ToLower(request.Address)
 
 	result, err := ens.Resolve(config.ConfigHub.RPC.General.Ethereum.HTTP, request.Address)
 	if err != nil {
