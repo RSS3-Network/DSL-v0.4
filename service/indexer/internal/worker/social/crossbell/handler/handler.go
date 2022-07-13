@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"gorm.io/gorm"
+
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/character"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/linklist"
@@ -57,7 +59,7 @@ func (h *handler) Handle(ctx context.Context, transaction model.Transaction, tra
 	}
 }
 
-func New(ethereumClient *ethclient.Client) (Interface, error) {
+func New(ethereumClient *ethclient.Client, databaseClient *gorm.DB) (Interface, error) {
 	profileContract, err := profile.NewProfile(contract.AddressCharacter, ethereumClient)
 	if err != nil {
 		return nil, err
@@ -84,7 +86,9 @@ func New(ethereumClient *ethclient.Client) (Interface, error) {
 			peripheryContract: peripheryContract,
 			profileHandler: &profileHandler{
 				profileContract: profileContract,
+				databaseClient:  databaseClient,
 			},
+			databaseClient: databaseClient,
 		},
 		linkListHandler: &linkListHandler{
 			linkListContract: linkListContract,

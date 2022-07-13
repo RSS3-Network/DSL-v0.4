@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 
+	"gorm.io/gorm"
+
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/handler"
@@ -32,6 +34,7 @@ var _ worker.Worker = (*service)(nil)
 type service struct {
 	ethereumClient *ethclient.Client
 	handler        handler.Interface
+	databaseClient *gorm.DB
 }
 
 func (s *service) Name() string {
@@ -49,7 +52,7 @@ func (s *service) Initialize(ctx context.Context) (err error) {
 		return err
 	}
 
-	if s.handler, err = handler.New(s.ethereumClient); err != nil {
+	if s.handler, err = handler.New(s.ethereumClient, s.databaseClient); err != nil {
 		return err
 	}
 
@@ -172,6 +175,8 @@ func (s *service) Jobs() []worker.Job {
 	return nil
 }
 
-func New() worker.Worker {
-	return &service{}
+func New(databaseClient *gorm.DB) worker.Worker {
+	return &service{
+		databaseClient: databaseClient,
+	}
 }
