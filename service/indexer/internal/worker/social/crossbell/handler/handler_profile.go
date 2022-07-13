@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -16,6 +15,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/profile"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var _ Interface = (*profileHandler)(nil)
@@ -89,7 +89,6 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	if err := json.Unmarshal(profileMetadata, &tempStructure); err != nil {
 		return nil, err
 	}
-	fmt.Println(profileMetadata, tempStructure)
 
 	profile := &model.Profile{
 		Address:    transfer.AddressFrom,
@@ -116,7 +115,9 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 		}
 	}
 
-	p.databaseClient.Model(&model.Profile{}).Create(profile)
+	p.databaseClient.Model(&model.Profile{}).Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(profile)
 
 	return &transfer, nil
 }

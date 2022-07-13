@@ -1,7 +1,6 @@
 package ens
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -77,8 +76,6 @@ func (c *Client) GetENSExpiry(domain string) (time.Time, error) {
 	}
 
 	expiry, err := name.Expires()
-
-	fmt.Println(expiry)
 	if err != nil {
 		return time.Time{}, err
 	}

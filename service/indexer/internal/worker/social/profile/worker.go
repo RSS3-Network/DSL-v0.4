@@ -3,6 +3,8 @@ package profile
 import (
 	"context"
 
+	"gorm.io/gorm/clause"
+
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
@@ -59,7 +61,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	// get ENS profile
 	profile, err := s.ensClient.GetProfile(message.Address)
 	if err == nil {
-		s.databaseClient.Model(&model.Profile{}).Create(&profile)
+		s.databaseClient.Model(&model.Profile{}).Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).Create(profile)
 	}
 
 	return transactions, nil
