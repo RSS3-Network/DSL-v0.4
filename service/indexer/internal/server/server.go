@@ -28,6 +28,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
+	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
@@ -57,9 +59,11 @@ type Server struct {
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
 	rabbitmqQueue      rabbitmq.Queue
+	rabbitmqAssetQueue rabbitmq.Queue
 	databaseClient     *gorm.DB
 	redisClient        *redis.Client
 	datasources        []datasource.Datasource
+	datasourcesAsset   []datasource_asset.Datasource
 	workers            []worker.Worker
 	indexedWorker      []worker.Worker
 	employer           *shedlock.Employer
@@ -100,31 +104,8 @@ func (s *Server) Initialize() (err error) {
 
 	coinmarketcap.Init(s.config.CoinMarketCap.APIKey)
 
-	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
+	err = s.InitializeMQ()
 	if err != nil {
-		return err
-	}
-
-	s.rabbitmqChannel, err = s.rabbitmqConnection.Channel()
-	if err != nil {
-		return err
-	}
-
-	if err := s.rabbitmqChannel.ExchangeDeclare(
-		protocol.ExchangeJob, "direct", true, false, false, false, nil,
-	); err != nil {
-		return err
-	}
-
-	if s.rabbitmqQueue, err = s.rabbitmqChannel.QueueDeclare(
-		protocol.IndexerWorkQueue, false, false, false, false, nil,
-	); err != nil {
-		return err
-	}
-
-	if err := s.rabbitmqChannel.QueueBind(
-		s.rabbitmqQueue.Name, protocol.IndexerWorkRoutingKey, protocol.ExchangeJob, false, nil,
-	); err != nil {
 		return err
 	}
 
@@ -176,6 +157,60 @@ func (s *Server) Initialize() (err error) {
 		}
 	}
 
+	// asset
+	alchemyAssetDatasource, err := alchemy_asset.New(s.config.RPC)
+	if err != nil {
+		return err
+	}
+	s.datasourcesAsset = []datasource_asset.Datasource{
+		alchemyAssetDatasource,
+	}
+
+	return nil
+}
+
+func (s *Server) InitializeMQ() (err error) {
+	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
+	if err != nil {
+		return err
+	}
+
+	s.rabbitmqChannel, err = s.rabbitmqConnection.Channel()
+	if err != nil {
+		return err
+	}
+
+	if err := s.rabbitmqChannel.ExchangeDeclare(
+		protocol.ExchangeJob, "direct", true, false, false, false, nil,
+	); err != nil {
+		return err
+	}
+
+	if s.rabbitmqQueue, err = s.rabbitmqChannel.QueueDeclare(
+		protocol.IndexerWorkQueue, false, false, false, false, nil,
+	); err != nil {
+		return err
+	}
+
+	if err := s.rabbitmqChannel.QueueBind(
+		s.rabbitmqQueue.Name, protocol.IndexerWorkRoutingKey, protocol.ExchangeJob, false, nil,
+	); err != nil {
+		return err
+	}
+
+	// asset mq
+	if s.rabbitmqAssetQueue, err = s.rabbitmqChannel.QueueDeclare(
+		protocol.IndexerAssetQueue, false, false, false, false, nil,
+	); err != nil {
+		return err
+	}
+
+	if err := s.rabbitmqChannel.QueueBind(
+		s.rabbitmqAssetQueue.Name, protocol.IndexerAssetRoutingKey, protocol.ExchangeJob, false, nil,
+	); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -204,6 +239,26 @@ func (s *Server) Run() error {
 		go func() {
 			if err := s.handle(context.Background(), &message); err != nil {
 				logger.Global().Error("failed to handle message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
+			}
+		}()
+	}
+
+	deliveryAssetCh, err := s.rabbitmqChannel.Consume(s.rabbitmqAssetQueue.Name, "", true, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+
+	for delivery := range deliveryAssetCh {
+		message := protocol.Message{}
+		if err := json.Unmarshal(delivery.Body, &message); err != nil {
+			logger.Global().Error("failed to unmarshal message", zap.Error(err))
+
+			continue
+		}
+
+		go func() {
+			if err := s.handleAsset(context.Background(), &message); err != nil {
+				logger.Global().Error("failed to handle asset message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
 			}
 		}()
 	}
@@ -317,6 +372,59 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	}()
 
 	return s.handleWorkers(ctx, message, transactions, transactionsMap)
+}
+
+func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (err error) {
+	lockKey := fmt.Sprintf("indexer_asset:%v:%v", message.Address, message.Network)
+
+	if s.employer.DoLock(lockKey, 2*time.Minute) {
+		return fmt.Errorf("%v lock", lockKey)
+	}
+
+	defer s.employer.UnLock(lockKey)
+
+	// convert address to lowercase
+	message.Address = strings.ToLower(message.Address)
+	tracer := otel.Tracer("indexer")
+
+	ctx, handlerSpan := tracer.Start(ctx, "indexer:handleAsset")
+
+	handlerSpan.SetAttributes(
+		attribute.String("network", message.Network),
+	)
+
+	defer handlerSpan.End()
+
+	logger.Global().Info("start indexing asset data", zap.String("address", message.Address), zap.String("network", message.Network))
+
+	// Get data from datasources
+	var assets []model.Asset
+
+	for _, datasource := range s.datasourcesAsset {
+		for _, network := range datasource.Networks() {
+			if network == message.Network {
+				internalAssets, err := datasource.Handle(ctx, message)
+				// Avoid blocking indexed workers
+				if err != nil {
+					logger.Global().Error("datasource handle failed", zap.Error(err))
+					continue
+				}
+
+				assets = append(assets, internalAssets...)
+			}
+		}
+	}
+
+	// set db
+	if err := s.databaseClient.
+		Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).
+		Create(assets).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func getTransactionsMap(transactions []model.Transaction) map[string]model.Transaction {
