@@ -28,6 +28,7 @@ type Metadata struct {
 	SnapShot  *SnapShot  `json:"snapshot,omitempty"`
 	Crossbell *Crossbell `json:"crossbell,omitempty"`
 	Post      *Post      `json:"content,omitempty"`
+	Profile   *Profile   `json:"profile,omitempty"`
 	Vote      *Vote      `json:"vote,omitempty"`
 	Proposal  *Proposal  `json:"proposal,omitempty"`
 }
@@ -144,6 +145,8 @@ func BuildMetadataRawMessage(metadataRawMessage json.RawMessage, metadataModel a
 	// social
 	case *Post:
 		internalMetadataModel.Post = model
+	case *Profile:
+		internalMetadataModel.Profile = model
 	// governance
 	case *Vote:
 		internalMetadataModel.Vote = model

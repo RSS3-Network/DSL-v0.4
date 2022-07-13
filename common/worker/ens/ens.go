@@ -1,8 +1,10 @@
 package ens
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -30,7 +32,7 @@ func (c *Client) GetProfile(address string) (*model.Profile, error) {
 		return nil, err
 	}
 
-	profile := model.Profile{
+	profile := &model.Profile{
 		Address:  address,
 		Network:  protocol.NetworkEthereum,
 		Platform: "ENS",
@@ -39,12 +41,16 @@ func (c *Client) GetProfile(address string) (*model.Profile, error) {
 		Handle:   primaryENS,
 	}
 
-	err = c.GetENSTextValue(primaryENS, &profile)
+	err = c.GetENSTextValue(primaryENS, profile)
 	if err != nil {
 		return nil, err
 	}
 
-	return &profile, nil
+	if profile.ExpireAt, err = c.GetENSExpiry(primaryENS); err != nil {
+		return nil, err
+	}
+
+	return profile, nil
 }
 
 func (c *Client) GetReverseResolve(address string) (string, error) {
@@ -52,6 +58,7 @@ func (c *Client) GetReverseResolve(address string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return target, nil
 }
 
@@ -61,6 +68,21 @@ func (c *Client) GetResolvedAddress(domain string) (string, error) {
 		return "", err
 	}
 	return address.String(), nil
+}
+
+func (c *Client) GetENSExpiry(domain string) (time.Time, error) {
+	name, err := goens.NewName(c.ethClient, domain)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	expiry, err := name.Expires()
+
+	fmt.Println(expiry)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return expiry, nil
 }
 
 // GetENSTextValue reads the text record value for a given domain
@@ -103,18 +125,18 @@ func getTextRecordKeyList() []string {
 	return []string{"email", "url", "avatar", "description", "notice", "keywords", "com.discord", "com.github", "com.reddit", "com.twitter", "org.telegram", "eth.ens.delegate"}
 }
 
-func New(ethRPCEndpoint string) (*Client, error) {
+func New(ethRPCEndpoint string) *Client {
 	var ethClient *ethclient.Client
 
 	ethClient, err := ethclient.Dial(ethRPCEndpoint)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
 	return &Client{
 		httpClient: http.DefaultClient,
 		ethClient:  ethClient,
-	}, nil
+	}
 }
 
 type NameServiceResult struct {
@@ -123,10 +145,7 @@ type NameServiceResult struct {
 }
 
 func Resolve(ethRPCEndpoint string, input string) (NameServiceResult, error) {
-	client, err := New(ethRPCEndpoint)
-	if err != nil {
-		return NameServiceResult{}, err
-	}
+	client := New(ethRPCEndpoint)
 
 	result := NameServiceResult{}
 

@@ -15,14 +15,6 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-type ProfileResult struct {
-	Hash       string          `json:"hash"`
-	Network    string          `json:"network"`
-	Platform   string          `json:"platform"`
-	ProfileURL string          `json:"profile_url"`
-	Metadata   json.RawMessage `json:"metadata"`
-}
-
 // GetProfileListFunc supported filter:
 // - address
 // - network
@@ -39,7 +31,7 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 		return err
 	}
 
-	profileList, total, err := h.getProfileListDatabase(ctx, request)
+	profileList, err := h.getProfileListDatabase(ctx, request)
 	if err != nil {
 		return err
 	}
@@ -50,32 +42,26 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 		})
 	}
 
-	var cursor string
-	if total > int64(DefaultLimit) {
-		cursor = profileList[len(profileList)-1].TransactionHash
-	}
-
 	result, err := formatProfileResult(profileList)
 	if err != nil {
-		return err
+		return BadRequest(c)
 	}
 
 	return c.JSON(http.StatusOK, &Response{
-		Total:  total,
-		Cursor: cursor,
+		Total:  int64(len(result)),
 		Result: result,
 	})
 }
 
 // getTransferListDatabase get transfer data from database
-func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) ([]dbModel.Transfer, int64, error) {
+func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) ([]dbModel.Transfer, error) {
 	tracer := otel.Tracer("getProfileListDatabase")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
 	dbResult := make([]dbModel.Transfer, 0)
-	total := int64(0)
+
 	sql := h.DatabaseClient.Model(&dbModel.Transfer{}).Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
 		request.Address,
 		request.Address,
@@ -84,7 +70,7 @@ func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) 
 	if len(request.Cursor) > 0 {
 		cursorInt, err := strconv.Atoi(request.Cursor)
 		if err != nil {
-			return nil, total, err
+			return nil, err
 		}
 
 		if cursorInt > 0 {
@@ -110,11 +96,11 @@ func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) 
 	sql = sql.Where("\"type\" IN ? ", []string{filter.SocialProfile})
 	sql = sql.Limit(DefaultLimit)
 
-	if err := sql.Count(&total).Find(&dbResult).Error; err != nil {
-		return nil, total, err
+	if err := sql.Find(&dbResult).Error; err != nil {
+		return nil, err
 	}
 
-	return dbResult, total, nil
+	return dbResult, nil
 }
 
 type CrossbellProfilestruct struct {
@@ -135,15 +121,13 @@ type CrossbellProfilestruct struct {
 }
 
 // formatProfileResult format profile result by extracting ProfileURL from metadata
-func formatProfileResult(profileList []dbModel.Transfer) ([]ProfileResult, error) {
-	result := make([]ProfileResult, 0)
+func formatProfileResult(profileList []dbModel.Transfer) ([]dbModel.Profile, error) {
+	result := make([]dbModel.Profile, 0)
 	for _, profile := range profileList {
-
-		temp := ProfileResult{
-			Hash:     profile.TransactionHash,
-			Network:  profile.Network,
-			Platform: profile.Platform,
-			Metadata: profile.Metadata,
+		temp := dbModel.Profile{
+			Network:    profile.Network,
+			Platform:   profile.Platform,
+			SourceData: profile.Metadata,
 		}
 
 		switch profile.Network {
@@ -152,10 +136,36 @@ func formatProfileResult(profileList []dbModel.Transfer) ([]ProfileResult, error
 			if err := json.Unmarshal(profile.Metadata, &tempStructure); err != nil {
 				return nil, err
 			}
-			temp.ProfileURL = tempStructure.Crossbell.Character.Metadata.Avatars[0]
+
+			switch tempStructure.Crossbell.Event {
+			case "CharacterCreated":
+				temp.Address = tempStructure.Crossbell.Character.Uri
+
+				temp.Name = tempStructure.Crossbell.Character.Metadata.Name
+				temp.Handle = tempStructure.Crossbell.Character.Metadata.Name
+				temp.Bio = tempStructure.Crossbell.Character.Metadata.Bio
+
+				if len(tempStructure.Crossbell.Character.Metadata.Avatars) > 0 {
+					for _, avatar := range tempStructure.Crossbell.Character.Metadata.Avatars {
+						temp.ProfileUris = append(temp.ProfileUris, avatar)
+					}
+				}
+
+				if len(tempStructure.Crossbell.Character.Metadata.ConnectedAvatars) > 0 {
+					for _, avatar := range tempStructure.Crossbell.Character.Metadata.ConnectedAvatars {
+						temp.SocialUris = append(temp.SocialUris, avatar)
+					}
+				}
+			case "SetCharacterUri":
+				// TODO: update URI
+				continue
+			case "SetHandle":
+				// TODO: update handle
+				continue
+			}
+
 		default:
 		}
-
 		result = append(result, temp)
 	}
 	return result, nil
