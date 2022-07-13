@@ -7,6 +7,7 @@ import (
 )
 
 func TestName(t *testing.T) {
-	t.Log(uniswap.EventHashSwap)
+	t.Log(uniswap.EventHashSwapV2)
+	t.Log(uniswap.EventHashSwapV3)
 	t.Log(uniswap.EventHashApproval)
 }

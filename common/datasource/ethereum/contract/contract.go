@@ -2,6 +2,8 @@ package contract
 
 // https://eips.ethereum.org/EIPS/eip-20
 //go:generate abigen --abi ./erc20/erc20.abi --pkg erc20 --type ERC20 --out ./erc20/erc20.go
+//https://etherscan.io/address/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
+//go:generate abigen --abi ./erc20/weth/weth.abi --pkg weth --type WETH --out ./erc20/weth/weth.go
 // https://eips.ethereum.org/EIPS/eip-721
 //go:generate abigen --abi ./erc721/erc721.abi --pkg erc721 --type ERC721 --out ./erc721/erc721.go
 // https://eips.ethereum.org/EIPS/eip-1155

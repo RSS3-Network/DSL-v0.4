@@ -4,12 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
-	"math/big"
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
@@ -175,7 +172,7 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 		internalTransfer = make([]model.Transfer, 0)
 		//poolMap          = map[common.Address]*uniswap.PoolV3{}
 		//poolTransferMap  = map[common.Address][]model.Transfer{}
-		poolTokenMap = map[common.Address]map[common.Address]*big.Int{}
+		//poolTokenMap = map[common.Address]map[common.Address]*big.Int{}
 	)
 
 	for _, transfer := range transaction.Transfers {
@@ -197,59 +194,59 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 			continue
 		}
 
-		var poolAddress common.Address
+		//var poolAddress common.Address
+		//
+		//switch message.Address {
+		//case transfer.AddressFrom:
+		//	poolAddress = common.HexToAddress(transfer.AddressTo)
+		//case transfer.AddressTo:
+		//	poolAddress = common.HexToAddress(transfer.AddressFrom)
+		//default:
+		//	continue
+		//}
 
-		switch message.Address {
-		case transfer.AddressFrom:
-			poolAddress = common.HexToAddress(transfer.AddressTo)
-		case transfer.AddressTo:
-			poolAddress = common.HexToAddress(transfer.AddressFrom)
-		default:
-			continue
-		}
+		//uniswapPoolV3, err := uniswap.NewPoolV3(poolAddress, s.ethereumClientMap[message.Network])
+		//if err != nil {
+		//	logger.Global().Error("failed to create uniswap pool v3", zap.Error(err))
+		//
+		//	continue
+		//}
 
-		uniswapPoolV3, err := uniswap.NewPoolV3(poolAddress, s.ethereumClientMap[message.Network])
-		if err != nil {
-			logger.Global().Error("failed to create uniswap pool v3", zap.Error(err))
-
-			continue
-		}
-
-		poolMap[poolAddress] = uniswapPoolV3
-		_, exist := poolTransferMap[poolAddress]
-		if !exist {
-			poolTransferMap[poolAddress] = make([]model.Transfer, 0)
-		}
-
-		poolTransferMap[poolAddress] = append(poolTransferMap[poolAddress], transfer)
+		//poolMap[poolAddress] = uniswapPoolV3
+		//_, exist := poolTransferMap[poolAddress]
+		//if !exist {
+		//	poolTransferMap[poolAddress] = make([]model.Transfer, 0)
+		//}
+		//
+		//poolTransferMap[poolAddress] = append(poolTransferMap[poolAddress], transfer)
 	}
 
-	for poolAddress, tokenMap := range poolTokenMap {
-		for tokenAddress, tokenValue := range tokenMap {
-			tokenContract, err := erc20.NewERC20(tokenAddress, s.ethereumClientMap[message.Network])
-			if err != nil {
-				return nil, err
-			}
-
-			internalTransfer = append(internalTransfer, model.Transfer{
-				TransactionHash: transaction.Hash,
-				Timestamp:       transaction.Timestamp,
-				BlockNumber:     big.NewInt(transaction.BlockNumber),
-				Index:           0,
-				AddressFrom:     message.Address,
-				// TODO Recipient
-				AddressTo:   message.Address,
-				Metadata:    nil,
-				Network:     "",
-				Platform:    "",
-				Source:      "",
-				SourceData:  nil,
-				RelatedUrls: nil,
-				CreatedAt:   time.Time{},
-				UpdatedAt:   time.Time{},
-			})
-		}
-	}
+	//for poolAddress, tokenMap := range poolTokenMap {
+	//	for tokenAddress, tokenValue := range tokenMap {
+	//		tokenContract, err := erc20.NewERC20(tokenAddress, s.ethereumClientMap[message.Network])
+	//		if err != nil {
+	//			return nil, err
+	//		}
+	//
+	//		internalTransfer = append(internalTransfer, model.Transfer{
+	//			TransactionHash: transaction.Hash,
+	//			Timestamp:       transaction.Timestamp,
+	//			BlockNumber:     big.NewInt(transaction.BlockNumber),
+	//			Index:           0,
+	//			AddressFrom:     message.Address,
+	//			// TODO Recipient
+	//			AddressTo:   message.Address,
+	//			Metadata:    nil,
+	//			Network:     "",
+	//			Platform:    "",
+	//			Source:      "",
+	//			SourceData:  nil,
+	//			RelatedUrls: nil,
+	//			CreatedAt:   time.Time{},
+	//			UpdatedAt:   time.Time{},
+	//		})
+	//	}
+	//}
 
 	return internalTransfer, nil
 }

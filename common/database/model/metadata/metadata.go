@@ -54,14 +54,17 @@ const (
 )
 
 type Swap struct {
-	Type             string   `json:"type"`
-	Protocol         string   `json:"protocol"`
-	TokenSymbolFrom  string   `json:"token_symbol_from,omitempty"`
-	TokenAddressFrom string   `json:"token_address_from,omitempty"`
-	TokenValueFrom   *big.Int `json:"token_value_from,omitempty"`
-	TokenSymbolTo    string   `json:"token_symbol_to,omitempty"`
-	TokenAddressTo   string   `json:"token_address_to,omitempty"`
-	TokenValueTo     *big.Int `json:"token_value_to,omitempty"`
+	Type      string    `json:"type"`
+	Protocol  string    `json:"protocol"`
+	TokenFrom SwapToken `json:"token_from"`
+	TokenTo   SwapToken `json:"token_to"`
+}
+
+type SwapToken struct {
+	Address  string          `json:"address"`
+	Symbol   string          `json:"symbol"`
+	Decimals uint8           `json:"decimals"`
+	Value    decimal.Decimal `json:"value"`
 }
 
 type SwapPool struct {
