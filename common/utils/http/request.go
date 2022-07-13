@@ -36,7 +36,6 @@ func DoRequest(_ context.Context, client *http.Client, request *http.Request, re
 		_ = httpResponse.Body.Close()
 	}()
 
-
 	if err = json.NewDecoder(httpResponse.Body).Decode(&response); err != nil {
 		return err
 	}

@@ -38,7 +38,6 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 	if err := c.Bind(&request); err != nil {
 		return err
 	}
-	request.Address = strings.ToLower(request.Address)
 
 	profileList, total, err := h.getProfileListDatabase(ctx, request)
 	if err != nil {
