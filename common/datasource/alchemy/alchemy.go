@@ -7,6 +7,7 @@ const (
 	EndpointOptimism = "opt-mainnet.g.alchemy.com"
 
 	MethodGetAssetTransfers = "alchemy_getAssetTransfers"
+	MethodGetNFTs           = "getNFTs"
 
 	CategoryExternal = "external"
 	CategoryInternal = "internal"

@@ -115,6 +115,7 @@ func (s *Server) Initialize() (err error) {
 
 	// GET
 	s.httpServer.GET("/notes/:address", s.httpHandler.GetNoteListFunc, middlewarex.GetParamMiddleware)
+	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetListFunc, middlewarex.GetParamMiddleware)
 	s.httpServer.GET("/exchanges/:exchange_type", s.httpHandler.GetExchangeListFunc)
 	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfileListFunc, middlewarex.GetParamMiddleware)
 	s.httpServer.GET("/ns/:address", s.httpHandler.GetENSResolve, middlewarex.GetParamMiddleware)
