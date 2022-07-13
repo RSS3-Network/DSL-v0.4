@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/google/go-querystring/query"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	http_utils "github.com/naturalselectionlabs/pregod/common/utils/http"
 )
 
 var ErrorUnsupportedNetwork = errors.New("unsupported network")
@@ -29,25 +31,6 @@ func NewClient(network, key string) (*Client, error) {
 	}
 
 	rpcURL, err := client.buildURL(false)
-	if err != nil {
-		return nil, err
-	}
-
-	if client.rpcClient, err = rpc.Dial(rpcURL.String()); err != nil {
-		return nil, err
-	}
-
-	return &client, nil
-}
-
-func NewNFTClient(network, key string) (*Client, error) {
-	client := Client{
-		network:    network,
-		key:        key,
-		httpClient: http.DefaultClient,
-	}
-
-	rpcURL, err := client.buildURL(true)
 	if err != nil {
 		return nil, err
 	}
@@ -121,10 +104,10 @@ type GetAssetTransfersResult struct {
 }
 
 type GetNFTsParameter struct {
-	Owner             string   `json:"owner"`
-	PageKey           string   `json:"pageKey"`
-	ContractAddresses []string `json:"contractAddresses"`
-	WithMetadata      bool     `json:"withMetadata"`
+	Owner             string   `url:"owner,omitempty"`
+	PageKey           string   `url:"pageKey,omitempty"`
+	ContractAddresses []string `url:"contractAddresses,omitempty"`
+	WithMetadata      bool     `url:"withMetadata"`
 }
 
 type GetNFTsResult struct {
@@ -163,9 +146,29 @@ func (c *Client) GetAssetTransfers(ctx context.Context, parameter GetAssetTransf
 }
 
 func (c *Client) GetNFTs(ctx context.Context, parameter GetNFTsParameter) (*GetNFTsResult, error) {
+	values, err := query.Values(parameter)
+	if err != nil {
+		return nil, err
+	}
+
+	url, err := c.buildURL(true)
+	if err != nil {
+		return nil, err
+	}
+	url.Path += fmt.Sprintf("/%v", MethodGetNFTs)
+
+	url.RawQuery = values.Encode()
+
+	request, err := http_utils.NewRequest(http.MethodGet, url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(url.String())
+
 	result := GetNFTsResult{}
 
-	if err := c.rpcClient.CallContext(ctx, &result, MethodGetNFTs, parameter); err != nil {
+	err = http_utils.DoRequest(ctx, c.httpClient, request, &result)
+	if err != nil {
 		return nil, err
 	}
 

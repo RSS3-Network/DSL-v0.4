@@ -47,7 +47,7 @@ func (h *Handler) GetAssetListFunc(c echo.Context) error {
 
 	if len(assetList) == 0 {
 		return c.JSON(http.StatusOK, &Response{
-			Result: make([]dbModel.Transaction, 0),
+			Result: make([]dbModel.Asset, 0),
 		})
 	}
 

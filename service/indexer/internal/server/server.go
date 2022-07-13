@@ -6,7 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -223,45 +226,53 @@ func (s *Server) Run() error {
 
 	defer s.employer.Stop()
 
-	deliveryCh, err := s.rabbitmqChannel.Consume(s.rabbitmqQueue.Name, "", true, false, false, false, nil)
-	if err != nil {
-		return err
-	}
-
-	for delivery := range deliveryCh {
-		message := protocol.Message{}
-		if err := json.Unmarshal(delivery.Body, &message); err != nil {
-			logger.Global().Error("failed to unmarshal message", zap.Error(err))
-
-			continue
+	go func() {
+		deliveryCh, err := s.rabbitmqChannel.Consume(s.rabbitmqQueue.Name, "", true, false, false, false, nil)
+		if err != nil {
+			return
 		}
 
-		go func() {
-			if err := s.handle(context.Background(), &message); err != nil {
-				logger.Global().Error("failed to handle message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
+		for delivery := range deliveryCh {
+			message := protocol.Message{}
+			if err := json.Unmarshal(delivery.Body, &message); err != nil {
+				logger.Global().Error("failed to unmarshal message", zap.Error(err))
+
+				continue
 			}
-		}()
-	}
 
-	deliveryAssetCh, err := s.rabbitmqChannel.Consume(s.rabbitmqAssetQueue.Name, "", true, false, false, false, nil)
-	if err != nil {
-		return err
-	}
+			go func() {
+				if err := s.handle(context.Background(), &message); err != nil {
+					logger.Global().Error("failed to handle message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
+				}
+			}()
+		}
+	}()
 
-	for delivery := range deliveryAssetCh {
-		message := protocol.Message{}
-		if err := json.Unmarshal(delivery.Body, &message); err != nil {
-			logger.Global().Error("failed to unmarshal message", zap.Error(err))
-
-			continue
+	go func() {
+		deliveryAssetCh, err := s.rabbitmqChannel.Consume(s.rabbitmqAssetQueue.Name, "", true, false, false, false, nil)
+		if err != nil {
+			return
 		}
 
-		go func() {
-			if err := s.handleAsset(context.Background(), &message); err != nil {
-				logger.Global().Error("failed to handle asset message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
+		for delivery := range deliveryAssetCh {
+			message := protocol.Message{}
+			if err := json.Unmarshal(delivery.Body, &message); err != nil {
+				logger.Global().Error("failed to unmarshal message", zap.Error(err))
+
+				continue
 			}
-		}()
-	}
+
+			go func() {
+				if err := s.handleAsset(context.Background(), &message); err != nil {
+					logger.Global().Error("failed to handle asset message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
+				}
+			}()
+		}
+	}()
+
+	stopchan := make(chan os.Signal, 1)
+	signal.Notify(stopchan, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+	<-stopchan
 
 	return nil
 }

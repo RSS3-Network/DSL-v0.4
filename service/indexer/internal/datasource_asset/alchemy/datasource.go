@@ -93,8 +93,13 @@ func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) (as
 				Description:   nft.Description,
 				Timestamp:     nft.TimeLastUpdated,
 			}
-			if len(nft.Media) > 1 {
-				asset.FileURL = nft.Media[0].Raw
+			for _, url := range nft.Media {
+				if len(url.Raw) > 0 {
+					asset.FileURLs = append(asset.FileURLs, url.Raw)
+				}
+				if len(url.Gateway) > 0 {
+					asset.FileURLs = append(asset.FileURLs, url.Gateway)
+				}
 			}
 			assets = append(assets, asset)
 		}
@@ -116,10 +121,10 @@ func New(config *configx.RPC) (datasource_asset.Datasource, error) {
 
 	var err error
 
-	if internalDatasource.rpcClientMap[protocol.NetworkEthereum], err = alchemy.NewNFTClient(protocol.NetworkEthereum, config.Alchemy.Ethereum); err != nil {
+	if internalDatasource.rpcClientMap[protocol.NetworkEthereum], err = alchemy.NewClient(protocol.NetworkEthereum, config.Alchemy.Ethereum); err != nil {
 		return nil, err
 	}
-	if internalDatasource.rpcClientMap[protocol.NetworkPolygon], err = alchemy.NewNFTClient(protocol.NetworkPolygon, config.Alchemy.Polygon); err != nil {
+	if internalDatasource.rpcClientMap[protocol.NetworkPolygon], err = alchemy.NewClient(protocol.NetworkPolygon, config.Alchemy.Polygon); err != nil {
 		return nil, err
 	}
 
