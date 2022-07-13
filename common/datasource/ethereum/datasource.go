@@ -17,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
 	mrc202 "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/mrc20"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	lop "github.com/samber/lo/parallel"
@@ -253,6 +254,19 @@ func handleLog(ctx context.Context, message *protocol.Message, transaction *mode
 
 		transfer.AddressFrom = strings.ToLower(event.From.String())
 		transfer.AddressTo = strings.ToLower(event.To.String())
+	case uniswap.EventHashSwap:
+		filterer, err := uniswap.NewPoolV3Filterer(log.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		event, err := filterer.ParseSwap(log)
+		if err != nil {
+			return nil, err
+		}
+
+		transfer.AddressFrom = strings.ToLower(event.Sender.String())
+		transfer.AddressTo = strings.ToLower(event.Recipient.String())
 	default:
 		return nil, ErrorUnsupportedEvent
 	}

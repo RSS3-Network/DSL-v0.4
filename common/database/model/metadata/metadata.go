@@ -53,6 +53,17 @@ const (
 	SwapTypePool   = "pool"
 )
 
+type Swap struct {
+	Type             string   `json:"type"`
+	Protocol         string   `json:"protocol"`
+	TokenSymbolFrom  string   `json:"token_symbol_from,omitempty"`
+	TokenAddressFrom string   `json:"token_address_from,omitempty"`
+	TokenValueFrom   *big.Int `json:"token_value_from,omitempty"`
+	TokenSymbolTo    string   `json:"token_symbol_to,omitempty"`
+	TokenAddressTo   string   `json:"token_address_to,omitempty"`
+	TokenValueTo     *big.Int `json:"token_value_to,omitempty"`
+}
+
 type SwapPool struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`

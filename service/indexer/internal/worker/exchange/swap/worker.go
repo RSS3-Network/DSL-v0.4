@@ -4,24 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
+	"math/big"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+	configx "github.com/naturalselectionlabs/pregod/common/config"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
-
-	"github.com/naturalselectionlabs/pregod/common/utils/errorx"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
-
-	"github.com/naturalselectionlabs/pregod/common/cache"
-	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -80,8 +81,9 @@ var (
 var _ worker.Worker = &service{}
 
 type service struct {
-	employer       *shedlock.Employer
-	databaseClient *gorm.DB
+	employer          *shedlock.Employer
+	databaseClient    *gorm.DB
+	ethereumClientMap map[string]*ethclient.Client
 }
 
 func (s *service) Name() string {
@@ -148,46 +150,13 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 		}
 
 		// Handle swap entry
-		router, exist := routerMap[transaction.AddressTo]
+		_, exist := routerMap[transaction.AddressTo]
 		if !exist {
 			continue
 		}
 
-		for _, transfer := range transaction.Transfers {
-			internalTransfer, err := s.handleEthereumTransfer(ctx, message, transfer, transaction.AddressTo)
-			if err != nil {
-				if errorx.IsUnexpectedError(err, gorm.ErrRecordNotFound, ErrorRouterTransferIsNotYetSupported, ErrorRouterTransferIsNotYetSupported) {
-					logrus.Error(err)
-				}
-
-				continue
-			}
-
-			internalTransfer.Tag, internalTransfer.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransfer.Tag, filter.ExchangeSwap, internalTransfer.Type)
-
-			if internalTransfer.Tag == filter.TagExchange {
-				internalTransfer.Platform = router.Name
-			}
-
-			// Copy the transaction to map
-			value, exist := internalTransactionMap[transaction.Hash]
-			if !exist {
-				value = transaction
-
-				// Ignore transfers data that will not be updated
-				value.Transfers = make([]model.Transfer, 0)
-			}
-
-			value.Transfers = append(value.Transfers, *internalTransfer)
-
-			// Update transaction tag
-			value.Tag, value.Type = filter.UpdateTagAndType(internalTransfer.Tag, value.Tag, internalTransfer.Type, value.Type)
-
-			if value.Tag == filter.TagExchange {
-				value.Platform = router.Name
-			}
-
-			internalTransactionMap[transaction.Hash] = value
+		if transaction.Transfers, err = s.handleEthereumTransaction(ctx, message, transaction); err != nil {
+			continue
 		}
 	}
 
@@ -201,107 +170,88 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	return internalTransactions, nil
 }
 
-func (s *service) handleEthereumTransfer(ctx context.Context, message *protocol.Message, transfer model.Transfer, swapRouterAddress string) (data *model.Transfer, err error) {
-	tracer := otel.Tracer("worker_swap")
-	_, trace := tracer.Start(ctx, "worker_swap:handleEthereumTransfer")
+func (s *service) handleEthereumTransaction(ctx context.Context, message *protocol.Message, transaction model.Transaction) ([]model.Transfer, error) {
+	var (
+		internalTransfer = make([]model.Transfer, 0)
+		//poolMap          = map[common.Address]*uniswap.PoolV3{}
+		//poolTransferMap  = map[common.Address][]model.Transfer{}
+		poolTokenMap = map[common.Address]map[common.Address]*big.Int{}
+	)
 
-	defer func() { opentelemetry.Log(trace, transfer, data, err) }()
+	for _, transfer := range transaction.Transfers {
+		if transfer.Index == protocol.IndexVirtual {
+			internalTransfer = append(internalTransfer, transfer)
 
-	var metadataModel metadata.Metadata
-
-	if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-		return nil, err
-	}
-
-	if metadataModel.Token == nil {
-		return nil, ErrorMetadataDoesNotHaveTokenField
-	}
-
-	var swapPoolAddress string
-
-	switch message.Address {
-	case transfer.AddressFrom:
-		swapPoolAddress = transfer.AddressTo
-	case transfer.AddressTo:
-		swapPoolAddress = transfer.AddressFrom
-	default:
-		// TODO Router
-
-		return nil, ErrorRouterTransferIsNotYetSupported
-	}
-
-	if transfer.AddressFrom == swapRouterAddress || transfer.AddressTo == swapRouterAddress {
-		if err := s.handleEthereumTransferSwapRouter(ctx, message, &transfer, swapRouterAddress); err != nil {
-			return nil, err
+			continue
 		}
-	} else {
-		if err := s.handleEthereumTransferSwapPool(ctx, message, &transfer, swapPoolAddress); err != nil {
-			return nil, err
+
+		var sourceData types.Log
+
+		if err := json.Unmarshal(transfer.SourceData, &sourceData); err != nil {
+			logger.Global().Error("failed to unmarshal source data", zap.Error(err))
+
+			continue
+		}
+
+		if sourceData.Topics[0] != uniswap.EventHashTransfer {
+			continue
+		}
+
+		var poolAddress common.Address
+
+		switch message.Address {
+		case transfer.AddressFrom:
+			poolAddress = common.HexToAddress(transfer.AddressTo)
+		case transfer.AddressTo:
+			poolAddress = common.HexToAddress(transfer.AddressFrom)
+		default:
+			continue
+		}
+
+		uniswapPoolV3, err := uniswap.NewPoolV3(poolAddress, s.ethereumClientMap[message.Network])
+		if err != nil {
+			logger.Global().Error("failed to create uniswap pool v3", zap.Error(err))
+
+			continue
+		}
+
+		poolMap[poolAddress] = uniswapPoolV3
+		_, exist := poolTransferMap[poolAddress]
+		if !exist {
+			poolTransferMap[poolAddress] = make([]model.Transfer, 0)
+		}
+
+		poolTransferMap[poolAddress] = append(poolTransferMap[poolAddress], transfer)
+	}
+
+	for poolAddress, tokenMap := range poolTokenMap {
+		for tokenAddress, tokenValue := range tokenMap {
+			tokenContract, err := erc20.NewERC20(tokenAddress, s.ethereumClientMap[message.Network])
+			if err != nil {
+				return nil, err
+			}
+
+			internalTransfer = append(internalTransfer, model.Transfer{
+				TransactionHash: transaction.Hash,
+				Timestamp:       transaction.Timestamp,
+				BlockNumber:     big.NewInt(transaction.BlockNumber),
+				Index:           0,
+				AddressFrom:     message.Address,
+				// TODO Recipient
+				AddressTo:   message.Address,
+				Metadata:    nil,
+				Network:     "",
+				Platform:    "",
+				Source:      "",
+				SourceData:  nil,
+				RelatedUrls: nil,
+				CreatedAt:   time.Time{},
+				UpdatedAt:   time.Time{},
+			})
 		}
 	}
 
-	return &transfer, nil
-}
-
-func keyOfHandleSwapPool(contractAddress, network string) string {
-	return fmt.Sprintf("handleEthereumTransferSwapPool.%s.%s", contractAddress, network)
-}
-
-func (s *service) handleEthereumTransferSwapPool(ctx context.Context, message *protocol.Message, transfer *model.Transfer, swapPoolAddress string) error {
-	var swapPoolModel exchange.SwapPool
-
-	// get from redis cache
-	key := keyOfHandleSwapPool(swapPoolAddress, message.Network)
-	exists, err := cache.GetMsgPack(ctx, key, &swapPoolModel)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		if err := s.databaseClient.
-			Model((*exchange.SwapPool)(nil)).
-			Where(map[string]interface{}{
-				"contract_address": swapPoolAddress,
-				"network":          message.Network,
-			}).
-			First(&swapPoolModel).
-			Error; err != nil {
-			return err
-		}
-		if err := cache.SetMsgPack(ctx, key, swapPoolModel, 7*24*time.Hour); err != nil {
-			return err
-		}
-	}
-
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.SwapPool{
-		Name:     swapPoolModel.Source,
-		Type:     metadata.SwapTypePool,
-		Network:  swapPoolModel.Network,
-		Token0:   swapPoolModel.Token0,
-		Token1:   swapPoolModel.Token1,
-		Protocol: swapPoolModel.Protocol,
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *service) handleEthereumTransferSwapRouter(ctx context.Context, message *protocol.Message, transfer *model.Transfer, swapRouterAddress string) error {
-	var err error
-
-	router := routerMap[swapRouterAddress]
-
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.SwapPool{
-		Name:     router.Name,
-		Type:     metadata.SwapTypeRouter,
-		Network:  message.Network,
-		Protocol: router.Protocol,
-	}); err != nil {
-		return err
-	}
-
-	return nil
+	return internalTransfer, nil
 }
 
 func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
@@ -318,9 +268,30 @@ func (s *service) Jobs() []worker.Job {
 	}
 }
 
-func New(employer *shedlock.Employer, databaseClient *gorm.DB) worker.Worker {
-	return &service{
-		employer:       employer,
-		databaseClient: databaseClient,
+func New(config *configx.RPC, employer *shedlock.Employer, databaseClient *gorm.DB) (worker.Worker, error) {
+	var err error
+
+	svc := service{
+		ethereumClientMap: make(map[string]*ethclient.Client),
+		employer:          employer,
+		databaseClient:    databaseClient,
 	}
+
+	if svc.ethereumClientMap[protocol.NetworkEthereum], err = ethclient.Dial(config.General.Ethereum.HTTP); err != nil {
+		return nil, err
+	}
+
+	if svc.ethereumClientMap[protocol.NetworkPolygon], err = ethclient.Dial(config.General.Polygon.HTTP); err != nil {
+		return nil, err
+	}
+
+	if svc.ethereumClientMap[protocol.NetworkBinanceSmartChain], err = ethclient.Dial(config.General.BinanceSmartChain.HTTP); err != nil {
+		return nil, err
+	}
+
+	if svc.ethereumClientMap[protocol.NetworkXDAI], err = ethclient.Dial(config.General.XDAI.HTTP); err != nil {
+		return nil, err
+	}
+
+	return &svc, nil
 }
