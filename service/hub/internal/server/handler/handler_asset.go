@@ -29,15 +29,13 @@ func (h *Handler) GetAssetListFunc(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
 	}
 
-	request.Address = strings.ToLower(request.Address)
-
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
 		request.Limit = DefaultLimit
 	}
 
 	assetList, total, err := h.getAssetListDatabase(ctx, request)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+		return BadRequest(c)
 	}
 
 	// publish mq message

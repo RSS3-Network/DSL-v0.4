@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"gorm.io/gorm"
+
 	"github.com/naturalselectionlabs/pregod/common/datasource/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
@@ -25,6 +27,7 @@ type characterHandler struct {
 	characterContract *character.Character
 	peripheryContract *periphery.Periphery
 	profileHandler    *profileHandler
+	databaseClient    *gorm.DB
 }
 
 func (c *characterHandler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {

@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	lens2 "github.com/naturalselectionlabs/pregod/common/worker/lens"
+	lensClient "github.com/naturalselectionlabs/pregod/common/worker/lens"
 
 	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -27,13 +27,13 @@ var _ worker.Worker = (*service)(nil)
 
 type service struct {
 	databaseClient *gorm.DB
-	lensClient     *lens2.Client
+	lensClient     *lensClient.Client
 }
 
 func New(databaseClient *gorm.DB) worker.Worker {
 	return &service{
 		databaseClient: databaseClient,
-		lensClient:     lens2.NewClient(),
+		lensClient:     lensClient.NewClient(),
 	}
 }
 
@@ -80,7 +80,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		cursor = fmt.Sprintf(`{"entityIdentifier":"%s","timestamp":%d,"cursorDirection":"BEFORE"}`, lastLens.Hash, lastLens.Timestamp.Unix())
 	}
 
-	options := lens2.Options{
+	options := lensClient.Options{
 		Address: graphql.String(message.Address),
 		Cursor:  graphql.String(cursor),
 	}

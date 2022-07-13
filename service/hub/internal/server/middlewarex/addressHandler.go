@@ -24,7 +24,7 @@ func GetParamMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func HandleAddress(address string) (string, error) {
-	result := strings.ToLower(address)
+	result := address
 
 	if strings.HasSuffix(address, ".eth") {
 		nsResult, err := ens.Resolve(config.ConfigHub.RPC.General.Ethereum.HTTP, address)
@@ -34,5 +34,5 @@ func HandleAddress(address string) (string, error) {
 
 		result = nsResult.Address
 	}
-	return result, nil
+	return strings.ToLower(result), nil
 }
