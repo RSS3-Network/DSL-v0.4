@@ -17,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -112,12 +113,15 @@ func (s *Server) Initialize() (err error) {
 		})
 	})
 
-	s.httpServer.GET("/notes/:address", s.httpHandler.GetNoteListFunc)
+	// GET
+	s.httpServer.GET("/notes/:address", s.httpHandler.GetNoteListFunc, middlewarex.GetParamMiddleware)
+	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetListFunc, middlewarex.GetParamMiddleware)
+	s.httpServer.GET("/exchanges/:exchange_type", s.httpHandler.GetExchangeListFunc)
+	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfileListFunc, middlewarex.GetParamMiddleware)
+	s.httpServer.GET("/ns/:address", s.httpHandler.GetENSResolve, middlewarex.GetParamMiddleware)
+
+	// POST
 	s.httpServer.POST("/notes", s.httpHandler.BatchGetNoteListFunc)
-	s.httpServer.GET("/exchange/:exchange_type", s.httpHandler.GetExchangeListFunc)
-	s.httpServer.GET("/profile/:address", s.httpHandler.GetProfileListFunc)
-	s.httpServer.GET("/ns/:address", s.httpHandler.GetENSResolve)
-	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetListFunc)
 
 	return nil
 }

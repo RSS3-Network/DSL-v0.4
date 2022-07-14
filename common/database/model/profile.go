@@ -16,7 +16,7 @@ type Profile struct {
 	Handle      string          `gorm:"column:handle;primaryKey" json:"handle"`
 	Bio         string          `gorm:"column:bio" json:"bio"`
 	URL         string          `gorm:"column:url" json:"url"`
-	ExpireAt    *time.Time      `gorm:"column:expire_at" json:"expire_at"`
+	ExpireAt    time.Time       `gorm:"column:expire_at" json:"expire_at"`
 	ProfileUris pq.StringArray  `gorm:"column:profile_uri;type:text[]" json:"profile_uri"`
 	BannerUris  pq.StringArray  `gorm:"column:banner_uri;type:text[]" json:"banner_uri"`
 	SocialUris  pq.StringArray  `gorm:"column:social_uri;type:text[]" json:"social_uri"`

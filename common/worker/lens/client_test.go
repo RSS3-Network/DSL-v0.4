@@ -3,17 +3,17 @@ package lens_test
 import (
 	"context"
 	"github.com/hasura/go-graphql-client"
-	lens2 "github.com/naturalselectionlabs/pregod/common/worker/lens"
+	lensClient "github.com/naturalselectionlabs/pregod/common/worker/lens"
 	"testing"
 )
 
 var (
-	client *lens2.Client
+	client *lensClient.Client
 
 	profile = "0x05"
 	address = "0x3a5bd1e37b099ae3386d13947b6a90d97675e5e3"
 
-	options = lens2.Options{
+	options = lensClient.Options{
 		Profile: graphql.String(profile),
 		Address: graphql.String(address),
 		Cursor:  "{}",
@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	client = lens2.NewClient()
+	client = lensClient.NewClient()
 }
 
 func TestGetProfiles(t *testing.T) {

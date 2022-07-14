@@ -41,6 +41,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	lensworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
+	profileworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/profile"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/coinmarketcap"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
@@ -129,6 +130,7 @@ func (s *Server) Initialize() (err error) {
 	s.indexedWorker = []worker.Worker{
 		lensworker.New(s.databaseClient),
 		snapshot.New(s.databaseClient, s.redisClient),
+		profileworker.New(s.databaseClient),
 	}
 
 	s.workers = []worker.Worker{
@@ -137,7 +139,7 @@ func (s *Server) Initialize() (err error) {
 		poap.New(),
 		mirror.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
-		crossbell.New(),
+		crossbell.New(s.databaseClient),
 		snapshot.New(s.databaseClient, s.redisClient),
 		lensworker.New(s.databaseClient),
 	}

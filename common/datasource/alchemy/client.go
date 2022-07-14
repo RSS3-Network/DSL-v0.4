@@ -173,5 +173,3 @@ func (c *Client) GetNFTs(ctx context.Context, parameter GetNFTsParameter) (*GetN
 
 	return &result, nil
 }
-
-
