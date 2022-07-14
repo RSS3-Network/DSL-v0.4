@@ -13,7 +13,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/alchemy"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -44,6 +46,13 @@ func (d *Datasource) Networks() []string {
 }
 
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	tracer := otel.Tracer("datasource_alchemy")
+	ctx, trace := tracer.Start(ctx, "datasource_alchemy:Handle")
+
+	transactions := make([]*model.Transaction, 0)
+	var err error
+	defer func() { opentelemetry.Log(trace, message, len(transactions), err) }()
+
 	ethereumClient, exist := d.ethereumClientMap[message.Network]
 	if !exist {
 		return nil, ErrorUnsupportedNetwork
@@ -55,7 +64,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	}
 
 	// Get all block and transaction data
-	transactions := make([]*model.Transaction, 0)
 	for _, transaction := range transactionMap {
 		internalTransaction := transaction
 

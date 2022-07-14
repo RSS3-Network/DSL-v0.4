@@ -7,8 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 
+	"github.com/alecthomas/repr"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -26,6 +28,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+	cache.Dial(config.ConfigIndexer.Redis)
 	tokenWorker = New(db)
 }
 
@@ -110,9 +113,9 @@ func Test_service_Handle(t *testing.T) {
 
 	fakeTime := time.Date(2022, 6, 14, 0, 0, 0, 0, location)
 
-	sourceData := `{"amount": "1", "token_id": "1", "log_index": "360", "block_hash": "0xbc1bad9a35b90beb6133090dead9ecbbdf7a66685da86176ce5fa1c6f7288b90", "to_address": "0xe02a52a553acf14cd5552e53d48dc0fc072978d8", "block_number": "28360240", "from_address": "0x0000000000000000000000000000000000000000", "contract_type": "ERC1155", "token_address": "0xb3a5104f3d934fffab52cfa5edd4968d0bbaa470", "block_timestamp": "2022-05-15T19:54:11.000Z", "transaction_hash": "0x7d3a23577c600b76fa7528f1a7cae8631cc7fa786a4b5923d676aed2f619121d", "transaction_type": "Single", "transaction_index": "55"}`
-	sourceDataZkSync := `{"tx": {"op": {"to": "0x000000a52a03835517e9d193b3c27626e1bc96b1", "fee": "435000000000000000", "from": "0x000000a52a03835517e9d193b3c27626e1bc96b1", "type": "Transfer", "nonce": 8, "transaction": 1, "amount": "0", "accountId": 1087980, "signature": {"pubKey": "6bcf3cf9121bd9db9b8cc0112bbd430d0a774637634b33cbb64a99f3fdcb3d2a", "signature": "1a5ec0461ae66bb819f8a7997b7f935a031759be94bbc64fb0c575c395f2e9956f65ea4a8566149a90e418e0b0518e82c9e2679d0671b082089269d8b2860403"}, "validFrom": 0, "validUntil": 4294967295}, "status": "finalized", "txHash": "0x3ad53192eb24de7c476d6e6d6b1edfa8068313831615503878c8f49efa52d4e7", "batchId": 1481025, "createdAt": "2022-06-08T13:28:23.927989Z", "failReason": "", "blockNumber": 81578}, "ethSignature": ""}`
-	sourceDataZkSyncNFT := `{"tx": {"op": {"to": "0xbaffff8509fc36ca4c6bccea3ae4c5fe53286892", "fee": "0", "from": "0x37719d7662a616e466b4d0f139a38e032946d503", "type": "Transfer", "nonce": 11, "transaction": 424218, "amount": "1", "accountId": 1101474, "signature": {"pubKey": "39010e78e70c93d0795324b039e38bb2649a7604485e32c4d40d651c33a028a6", "signature": "9493d8835e42bc9728078a78043be5eab3ff5d06ef16d82941136f6e46074b8832e7b01d8a469518e393c02f766b69dbc6e152d9dcbe861838dbe1dda2a4fc02"}, "validFrom": 0, "validUntil": 4294967295}, "status": "finalized", "txHash": "0x060914bad793e53410914c974a180267fc28fc0a83141a32a33f5316a7ab2852", "batchId": 1527108, "createdAt": "2022-06-14T02:59:37.921502Z", "failReason": "", "blockNumber": 84575}, "ethSignature": ""}`
+	sourceData := `{"data":"0x","topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x0000000000000000000000000000000000000000000000000000000000000000","0x000000000000000000000000e02a52a553acf14cd5552e53d48dc0fc072978d8","0x000000000000000000000000000000000000000000000000000000000000000a"],"address":"0x2f5b8386b6a0e51e00a7903e9d2d3a2fe482f4c0","removed":false,"logIndex":"0x0","blockHash":"0x1b48f4374837e6d425a71335bf37601331707c176da7abd39d2952030e6886ea","blockNumber":"0x3b3fc9","transactionHash":"0x5ecd3761c8c750e872c6ca54ff7395e91daf74e2f338e73d133473915b2c1b60","transactionIndex":"0x0"}`
+	sourceDataZkSync := `{"tx":{"op":{"to":"0x000000a52a03835517e9d193b3c27626e1bc96b1","fee":"435000000000000000","from":"0x000000a52a03835517e9d193b3c27626e1bc96b1","type":"Transfer","nonce":8,"token":1,"amount":"0","accountId":1087980,"signature":{"pubKey":"6bcf3cf9121bd9db9b8cc0112bbd430d0a774637634b33cbb64a99f3fdcb3d2a","signature":"1a5ec0461ae66bb819f8a7997b7f935a031759be94bbc64fb0c575c395f2e9956f65ea4a8566149a90e418e0b0518e82c9e2679d0671b082089269d8b2860403"},"validFrom":0,"validUntil":4294967295},"status":"finalized","txHash":"0x3ad53192eb24de7c476d6e6d6b1edfa8068313831615503878c8f49efa52d4e7","batchId":1481025,"createdAt":"2022-06-08T13:28:23.927989Z","failReason":"","blockNumber":81578},"ethSignature":""}`
+	sourceDataZkSyncNFT := `{"tx": {"op": {"to": "0xbaffff8509fc36ca4c6bccea3ae4c5fe53286892", "fee": "0", "from": "0x37719d7662a616e466b4d0f139a38e032946d503", "type": "Transfer", "nonce": 11, "token": 424218, "amount": "1", "accountId": 1101474, "signature": {"pubKey": "39010e78e70c93d0795324b039e38bb2649a7604485e32c4d40d651c33a028a6", "signature": "9493d8835e42bc9728078a78043be5eab3ff5d06ef16d82941136f6e46074b8832e7b01d8a469518e393c02f766b69dbc6e152d9dcbe861838dbe1dda2a4fc02"}, "validFrom": 0, "validUntil": 4294967295}, "status": "finalized", "txHash": "0x060914bad793e53410914c974a180267fc28fc0a83141a32a33f5316a7ab2852", "batchId": 1527108, "createdAt": "2022-06-14T02:59:37.921502Z", "failReason": "", "blockNumber": 84575}, "ethSignature": ""}`
 
 	type args struct {
 		ctx          context.Context
@@ -141,27 +144,27 @@ func Test_service_Handle(t *testing.T) {
 				ctx: context.Background(),
 				message: &protocol.Message{
 					Address: "0xe02a52A553ACf14cD5552E53D48Dc0fC072978D8",
-					Network: protocol.NetworkPolygon,
+					Network: protocol.NetworkCrossbell,
 				},
 				transactions: []model.Transaction{
 					{
 						BlockNumber: 0,
 						Timestamp:   fakeTime,
-						Hash:        "0x7d3a23577c600b76fa7528f1a7cae8631cc7fa786a4b5923d676aed2f619121d",
+						Hash:        "0x5ecd3761c8c750e872c6ca54ff7395e91daf74e2f338e73d133473915b2c1b60",
 						AddressFrom: "0x0000000000000000000000000000000000000000",
 						AddressTo:   "0xe02a52a553acf14cd5552e53d48dc0fc072978d8",
-						Network:     protocol.NetworkPolygon,
-						Source:      "moralis",
+						Network:     protocol.NetworkCrossbell,
+						Source:      "ethereum",
 						SourceData:  []byte(sourceData),
 						Transfers: []model.Transfer{
 							{
-								TransactionHash: "0x7d3a23577c600b76fa7528f1a7cae8631cc7fa786a4b5923d676aed2f619121d",
+								TransactionHash: "0x5ecd3761c8c750e872c6ca54ff7395e91daf74e2f338e73d133473915b2c1b60",
 								Timestamp:       fakeTime,
-								Index:           360,
+								Index:           0,
 								AddressFrom:     "0x0000000000000000000000000000000000000000",
 								AddressTo:       "0xe02a52a553acf14cd5552e53d48dc0fc072978d8",
-								Network:         protocol.NetworkPolygon,
-								Source:          "moralis",
+								Network:         protocol.NetworkCrossbell,
+								Source:          "ethereum",
 								SourceData:      []byte(sourceData),
 								Metadata:        []byte("{}"),
 							},
@@ -173,26 +176,28 @@ func Test_service_Handle(t *testing.T) {
 				{
 					BlockNumber: 0,
 					Timestamp:   fakeTime,
-					Hash:        "0x7d3a23577c600b76fa7528f1a7cae8631cc7fa786a4b5923d676aed2f619121d",
+					Hash:        "0x5ecd3761c8c750e872c6ca54ff7395e91daf74e2f338e73d133473915b2c1b60",
 					AddressFrom: "0x0000000000000000000000000000000000000000",
 					AddressTo:   "0xe02a52a553acf14cd5552e53d48dc0fc072978d8",
-					Network:     protocol.NetworkPolygon,
-					Source:      "moralis",
+					Network:     protocol.NetworkCrossbell,
+					Source:      "ethereum",
+					Type:        "mint",
 					Tag:         filter.TagCollectible,
 					SourceData:  []byte(sourceData),
 					Transfers: []model.Transfer{
 						{
-							TransactionHash: "0x7d3a23577c600b76fa7528f1a7cae8631cc7fa786a4b5923d676aed2f619121d",
+							TransactionHash: "0x5ecd3761c8c750e872c6ca54ff7395e91daf74e2f338e73d133473915b2c1b60",
 							Timestamp:       time.Date(2022, 6, 14, 0, 0, 0, 0, location),
-							Index:           360,
+							Index:           0,
 							AddressFrom:     "0x0000000000000000000000000000000000000000",
 							AddressTo:       "0xe02a52a553acf14cd5552e53d48dc0fc072978d8",
-							Network:         protocol.NetworkPolygon,
-							Source:          "moralis",
+							Network:         protocol.NetworkCrossbell,
+							Source:          "ethereum",
 							SourceData:      []byte(sourceData),
 							Tag:             filter.TagCollectible,
 							Type:            filter.TransactionMint,
-							Metadata:        []byte(`{"transaction":{"token_id":"1","token_value":"1","token_address":"0xb3a5104f3d934fffab52cfa5edd4968d0bbaa470","token_standard":"ERC1155"}}`),
+							Metadata:        []byte(`{"transaction":{"token_id":"10","token_value":"1","nft_metadata":{"name":"RSS3 gourmet Zongzi","type":"csb-nft","avatars":["ipfs://QmchBwHJ7QZm4SS9iFzsckjxv61wRQGpamvbWyucAoRQrC"],"description":"RSS3 gourmet Zongzi"},"token_address":"0x2f5b8386b6a0e51e00a7903e9d2d3a2fe482f4c0","token_standard":"ERC-721"}}`),
+							RelatedUrls:     []string{""},
 						},
 					},
 				},
@@ -243,6 +248,7 @@ func Test_service_Handle(t *testing.T) {
 					Network:     protocol.NetworkZkSync,
 					Source:      "zksync",
 					Tag:         filter.TagTransaction,
+					Type:        "self",
 					SourceData:  []byte(sourceDataZkSync),
 					Transfers: []model.Transfer{
 						{
@@ -306,6 +312,7 @@ func Test_service_Handle(t *testing.T) {
 					AddressTo:   "0xbaffff8509fc36ca4c6bccea3ae4c5fe53286892",
 					Network:     protocol.NetworkZkSync,
 					Tag:         filter.TagCollectible,
+					Type:        filter.CollectibleTrade,
 					Source:      "zksync",
 					SourceData:  []byte(sourceDataZkSyncNFT),
 					Transfers: []model.Transfer{
@@ -349,7 +356,7 @@ func Test_service_Handle(t *testing.T) {
 						t.Error(err)
 					}
 					for k, v := range g["transaction"] {
-						assert.EqualValues(t, v, w["transaction"][k], "key is %s", k)
+						assert.EqualValues(t, w["transaction"][k], v, "key is %s", k)
 					}
 				}
 			}
@@ -362,6 +369,12 @@ func Test_service_Handle(t *testing.T) {
 				}
 			}
 			if !reflect.DeepEqual(got, tt.want) {
+				got[0].SourceData = []byte{}
+				got[0].Transfers[0].SourceData = []byte{}
+				tt.want[0].SourceData = []byte{}
+				tt.want[0].Transfers[0].SourceData = []byte{}
+				repr.Print(got)
+				repr.Print(tt.want)
 				t.Errorf("service.Handle() = %v, want %v", got, tt.want)
 			}
 		})

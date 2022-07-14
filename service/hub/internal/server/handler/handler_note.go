@@ -103,11 +103,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 	total := int64(0)
 	sql := h.DatabaseClient.
 		Model(&dbModel.Transaction{}).
-		Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
-			// address was already converted to lowercase
-			request.Address,
-			request.Address,
-		)
+		Where("? = ANY(addresses)", request.Address) // address was already converted to lowercase
 
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
@@ -250,11 +246,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 
 	sql := h.DatabaseClient.
 		Model(&dbModel.Transaction{}).
-		Where("LOWER(address_from) IN ? OR LOWER(address_to) IN ?",
-			// address was already converted to lowercase
-			addresses,
-			addresses,
-		)
+		Where("addresses && ?", addresses)
 
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
@@ -377,10 +369,7 @@ func (h *Handler) batchGetTransactionsWithFilter(ctx context.Context, request Ba
 
 		// query transaction
 		sql := h.DatabaseClient.Model(&dbModel.Transaction{}).
-			Where("LOWER(address_from) = ? OR LOWER(address_to) = ?",
-				strings.ToLower(reqFilter.Address),
-				strings.ToLower(reqFilter.Address),
-			)
+			Where("? = ANY(addresses)", strings.ToLower(reqFilter.Address))
 
 		if len(request.Cursor) > 0 {
 			sql = sql.Where("timestamp < ? OR (timestamp = ? AND index < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)

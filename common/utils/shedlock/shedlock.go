@@ -46,7 +46,9 @@ func (e *Employer) DoLock(name string, timeout time.Duration) bool {
 }
 
 func (e *Employer) UnLock(name string) bool {
-	// TODO Need to consider the minimum preemption time of the lock
+	if err := e.redisClient.Del(context.Background(), name).Err(); err != nil {
+		return false
+	}
 
 	return true
 }
