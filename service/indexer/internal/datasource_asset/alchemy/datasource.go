@@ -3,6 +3,8 @@ package alchemy
 import (
 	"context"
 	"errors"
+	"math/big"
+	"strings"
 
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -82,9 +84,12 @@ func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) (as
 		}
 
 		for _, nft := range result.OwnedNFTs {
+			if len(nft.Title) == 0 {
+				continue
+			}
+
 			asset := model.Asset{
 				TokenAddress:  nft.Contract.Address,
-				TokenID:       nft.ID.TokenID,
 				TokenStandard: nft.ID.TokenMetadata.TokenType,
 				Network:       message.Network,
 				Owner:         message.Address,
@@ -93,11 +98,16 @@ func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) (as
 				Description:   nft.Description,
 				Timestamp:     nft.TimeLastUpdated,
 			}
+
+			tokenID := big.NewInt(0)
+			tokenID.SetString(nft.ID.TokenID, 0)
+			asset.TokenID = tokenID.String()
+
 			for _, url := range nft.Media {
 				if len(url.Raw) > 0 {
 					asset.FileURLs = append(asset.FileURLs, url.Raw)
 				}
-				if len(url.Gateway) > 0 {
+				if len(url.Gateway) > 0 && strings.Compare(url.Raw, url.Gateway) != 0 {
 					asset.FileURLs = append(asset.FileURLs, url.Gateway)
 				}
 			}
