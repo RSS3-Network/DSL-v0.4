@@ -29,3 +29,24 @@ redis:
   addr: 127.0.0.1:6379
   db: 0
   password: ''
+
+rpc:
+  general:
+    ethereum:
+      http: ''
+      websocket: ''
+    polygon:
+      http: ''
+      websocket: ''
+    bsc:
+      http: ''
+      websocket: ''
+    xdai:
+      http: ''
+      websocket: ''
+    crossbell:
+      http: ''
+      websocket: ''
+  alchemy:
+    ethereum: ''
+    polygon: ''
