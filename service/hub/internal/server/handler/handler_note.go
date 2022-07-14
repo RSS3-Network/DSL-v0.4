@@ -17,10 +17,10 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-// GetNoteListFunc HTTP handler for action API
+// GetNotesFunc HTTP handler for action API
 // parse query parameters, query and assemble data
-func (h *Handler) GetNoteListFunc(c echo.Context) error {
-	tracer := otel.Tracer("GetActionListFunc")
+func (h *Handler) GetNotesFunc(c echo.Context) error {
+	tracer := otel.Tracer("GetNotesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
 	defer httpSnap.End()
@@ -45,61 +45,61 @@ func (h *Handler) GetNoteListFunc(c echo.Context) error {
 
 	request.Type = types
 
-	transactionList, total, err := h.getTransactionListDatabase(ctx, request)
+	transactions, total, err := h.getTransactions(ctx, request)
 	if err != nil {
 		return BadRequest(c)
 	}
 
 	// publish mq message
-	if request.Refresh || len(transactionList) == 0 {
+	if request.Refresh || len(transactions) == 0 {
 		go h.publishIndexerMessage(ctx, request.Address)
 	}
 
-	if len(transactionList) == 0 {
+	if len(transactions) == 0 {
 		return c.JSON(http.StatusOK, &Response{
 			Result: make([]dbModel.Transaction, 0),
 		})
 	}
 
-	transactionHashList := make([]string, 0)
-	for _, transactionHash := range transactionList {
-		transactionHashList = append(transactionHashList, transactionHash.Hash)
+	transactionHashs := make([]string, 0)
+	for _, transactionHash := range transactions {
+		transactionHashs = append(transactionHashs, transactionHash.Hash)
 	}
 
-	transferList, err := h.getTransferListDatabase(ctx, transactionHashList, request.Type)
+	transfers, err := h.getTransfers(ctx, transactionHashs, request.Type)
 	if err != nil {
 		return BadRequest(c)
 	}
 
 	transferMap := make(map[string][]dbModel.Transfer)
-	for _, transfer := range transferList {
+	for _, transfer := range transfers {
 		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
 	}
 
-	for index := range transactionList {
-		transactionList[index].Transfers = transferMap[transactionList[index].Hash]
+	for index := range transactions {
+		transactions[index].Transfers = transferMap[transactions[index].Hash]
 	}
 
 	var cursor string
 	if total > int64(request.Limit) {
-		cursor = transactionList[len(transactionList)-1].Hash
+		cursor = transactions[len(transactions)-1].Hash
 	}
 
 	return c.JSON(http.StatusOK, &Response{
 		Total:  total,
 		Cursor: cursor,
-		Result: transactionList,
+		Result: transactions,
 	})
 }
 
-// getTransactionListDatabase get transaction data from database
-func (h *Handler) getTransactionListDatabase(c context.Context, request GetRequest) ([]dbModel.Transaction, int64, error) {
-	tracer := otel.Tracer("getNoteListDatabase")
+// getTransactions get transaction data from database
+func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbModel.Transaction, int64, error) {
+	tracer := otel.Tracer("getTransactions")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
-	transactionList := make([]dbModel.Transaction, 0)
+	transactions := make([]dbModel.Transaction, 0)
 	total := int64(0)
 	sql := h.DatabaseClient.
 		Model(&dbModel.Transaction{}).
@@ -151,16 +151,16 @@ func (h *Handler) getTransactionListDatabase(c context.Context, request GetReque
 		sql = sql.Where("timestamp > ?", request.Timestamp)
 	}
 
-	if err := sql.Count(&total).Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactionList).Error; err != nil {
+	if err := sql.Count(&total).Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
 		return nil, 0, err
 	}
 
-	return transactionList, total, nil
+	return transactions, total, nil
 }
 
-// getTransferListDatabase get transfer data from database
-func (h *Handler) getTransferListDatabase(c context.Context, transactionHashList []string, requestType []string) ([]dbModel.Transfer, error) {
-	tracer := otel.Tracer("getNoteListDatabase")
+// getTransfers get transfer data from database
+func (h *Handler) getTransfers(c context.Context, transactionHashs []string, requestType []string) ([]dbModel.Transfer, error) {
+	tracer := otel.Tracer("getTransfers")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
@@ -174,7 +174,7 @@ func (h *Handler) getTransferListDatabase(c context.Context, transactionHashList
 	}
 
 	if err := sql.
-		Where("transaction_hash IN ?", transactionHashList).
+		Where("transaction_hash IN ?", transactionHashs).
 		Find(&transfers).Error; err != nil {
 		return nil, err
 	}
@@ -182,14 +182,14 @@ func (h *Handler) getTransferListDatabase(c context.Context, transactionHashList
 	return transfers, nil
 }
 
-// BatchGetNoteListFunc query multiple addresses and filters
-func (h *Handler) BatchGetNoteListFunc(c echo.Context) error {
-	tracer := otel.Tracer("BatchGetNoteListFunc")
-	ctx, httpSnap := tracer.Start(c.Request().Context(), "BatchGetNoteListFunc:http")
+// BatchGetNotesFunc query multiple addresses and filters
+func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
+	tracer := otel.Tracer("BatchGetNotesFunc")
+	ctx, httpSnap := tracer.Start(c.Request().Context(), "BatchGetNotesFunc:http")
 
 	defer httpSnap.End()
 
-	request := BatchGetNoteListRequest{}
+	request := BatchGetNotesRequest{}
 
 	if err := c.Bind(&request); err != nil {
 		return BadRequest(c)
@@ -199,11 +199,19 @@ func (h *Handler) BatchGetNoteListFunc(c echo.Context) error {
 		request.Limit = DefaultLimit
 	}
 
-	if len(request.List) > DefaultBatchGetLimit {
-		request.List = request.List[:DefaultBatchGetLimit]
+	var err error
+	var transactions []dbModel.Transaction
+	var total int64
+
+	if request.Global != nil {
+		transactions, total, err = h.batchGetTransactions(ctx, request)
+	} else {
+		if len(request.List) > DefaultBatchGetLimit {
+			request.List = request.List[:DefaultBatchGetLimit]
+		}
+		transactions, total, err = h.batchGetTransactionsWithFilter(ctx, request)
 	}
 
-	transactionList, total, err := h.batchGetTransactionListDatabase(ctx, request)
 	if err != nil {
 		return BadRequest(c)
 	}
@@ -216,18 +224,121 @@ func (h *Handler) BatchGetNoteListFunc(c echo.Context) error {
 
 	var cursor string
 	if total > int64(request.Limit) {
-		cursor = transactionList[len(transactionList)-1].Hash
+		cursor = transactions[len(transactions)-1].Hash
 	}
 
 	return c.JSON(http.StatusOK, &Response{
 		Total:  total,
 		Cursor: cursor,
-		Result: transactionList,
+		Result: transactions,
 	})
 }
 
-func (h *Handler) batchGetTransactionListDatabase(ctx context.Context, request BatchGetNoteListRequest) ([]dbModel.Transaction, int64, error) {
-	tracer := otel.Tracer("batchGetTransactionListDatabase")
+func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNotesRequest) ([]dbModel.Transaction, int64, error) {
+	tracer := otel.Tracer("batchGetTransactions")
+	_, postgresSnap := tracer.Start(ctx, "postgres")
+
+	defer postgresSnap.End()
+
+	transactions := make([]dbModel.Transaction, 0)
+	total := int64(0)
+	addresses := []string{}
+
+	for _, list := range request.List {
+		addresses = append(addresses, strings.ToLower(list.Address))
+	}
+
+	sql := h.DatabaseClient.
+		Model(&dbModel.Transaction{}).
+		Where("LOWER(address_from) IN ? OR LOWER(address_to) IN ?",
+			// address was already converted to lowercase
+			addresses,
+			addresses,
+		)
+
+	if len(request.Cursor) > 0 {
+		var lastItem dbModel.Transaction
+
+		if err := h.DatabaseClient.Where("hash = ?", strings.ToLower(request.Cursor)).First(&lastItem).Error; err != nil {
+			return nil, 0, err
+		}
+
+		sql = sql.Where("timestamp < ? OR (timestamp = ? AND index < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)
+	}
+
+	if len(request.Global.Tag) > 0 {
+		sql = sql.Where("tag = ?", strings.ToLower(request.Global.Tag))
+	}
+
+	var types []string
+	for _, t := range request.Global.Type {
+		t = strings.ToLower(t)
+		if filter.CheckTypeValid(request.Global.Tag, t) {
+			types = append(types, t)
+		}
+	}
+
+	request.Global.Type = types
+
+	if len(request.Global.Type) > 0 {
+		// type was already converted to lowercase
+		sql = sql.Where("\"type\" IN ?", request.Global.Type)
+	}
+
+	if len(request.Global.Network) > 0 {
+		for i, v := range request.Global.Network {
+			request.Global.Network[i] = strings.ToLower(v)
+		}
+
+		sql = sql.Where("network IN ?", request.Global.Network)
+	}
+
+	if len(request.Global.Platform) > 0 {
+		for i, v := range request.Global.Platform {
+			request.Global.Platform[i] = strings.ToLower(v)
+		}
+		sql = sql.Where("platform IN ?", request.Global.Platform)
+	}
+
+	if len(request.Timestamp.String()) > 0 {
+		sql = sql.Where("timestamp > ?", request.Timestamp)
+	}
+
+	if err := sql.Count(&total).Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// publish mq message
+	if request.Refresh || len(transactions) == 0 {
+		for _, list := range request.List {
+			go h.publishIndexerMessage(ctx, list.Address)
+		}
+	}
+
+	transactionHashs := make([]string, 0)
+	for _, transactionHash := range transactions {
+		transactionHashs = append(transactionHashs, transactionHash.Hash)
+	}
+
+	transfers, err := h.getTransfers(ctx, transactionHashs, request.Global.Type)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	transferMap := make(map[string][]dbModel.Transfer)
+	for _, transfer := range transfers {
+		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
+	}
+
+	for index := range transactions {
+		transactions[index].Transfers = transferMap[transactions[index].Hash]
+	}
+
+	return transactions, total, nil
+}
+
+func (h *Handler) batchGetTransactionsWithFilter(ctx context.Context, request BatchGetNotesRequest) ([]dbModel.Transaction, int64, error) {
+	tracer := otel.Tracer("batchGetTransactionsWithFilter")
 	_, postgresSnap := tracer.Start(ctx, "postgres")
 
 	defer postgresSnap.End()
@@ -246,10 +357,14 @@ func (h *Handler) batchGetTransactionListDatabase(ctx context.Context, request B
 		}
 	}
 
-	lop.ForEach(request.List, func(reqFilter Filter, i int) {
-		var types []string
+	lop.ForEach(request.List, func(reqFilter *Filter, i int) {
+		if reqFilter == nil {
+			return
+		}
+
+		types := []string{}
 		count := int64(0)
-		transactionList := make([]dbModel.Transaction, 0)
+		transactions := make([]dbModel.Transaction, 0)
 
 		// check type
 		for _, t := range reqFilter.Type {
@@ -291,38 +406,38 @@ func (h *Handler) batchGetTransactionListDatabase(ctx context.Context, request B
 			sql = sql.Where("timestamp > ?", request.Timestamp)
 		}
 
-		if err := sql.Count(&count).Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactionList).Error; err != nil {
-			logrus.Errorf("batchGetTransactionListDatabase: query transaction error, %v", err)
+		if err := sql.Count(&count).Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
+			logrus.Errorf("batchGetTransactions: query transaction error, %v", err)
 			return
 		}
 
 		// query transfer
-		transactionHashList := make([]string, 0)
-		for _, transactionHash := range transactionList {
-			transactionHashList = append(transactionHashList, transactionHash.Hash)
+		transactionHashs := make([]string, 0)
+		for _, transactionHash := range transactions {
+			transactionHashs = append(transactionHashs, transactionHash.Hash)
 		}
 
-		transferList, err := h.getTransferListDatabase(ctx, transactionHashList, reqFilter.Type)
+		transfers, err := h.getTransfers(ctx, transactionHashs, reqFilter.Type)
 		if err != nil {
-			logrus.Errorf("batchGetTransactionListDatabase: query transfer error, %v", err)
+			logrus.Errorf("batchGetTransactions: query transfer error, %v", err)
 			return
 		}
 
 		transferMap := make(map[string][]dbModel.Transfer)
-		for _, transfer := range transferList {
+		for _, transfer := range transfers {
 			transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
 		}
 
-		for index := range transactionList {
-			transactionList[index].Transfers = transferMap[transactionList[index].Hash]
+		for index := range transactions {
+			transactions[index].Transfers = transferMap[transactions[index].Hash]
 		}
 
 		// publish mq message
-		if request.Refresh || len(transactionHashList) == 0 {
+		if request.Refresh || len(transactionHashs) == 0 {
 			go h.publishIndexerMessage(ctx, reqFilter.Address)
 		}
 
-		results[i] = transactionList
+		results[i] = transactions
 		total += count
 	})
 

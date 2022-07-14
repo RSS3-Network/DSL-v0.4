@@ -16,9 +16,9 @@ import (
 
 var cursorKey = "%v:%v:%v"
 
-// GetAssetListFunc HTTP handler for asset API
-func (h *Handler) GetAssetListFunc(c echo.Context) error {
-	tracer := otel.Tracer("GetAssetListFunc")
+// GetAssetsFunc HTTP handler for asset API
+func (h *Handler) GetAssetsFunc(c echo.Context) error {
+	tracer := otel.Tracer("GetAssetsFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
 	defer httpSnap.End()
@@ -33,7 +33,7 @@ func (h *Handler) GetAssetListFunc(c echo.Context) error {
 		request.Limit = DefaultLimit
 	}
 
-	assetList, total, err := h.getAssetListDatabase(ctx, request)
+	assetList, total, err := h.getAssets(ctx, request)
 	if err != nil {
 		return BadRequest(c)
 	}
@@ -62,8 +62,8 @@ func (h *Handler) GetAssetListFunc(c echo.Context) error {
 	})
 }
 
-func (h *Handler) getAssetListDatabase(c context.Context, request GetRequest) ([]dbModel.Asset, int64, error) {
-	tracer := otel.Tracer("getAssetListDatabase")
+func (h *Handler) getAssets(c context.Context, request GetRequest) ([]dbModel.Asset, int64, error) {
+	tracer := otel.Tracer("getAssets")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
