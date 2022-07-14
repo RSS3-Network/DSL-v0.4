@@ -39,6 +39,17 @@ type CrossbellProfileStruct struct {
 	Bio              string   `json:"bio"`
 }
 
+type CrossbellPostStruct struct {
+	Tags        []string `json:"tags"`
+	Authors     []string `json:"authors"`
+	Content     string   `json:"content"`
+	Attachments []struct {
+		Address     string `json:"address"`
+		MimeType    string `json:"mime_type"`
+		SizeInBytes int    `json:"size_in_bytes"`
+	} `json:"attachments"`
+}
+
 func (h *handler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handle")
 

@@ -173,42 +173,31 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 		return nil, err
 	}
 
+	transfer.RelatedUrls = []string{note.ContentUri}
+
 	// Self-hosted IPFS files may be out of date
 	contentData, _ := ipfs.GetFileByURL(ctx, note.ContentUri)
 
-	var noteMetadata json.RawMessage
+	postOriginal := CrossbellPostStruct{}
 
-	if err := json.Unmarshal(contentData, &noteMetadata); err != nil {
+	if err := json.Unmarshal(contentData, &postOriginal); err != nil {
 		return nil, err
 	}
 
-	uri, err := c.peripheryContract.GetLinkingAnyUri(&bind.CallOpts{}, event.LinkKey)
-	if err != nil {
-		return nil, err
+	post := &metadata.Post{
+		TypeOnPlatform: contract.EventNamePostNote,
+		Title:          postOriginal.Content,
+		Body:           postOriginal.Content,
 	}
 
-	characterMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.NoteId)
+	for _, attachment := range postOriginal.Attachments {
+		post.Media = append(post.Media, metadata.Media{
+			Address:  attachment.Address,
+			MimeType: attachment.MimeType,
+		})
+	}
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
-		Event: contract.EventNamePostNote,
-		Character: &metadata.CrossbellCharacter{
-			ID:       event.CharacterId,
-			Metadata: characterMetadata,
-		},
-		Note: &metadata.CrossbellNote{
-			ID:           event.NoteId,
-			LinkItemType: note.LinkItemType,
-			LinkKey:      note.LinkKey,
-			Link:         uri,
-			ContentURI:   note.ContentUri,
-			LinkModule:   note.LinkModule,
-			MintModule:   note.MintModule,
-			MintNFT:      note.MintNFT,
-			Deleted:      note.Deleted,
-			Locked:       note.Locked,
-			Metadata:     noteMetadata,
-		},
-	}); err != nil {
+	if transfer.Metadata, err = json.Marshal(post); err != nil {
 		return nil, err
 	}
 

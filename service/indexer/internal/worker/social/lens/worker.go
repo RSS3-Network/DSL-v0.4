@@ -6,14 +6,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	lensClient "github.com/naturalselectionlabs/pregod/common/worker/lens"
-
 	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	lensClient "github.com/naturalselectionlabs/pregod/common/worker/lens"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/lens/graphql"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
@@ -102,35 +102,26 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			return nil, err
 		}
 
-		var metadataModel metadata.Metadata
-
-		media, err := json.Marshal(publication.Metadata.Media)
-		if err != nil {
-			return nil, err
-		}
-
-		metadataModel.Post = &metadata.Post{
+		post := &metadata.Post{
 			TypeOnPlatform: string(publication.Type),
 			Body:           string(publication.Metadata.Description),
-			Media:          media,
 		}
+
+		formatMedia(publication.Metadata.Media, post)
 
 		if publication.Type != "Post" {
-			media, err := json.Marshal(publication.Target.Metadata.Media)
-			if err != nil {
-				return nil, err
-			}
 
-			targetContent := metadata.Post{
+			targetContent := &metadata.Post{
 				TypeOnPlatform: string(publication.Target.Type),
 				Body:           string(publication.Target.Metadata.Description),
-				Media:          media,
 			}
 
-			metadataModel.Post.Target = &targetContent
+			formatMedia(publication.Metadata.Media, targetContent)
+
+			post.Target = targetContent
 		}
 
-		rawMetadata, err := json.Marshal(metadataModel)
+		rawMetadata, err := json.Marshal(post)
 		if err != nil {
 			return nil, err
 		}
@@ -178,4 +169,13 @@ func getType(pubType string) string {
 	}
 
 	return filter.SocialPost
+}
+
+func formatMedia(mediaList []graphqlx.Media, post *metadata.Post) {
+	for _, media := range mediaList {
+		post.Media = append(post.Media, metadata.Media{
+			Address:  string(media.Original.URL),
+			MimeType: string(media.Original.MimeType),
+		})
+	}
 }
