@@ -200,9 +200,8 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	}
 
 	var err error
-
-	transactions := make([]dbModel.Transaction, 0)
-	total := int64(0)
+	var transactions []dbModel.Transaction
+	var total int64
 
 	if request.Global != nil {
 		transactions, total, err = h.batchGetTransactions(ctx, request)
@@ -219,7 +218,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 
 	if total == 0 {
 		return c.JSON(http.StatusOK, &Response{
-			Result: transactions,
+			Result: make([]dbModel.Transaction, 0),
 		})
 	}
 
