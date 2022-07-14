@@ -45,12 +45,13 @@ type GetExchangeRequest struct {
 	Network      []string `query:"network"`
 }
 
-type BatchGetNoteListRequest struct {
+type BatchGetNotesRequest struct {
 	Timestamp time.Time `json:"timestamp"`
 	Limit     int       `json:"limit"`
 	Cursor    string    `json:"cursor"`
 	Refresh   bool      `json:"refresh"`
-	List      []Filter  `json:"list"`
+	Global    *Filter   `json:"global"`
+	List      []*Filter `json:"list"`
 }
 
 type Filter struct {
