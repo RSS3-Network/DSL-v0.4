@@ -14,3 +14,5 @@ package contract
 //go:generate abigen --abi ./uniswap/pool_v2.abi --pkg uniswap --type PoolV2 --out ./uniswap/pool_v2.go
 // https://etherscan.io/address/0x5777d92f208679db4b9778590fa3cab3ac9e2168
 //go:generate abigen --abi ./uniswap/pool_v3.abi --pkg uniswap --type PoolV3 --out ./uniswap/pool_v3.go
+// https://etherscan.io/address/0xdef1c0ded9bec7f1a1670819833240f027b25eff
+//go:generate abigen --abi ./zerox/zerox.abi --pkg zerox --type ZeroX --out ./zerox/zerox.go
