@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -50,14 +49,6 @@ func (p *profileHandler) Handle(ctx context.Context, transaction model.Transacti
 	}
 }
 
-type CrossbellProfilestruct struct {
-	Type             string   `json:"type"`
-	Avatars          []string `json:"avatars"`
-	ConnectedAvatars []string `json:"connected_avatars"`
-	Name             string   `json:"name"`
-	Bio              string   `json:"bio"`
-}
-
 func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
@@ -73,47 +64,23 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	// Self-hosted IPFS files may be out of date
 	profileMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.ProfileId)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
-		Event: contract.EventNameCharacterCreated,
-		Character: &metadata.CrossbellCharacter{
-			ID:       event.ProfileId,
-			Metadata: profileMetadata,
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
-
-	tempStructure := &CrossbellProfilestruct{}
-	if err := json.Unmarshal(profileMetadata, &tempStructure); err != nil {
-		return nil, err
-	}
-
 	profile := &model.Profile{
 		Address:    transfer.AddressFrom,
 		Platform:   transfer.Platform,
 		Network:    transfer.Network,
 		Source:     transfer.Network,
-		ExpireAt:   time.Unix(0, 0),
 		SourceData: profileMetadata,
 	}
 
-	profile.Name = tempStructure.Name
-	profile.Handle = tempStructure.Name
-	profile.Bio = tempStructure.Bio
-
-	if len(tempStructure.Avatars) > 0 {
-		for _, avatar := range tempStructure.Avatars {
-			profile.ProfileUris = append(profile.ProfileUris, avatar)
-		}
+	if err = BuildProfileMetadata(profileMetadata, profile); err != nil {
+		return nil, err
 	}
 
-	if len(tempStructure.ConnectedAvatars) > 0 {
-		for _, avatar := range tempStructure.ConnectedAvatars {
-			profile.SocialUris = append(profile.SocialUris, avatar)
-		}
+	if transfer.Metadata, err = json.Marshal(profile); err != nil {
+		return nil, err
 	}
+
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 
 	p.databaseClient.Model(&model.Profile{}).Clauses(clause.OnConflict{
 		UpdateAll: true,

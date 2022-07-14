@@ -31,6 +31,14 @@ type handler struct {
 	linkListHandler  Interface
 }
 
+type CrossbellProfileStruct struct {
+	Type             string   `json:"type"`
+	Avatars          []string `json:"avatars"`
+	ConnectedAvatars []string `json:"connected_avatars"`
+	Name             string   `json:"name"`
+	Bio              string   `json:"bio"`
+}
+
 func (h *handler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handle")
 
@@ -94,4 +102,28 @@ func New(ethereumClient *ethclient.Client, databaseClient *gorm.DB) (Interface, 
 			linkListContract: linkListContract,
 		},
 	}, nil
+}
+
+func BuildProfileMetadata(profileMetadata []byte, profile *model.Profile) error {
+	tempStructure := &CrossbellProfileStruct{}
+	if err := json.Unmarshal(profileMetadata, &tempStructure); err != nil {
+		return err
+	}
+
+	profile.Name = tempStructure.Name
+	profile.Handle = tempStructure.Name
+	profile.Bio = tempStructure.Bio
+
+	if len(tempStructure.Avatars) > 0 {
+		for _, avatar := range tempStructure.Avatars {
+			profile.ProfileUris = append(profile.ProfileUris, avatar)
+		}
+	}
+
+	if len(tempStructure.ConnectedAvatars) > 0 {
+		for _, avatar := range tempStructure.ConnectedAvatars {
+			profile.SocialUris = append(profile.SocialUris, avatar)
+		}
+	}
+	return nil
 }

@@ -77,6 +77,20 @@ func (c *characterHandler) Handle(ctx context.Context, transaction model.Transac
 	}
 }
 
+type T struct {
+	Crossbell struct {
+		Event     string `json:"event"`
+		Character struct {
+			Id       int `json:"id"`
+			Metadata struct {
+				Bio     string   `json:"bio"`
+				Name    string   `json:"name"`
+				Avatars []string `json:"avatars"`
+			} `json:"metadata"`
+		} `json:"character"`
+	} `json:"crossbell"`
+}
+
 func (c *characterHandler) handleCharacterCreated(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
@@ -88,17 +102,21 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 	if err != nil {
 		return nil, err
 	}
-
 	// Self-hosted IPFS files may be out of date
 	characterMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.CharacterId)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
-		Event: contract.EventNameCharacterCreated,
-		Character: &metadata.CrossbellCharacter{
-			ID:       event.CharacterId,
-			Metadata: characterMetadata,
-		},
-	}); err != nil {
+	profile := &model.Profile{
+		Address:    transfer.AddressFrom,
+		Platform:   transfer.Platform,
+		Network:    transfer.Network,
+		Source:     transfer.Network,
+		SourceData: characterMetadata,
+	}
+
+	if err = BuildProfileMetadata(characterMetadata, profile); err != nil {
+		return nil, err
+	}
+	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
 	}
 

@@ -45,9 +45,12 @@ func (c *Client) GetProfile(address string) (*model.Profile, error) {
 		return nil, err
 	}
 
-	if profile.ExpireAt, err = c.GetENSExpiry(primaryENS); err != nil {
+	expiry, err := c.GetENSExpiry(primaryENS)
+	if err != nil {
 		return nil, err
 	}
+
+	profile.ExpireAt = &expiry
 
 	return profile, nil
 }

@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 )
@@ -21,16 +22,16 @@ func init() {
 }
 
 type Metadata struct {
-	Token     *Token     `json:"transaction,omitempty"`
-	Swap      *SwapPool  `json:"swap,omitempty"`
-	POAP      *POAP      `json:"poap,omitempty"`
-	Donation  *Donation  `json:"donation,omitempty"`
-	SnapShot  *SnapShot  `json:"snapshot,omitempty"`
-	Crossbell *Crossbell `json:"crossbell,omitempty"`
-	Post      *Post      `json:"content,omitempty"`
-	Profile   *Profile   `json:"profile,omitempty"`
-	Vote      *Vote      `json:"vote,omitempty"`
-	Proposal  *Proposal  `json:"proposal,omitempty"`
+	Token     *Token         `json:"transaction,omitempty"`
+	Swap      *SwapPool      `json:"swap,omitempty"`
+	POAP      *POAP          `json:"poap,omitempty"`
+	Donation  *Donation      `json:"donation,omitempty"`
+	SnapShot  *SnapShot      `json:"snapshot,omitempty"`
+	Crossbell *Crossbell     `json:"crossbell,omitempty"`
+	Post      *Post          `json:"content,omitempty"`
+	Profile   *model.Profile `json:"profile,omitempty"`
+	Vote      *Vote          `json:"vote,omitempty"`
+	Proposal  *Proposal      `json:"proposal,omitempty"`
 }
 
 type Token struct {
@@ -145,7 +146,7 @@ func BuildMetadataRawMessage(metadataRawMessage json.RawMessage, metadataModel a
 	// social
 	case *Post:
 		internalMetadataModel.Post = model
-	case *Profile:
+	case *model.Profile:
 		internalMetadataModel.Profile = model
 	// governance
 	case *Vote:
