@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -280,13 +279,13 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) handle(ctx context.Context, message *protocol.Message) (err error) {
-	lockKey := fmt.Sprintf("indexer:%v:%v", message.Address, message.Network)
+	// lockKey := fmt.Sprintf("indexer:%v:%v", message.Address, message.Network)
 
-	if !s.employer.DoLock(lockKey, 2*time.Minute) {
-		return fmt.Errorf("%v lock", lockKey)
-	}
+	// if !s.employer.DoLock(lockKey, 2*time.Minute) {
+	// 	return fmt.Errorf("%v lock", lockKey)
+	// }
 
-	defer s.employer.UnLock(lockKey)
+	// defer s.employer.UnLock(lockKey)
 
 	// convert address to lowercase
 	message.Address = strings.ToLower(message.Address)
@@ -388,13 +387,13 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 }
 
 func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (err error) {
-	lockKey := fmt.Sprintf("indexer_asset:%v:%v", message.Address, message.Network)
+	// lockKey := fmt.Sprintf("indexer_asset:%v:%v", message.Address, message.Network)
 
-	if !s.employer.DoLock(lockKey, 2*time.Minute) {
-		return fmt.Errorf("%v lock", lockKey)
-	}
+	// if !s.employer.DoLock(lockKey, 2*time.Minute) {
+	// 	return fmt.Errorf("%v lock", lockKey)
+	// }
 
-	defer s.employer.UnLock(lockKey)
+	// defer s.employer.UnLock(lockKey)
 
 	// convert address to lowercase
 	message.Address = strings.ToLower(message.Address)
