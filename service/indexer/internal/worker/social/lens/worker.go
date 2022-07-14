@@ -103,7 +103,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		}
 
 		post := &metadata.Post{
-			TypeOnPlatform: string(publication.Type),
+			TypeOnPlatform: []string{string(publication.Type)},
 			Body:           string(publication.Metadata.Description),
 		}
 
@@ -112,7 +112,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		if publication.Type != "Post" {
 
 			targetContent := &metadata.Post{
-				TypeOnPlatform: string(publication.Target.Type),
+				TypeOnPlatform: []string{string(publication.Target.Type)},
 				Body:           string(publication.Target.Metadata.Description),
 			}
 
