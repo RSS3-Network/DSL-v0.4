@@ -163,7 +163,6 @@ func (c *Client) GetNFTs(ctx context.Context, parameter GetNFTsParameter) (*GetN
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(url.String())
 
 	result := GetNFTsResult{}
 
@@ -174,3 +173,5 @@ func (c *Client) GetNFTs(ctx context.Context, parameter GetNFTsParameter) (*GetN
 
 	return &result, nil
 }
+
+
