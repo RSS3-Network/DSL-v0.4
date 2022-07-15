@@ -14,42 +14,47 @@ type Router struct {
 var (
 	routerUniswapV2 = Router{
 		Name:     protocol.PlatformUniswap,
-		Protocol: "UniSwapV2",
+		Protocol: "Uniswap V2",
 	}
 
 	routerUniswapV3 = Router{
 		Name:     protocol.PlatformUniswap,
-		Protocol: "UniSwapV2",
+		Protocol: "Uniswap V2",
 	}
 
 	routerSushiSwap = Router{
 		Name:     protocol.PlatformSushiswap,
-		Protocol: "UniSwapV3",
+		Protocol: "Uniswap V3",
 	}
 
 	pancakeSwap = Router{
 		Name:     protocol.PlatformPancakeswap,
-		Protocol: "UniSwapV2",
+		Protocol: "Uniswap V2",
 	}
 
 	oneinchV1 = Router{
 		Name:     protocol.Platform1inch,
-		Protocol: "Aggregation Protocol V1",
+		Protocol: "1inch Aggregation Protocol V1",
 	}
 
 	oneinchV2 = Router{
 		Name:     protocol.Platform1inch,
-		Protocol: "Aggregation Protocol V2",
+		Protocol: "1inch Aggregation Protocol V2",
 	}
 
 	oneinchV3 = Router{
 		Name:     protocol.Platform1inch,
-		Protocol: "Aggregation Protocol V3",
+		Protocol: "1inch Aggregation Protocol V3",
 	}
 
 	oneinchV4 = Router{
 		Name:     protocol.Platform1inch,
-		Protocol: "Aggregation Protocol V4",
+		Protocol: "1inch Aggregation Protocol V4",
+	}
+
+	metamask = Router{
+		Name:     protocol.PlatformMetamask,
+		Protocol: "Metamask V1",
 	}
 
 	routerMap = map[string]Router{
@@ -70,9 +75,13 @@ var (
 		strings.ToLower("0x10ED43C718714eb63d5aA57B78B54704E256024E"): pancakeSwap, // PancakeSwap V2
 		// 1inch
 		// https://etherscan.io/accounts/label/1inch-exchange
-		//strings.ToLower("0x11111254369792b2ca5d084ab5eea397ca8fa48b"): oneinchV1,  // 1inch V1
-		//strings.ToLower("0x111111125434b319222cdbf8c261674adb56f3ae"): oneinchV2,  // 1inch V2
-		//strings.ToLower("0x11111112542d85b3ef69ae05771c2dccff4faa26"): oneinchV3, // 1inch V3
-		//strings.ToLower("0x1111111254fb6c44bac0bed2854e76f90643097d"): oneinchV4, // 1inch V4
+		strings.ToLower("0x11111254369792b2ca5d084ab5eea397ca8fa48b"): oneinchV1, // 1inch V1
+		strings.ToLower("0x111111125434b319222cdbf8c261674adb56f3ae"): oneinchV2, // 1inch V2
+		strings.ToLower("0x11111112542d85b3ef69ae05771c2dccff4faa26"): oneinchV3, // 1inch V3
+		strings.ToLower("0x1111111254fb6c44bac0bed2854e76f90643097d"): oneinchV4, // 1inch V4
+		// Metamask
+		// https://etherscan.io/accounts/label/metamask
+		strings.ToLower("0x881d40237659c251811cec9c364ef91dc08d300c"): metamask, // Metamask Ethereum
+		strings.ToLower("0x1a1ec25DC08e98e5E93F1104B5e5cdD298707d31"): metamask, // Metamask Polygon
 	}
 )

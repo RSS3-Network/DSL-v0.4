@@ -13,4 +13,5 @@ const (
 	PlatformSushiswap   = "sushiswap"
 	PlatformPancakeswap = "pancakeswap"
 	Platform1inch       = "1inch"
+	PlatformMetamask    = "metamask"
 )
