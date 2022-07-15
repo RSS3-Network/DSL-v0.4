@@ -48,10 +48,18 @@ type Token struct {
 	NFTMetadata json.RawMessage `json:"nft_metadata,omitempty"`
 }
 
-const (
-	SwapTypeRouter = "router"
-	SwapTypePool   = "pool"
-)
+type Swap struct {
+	Protocol  string    `json:"protocol"`
+	TokenFrom SwapToken `json:"token_from"`
+	TokenTo   SwapToken `json:"token_to"`
+}
+
+type SwapToken struct {
+	Address  string          `json:"address"`
+	Symbol   string          `json:"symbol"`
+	Decimals uint8           `json:"decimals"`
+	Value    decimal.Decimal `json:"value"`
+}
 
 type SwapPool struct {
 	Name     string `json:"name"`

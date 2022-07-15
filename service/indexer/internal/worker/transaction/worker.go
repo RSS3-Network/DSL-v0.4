@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"encoding/csv"
@@ -173,6 +174,12 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 	internalTransaction.Transfers = make([]model.Transfer, 0)
 
 	for _, transfer := range transaction.Transfers {
+		if !(transfer.Metadata == nil || bytes.Equal(transfer.Metadata, metadata.Default)) {
+			internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+
+			continue
+		}
+
 		if transfer.Index == protocol.IndexVirtual {
 			var sourceData ethereum.SourceData
 
@@ -313,6 +320,12 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 	internalTransaction.Transfers = make([]model.Transfer, 0)
 
 	for _, transfer := range transaction.Transfers {
+		if !(transfer.Metadata == nil || bytes.Equal(transfer.Metadata, metadata.Default)) {
+			internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+
+			continue
+		}
+
 		var data zksync.GetTransactionData
 
 		if err := json.Unmarshal(transfer.SourceData, &data); err != nil {
@@ -425,10 +438,12 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 		tokenMetadata.TokenAddress = *address
 	}
 
-	var err error
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &tokenMetadata); err != nil {
+	metadataRaw, err := json.Marshal(tokenMetadata)
+	if err != nil {
 		return nil, err
 	}
+
+	transfer.Metadata = metadataRaw
 
 	return &transfer, nil
 }
@@ -451,9 +466,12 @@ func (s *service) buildZkSyncTokenMetadata(ctx context.Context, message *protoco
 
 	transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &tokenMetadata); err != nil {
+	metadataRaw, err := json.Marshal(tokenMetadata)
+	if err != nil {
 		return nil, err
 	}
+
+	transfer.Metadata = metadataRaw
 
 	return &transfer, nil
 }
@@ -476,9 +494,12 @@ func (s *service) buildZkSyncNFTMetadata(ctx context.Context, message *protocol.
 
 	transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &tokenMetadata); err != nil {
+	metadataRaw, err := json.Marshal(tokenMetadata)
+	if err != nil {
 		return nil, err
 	}
+
+	transfer.Metadata = metadataRaw
 
 	return &transfer, nil
 }

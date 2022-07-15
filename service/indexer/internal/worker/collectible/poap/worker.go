@@ -96,7 +96,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			metadataModel.POAP = &metadata.POAP{
+			rawMetadata, err := json.Marshal(&metadata.POAP{
 				ID:          token.Event.ID,
 				Name:        token.Event.Name,
 				ImageURL:    token.Event.ImageURL,
@@ -106,9 +106,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				EndDate:     token.Event.EndDate,
 				ExpiryDate:  token.Event.ExpiryDate,
 				TokenID:     token.TokenID,
-			}
-
-			rawMetadata, err := json.Marshal(metadataModel)
+			})
 			if err != nil {
 				return nil, err
 			}

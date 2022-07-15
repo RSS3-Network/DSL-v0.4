@@ -367,6 +367,7 @@ func (s *service) getVote(
 	space, ok := spaceMap[vote.SpaceID]
 	if !ok {
 		logrus.Warnf("[snapshot worker] failed to get space:%v, network:%v", vote.SpaceID, message.Network)
+
 		return nil, nil
 	}
 

@@ -135,15 +135,20 @@ func (s *Server) Initialize() (err error) {
 		profileworker.New(s.databaseClient),
 	}
 
+	swapWorker, err := swap.New(s.config.RPC, s.employer, s.databaseClient)
+	if err != nil {
+		return err
+	}
+
 	s.workers = []worker.Worker{
-		transaction.New(s.databaseClient),
-		swap.New(s.employer, s.databaseClient),
+		swapWorker,
 		poap.New(),
 		mirror.New(),
 		gitcoin.New(s.databaseClient, s.redisClient),
 		crossbell.New(s.databaseClient),
 		snapshot.New(s.databaseClient, s.redisClient),
 		lensworker.New(s.databaseClient),
+		transaction.New(s.databaseClient),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
