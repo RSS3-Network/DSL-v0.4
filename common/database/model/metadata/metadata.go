@@ -71,7 +71,7 @@ type SwapPool struct {
 }
 
 type Donation struct {
-	ID          int    `json:"id"`
+	ID          int    `json:"-"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Logo        string `json:"logo"`
