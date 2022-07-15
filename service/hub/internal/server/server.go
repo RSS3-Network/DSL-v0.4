@@ -14,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
@@ -41,20 +42,21 @@ type Server struct {
 }
 
 func (s *Server) Initialize() (err error) {
-	s.logger, err = zap.NewProduction()
-	if err != nil {
-		return err
-	}
+	// do not check the err here
+	s.logger, _ = zap.NewProduction()
+	// if err != nil {
+	//	return err
+	//}
 
 	var exporter trace.SpanExporter
 
 	if s.config.OpenTelemetry == nil {
 		if exporter, err = opentelemetry.DialWithPath(opentelemetry.DefaultPath); err != nil {
-			return err
+			logger.Global().Error("opentelemetry DialWithPath failed", zap.Error(err))
 		}
 	} else if s.config.OpenTelemetry.Enabled {
 		if exporter, err = opentelemetry.DialWithURL(s.config.OpenTelemetry.String()); err != nil {
-			return err
+			logger.Global().Error("opentelemetry DialWithURL failed", zap.Error(err))
 		}
 	}
 
@@ -69,25 +71,25 @@ func (s *Server) Initialize() (err error) {
 
 	s.databaseClient, err = database.Dial(s.config.Postgres.String(), true)
 	if err != nil {
-		return err
+		logger.Global().Error("database dail failed", zap.Error(err))
 	}
 
 	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
 	if err != nil {
-		return err
+		logger.Global().Error("rabbitmq dail failed", zap.Error(err))
 	}
 
 	s.rabbitmqChannel, err = s.rabbitmqConnection.Channel()
 	if err != nil {
-		return err
+		logger.Global().Error("rabbitmqConnection failed", zap.Error(err))
 	}
 
 	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeJob, "direct", true, false, false, false, nil); err != nil {
-		return err
+		logger.Global().Error("rabbitmqChannel ExchangeDeclare failed", zap.Error(err))
 	}
 
 	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
-		return err
+		logger.Global().Error("redis dial failed", zap.Error(err))
 	}
 
 	s.httpServer = echo.New()
