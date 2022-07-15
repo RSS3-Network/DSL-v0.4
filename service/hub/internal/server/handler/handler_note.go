@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
@@ -201,6 +202,9 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	var total int64
 
 	if request.Global != nil {
+		if len(request.Global.Address) > DefaultLimit {
+			request.Global.Address = request.Global.Address[:DefaultLimit]
+		}
 		transactions, total, err = h.batchGetTransactions(ctx, request)
 	} else {
 		if len(request.List) > DefaultBatchGetLimit {
@@ -308,6 +312,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	if request.Refresh || len(transactions) == 0 {
 		for _, list := range request.List {
 			go h.publishIndexerMessage(ctx, list.Address)
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 
