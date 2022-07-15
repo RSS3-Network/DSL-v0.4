@@ -17,8 +17,6 @@ import (
 )
 
 var (
-	AddressETH = common.HexToAddress("0x0000000000000000000000000000000000001010")
-
 	RouterMap = map[common.Address]string{
 		common.HexToAddress("0x1111111254fb6c44bAC0beD2854e76F90643097d"): "1inch v4",
 		common.HexToAddress("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"): "Uniswap V3",
@@ -32,12 +30,12 @@ var (
 )
 
 func TestName(t *testing.T) {
-	ethereumClient, err := ethclient.Dial("https://damp-delicate-glitter.quiknode.pro/22ae6184085ebd6115988ae67da9fb099645aa9f/")
+	ethereumClient, err := ethclient.Dial("https://rpc.rss3.dev/networks/ethereum")
 	if err != nil {
 		t.Fatalf("failed to connect to ethereum client: %v", err)
 	}
 
-	transaction, _, err := ethereumClient.TransactionByHash(context.Background(), common.HexToHash("0x99ce39ef831d9587118dc26caf3a2ae7e313a9ffb56779bf27780991aa7757cc"))
+	transaction, _, err := ethereumClient.TransactionByHash(context.Background(), common.HexToHash("0x4b37b3dcb3014a9f09d0ce9ced7385a9662f0464b738c5957a96cd8c4af12160"))
 	if err != nil {
 		t.Fatalf("failed to get transaction: %v", err)
 	}

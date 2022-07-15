@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -17,6 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
@@ -140,7 +142,6 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		transaction.New(s.databaseClient),
 		swapWorker,
 		poap.New(),
 		mirror.New(),
@@ -148,6 +149,7 @@ func (s *Server) Initialize() (err error) {
 		crossbell.New(s.databaseClient),
 		snapshot.New(s.databaseClient, s.redisClient),
 		lensworker.New(s.databaseClient),
+		transaction.New(s.databaseClient),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
@@ -444,12 +446,11 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 	for _, transaction := range transactions {
 		addresses := strset.New(transaction.AddressFrom, transaction.AddressTo)
 		for _, transfer := range transaction.Transfers {
-			// TODO
-			//if bytes.Equal(transfer.Metadata, metadata.Default) {
-			//	continue
-			//}
-
-			internalTransfers = append(internalTransfers, transfer)
+			if bytes.Equal(transfer.Metadata, metadata.Default) {
+				continue
+			}
+			transfers = append(transfers, transfer)
+			addresses.Add(transfer.AddressFrom, transfer.AddressTo)
 		}
 		transaction.Addresses = addresses.List()
 		updatedTransactions = append(updatedTransactions, transaction)

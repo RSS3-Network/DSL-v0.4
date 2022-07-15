@@ -48,13 +48,7 @@ type Token struct {
 	NFTMetadata json.RawMessage `json:"nft_metadata,omitempty"`
 }
 
-const (
-	SwapTypeRouter = "router"
-	SwapTypePool   = "pool"
-)
-
 type Swap struct {
-	Type      string    `json:"type"`
 	Protocol  string    `json:"protocol"`
 	TokenFrom SwapToken `json:"token_from"`
 	TokenTo   SwapToken `json:"token_to"`

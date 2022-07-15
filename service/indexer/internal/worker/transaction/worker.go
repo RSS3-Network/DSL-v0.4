@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"encoding/csv"
@@ -173,6 +174,12 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 	internalTransaction.Transfers = make([]model.Transfer, 0)
 
 	for _, transfer := range transaction.Transfers {
+		if !(transfer.Metadata == nil || bytes.Equal(transfer.Metadata, metadata.Default)) {
+			internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+
+			continue
+		}
+
 		if transfer.Index == protocol.IndexVirtual {
 			var sourceData ethereum.SourceData
 
@@ -313,6 +320,12 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 	internalTransaction.Transfers = make([]model.Transfer, 0)
 
 	for _, transfer := range transaction.Transfers {
+		if !(transfer.Metadata == nil || bytes.Equal(transfer.Metadata, metadata.Default)) {
+			internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+
+			continue
+		}
+
 		var data zksync.GetTransactionData
 
 		if err := json.Unmarshal(transfer.SourceData, &data); err != nil {

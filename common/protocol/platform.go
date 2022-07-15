@@ -12,4 +12,5 @@ const (
 	PlatformUniswap     = "uniswap"
 	PlatformSushiswap   = "sushiswap"
 	PlatformPancakeswap = "pancakeswap"
+	Platform1inch       = "1inch"
 )
