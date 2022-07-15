@@ -438,10 +438,12 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 		tokenMetadata.TokenAddress = *address
 	}
 
-	var err error
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &tokenMetadata); err != nil {
+	metadataRaw, err := json.Marshal(tokenMetadata)
+	if err != nil {
 		return nil, err
 	}
+
+	transfer.Metadata = metadataRaw
 
 	return &transfer, nil
 }
@@ -464,9 +466,12 @@ func (s *service) buildZkSyncTokenMetadata(ctx context.Context, message *protoco
 
 	transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &tokenMetadata); err != nil {
+	metadataRaw, err := json.Marshal(tokenMetadata)
+	if err != nil {
 		return nil, err
 	}
+
+	transfer.Metadata = metadataRaw
 
 	return &transfer, nil
 }
@@ -489,9 +494,12 @@ func (s *service) buildZkSyncNFTMetadata(ctx context.Context, message *protocol.
 
 	transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &tokenMetadata); err != nil {
+	metadataRaw, err := json.Marshal(tokenMetadata)
+	if err != nil {
 		return nil, err
 	}
+
+	transfer.Metadata = metadataRaw
 
 	return &transfer, nil
 }
