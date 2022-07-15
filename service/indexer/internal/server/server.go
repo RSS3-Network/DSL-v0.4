@@ -48,7 +48,6 @@ import (
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/samber/lo"
 	"github.com/scylladb/go-set/strset"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -489,34 +488,6 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 				internalTransactions, err := worker.Handle(ctx, message, transactions)
 				if err != nil {
 					logger.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
-
-					return err
-				}
-
-				if len(internalTransactions) == 0 {
-					continue
-				}
-
-				newTransactionMap := getTransactionsMap(internalTransactions)
-				for _, t := range newTransactionMap {
-					transactionsMap[t.Hash] = t
-				}
-
-				transactions = transactionsMap2Array(transactionsMap)
-			}
-		}
-	}
-
-	return s.upsertTransactions(ctx, transactions)
-}
-
-func (s *Server) handleIndexedWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction, transactionsMap map[string]model.Transaction) error {
-	for _, worker := range s.indexedWorker {
-		for _, network := range worker.Networks() {
-			if network == message.Network {
-				internalTransactions, err := worker.Handle(ctx, message, transactions)
-				if err != nil {
-					logrus.Error(worker.Name(), message.Network, err)
 
 					return err
 				}
