@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/cache"
-	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-
 	"github.com/alecthomas/repr"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/stretchr/testify/assert"
@@ -166,7 +166,7 @@ func Test_service_Handle(t *testing.T) {
 								Network:         protocol.NetworkCrossbell,
 								Source:          "ethereum",
 								SourceData:      []byte(sourceData),
-								Metadata:        []byte("{}"),
+								Metadata:        metadata.Default,
 							},
 						},
 					},
@@ -196,7 +196,7 @@ func Test_service_Handle(t *testing.T) {
 							SourceData:      []byte(sourceData),
 							Tag:             filter.TagCollectible,
 							Type:            filter.TransactionMint,
-							Metadata:        []byte(`{"transaction":{"token_id":"10","token_value":"1","nft_metadata":{"name":"RSS3 gourmet Zongzi","type":"csb-nft","avatars":["ipfs://QmchBwHJ7QZm4SS9iFzsckjxv61wRQGpamvbWyucAoRQrC"],"description":"RSS3 gourmet Zongzi"},"token_address":"0x2f5b8386b6a0e51e00a7903e9d2d3a2fe482f4c0","token_standard":"ERC-721"}}`),
+							Metadata:        []byte(`{"token_id":"10","token_value":"1","nft_metadata":{"name":"RSS3 gourmet Zongzi","type":"csb-nft","avatars":["ipfs://QmchBwHJ7QZm4SS9iFzsckjxv61wRQGpamvbWyucAoRQrC"],"description":"RSS3 gourmet Zongzi"},"token_address":"0x2f5b8386b6a0e51e00a7903e9d2d3a2fe482f4c0","token_standard":"ERC-721"}`),
 							RelatedUrls:     []string{""},
 						},
 					},
@@ -232,7 +232,7 @@ func Test_service_Handle(t *testing.T) {
 								Network:         protocol.NetworkZkSync,
 								Source:          "zksync",
 								SourceData:      []byte(sourceDataZkSync),
-								Metadata:        []byte("{}"),
+								Metadata:        metadata.Default,
 							},
 						},
 					},
@@ -262,7 +262,7 @@ func Test_service_Handle(t *testing.T) {
 							Source:          "zksync",
 							SourceData:      []byte(sourceDataZkSync),
 							Type:            filter.TransactionSelf,
-							Metadata:        []byte(`{"transaction":{"symbol":"DAI","decimals":18,"token_id":"1","token_value":"0","token_address":"0x6b175474e89094c44da98b954eedeac495271d0f","token_standard":"ERC-20"}}`),
+							Metadata:        []byte(`{"symbol":"DAI","decimals":18,"token_id":"1","token_value":"0","token_address":"0x6b175474e89094c44da98b954eedeac495271d0f","token_standard":"ERC-20"}`),
 						},
 					},
 				},
@@ -297,7 +297,7 @@ func Test_service_Handle(t *testing.T) {
 								Network:         protocol.NetworkZkSync,
 								Source:          "zksync",
 								SourceData:      []byte(sourceDataZkSyncNFT),
-								Metadata:        []byte("{}"),
+								Metadata:        metadata.Default,
 							},
 						},
 					},
@@ -327,7 +327,7 @@ func Test_service_Handle(t *testing.T) {
 							Tag:             filter.TagCollectible,
 							SourceData:      []byte(sourceDataZkSyncNFT),
 							Type:            filter.CollectibleTrade,
-							Metadata:        []byte(`{"transaction":{"symbol":"NFT-424218","token_id":"424218","token_value":"1","nft_metadata":{"id":424218,"symbol":"NFT-424218","address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","serialId":0,"creatorId":1101474,"contentHash":"0xd252497a6db751c63bb23eb1493e8461b280bdc398bcc494e6bb5bab2d04935a","creatorAddress":"0x37719d7662a616e466b4d0f139a38e032946d503","currentFactory":"0x7c770595a2be9a87cf49b35ea9bc534f1a59552d","withdrawnFactory":""},"token_address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","token_standard":"ERC-721"}}`),
+							Metadata:        []byte(`{"symbol":"NFT-424218","token_id":"424218","token_value":"1","nft_metadata":{"id":424218,"symbol":"NFT-424218","address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","serialId":0,"creatorId":1101474,"contentHash":"0xd252497a6db751c63bb23eb1493e8461b280bdc398bcc494e6bb5bab2d04935a","creatorAddress":"0x37719d7662a616e466b4d0f139a38e032946d503","currentFactory":"0x7c770595a2be9a87cf49b35ea9bc534f1a59552d","withdrawnFactory":""},"token_address":"0x4a64471047696f0ee2dfbff8a92fd91c3a060cf2","token_standard":"ERC-721"}`),
 						},
 					},
 				},
@@ -347,16 +347,16 @@ func Test_service_Handle(t *testing.T) {
 			// check metadata
 			for index := range got {
 				for index_transfers := range got[index].Transfers {
-					g := map[string]map[string]interface{}{}
-					w := map[string]map[string]interface{}{}
+					g := map[string]interface{}{}
+					w := map[string]interface{}{}
 					if err := json.Unmarshal(got[index].Transfers[index_transfers].Metadata, &g); err != nil {
 						t.Error(err)
 					}
 					if err := json.Unmarshal(tt.want[index].Transfers[index_transfers].Metadata, &w); err != nil {
 						t.Error(err)
 					}
-					for k, v := range g["transaction"] {
-						assert.EqualValues(t, w["transaction"][k], v, "key is %s", k)
+					for k, v := range g {
+						assert.EqualValues(t, w[k], v, "key is %s", k)
 					}
 				}
 			}
