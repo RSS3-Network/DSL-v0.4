@@ -134,6 +134,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			AddressFrom: message.Address,
 			AddressTo:   "",
 			Tag:         filter.TagSocial,
+			Type:        getType(string(publication.Type)),
 			Network:     message.Network,
 			Platform:    string(publication.Platform),
 			Source:      s.Name(),
