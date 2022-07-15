@@ -133,7 +133,7 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 	}
 
 	for _, log := range receipt.Logs {
-		var internalTokenMap = make(map[common.Address]*big.Int)
+		internalTokenMap := make(map[common.Address]*big.Int)
 
 		for _, topic := range log.Topics {
 			switch topic {
