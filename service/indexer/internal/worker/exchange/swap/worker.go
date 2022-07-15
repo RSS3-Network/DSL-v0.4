@@ -132,12 +132,10 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 		return nil, err
 	}
 
-	internalTokenMap := make(map[common.Address]*big.Int)
-
 	for _, log := range receipt.Logs {
-		internalTokenMap = make(map[common.Address]*big.Int)
-
 		for _, topic := range log.Topics {
+			var internalTokenMap map[common.Address]*big.Int
+
 			switch topic {
 			case uniswap.EventHashSwapV2:
 				internalTokenMap, err = s.handleUniswapV2(ctx, message, *log, tokenMap, ethereumClient)
