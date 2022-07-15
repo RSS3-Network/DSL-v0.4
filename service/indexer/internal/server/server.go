@@ -48,7 +48,6 @@ import (
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/samber/lo"
 	"github.com/scylladb/go-set/strset"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -308,8 +307,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	// Get data from datasources
 	var transactions []model.Transaction
 
-	var datasourceError error
-
 	for _, datasource := range s.datasources {
 		for _, network := range datasource.Networks() {
 			if network == message.Network {
@@ -335,22 +332,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 				if err != nil {
 					logger.Global().Error("datasource handle failed", zap.Error(err))
 
-					datasourceError = err
-
-					transactions = append(transactions, model.Transaction{
-						AddressFrom: message.Address,
-						AddressTo:   message.Address,
-						Network:     network,
-						Transfers: []model.Transfer{
-							{
-								Index:       0,
-								AddressFrom: message.Address,
-								AddressTo:   message.Address,
-								Network:     message.Network,
-							},
-						},
-					})
-
 					continue
 				}
 
@@ -360,14 +341,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	}
 
 	transactionsMap := getTransactionsMap(transactions)
-
-	if datasourceError != nil {
-		if s.handleIndexedWorkers(ctx, message, transactions, transactionsMap) != nil {
-			return err
-		}
-
-		return datasourceError
-	}
 
 	defer func() {
 		transfers := 0
@@ -383,13 +356,13 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 }
 
 func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (err error) {
-	// lockKey := fmt.Sprintf("indexer_asset:%v:%v", message.Address, message.Network)
+	lockKey := fmt.Sprintf("indexer_asset:%v:%v", message.Address, message.Network)
 
-	// if !s.employer.DoLock(lockKey, 2*time.Minute) {
-	// 	return fmt.Errorf("%v lock", lockKey)
-	// }
+	if !s.employer.DoLock(lockKey, 2*time.Minute) {
+		return fmt.Errorf("%v lock", lockKey)
+	}
 
-	// defer s.employer.UnLock(lockKey)
+	defer s.employer.UnLock(lockKey)
 
 	// convert address to lowercase
 	message.Address = strings.ToLower(message.Address)
@@ -510,34 +483,6 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 				internalTransactions, err := worker.Handle(ctx, message, transactions)
 				if err != nil {
 					logger.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
-
-					return err
-				}
-
-				if len(internalTransactions) == 0 {
-					continue
-				}
-
-				newTransactionMap := getTransactionsMap(internalTransactions)
-				for _, t := range newTransactionMap {
-					transactionsMap[t.Hash] = t
-				}
-
-				transactions = transactionsMap2Array(transactionsMap)
-			}
-		}
-	}
-
-	return s.upsertTransactions(ctx, transactions)
-}
-
-func (s *Server) handleIndexedWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction, transactionsMap map[string]model.Transaction) error {
-	for _, worker := range s.indexedWorker {
-		for _, network := range worker.Networks() {
-			if network == message.Network {
-				internalTransactions, err := worker.Handle(ctx, message, transactions)
-				if err != nil {
-					logrus.Error(worker.Name(), message.Network, err)
 
 					return err
 				}
