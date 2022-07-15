@@ -63,12 +63,12 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		})
 	}
 
-	transactionHashs := make([]string, 0)
+	transactionHashes := make([]string, 0)
 	for _, transactionHash := range transactions {
-		transactionHashs = append(transactionHashs, transactionHash.Hash)
+		transactionHashes = append(transactionHashes, transactionHash.Hash)
 	}
 
-	transfers, err := h.getTransfers(ctx, transactionHashs, request.Type)
+	transfers, err := h.getTransfers(ctx, transactionHashes, request.Type)
 	if err != nil {
 		return BadRequest(c)
 	}
@@ -157,7 +157,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 }
 
 // getTransfers get transfer data from database
-func (h *Handler) getTransfers(c context.Context, transactionHashs []string, requestType []string) ([]dbModel.Transfer, error) {
+func (h *Handler) getTransfers(c context.Context, transactionHashes []string, requestType []string) ([]dbModel.Transfer, error) {
 	tracer := otel.Tracer("getTransfers")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
@@ -172,7 +172,7 @@ func (h *Handler) getTransfers(c context.Context, transactionHashs []string, req
 	}
 
 	if err := sql.
-		Where("transaction_hash IN ?", transactionHashs).
+		Where("transaction_hash IN ?", transactionHashes).
 		Find(&transfers).Error; err != nil {
 		return nil, err
 	}
@@ -316,12 +316,12 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 		}
 	}
 
-	transactionHashs := make([]string, 0)
+	transactionHashes := make([]string, 0)
 	for _, transactionHash := range transactions {
-		transactionHashs = append(transactionHashs, transactionHash.Hash)
+		transactionHashes = append(transactionHashes, transactionHash.Hash)
 	}
 
-	transfers, err := h.getTransfers(ctx, transactionHashs, request.Global.Type)
+	transfers, err := h.getTransfers(ctx, transactionHashes, request.Global.Type)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -410,12 +410,12 @@ func (h *Handler) batchGetTransactionsWithFilter(ctx context.Context, request Ba
 		}
 
 		// query transfer
-		transactionHashs := make([]string, 0)
+		transactionHashes := make([]string, 0)
 		for _, transactionHash := range transactions {
-			transactionHashs = append(transactionHashs, transactionHash.Hash)
+			transactionHashes = append(transactionHashes, transactionHash.Hash)
 		}
 
-		transfers, err := h.getTransfers(ctx, transactionHashs, reqFilter.Type)
+		transfers, err := h.getTransfers(ctx, transactionHashes, reqFilter.Type)
 		if err != nil {
 			logrus.Errorf("batchGetTransactions: query transfer error, %v", err)
 			return
@@ -431,7 +431,7 @@ func (h *Handler) batchGetTransactionsWithFilter(ctx context.Context, request Ba
 		}
 
 		// publish mq message
-		if request.Refresh || len(transactionHashs) == 0 {
+		if request.Refresh || len(transactionHashes) == 0 {
 			go h.publishIndexerMessage(ctx, reqFilter.Address)
 		}
 
