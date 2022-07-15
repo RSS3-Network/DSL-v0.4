@@ -105,6 +105,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		post := &metadata.Post{
 			TypeOnPlatform: []string{string(publication.Type)},
 			Body:           string(publication.Metadata.Description),
+			Title:          string(publication.Metadata.Description),
 		}
 
 		formatMedia(publication.Metadata.Media, post)
@@ -114,6 +115,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			targetContent := &metadata.Post{
 				TypeOnPlatform: []string{string(publication.Target.Type)},
 				Body:           string(publication.Target.Metadata.Description),
+				Title:          string(publication.Target.Metadata.Description),
 			}
 
 			formatMedia(publication.Metadata.Media, targetContent)
