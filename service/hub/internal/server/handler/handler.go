@@ -46,12 +46,20 @@ type GetExchangeRequest struct {
 }
 
 type BatchGetNotesRequest struct {
-	Timestamp time.Time `json:"timestamp"`
-	Limit     int       `json:"limit"`
-	Cursor    string    `json:"cursor"`
-	Refresh   bool      `json:"refresh"`
-	Global    *Filter   `json:"global"`
-	List      []*Filter `json:"list"`
+	Timestamp time.Time     `json:"timestamp"`
+	Limit     int           `json:"limit"`
+	Cursor    string        `json:"cursor"`
+	Refresh   bool          `json:"refresh"`
+	Global    *GlobalFilter `json:"global"`
+	List      []*Filter     `json:"list"`
+}
+
+type GlobalFilter struct {
+	Address  []string `json:"address"`
+	Type     []string `json:"type"`
+	Tag      string   `json:"tag"`
+	Network  []string `json:"network"`
+	Platform []string `json:"platform"`
 }
 
 type Filter struct {

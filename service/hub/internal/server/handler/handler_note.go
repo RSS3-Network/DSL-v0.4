@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/lib/pq"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -143,7 +144,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 		sql = sql.Where("platform IN ?", request.Platform)
 	}
 
-	if len(request.Timestamp.String()) > 0 {
+	if request.Timestamp.Unix() > 0 {
 		sql = sql.Where("timestamp > ?", request.Timestamp)
 	}
 
@@ -236,17 +237,20 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 
 	defer postgresSnap.End()
 
+	if len(request.Global.Address) == 0 {
+		return nil, 0, nil
+	}
+
 	transactions := make([]dbModel.Transaction, 0)
 	total := int64(0)
-	addresses := []string{}
 
-	for _, list := range request.List {
-		addresses = append(addresses, strings.ToLower(list.Address))
+	for i, v := range request.Global.Address {
+		request.Global.Address[i] = strings.ToLower(v)
 	}
 
 	sql := h.DatabaseClient.
 		Model(&dbModel.Transaction{}).
-		Where("addresses && ?", addresses)
+		Where("addresses && ?", pq.Array(request.Global.Address))
 
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
@@ -292,7 +296,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 		sql = sql.Where("platform IN ?", request.Global.Platform)
 	}
 
-	if len(request.Timestamp.String()) > 0 {
+	if request.Timestamp.Unix() > 0 {
 		sql = sql.Where("timestamp > ?", request.Timestamp)
 	}
 
@@ -391,7 +395,7 @@ func (h *Handler) batchGetTransactionsWithFilter(ctx context.Context, request Ba
 			sql = sql.Where("platform IN ?", reqFilter.Platform)
 		}
 
-		if len(request.Timestamp.String()) > 0 {
+		if request.Timestamp.Unix() > 0 {
 			sql = sql.Where("timestamp > ?", request.Timestamp)
 		}
 
