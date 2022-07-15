@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -33,6 +34,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
@@ -44,6 +46,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/coinmarketcap"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
+	"github.com/samber/lo"
+	"github.com/scylladb/go-set/strset"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -279,13 +283,13 @@ func (s *Server) Run() error {
 }
 
 func (s *Server) handle(ctx context.Context, message *protocol.Message) (err error) {
-	// lockKey := fmt.Sprintf("indexer:%v:%v", message.Address, message.Network)
+	lockKey := fmt.Sprintf("indexer:%v:%v", message.Address, message.Network)
 
-	// if !s.employer.DoLock(lockKey, 2*time.Minute) {
-	// 	return fmt.Errorf("%v lock", lockKey)
-	// }
+	if !s.employer.DoLock(lockKey, 2*time.Minute) {
+		return fmt.Errorf("%v lock", lockKey)
+	}
 
-	// defer s.employer.UnLock(lockKey)
+	defer s.employer.UnLock(lockKey)
 
 	// convert address to lowercase
 	message.Address = strings.ToLower(message.Address)
@@ -315,14 +319,8 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 				if err := s.databaseClient.
 					Model((*model.Transaction)(nil)).
 					Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp").
-					Where(map[string]interface{}{
-						"address_from": message.Address,
-						"network":      message.Network,
-					}).
-					Or(map[string]interface{}{
-						"address_to": message.Address,
-						"network":    message.Network,
-					}).
+					Where("? = ANY(addresses)", message.Address).
+					Where("network = ?", message.Network).
 					Order("timestamp DESC").
 					Limit(1).
 					Pluck("timestamp", &timestamp).
@@ -375,9 +373,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		transfers := 0
 
 		for _, transaction := range transactions {
-			for range transaction.Transfers {
-				transfers++
-			}
+			transfers += len(transaction.Transfers)
 		}
 
 		logger.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
@@ -459,41 +455,45 @@ func transactionsMap2Array(transactionsMap map[string]model.Transaction) []model
 	return transactions
 }
 
-func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Transaction) error {
-	if len(transactions) == 0 {
-		return nil
-	}
+func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Transaction) (err error) {
+	tracer := otel.Tracer("server_upsertTransactions")
+	_, trace := tracer.Start(ctx, "server:upsertTransactions")
+	defer func() { opentelemetry.Log(trace, len(transactions), nil, err) }()
 
-	if err := s.databaseClient.
-		Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).
-		Create(transactions).Error; err != nil {
-		return err
-	}
+	dbChunkSize := 800
 
+	transfers := []model.Transfer{}
+	updatedTransactions := []model.Transaction{}
 	for _, transaction := range transactions {
-		internalTransfers := make([]model.Transfer, 0)
-
+		addresses := strset.New(transaction.AddressFrom, transaction.AddressTo)
 		for _, transfer := range transaction.Transfers {
 			if bytes.Equal(transfer.Metadata, metadata.Default) {
 				continue
 			}
-
-			internalTransfers = append(internalTransfers, transfer)
+			transfers = append(transfers, transfer)
+			addresses.Add(transfer.AddressFrom, transfer.AddressTo)
 		}
+		transaction.Addresses = addresses.List()
+		updatedTransactions = append(updatedTransactions, transaction)
+	}
 
-		if len(internalTransfers) == 0 {
-			continue
+	for _, ts := range lo.Chunk(updatedTransactions, dbChunkSize) {
+		if err = s.databaseClient.
+			Clauses(clause.OnConflict{
+				UpdateAll: true,
+			}).
+			Create(ts).Error; err != nil {
+			return err
 		}
-
-		if err := s.databaseClient.
+	}
+	for _, ts := range lo.Chunk(transfers, dbChunkSize) {
+		if err = s.databaseClient.
 			Clauses(clause.OnConflict{
 				UpdateAll: true,
 				DoUpdates: clause.AssignmentColumns([]string{"metadata"}),
 			}).
-			Create(internalTransfers).Error; err != nil {
-			logger.Global().Error("failed to upsert transfers", zap.Error(err), zap.String("network", transaction.Network))
+			Create(ts).Error; err != nil {
+			logger.Global().Error("failed to upsert transfers", zap.Error(err), zap.String("network", transactions[0].Network))
 
 			return err
 		}

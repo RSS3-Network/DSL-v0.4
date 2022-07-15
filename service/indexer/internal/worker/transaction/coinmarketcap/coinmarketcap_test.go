@@ -79,6 +79,17 @@ func Test_CachedGetCoinInfo(t *testing.T) {
 	assert.EqualValues(t, 18, info.Decimals)
 	assert.EqualValues(t, "ETH", info.Symbol)
 	assert.EqualValues(t, "coin", info.Category)
+
+	// USDT address (on ETH)
+	coinmarketcap.Init(coinmarketcapKey)
+	ethUSDTAddress := "0xdac17f958d2ee523a2206206994597c13d831ec7"
+	info, err = coinmarketcap.CachedGetCoinInfo(ctx, "ethereum", ethUSDTAddress)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "Tether", info.Name)
+	assert.EqualValues(t, "tether", info.Slug)
+	assert.EqualValues(t, 6, info.Decimals)
+	assert.EqualValues(t, "USDT", info.Symbol)
+	assert.EqualValues(t, "token", info.Category)
 }
 
 func Test_CachedGetCoinInfoByNetwork(t *testing.T) {

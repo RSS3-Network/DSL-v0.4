@@ -94,7 +94,7 @@ func GetMetadata(network string, contractAddress common.Address, tokenID *big.In
 
 	response, err := http.Get(tokenURI)
 	if err != nil {
-		return nil, errors.New("failed to get the url of the transaction metadata")
+		return nil, errors.New("failed to get the url of the transaction metadata: " + err.Error())
 	}
 
 	defer func() {

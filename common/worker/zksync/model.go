@@ -40,7 +40,7 @@ type GetTransactionDataOperation struct {
 	Fee        string                               `json:"fee"`
 	From       string                               `json:"from"`
 	Nonce      int                                  `json:"nonce"`
-	Token      int                                  `json:"transaction"`
+	Token      int                                  `json:"token"`
 	Amount     string                               `json:"amount"`
 	AccountId  int                                  `json:"accountId"`
 	ValidFrom  int                                  `json:"validFrom"`

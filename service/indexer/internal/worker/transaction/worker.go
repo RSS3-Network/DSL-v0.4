@@ -131,13 +131,15 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	var internalTransactions []*model.Transaction
 
+	opt := lop.NewOption().WithConcurrency(200)
+
 	switch message.Network {
 	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkCrossbell, protocol.NetworkXDAI:
-		internalTransactions, err = lop.MapWithError(transactions, s.makeEthereumHandlerFunc(ctx, message, transactions))
+		internalTransactions, err = lop.MapWithError(transactions, s.makeEthereumHandlerFunc(ctx, message, transactions), opt)
 	case protocol.NetworkZkSync:
-		internalTransactions, err = lop.MapWithError(transactions, s.makeZkSyncHandlerFunc(ctx, message, transactions))
+		internalTransactions, err = lop.MapWithError(transactions, s.makeZkSyncHandlerFunc(ctx, message, transactions), opt)
 	case arweave.Source:
-		internalTransactions, err = lop.MapWithError(transactions, s.makeArweaveHandlerFunc(ctx, message, transactions))
+		internalTransactions, err = lop.MapWithError(transactions, s.makeArweaveHandlerFunc(ctx, message, transactions), opt)
 	}
 
 	if err != nil {
@@ -394,6 +396,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			// ERC-721 / ERC-1155
 			nftMetadata, err := nft.GetMetadata(message.Network, common.HexToAddress(*address), id)
 			if err != nil {
+				// logger.Global().Error("worker_token:buildEthereumTokenMetadata", zap.Error(err))
 				return &transfer, nil
 			}
 
@@ -471,7 +474,7 @@ func (s *service) buildZkSyncNFTMetadata(ctx context.Context, message *protocol.
 	// TODO ERC-1155
 	tokenMetadata.TokenStandard = protocol.TokenStandardERC721
 
-	transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
+	transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
 	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &tokenMetadata); err != nil {
 		return nil, err

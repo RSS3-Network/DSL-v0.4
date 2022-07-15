@@ -3,6 +3,8 @@ package model
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type Transaction struct {
@@ -12,6 +14,7 @@ type Transaction struct {
 	Index       int64           `gorm:"column:index;index;default:0" json:"index"`
 	AddressFrom string          `gorm:"column:address_from;index" json:"address_from"`
 	AddressTo   string          `gorm:"column:address_to;index" json:"address_to,omitempty"`
+	Addresses   pq.StringArray  `gorm:"column:addresses;type:text[];index" json:"addresses,omitempty"`
 	Network     string          `gorm:"column:network;primaryKey" json:"network"`
 	Platform    string          `gorm:"column:platform;index" json:"platform,omitempty"`
 	Source      string          `gorm:"column:source;primaryKey" json:"-"`
