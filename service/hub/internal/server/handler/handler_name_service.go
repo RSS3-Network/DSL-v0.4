@@ -25,10 +25,8 @@ func (h *Handler) GetENSResolve(c echo.Context) error {
 		return BadRequest(c)
 	}
 
-	result, err := ens.Resolve(config.ConfigHub.RPC.General.Ethereum.HTTP, request.Address)
-	if err != nil {
-		return BadRequest(c)
-	}
+	// error here means the address doesn't have a primary ENS, and can be ignored
+	result, _ := ens.Resolve(config.ConfigHub.RPC.General.Ethereum.HTTP, request.Address)
 
 	return c.JSON(http.StatusOK, result)
 }
