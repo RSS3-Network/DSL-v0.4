@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/hasura/go-graphql-client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -15,8 +16,11 @@ import (
 	lensClient "github.com/naturalselectionlabs/pregod/common/worker/lens"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/lens/graphql"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -61,6 +65,27 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
 
+	// handle posts
+	transactions, err = s.handlePost(ctx, message, transactions)
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	// handle profiles
+	transactions, err = s.handleProfile(ctx, message, transactions)
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	return transactions, nil
+}
+
+func (s *service) handlePost(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
+	tracer := otel.Tracer("lens_worker")
+	_, trace := tracer.Start(ctx, "lens_worker:handlePost")
+
+	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
+
 	// read the last cursor value from the database
 	var lastLens model.Transaction
 	var cursor string
@@ -70,7 +95,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			"address_from": message.Address,
 			"source":       Name,
 		}).Order("timestamp DESC").First(&lastLens).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
+		return transactions, err
 	}
 
 	// if it's a new address, the cursor will be empty
@@ -88,7 +113,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	// handle publications
 	result, err := s.lensClient.GetAllPublicationsByAddress(ctx, &options)
 	if err != nil {
-		return nil, err
+		return transactions, err
 	}
 
 	// returns when no results are found
@@ -99,7 +124,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	for _, publication := range result {
 		sourceData, err := json.Marshal(publication)
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		post := &metadata.Post{
@@ -108,7 +133,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			Title:          string(publication.Metadata.Description),
 		}
 
-		formatMedia(publication.Metadata.Media, post)
+		formatPostMedia(publication.Metadata.Media, post)
 
 		if publication.Type != "Post" {
 
@@ -118,14 +143,14 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				Title:          string(publication.Target.Metadata.Description),
 			}
 
-			formatMedia(publication.Metadata.Media, targetContent)
+			formatPostMedia(publication.Metadata.Media, targetContent)
 
 			post.Target = targetContent
 		}
 
 		rawMetadata, err := json.Marshal(post)
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		transactions = append(transactions, model.Transaction{
@@ -138,11 +163,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			Network:     message.Network,
 			Platform:    string(publication.Platform),
 			Source:      s.Name(),
-			SourceData:  sourceData,
 			Transfers: []model.Transfer{
 				{
-					Type:            getType(string(publication.Type)),
 					Tag:             filter.TagSocial,
+					Type:            getType(string(publication.Type)),
 					TransactionHash: string(publication.ID),
 					Timestamp:       publication.CreatedAt,
 					AddressFrom:     message.Address,
@@ -150,8 +174,94 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 					Metadata:        rawMetadata,
 					Network:         protocol.NetworkPolygon,
 					Platform:        string(publication.Platform),
-					RelatedUrls:     []string{string(publication.RelatedURL)},
 					Source:          s.Name(),
+					RelatedUrls:     []string{string(publication.RelatedURL)},
+					SourceData:      sourceData,
+				},
+			},
+		})
+	}
+
+	return transactions, nil
+}
+
+func (s *service) handleProfile(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
+	tracer := otel.Tracer("lens_worker")
+	_, trace := tracer.Start(ctx, "lens_worker:handleProfile")
+
+	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
+
+	options := lensClient.Options{
+		Address: graphql.String(message.Address),
+	}
+
+	profiles, err := s.lensClient.GetProfiles(ctx, &options)
+	if err != nil {
+		return transactions, err
+	}
+
+	// returns when no results are found
+	if len(profiles) == 0 {
+		return transactions, nil
+	}
+
+	for _, profile := range profiles {
+
+		// ignore non-default profiles
+		if !profile.IsDefault {
+			continue
+		}
+		sourceData, err := json.Marshal(profile)
+		if err != nil {
+			continue
+		}
+
+		profileTemp := &model.Profile{
+			Address:    message.Address,
+			Network:    message.Network,
+			Platform:   s.Name(),
+			Source:     s.Name(),
+			Name:       string(profile.Name),
+			Handle:     string(profile.Handle),
+			Bio:        string(profile.Bio),
+			SourceData: sourceData,
+		}
+
+		formatProfileMedia(&profile, profileTemp)
+
+		// this will also update the profile in the database
+		// if the default profile has changed
+		s.databaseClient.Model(&model.Profile{}).Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).Create(&profileTemp)
+
+		rawMetadata, err := json.Marshal(profileTemp)
+		if err != nil {
+			continue
+		}
+
+		transactions = append(transactions, model.Transaction{
+			Hash:        fmt.Sprintf("%s-%s", string(profile.ID), string(profile.Handle)),
+			AddressFrom: message.Address,
+			AddressTo:   "",
+			Timestamp:   time.Now(),
+			Tag:         filter.TagSocial,
+			Type:        filter.SocialProfile,
+			Network:     message.Network,
+			Platform:    s.Name(),
+			Source:      s.Name(),
+			Transfers: []model.Transfer{
+				{
+					Tag:             filter.TagSocial,
+					Type:            filter.SocialProfile,
+					TransactionHash: fmt.Sprintf("%s-%s", string(profile.ID), string(profile.Handle)),
+					AddressFrom:     message.Address,
+					AddressTo:       "",
+					Metadata:        rawMetadata,
+					Network:         protocol.NetworkPolygon,
+					Platform:        s.Name(),
+					Source:          s.Name(),
+					RelatedUrls:     []string{string(profile.Metadata), fmt.Sprintf("https://www.lensfrens.xyz/%s", string(profile.Handle))},
 					SourceData:      sourceData,
 				},
 			},
@@ -174,11 +284,28 @@ func getType(pubType string) string {
 	return filter.SocialPost
 }
 
-func formatMedia(mediaList []graphqlx.Media, post *metadata.Post) {
+func formatPostMedia(mediaList []graphqlx.Media, post *metadata.Post) {
 	for _, media := range mediaList {
 		post.Media = append(post.Media, metadata.Media{
 			Address:  string(media.Original.URL),
 			MimeType: string(media.Original.MimeType),
 		})
+	}
+}
+
+func formatProfileMedia(profile *graphqlx.Profile, result *model.Profile) {
+	// either `NftImage` or `MediaSet`
+	switch profile.Picture.Type {
+	case "NftImage":
+		result.ProfileUris = append(result.ProfileUris, string(profile.Picture.NFTImage.Uri))
+	case "MediaSet":
+		result.ProfileUris = append(result.ProfileUris, string(profile.Picture.MediaSet.Original.URL))
+	}
+
+	switch profile.CoverPicture.Type {
+	case "NftImage":
+		result.BannerUris = append(result.BannerUris, string(profile.CoverPicture.NFTImage.Uri))
+	case "MediaSet":
+		result.BannerUris = append(result.BannerUris, string(profile.CoverPicture.MediaSet.Original.URL))
 	}
 }

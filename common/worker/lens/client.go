@@ -32,12 +32,10 @@ type (
 	}
 )
 
-func (c *Client) GetProfiles(ctx context.Context, options *Options) ([]string, error) {
+func (c *Client) GetProfiles(ctx context.Context, options *Options) ([]graphqlx.Profile, error) {
 	var query struct {
 		Profiles struct {
-			Items []struct {
-				ID graphql.String `json:"id"`
-			} `graphql:"items"`
+			Items []graphqlx.Profile `graphql:"items"`
 		} `graphql:"profiles(request: $request )"`
 	}
 
@@ -51,13 +49,7 @@ func (c *Client) GetProfiles(ctx context.Context, options *Options) ([]string, e
 		return nil, err
 	}
 
-	result := make([]string, len(query.Profiles.Items))
-
-	for i, item := range query.Profiles.Items {
-		result[i] = string(item.ID)
-	}
-
-	return result, nil
+	return query.Profiles.Items, nil
 }
 
 // types for GetPublications and GetPublicationCount
@@ -213,7 +205,7 @@ func (c *Client) GetAllPublicationsByAddress(ctx context.Context, options *Optio
 	result := make([]graphqlx.Publication, 0)
 
 	for _, profile := range profiles {
-		options.Profile = graphql.String(profile)
+		options.Profile = profile.ID
 		publications, err := c.GetPublications(ctx, options)
 		if err != nil {
 			return nil, err
