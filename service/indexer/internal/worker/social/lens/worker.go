@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/hasura/go-graphql-client"
+	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -91,10 +91,10 @@ func (s *service) handlePost(ctx context.Context, message *protocol.Message, tra
 	var cursor string
 
 	if err := s.databaseClient.Model((*model.Transaction)(nil)).
-		Where(map[string]interface{}{
-			"address_from": message.Address,
-			"source":       Name,
-		}).Order("timestamp DESC").First(&lastLens).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		Where("address_from = ?", message.Address).
+		Where("source = ?", s.Name()).
+		Where("type = ANY(?)", pq.StringArray{filter.SocialPost, filter.SocialComment, filter.SocialShare}).
+		Order("timestamp DESC").First(&lastLens).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return transactions, err
 	}
 
@@ -229,6 +229,15 @@ func (s *service) handleProfile(ctx context.Context, message *protocol.Message, 
 
 		formatProfileMedia(&profile, profileTemp)
 
+		// use created_at from the previous profile
+		var existingProfile model.Profile
+		if err := s.databaseClient.Model(&model.Profile{}).
+			Where("address_from = ?", message.Address).
+			Where("handle = ?", string(profile.Handle)).
+			Where("platform = ?", s.Name()).First(&existingProfile).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
+			profileTemp.CreatedAt = existingProfile.CreatedAt
+		}
+
 		// this will also update the profile in the database
 		// if the default profile has changed
 		s.databaseClient.Model(&model.Profile{}).Clauses(clause.OnConflict{
@@ -244,7 +253,7 @@ func (s *service) handleProfile(ctx context.Context, message *protocol.Message, 
 			Hash:        fmt.Sprintf("%s-%s", string(profile.ID), string(profile.Handle)),
 			AddressFrom: message.Address,
 			AddressTo:   "",
-			Timestamp:   time.Now(),
+			Timestamp:   profileTemp.CreatedAt,
 			Tag:         filter.TagSocial,
 			Type:        filter.SocialProfile,
 			Network:     message.Network,
