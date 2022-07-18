@@ -378,7 +378,7 @@ func (s *service) getVote(
 	}
 
 	metadataModel.Vote = &metadata.Vote{
-		TypeOnPlatform: filter.GovernanceVote,
+		TypeOnPlatform: []string{filter.GovernanceVote},
 		Choice:         string(vote.Choice),
 		Proposal:       formattedProposal,
 	}
@@ -389,13 +389,13 @@ func (s *service) getVote(
 		return nil, nil
 	}
 
-	snapShotSourcedata := metadata.SnapShot{
+	snapShotSourceData := &metadata.SnapShot{
 		Proposal: proposal.Metadata,
 		Space:    space.Metadata,
 		Choice:   vote.Choice,
 	}
 
-	sourceData, err := json.Marshal(snapShotSourcedata)
+	sourceData, err := json.Marshal(snapShotSourceData)
 	if err != nil {
 		logrus.Warnf("[snapshot worker] failed to marshal sourcedata:%v", err)
 		return nil, nil
@@ -461,12 +461,12 @@ func (s *service) getProposal(
 		return nil, nil
 	}
 
-	snapShotSourcedata := metadata.SnapShot{
+	snapShotSourceData := metadata.SnapShot{
 		Proposal: proposal.Metadata,
 		Space:    space.Metadata,
 	}
 
-	sourceData, err := json.Marshal(snapShotSourcedata)
+	sourceData, err := json.Marshal(snapShotSourceData)
 	if err != nil {
 		logrus.Warnf("[snapshot worker] failed to marshal sourcedata:%v", err)
 		return nil, nil
