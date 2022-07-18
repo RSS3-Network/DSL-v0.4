@@ -15,6 +15,7 @@ type Profile struct {
 	Picture      ProfileMedia    `json:"picture"`
 	CoverPicture ProfileMedia    `json:"coverPicture"`
 	Metadata     graphql.String  `json:"metadata"`
+	OwnedBy      graphql.String  `json:"ownedBy"`
 }
 
 // Publication is a custom type to hold Post, Comment, and Mirror.

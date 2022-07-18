@@ -8,7 +8,7 @@ import (
 )
 
 type Profile struct {
-	Address     string          `gorm:"column:address;primaryKey" json:"-"`
+	Address     string          `gorm:"column:address;primaryKey" json:"address"`
 	Network     string          `gorm:"column:network;index" json:"network"`
 	Platform    string          `gorm:"column:platform;index;primaryKey" json:"platform"`
 	Source      string          `gorm:"column:source" json:"source"`

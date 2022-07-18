@@ -61,3 +61,12 @@ func TestGetAllPublicationsByAddress(t *testing.T) {
 
 	t.Log(result)
 }
+
+func TestGetFollowings(t *testing.T) {
+	result, err := client.GetFollowings(context.Background(), &options)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(result)
+}

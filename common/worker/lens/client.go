@@ -218,6 +218,56 @@ func (c *Client) GetAllPublicationsByAddress(ctx context.Context, options *Optio
 	return result, nil
 }
 
+type (
+	FollowingRequest struct {
+		Address EthereumAddress `json:"address"`
+		Cursor  graphql.String  `json:"cursor"`
+		Limit   graphql.Int     `json:"limit"`
+	}
+)
+
+func (c *Client) GetFollowings(ctx context.Context, options *Options) ([]graphqlx.Profile, error) {
+	variable := FollowingRequest{
+		Address: EthereumAddress(options.Address),
+		Cursor:  options.Cursor,
+		Limit:   graphql.Int(EndpointLimit),
+	}
+	options.TotalCount = 0
+
+	result := make([]graphqlx.Profile, 0)
+
+	for i := 0; i <= int(options.TotalCount); i += EndpointLimit {
+		variable.Cursor = options.Cursor
+		variableMap := map[string]interface{}{
+			"request": variable,
+		}
+
+		var query struct {
+			Following struct {
+				Items []struct {
+					Profile graphqlx.Profile `graphql:"profile"`
+				} `graphql:"items"`
+				PageInfo graphqlx.PageInfo
+			} `graphql:"following(request: $request)"`
+		}
+
+		if err := c.graphqlClient.Query(ctx, &query, variableMap); err != nil {
+			return nil, err
+		}
+
+		for _, item := range query.Following.Items {
+			result = append(result, item.Profile)
+		}
+
+		if len(query.Following.Items) > 0 {
+			options.TotalCount = query.Following.PageInfo.TotalCount
+			options.Cursor = query.Following.PageInfo.Next
+		}
+	}
+
+	return result, nil
+}
+
 func NewClient() *Client {
 	endpointURL := url.URL{
 		Scheme: EndpointScheme,

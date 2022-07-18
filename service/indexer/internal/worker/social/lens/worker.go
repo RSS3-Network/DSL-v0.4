@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/hasura/go-graphql-client"
 	"github.com/lib/pq"
@@ -73,6 +74,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	// handle profiles
 	transactions, err = s.handleProfile(ctx, message, transactions)
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	// handle follows
+	transactions, err = s.handleFollow(ctx, message, transactions)
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -206,25 +213,19 @@ func (s *service) handleProfile(ctx context.Context, message *protocol.Message, 
 	}
 
 	for _, profile := range profiles {
-
 		// ignore non-default profiles
 		if !profile.IsDefault {
 			continue
 		}
-		sourceData, err := json.Marshal(profile)
-		if err != nil {
-			continue
-		}
 
 		profileTemp := &model.Profile{
-			Address:    message.Address,
-			Network:    message.Network,
-			Platform:   s.Name(),
-			Source:     s.Name(),
-			Name:       string(profile.Name),
-			Handle:     string(profile.Handle),
-			Bio:        string(profile.Bio),
-			SourceData: sourceData,
+			Address:  message.Address,
+			Network:  message.Network,
+			Platform: s.Name(),
+			Source:   s.Name(),
+			Name:     string(profile.Name),
+			Handle:   string(profile.Handle),
+			Bio:      string(profile.Bio),
 		}
 
 		formatProfileMedia(&profile, profileTemp)
@@ -271,7 +272,88 @@ func (s *service) handleProfile(ctx context.Context, message *protocol.Message, 
 					Platform:        s.Name(),
 					Source:          s.Name(),
 					RelatedUrls:     []string{string(profile.Metadata), fmt.Sprintf("https://www.lensfrens.xyz/%s", string(profile.Handle))},
-					SourceData:      sourceData,
+				},
+			},
+		})
+	}
+
+	return transactions, nil
+}
+
+func (s *service) handleFollow(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
+	tracer := otel.Tracer("lens_worker")
+	_, trace := tracer.Start(ctx, "lens_worker:handlePost")
+
+	defer func() { opentelemetry.Log(trace, transactions, data, err) }()
+
+	// read the last cursor value from the database
+	var followCount int64
+	var cursor string
+
+	s.databaseClient.Model((*model.Transaction)(nil)).
+		Where("address_from = ?", message.Address).
+		Where("source = ?", s.Name()).
+		Where("type = ?", filter.SocialFollow).
+		Count(&followCount)
+
+	cursor = fmt.Sprintf(`{"offset":"%d"}`, followCount)
+
+	options := lensClient.Options{
+		Address: graphql.String(message.Address),
+		Cursor:  graphql.String(cursor),
+	}
+
+	// handle publications
+	result, err := s.lensClient.GetFollowings(ctx, &options)
+	if err != nil {
+		return transactions, err
+	}
+
+	// returns when no results are found
+	if len(result) == 0 {
+		return transactions, nil
+	}
+
+	for _, profile := range result {
+		// follow is essentially targeting a profile
+		profileTemp := &model.Profile{
+			Address:  string(profile.OwnedBy),
+			Network:  message.Network,
+			Platform: s.Name(),
+			Source:   s.Name(),
+			Name:     string(profile.Name),
+			Handle:   string(profile.Handle),
+			Bio:      string(profile.Bio),
+		}
+
+		formatProfileMedia(&profile, profileTemp)
+
+		rawMetadata, err := json.Marshal(profileTemp)
+		if err != nil {
+			continue
+		}
+
+		transactions = append(transactions, model.Transaction{
+			Hash:        fmt.Sprintf("%s-%s", message.Address, string(profile.Handle)),
+			AddressFrom: message.Address,
+			AddressTo:   "",
+			Timestamp:   time.Now(),
+			Tag:         filter.TagSocial,
+			Type:        filter.SocialFollow,
+			Network:     message.Network,
+			Platform:    s.Name(),
+			Source:      s.Name(),
+			Transfers: []model.Transfer{
+				{
+					Tag:             filter.TagSocial,
+					Type:            filter.SocialFollow,
+					TransactionHash: fmt.Sprintf("%s-%s", message.Address, string(profile.Handle)),
+					AddressFrom:     message.Address,
+					AddressTo:       "",
+					Metadata:        rawMetadata,
+					Network:         protocol.NetworkPolygon,
+					Platform:        s.Name(),
+					Source:          s.Name(),
 				},
 			},
 		})
