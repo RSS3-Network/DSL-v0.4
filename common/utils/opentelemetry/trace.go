@@ -14,7 +14,7 @@ func Log(span trace.Span, input interface{}, output interface{}, err error) {
 	span.SetAttributes(attribute.String("output", string(outputByte)))
 
 	if err != nil {
-		span.SetAttributes(attribute.String("error", err.Error()))
+		span.RecordError(err)
 	}
 
 	span.End()
