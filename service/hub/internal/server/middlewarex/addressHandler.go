@@ -1,6 +1,7 @@
 package middlewarex
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -29,7 +30,7 @@ func HandleAddress(address string) (string, error) {
 	if strings.HasSuffix(address, ".eth") {
 		nsResult, err := ens.Resolve(config.ConfigHub.RPC.General.Ethereum.HTTP, address)
 		if err != nil {
-			return "", err
+			return "", errors.New("ENS: " + err.Error())
 		}
 
 		result = nsResult.Address

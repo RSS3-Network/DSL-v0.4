@@ -86,6 +86,12 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 }
 
 func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *protocol.Message) (map[string]model.Transaction, error) {
+	tracer := otel.Tracer("datasource_alchemy")
+	ctx, trace := tracer.Start(ctx, "datasource_alchemy:getAllAssetTransferHashes")
+	internalTransactionMap := make(map[string]model.Transaction)
+	var err error
+	defer func() { opentelemetry.Log(trace, message, internalTransactionMap, err) }()
+
 	category := []string{
 		alchemy.CategoryExternal, alchemy.CategoryERC20, alchemy.CategoryERC721, alchemy.CategoryERC1155,
 	}
@@ -100,8 +106,6 @@ func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *pro
 		MaxCount:    hexutil.EncodeBig(big.NewInt(alchemy.MaxCount)),
 		Category:    category,
 	}
-
-	internalTransactionMap := make(map[string]model.Transaction)
 
 	// Get the transactions sent from this address
 	internalTransactions, err := d.getAssetTransactionHashes(ctx, message, parameter)
@@ -131,12 +135,17 @@ func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *pro
 }
 
 func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *protocol.Message, parameter alchemy.GetAssetTransfersParameter) ([]model.Transaction, error) {
+	tracer := otel.Tracer("datasource_alchemy")
+	_, trace := tracer.Start(ctx, "datasource_alchemy:Handle")
+	internalTransactions := make([]model.Transaction, 0)
+
+	var err error
+	defer func() { opentelemetry.Log(trace, message, len(internalTransactions), err) }()
+
 	alchemyClient, exist := d.rpcClientMap[message.Network]
 	if !exist {
 		return nil, ErrorUnsupportedNetwork
 	}
-
-	internalTransactions := make([]model.Transaction, 0)
 
 	for {
 		result, err := alchemyClient.GetAssetTransfers(context.Background(), parameter)

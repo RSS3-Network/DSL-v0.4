@@ -2,39 +2,39 @@ package filter
 
 const (
 	// transaction types:  transfer | mint | burn | cancel
-	TransactionTransfer = "transfer"
-	TransactionMint     = "mint"
-	TransactionBurn     = "burn"
-	TransactionSelf     = "self"
+	TransactionTransfer string = "transfer"
+	TransactionMint     string = "mint"
+	TransactionBurn     string = "burn"
+	TransactionSelf     string = "self"
 
 	// exchange types:  withdraw | deposit | swap
-	ExchangeWithdraw = "withdraw"
-	ExchangeDeposit  = "deposit"
-	ExchangeSwap     = "swap"
+	ExchangeWithdraw string = "withdraw"
+	ExchangeDeposit  string = "deposit"
+	ExchangeSwap     string = "swap"
 
 	// NFT types: transfer | mint | burn | poap
-	CollectibleTrade = "trade"
-	CollectibleMint  = "mint"
-	CollectibleBurn  = "burn"
-	CollectiblePoap  = "poap"
+	CollectibleTrade string = "trade"
+	CollectibleMint  string = "mint"
+	CollectibleBurn  string = "burn"
+	CollectiblePoap  string = "poap"
 
 	// social types: post | comment | share (retweet) | profile | follow | unfollow | like
-	SocialPost     = "post"
-	SocialRevise   = "revise"
-	SocialComment  = "comment"
-	SocialShare    = "share"
-	SocialProfile  = "profile"
-	SocialFollow   = "follow"
-	SocialUnfollow = "unfollow"
-	SocialLike     = "like"
+	SocialPost     string = "post"
+	SocialRevise   string = "revise"
+	SocialComment  string = "comment"
+	SocialShare    string = "share"
+	SocialProfile  string = "profile"
+	SocialFollow   string = "follow"
+	SocialUnfollow string = "unfollow"
+	SocialLike     string = "like"
 
 	// Governance types: propose | vote
-	GovernancePropose = "propose"
-	GovernanceVote    = "vote"
+	GovernancePropose string = "propose"
+	GovernanceVote    string = "vote"
 
 	// donation type: donate
-	DonationLaunch = "launch"
-	DonationDonate = "donate"
+	DonationLaunch string = "launch"
+	DonationDonate string = "donate"
 )
 
 var ValidTypeMap = map[string][]string{

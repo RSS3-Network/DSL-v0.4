@@ -6,6 +6,18 @@ import (
 	"github.com/hasura/go-graphql-client"
 )
 
+type Profile struct {
+	ID           graphql.String  `json:"id"`
+	Name         graphql.String  `json:"name"`
+	Handle       graphql.String  `json:"handle"`
+	Bio          graphql.String  `json:"bio"`
+	IsDefault    graphql.Boolean `json:"isDefault"`
+	Picture      ProfileMedia    `json:"picture"`
+	CoverPicture ProfileMedia    `json:"coverPicture"`
+	Metadata     graphql.String  `json:"metadata"`
+	OwnedBy      graphql.String  `json:"ownedBy"`
+}
+
 // Publication is a custom type to hold Post, Comment, and Mirror.
 // Target is used to hold either CommentOn or MirrorOf
 type Publication struct {
@@ -72,6 +84,20 @@ type Media struct {
 		URL      graphql.String `json:"url"`
 		MimeType graphql.String `json:"mimeType"`
 	} `graphql:"original"`
+}
+
+type NFTMedia struct {
+	Uri             graphql.String  `json:"uri"`
+	ChainId         graphql.Int     `json:"chainId"`
+	ContractAddress graphql.String  `json:"contractAddress"`
+	TokenId         graphql.String  `json:"tokenId"`
+	Verified        graphql.Boolean `json:"verified"`
+}
+
+type ProfileMedia struct {
+	Type     graphql.String `graphql:"__typename" json:"type"`
+	MediaSet Media          `graphql:"... on MediaSet"`
+	NFTImage NFTMedia       `graphql:"... on NftImage"`
 }
 
 type PageInfo struct {

@@ -16,10 +16,13 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/gitcoin"
 	mrc202 "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/mrc20"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	lop "github.com/samber/lo/parallel"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
@@ -35,6 +38,12 @@ var (
 )
 
 func BuildTransactions(ctx context.Context, message *protocol.Message, transactions []*model.Transaction, ethereumClient *ethclient.Client) ([]*model.Transaction, error) {
+	tracer := otel.Tracer("ethereum")
+	ctx, trace := tracer.Start(ctx, "ethereum:BuildTransactions")
+
+	var err error
+	defer func() { opentelemetry.Log(trace, message, transactions, err) }()
+
 	blocks, err := lop.MapWithError(transactions, makeBlockHandlerFunc(ctx, message, ethereumClient), lop.NewOption().WithConcurrency(MaxConcurrency))
 	if err != nil {
 		return nil, err
@@ -151,7 +160,11 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 }
 
 func handleReceipt(ctx context.Context, message *protocol.Message, transaction *model.Transaction, receipt *types.Receipt) ([]model.Transfer, error) {
+	tracer := otel.Tracer("ethereum")
+	ctx, trace := tracer.Start(ctx, "ethereum:handleReceipt")
 	transfers := make([]model.Transfer, 0)
+	var err error
+	defer func() { opentelemetry.Log(trace, message, transfers, err) }()
 
 	for _, log := range receipt.Logs {
 		transfer, err := handleLog(ctx, message, transaction, *log)
@@ -170,6 +183,8 @@ func handleReceipt(ctx context.Context, message *protocol.Message, transaction *
 }
 
 func handleLog(ctx context.Context, message *protocol.Message, transaction *model.Transaction, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("ethereum")
+	_, trace := tracer.Start(ctx, "ethereum:handleLog")
 	transfer := model.Transfer{
 		TransactionHash: transaction.Hash,
 		Timestamp:       transaction.Timestamp,
@@ -181,6 +196,8 @@ func handleLog(ctx context.Context, message *protocol.Message, transaction *mode
 			BuildScanURL(message.Network, transaction.Hash),
 		},
 	}
+	var err error
+	defer func() { opentelemetry.Log(trace, message, transfer, err) }()
 
 	switch log.Topics[0] {
 	case erc20.EventHashTransfer, erc721.EventHashTransfer:
@@ -253,6 +270,19 @@ func handleLog(ctx context.Context, message *protocol.Message, transaction *mode
 
 		transfer.AddressFrom = strings.ToLower(event.From.String())
 		transfer.AddressTo = strings.ToLower(event.To.String())
+	case gitcoin.EventHashDonation:
+		flterer, err := gitcoin.NewGitcoinFilterer(log.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		event, err := flterer.ParseDonationSent(log)
+		if err != nil {
+			return nil, err
+		}
+
+		transfer.AddressFrom = strings.ToLower(event.Donor.String())
+		transfer.AddressTo = strings.ToLower(event.Dest.String())
 	default:
 		return nil, ErrorUnsupportedEvent
 	}
@@ -262,8 +292,6 @@ func handleLog(ctx context.Context, message *protocol.Message, transaction *mode
 	if !(transfer.AddressTo == address || transfer.AddressFrom == address) {
 		return nil, ErrorUnrelatedEvent
 	}
-
-	var err error
 
 	if transfer.SourceData, err = json.Marshal(log); err != nil {
 		return nil, err
