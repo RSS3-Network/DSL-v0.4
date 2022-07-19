@@ -16,8 +16,8 @@ type Proposal struct {
 	Title          string        `json:"title,omitempty"`
 	Body           string        `json:"body,omitempty"`
 	Options        []string      `json:"options"`
-	StartAt        time.Time     ` json:"startAt"`
-	EndAt          time.Time     ` json:"endAt"`
+	StartAt        time.Time     `json:"start_at"`
+	EndAt          time.Time     `json:"end_at"`
 	Organization   *Organization `json:"organization,omitempty"`
 }
 
