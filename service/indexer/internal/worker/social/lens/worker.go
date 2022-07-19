@@ -233,7 +233,7 @@ func (s *service) handleProfile(ctx context.Context, message *protocol.Message, 
 		// use created_at from the previous profile
 		var existingProfile model.Profile
 		if err := s.databaseClient.Model(&model.Profile{}).
-			Where("address_from = ?", message.Address).
+			Where("address = ?", message.Address).
 			Where("handle = ?", string(profile.Handle)).
 			Where("platform = ?", s.Name()).First(&existingProfile).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
 			profileTemp.CreatedAt = existingProfile.CreatedAt
