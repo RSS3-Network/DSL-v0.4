@@ -313,7 +313,6 @@ func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networ
 	if err := s.databaseClient.
 		Model(&governance.SnapshotSpace{}).
 		Where("id in (?)", spaces).
-		Where("network in (?)", networkNum).
 		Find(&snapshotSpaces).Error; err != nil {
 		return nil, err
 	}
@@ -356,8 +355,6 @@ func (s *service) getVote(
 	spaceMap map[string]governance.SnapshotSpace,
 	message *protocol.Message,
 ) (*model.Transaction, error) {
-	var metadataModel metadata.Metadata
-
 	proposal, ok := proposalMap[vote.ProposalID]
 	if !ok {
 		logrus.Warnf("[snapshot worker] failed to get proposal:%v", vote.ProposalID)
@@ -377,7 +374,7 @@ func (s *service) getVote(
 		return nil, nil
 	}
 
-	metadataModel.Vote = &metadata.Vote{
+	metadataModel := &metadata.Vote{
 		TypeOnPlatform: []string{filter.GovernanceVote},
 		Choice:         string(vote.Choice),
 		Proposal:       formattedProposal,
@@ -413,6 +410,7 @@ func (s *service) getVote(
 		Source:      Name,
 		SourceData:  sourceData,
 		Tag:         filter.TagGovernance,
+		Type:        filter.GovernanceVote,
 		Transfers: []model.Transfer{
 			{
 				TransactionHash: vote.ID,
@@ -439,8 +437,6 @@ func (s *service) getProposal(
 	spaceMap map[string]governance.SnapshotSpace,
 	message *protocol.Message,
 ) (*model.Transaction, error) {
-	var metadataModel metadata.Metadata
-
 	space, ok := spaceMap[proposal.SpaceID]
 	if !ok {
 		logrus.Warnf("[snapshot worker] failed to get space:%v, network:%v", proposal.SpaceID, message.Network)
@@ -453,9 +449,7 @@ func (s *service) getProposal(
 		return nil, nil
 	}
 
-	metadataModel.Proposal = formattedProposal
-
-	rawMetadata, err := json.Marshal(metadataModel)
+	rawMetadata, err := json.Marshal(formattedProposal)
 	if err != nil {
 		logrus.Warnf("[snapshot worker] failed to marshal metadata:%v", err)
 		return nil, nil
@@ -483,6 +477,7 @@ func (s *service) getProposal(
 		Source:      s.Name(),
 		SourceData:  sourceData,
 		Tag:         filter.TagGovernance,
+		Type:        filter.GovernancePropose,
 		Transfers: []model.Transfer{
 			{
 				TransactionHash: proposal.ID,
