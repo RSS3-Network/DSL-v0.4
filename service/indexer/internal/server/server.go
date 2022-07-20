@@ -19,6 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
@@ -140,6 +141,11 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	ethereumClientMap, err := ethereum.New(s.config.RPC)
+	if err != nil {
+		return err
+	}
+
 	s.workers = []worker.Worker{
 		swapWorker,
 		poap.New(),
@@ -148,7 +154,7 @@ func (s *Server) Initialize() (err error) {
 		crossbell.New(s.databaseClient),
 		snapshot.New(s.databaseClient, s.redisClient),
 		lensworker.New(s.databaseClient),
-		transaction.New(s.databaseClient),
+		transaction.New(s.databaseClient, ethereumClientMap),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
@@ -335,7 +341,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 				internalTransactions, err := datasource.Handle(ctx, message)
 				// Avoid blocking indexed workers
 				if err != nil {
-					logger.Global().Error("datasource handle failed", zap.Error(err))
+					logger.Global().Error("datasource handle failed", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
 
 					continue
 				}

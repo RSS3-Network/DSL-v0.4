@@ -28,6 +28,7 @@ var tables = []any{
 	&governance.SnapshotProposal{},
 	&governance.SnapshotVote{},
 	&model.Asset{},
+	&model.Token{},
 }
 
 var Client *gorm.DB

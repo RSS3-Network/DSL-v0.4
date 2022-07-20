@@ -34,8 +34,8 @@ type CoinListParameter struct {
 
 type Coin struct {
 	ID        string        `json:"id"`
-	Symbol    string        `json:"symbol"`
 	Name      string        `json:"name"`
+	Symbol    string        `json:"symbol"`
 	Platforms CoinPlatforms `json:"platforms,omitempty"`
 	Image     *CoinImage    `json:"image,omitempty"`
 }

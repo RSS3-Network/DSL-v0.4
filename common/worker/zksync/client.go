@@ -54,11 +54,12 @@ func (c *Client) DoRequest(_ context.Context, request *http.Request) (*Response,
 type GetTokenList []GetTokenListItem
 
 type GetTokenListItem struct {
-	ID      int    `json:"id"`
-	Address string `json:"address"`
-	Symbol  string `json:"symbol"`
-	Kind    string `json:"kind"`
-	IsNFT   bool   `json:"is_nft"`
+	ID       int    `json:"id"`
+	Address  string `json:"address"`
+	Symbol   string `json:"symbol"`
+	Decimals uint8  `json:"decimals"`
+	Kind     string `json:"kind"`
+	IsNFT    bool   `json:"is_nft"`
 }
 
 func (c *Client) GetTokenList(ctx context.Context) (GetTokenList, error) {

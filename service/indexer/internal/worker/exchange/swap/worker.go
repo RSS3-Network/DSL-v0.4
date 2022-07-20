@@ -6,20 +6,19 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
+	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
@@ -36,6 +35,7 @@ var _ worker.Worker = &service{}
 type service struct {
 	employer          *shedlock.Employer
 	databaseClient    *gorm.DB
+	tokenClient       *token.Client
 	ethereumClientMap map[string]*ethclient.Client
 }
 
@@ -158,39 +158,37 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 	}
 
 	for token, value := range tokenMap {
-		erc20Contract, err := erc20.NewERC20(token, ethereumClient)
+		erc20, err := s.tokenClient.ERC20(ctx, message.Network, token.String())
 		if err != nil {
 			return nil, err
 		}
 
-		tokenSymbol, err := erc20Contract.Symbol(&bind.CallOpts{})
-		if err != nil {
-			return nil, err
-		}
+		tokenValueTo := decimal.NewFromBigInt(value, 0)
 
-		tokenDecimals, err := erc20Contract.Decimals(&bind.CallOpts{})
-		if err != nil {
-			return nil, err
-		}
-
-		tokenValue := decimal.NewFromBigInt(value, 0).DivRound(decimal.NewFromBigInt(big.NewInt(1), int32(tokenDecimals)), int32(tokenDecimals))
+		tokenValueFrom := tokenValueTo.Abs()
 
 		switch value.Cmp(big.NewInt(0)) {
 		case -1:
-			swapMetadataModel.TokenFrom = metadata.SwapToken{
-				Address:  token.String(),
-				Symbol:   tokenSymbol,
-				Decimals: tokenDecimals,
-				Value:    tokenValue.Abs(),
+			swapMetadataModel.TokenFrom = metadata.Token{
+				Name:            erc20.Name,
+				Symbol:          erc20.Symbol,
+				Decimals:        erc20.Decimals,
+				Value:           &tokenValueFrom,
+				ContractAddress: token.String(),
+				Standard:        protocol.TokenStandardERC20,
+				Image:           erc20.Logo,
 			}
 		case 0:
 			continue
 		case 1:
-			swapMetadataModel.TokenTo = metadata.SwapToken{
-				Address:  token.String(),
-				Symbol:   tokenSymbol,
-				Decimals: tokenDecimals,
-				Value:    tokenValue,
+			swapMetadataModel.TokenTo = metadata.Token{
+				Name:            erc20.Name,
+				Symbol:          erc20.Symbol,
+				Decimals:        erc20.Decimals,
+				Value:           &tokenValueTo,
+				ContractAddress: token.String(),
+				Standard:        protocol.TokenStandardERC20,
+				Image:           erc20.Logo,
 			}
 		}
 	}
@@ -260,6 +258,8 @@ func New(config *configx.RPC, employer *shedlock.Employer, databaseClient *gorm.
 	if svc.ethereumClientMap[protocol.NetworkXDAI], err = ethclient.Dial(config.General.XDAI.HTTP); err != nil {
 		return nil, err
 	}
+
+	svc.tokenClient = token.New(svc.databaseClient, svc.ethereumClientMap)
 
 	return &svc, nil
 }

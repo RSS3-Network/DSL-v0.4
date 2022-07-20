@@ -15,6 +15,8 @@ func TestCoinList(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Log(len(coinList))
+
 	for _, coin := range coinList {
 		t.Log(coin.ID, coin.Name, coin.Symbol)
 	}
@@ -32,5 +34,7 @@ func TestCoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(coin)
+	t.Log(coin.Image.Small)
+	t.Log(coin.Image.Thumb)
+	t.Log(coin.Image.Large)
 }

@@ -7,8 +7,12 @@ import (
 	"strings"
 )
 
+func GetDirectURL(ctx context.Context, url string) string {
+	return strings.Replace(url, "ipfs://", "https://ipfs.rss3.page/ipfs/", 1)
+}
+
 func GetFileByURL(ctx context.Context, url string) ([]byte, error) {
-	response, err := http.Get(strings.Replace(url, "ipfs://", "https://rss3.infura-ipfs.io/ipfs/", 1))
+	response, err := http.Get(GetDirectURL(ctx, url))
 	if err != nil {
 		return nil, err
 	}
