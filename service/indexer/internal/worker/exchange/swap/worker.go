@@ -95,7 +95,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 			continue
 		}
 
-		transaction.Tag, transaction.Tag = filter.UpdateTagAndType(filter.TagExchange, transaction.Tag, filter.ExchangeSwap, transaction.Type)
+		transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagExchange, transaction.Tag, filter.ExchangeSwap, transaction.Type)
 
 		internalTransactionMap[transaction.Hash] = transaction
 	}
