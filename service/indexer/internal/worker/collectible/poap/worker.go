@@ -72,6 +72,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			value, exist := internalTransactionMap[transaction.Hash]
 			if !exist {
+				value = transaction
+				value.Transfers = make([]model.Transfer, 0)
+
 				internalTransactionMap[transaction.Hash] = transaction
 			}
 

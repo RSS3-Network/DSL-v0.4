@@ -82,12 +82,12 @@ type Donation struct {
 
 type POAP struct {
 	ID          int    `json:"id"`
-	FancyID     string `json:"fancy_id"`
+	FancyID     string `json:"fancy_id,omitempty"`
 	Name        string `json:"name"`
-	EventURL    string `json:"event_url"`
+	EventURL    string `json:"event_url,omitempty"`
 	ImageURL    string `json:"image_url"`
-	Country     string `json:"country"`
-	City        string `json:"city"`
+	Country     string `json:"country,omitempty"`
+	City        string `json:"city,omitempty"`
 	Description string `json:"description"`
 	Year        int    `json:"year"`
 	StartDate   string `json:"start_date"`

@@ -416,7 +416,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			// ERC-721 / ERC-1155
 			nft, err := s.tokenClient.NFT(ctx, message.Network, *address, id)
 			if err != nil {
-				return nil, err
+				return &transfer, nil
 			}
 
 			tokenMetadata.Name = nft.Name
