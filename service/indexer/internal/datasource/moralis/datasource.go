@@ -115,6 +115,10 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 
 	internalTransactions := make([]*model.Transaction, 0)
 
+	for _, transaction := range transactionsMap {
+		internalTransactions = append(internalTransactions, transaction)
+	}
+
 	internalTransactions, err = ethereum.BuildTransactions(ctx, message, internalTransactions, d.ethereumClient)
 	if err != nil {
 		return nil, err
