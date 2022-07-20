@@ -111,12 +111,14 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
+			// Transfer
 			transfer.Metadata = rawMetadata
 			transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagCollectible, transfer.Tag, filter.CollectiblePoap, transfer.Type)
 			if transfer.Tag == filter.TagCollectible {
 				transfer.Platform = Name
 			}
 
+			// Transaction
 			value.Tag, value.Type = filter.UpdateTagAndType(transfer.Tag, value.Tag, transfer.Type, value.Type)
 			if value.Tag == transfer.Tag {
 				value.Platform = transfer.Platform
