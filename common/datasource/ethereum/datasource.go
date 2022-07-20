@@ -57,7 +57,7 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 	// Error topic/field count mismatch
 	transactions, err = lop.MapWithError(transactions, makeTransactionHandlerFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
 	if err != nil {
-		logger.Global().Error("failed to handle transaction", zap.Error(err))
+		logger.Global().Error("failed to handle transaction", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
 	}
 
 	return transactions, err
