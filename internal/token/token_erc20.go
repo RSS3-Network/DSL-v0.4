@@ -15,27 +15,29 @@ import (
 func (c *Client) ERC20(ctx context.Context, network string, contractAddress string) (*ERC20, error) {
 	var token model.Token
 
-	err := c.databaseClient.
-		Model((*model.Token)(nil)).
-		Where(map[string]interface{}{
-			"network":          network,
-			"contract_address": strings.ToLower(contractAddress),
-		}).
-		First(&token).
-		Error
+	if c.databaseClient != nil {
+		err := c.databaseClient.
+			Model((*model.Token)(nil)).
+			Where(map[string]interface{}{
+				"network":          network,
+				"contract_address": strings.ToLower(contractAddress),
+			}).
+			First(&token).
+			Error
 
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
-	}
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
 
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return &ERC20{
-			Name:            token.Name,
-			Symbol:          token.Symbol,
-			Decimals:        token.Decimal, // TODO Rename it to decimals
-			ContractAddress: token.ContractAddress,
-			Logo:            token.Logo,
-		}, nil
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return &ERC20{
+				Name:            token.Name,
+				Symbol:          token.Symbol,
+				Decimals:        token.Decimal, // TODO Rename it to decimals
+				ContractAddress: token.ContractAddress,
+				Logo:            token.Logo,
+			}, nil
+		}
 	}
 
 	result := &ERC20{

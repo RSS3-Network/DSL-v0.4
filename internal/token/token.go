@@ -61,16 +61,16 @@ type NFT struct {
 }
 
 type Metadata struct {
-	Name         string                       `json:"name"`
-	Title        string                       `json:"title"`
-	Description  string                       `json:"description"`
-	AnimationURL string                       `json:"animation_url"`
-	Image        string                       `json:"image"`
-	Type         string                       `json:"type"`
-	Attributes   map[string]MetadataAttribute `json:"attributes"`
-	Properties   map[string]json.RawMessage   `json:"properties"`
-	Traits       []MetadataTrait              `json:"traits"`
-	ExternalLink string                       `json:"external_link"`
+	Name         string                     `json:"name"`
+	Title        string                     `json:"title"`
+	Description  string                     `json:"description"`
+	AnimationURL string                     `json:"animation_url"`
+	Image        string                     `json:"image"`
+	Type         string                     `json:"type"`
+	Attributes   []MetadataAttribute        `json:"attributes"`
+	Properties   map[string]json.RawMessage `json:"properties"`
+	Traits       []MetadataTrait            `json:"traits"`
+	ExternalLink string                     `json:"external_link"`
 }
 
 type MetadataAttribute struct {

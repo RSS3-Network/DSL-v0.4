@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	configx "github.com/naturalselectionlabs/pregod/common/config"
-	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/token"
@@ -39,12 +38,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	databaseClient, err := database.Dial("postgres://postgres:password@192.168.2.100:5432/pregod2?sslmode=disable", false)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	tokenClient = token.New(databaseClient, ethereumClientMap)
+	tokenClient = token.New(nil, ethereumClientMap)
 }
 
 func TestClient_Native(t *testing.T) {
