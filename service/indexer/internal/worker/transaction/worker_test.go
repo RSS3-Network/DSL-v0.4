@@ -9,9 +9,11 @@ import (
 
 	"github.com/alecthomas/repr"
 	"github.com/naturalselectionlabs/pregod/common/cache"
+	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
@@ -28,8 +30,21 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
 	cache.Dial(config.ConfigIndexer.Redis)
-	tokenWorker = New(db)
+
+	ethereumClientMap, err := ethereum.New(&configx.RPC{
+		General: configx.RPCNetwork{
+			Ethereum: &configx.RPCEndpoint{
+				HTTP: "https://rpc.rss3.dev/networks/ethereum",
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	tokenWorker = New(db, ethereumClientMap)
 }
 
 func Test_service_Name(t *testing.T) {

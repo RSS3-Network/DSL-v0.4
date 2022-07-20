@@ -45,7 +45,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	profileworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/profile"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/coinmarketcap"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/samber/lo"
 	"github.com/scylladb/go-set/strset"
@@ -108,8 +107,6 @@ func (s *Server) Initialize() (err error) {
 	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
 		return err
 	}
-
-	coinmarketcap.Init(s.config.CoinMarketCap.APIKey)
 
 	err = s.InitializeMQ()
 	if err != nil {

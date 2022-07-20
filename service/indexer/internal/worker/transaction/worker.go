@@ -32,7 +32,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/coinmarketcap"
 	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
@@ -396,13 +395,13 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 
 		transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 	} else {
-		tokenInfo, err := coinmarketcap.CachedGetCoinInfo(ctx, message.Network, *address)
-		if err == nil && tokenInfo.Symbol != "" {
+		erc20Token, err := s.tokenClient.ERC20(ctx, message.Network, *address)
+		if err == nil && erc20Token.Symbol != "" {
 			// Common ERC-20
-			tokenMetadata.Name = tokenInfo.Name
-			tokenMetadata.Symbol = tokenInfo.Symbol
-			tokenMetadata.Image = tokenInfo.Logo
-			tokenMetadata.Decimals = tokenInfo.Decimals
+			tokenMetadata.Name = erc20Token.Name
+			tokenMetadata.Symbol = erc20Token.Symbol
+			tokenMetadata.Image = erc20Token.Logo
+			tokenMetadata.Decimals = erc20Token.Decimals
 			tokenMetadata.Standard = protocol.TokenStandardERC20
 			tokenValue := decimal.NewFromBigInt(value, 0)
 			tokenMetadata.Value = &tokenValue
