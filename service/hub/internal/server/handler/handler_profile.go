@@ -23,12 +23,12 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 	request := GetRequest{}
 
 	if err := c.Bind(&request); err != nil {
-		return err
+		return BadRequest(c)
 	}
 
 	profileList, err := h.getProfileListDatabase(ctx, request)
 	if err != nil {
-		return BadRequest(c)
+		return InternalError(c)
 	}
 
 	if len(profileList) == 0 {

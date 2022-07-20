@@ -49,7 +49,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	transactions, total, err := h.getTransactions(ctx, request)
 	if err != nil {
-		return BadRequest(c)
+		return InternalError(c)
 	}
 
 	// publish mq message
@@ -70,7 +70,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	transfers, err := h.getTransfers(ctx, transactionHashes, request.Type)
 	if err != nil {
-		return BadRequest(c)
+		return InternalError(c)
 	}
 
 	transferMap := make(map[string][]dbModel.Transfer)
@@ -202,11 +202,20 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	var total int64
 
 	if request.Global != nil {
+
+		if len(request.Global.Address) == 0 {
+			return AddressIsEmpty(c)
+		}
+
 		if len(request.Global.Address) > DefaultLimit {
 			request.Global.Address = request.Global.Address[:DefaultLimit]
 		}
 		transactions, total, err = h.batchGetTransactions(ctx, request)
 	} else {
+		if len(request.List) == 0 {
+			return AddressIsEmpty(c)
+		}
+
 		if len(request.List) > DefaultBatchGetLimit {
 			request.List = request.List[:DefaultBatchGetLimit]
 		}
@@ -214,7 +223,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	}
 
 	if err != nil {
-		return BadRequest(c)
+		return InternalError(c)
 	}
 
 	if total == 0 {
@@ -240,10 +249,6 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	_, postgresSnap := tracer.Start(ctx, "postgres")
 
 	defer postgresSnap.End()
-
-	if len(request.Global.Address) == 0 {
-		return nil, 0, nil
-	}
 
 	transactions := make([]dbModel.Transaction, 0)
 	total := int64(0)
@@ -363,7 +368,7 @@ func (h *Handler) batchGetTransactionsWithFilter(ctx context.Context, request Ba
 			return
 		}
 
-		types := []string{}
+		var types []string
 		count := int64(0)
 		transactions := make([]dbModel.Transaction, 0)
 

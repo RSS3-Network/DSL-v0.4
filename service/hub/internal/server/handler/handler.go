@@ -20,9 +20,10 @@ type Handler struct {
 }
 
 type Response struct {
-	Total  int64  `json:"total"`
-	Cursor string `json:"cursor,omitempty"`
-	Result any    `json:"result"`
+	Total   int64  `json:"total,omitempty"`
+	Cursor  string `json:"cursor,omitempty"`
+	Result  any    `json:"result,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 type GetRequest struct {
@@ -46,12 +47,13 @@ type GetExchangeRequest struct {
 }
 
 type BatchGetNotesRequest struct {
-	Timestamp time.Time     `json:"timestamp"`
-	Limit     int           `json:"limit"`
-	Cursor    string        `json:"cursor"`
-	Refresh   bool          `json:"refresh"`
-	Global    *GlobalFilter `json:"global"`
-	List      []*Filter     `json:"list"`
+	Timestamp  time.Time     `json:"timestamp"`
+	Limit      int           `json:"limit"`
+	Cursor     string        `json:"cursor"`
+	Refresh    bool          `json:"refresh"`
+	Global     *GlobalFilter `json:"global"`
+	List       []*Filter     `json:"list"`
+	ConvertENS bool          `json:"convert_ens"`
 }
 
 type GlobalFilter struct {

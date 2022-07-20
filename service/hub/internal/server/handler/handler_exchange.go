@@ -24,7 +24,7 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 
 	request := GetExchangeRequest{}
 	if err := c.Bind(&request); err != nil {
-		return err
+		return InternalError(c)
 	}
 
 	var cursor string
@@ -32,7 +32,7 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 	case "cex":
 		result, total, err := h.getCexListDatabase(ctx, request)
 		if err != nil {
-			return err
+			return InternalError(c)
 		}
 		if len(result) == 0 {
 			return c.JSON(http.StatusOK, &Response{
@@ -52,7 +52,7 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 	case "dex":
 		result, total, err := h.getDexListDatabase(ctx, request)
 		if err != nil {
-			return err
+			return InternalError(c)
 		}
 		if len(result) == 0 {
 			return c.JSON(http.StatusOK, &Response{

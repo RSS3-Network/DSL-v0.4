@@ -22,7 +22,7 @@ func (h *Handler) GetENSResolve(c echo.Context) error {
 	}
 
 	if len(request.Address) == 0 {
-		return BadRequest(c)
+		return AddressIsEmpty(c)
 	}
 
 	// error here means the address doesn't have a primary ENS, and can be ignored

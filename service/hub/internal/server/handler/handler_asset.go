@@ -26,7 +26,7 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 	request := GetRequest{}
 
 	if err := c.Bind(&request); err != nil {
-		return c.JSON(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+		return BadRequest(c)
 	}
 
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
@@ -35,7 +35,7 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 
 	assetList, total, err := h.getAssets(ctx, request)
 	if err != nil {
-		return BadRequest(c)
+		return InternalError(c)
 	}
 
 	// publish mq message
