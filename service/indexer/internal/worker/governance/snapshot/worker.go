@@ -402,7 +402,7 @@ func (s *service) getVote(
 	lowerAddress := message.Address
 
 	currTransaction := model.Transaction{
-		Hash:        vote.ID,
+		Hash:        strings.ToLower(vote.ID),
 		Timestamp:   vote.DateCreated,
 		AddressFrom: lowerAddress,
 		Platform:    Name,
@@ -413,7 +413,7 @@ func (s *service) getVote(
 		Type:        filter.GovernanceVote,
 		Transfers: []model.Transfer{
 			{
-				TransactionHash: vote.ID,
+				TransactionHash: strings.ToLower(vote.ID),
 				Tag:             filter.TagGovernance,
 				Type:            filter.GovernanceVote,
 				Timestamp:       vote.DateCreated,
@@ -469,7 +469,7 @@ func (s *service) getProposal(
 	relatedUrl := "https://snapshot.org/#/" + proposal.SpaceID + "/proposal/" + proposal.ID
 
 	currTransaction := model.Transaction{
-		Hash:        proposal.ID,
+		Hash:        strings.ToLower(proposal.ID),
 		Timestamp:   proposal.DateCreated,
 		AddressFrom: message.Address,
 		Platform:    Name,
@@ -480,7 +480,7 @@ func (s *service) getProposal(
 		Type:        filter.GovernancePropose,
 		Transfers: []model.Transfer{
 			{
-				TransactionHash: proposal.ID,
+				TransactionHash: strings.ToLower(proposal.ID),
 				Tag:             filter.TagGovernance,
 				Type:            filter.GovernancePropose,
 				Timestamp:       proposal.DateCreated,
