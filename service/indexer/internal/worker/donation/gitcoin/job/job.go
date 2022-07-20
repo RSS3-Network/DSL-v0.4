@@ -66,6 +66,8 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 			logrus.Errorf("[gitcoin job] create lastest grant, db error: %v", err)
 			continue
 		}
+
+		lastestProject.ID += 1
 	}
 
 	go job.SetCache()
