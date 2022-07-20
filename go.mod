@@ -8,6 +8,7 @@ replace github.com/samber/lo v1.25.0 => github.com/kallydev/lo v1.26.0-alpha.1
 
 require (
 	github.com/alecthomas/repr v0.1.0
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/deckarep/golang-set v1.8.0
 	github.com/ethereum/go-ethereum v1.10.19
 	github.com/go-redis/redis/v8 v8.11.5

@@ -24,6 +24,8 @@ const (
 
 	DirectionNewer = "newer"
 	DirectionOlder = "older"
+
+	KindERC20 = "ERC20"
 )
 
 type Client struct {
@@ -46,7 +48,43 @@ func (c *Client) DoRequest(_ context.Context, request *http.Request) (*Response,
 		return nil, httpResponse, err
 	}
 
-	return response, httpResponse, err
+	return response, httpResponse, nil
+}
+
+type GetTokenList []GetTokenListItem
+
+type GetTokenListItem struct {
+	ID       int    `json:"id"`
+	Address  string `json:"address"`
+	Symbol   string `json:"symbol"`
+	Decimals uint8  `json:"decimals"`
+	Kind     string `json:"kind"`
+	IsNFT    bool   `json:"is_nft"`
+}
+
+func (c *Client) GetTokenList(ctx context.Context) (GetTokenList, error) {
+	requestURL := &url.URL{
+		Scheme: Scheme,
+		Host:   Endpoint,
+		Path:   "/api/v0.1/tokens",
+	}
+
+	httpResponse, err := c.httpClient.Get(requestURL.String())
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		_ = httpResponse.Body.Close()
+	}()
+
+	tokenList := GetTokenList{}
+
+	if err := json.NewDecoder(httpResponse.Body).Decode(&tokenList); err != nil {
+		return nil, err
+	}
+
+	return tokenList, nil
 }
 
 type GetAddressTransactionsOption struct {

@@ -35,23 +35,25 @@ type Metadata struct {
 }
 
 type Token struct {
-	TokenAddress  string           `json:"token_address,omitempty"`
-	TokenStandard string           `json:"token_standard"`
-	TokenID       *decimal.Decimal `json:"token_id,omitempty"`
-	TokenValue    *decimal.Decimal `json:"token_value,omitempty"`
-
-	Logo     string `json:"logo,omitempty"`
-	Decimals uint8  `json:"decimals,omitempty"`
-	Name     string `json:"name,omitempty"`
-	Symbol   string `json:"symbol,omitempty"`
-
-	NFTMetadata json.RawMessage `json:"nft_metadata,omitempty"`
+	Name            string            `json:"name"`
+	Symbol          string            `json:"symbol"`
+	Decimals        uint8             `json:"decimals,omitempty"`
+	Standard        string            `json:"standard"`
+	ContractAddress string            `json:"contract_address,omitempty"`
+	Image           string            `json:"image,omitempty"`
+	ID              *big.Int          `json:"id,omitempty"`
+	Value           *decimal.Decimal  `json:"value,omitempty"`
+	Description     string            `json:"description,omitempty"`
+	Attributes      map[string]string `json:"attributes,omitempty"`
+	ExternalLink    string            `json:"external_link,omitempty"`
+	AnimationURL    string            `json:"animation_url,omitempty"`
+	Metadata        json.RawMessage   `json:"metadata,omitempty"`
 }
 
 type Swap struct {
-	Protocol  string    `json:"protocol"`
-	TokenFrom SwapToken `json:"token_from"`
-	TokenTo   SwapToken `json:"token_to"`
+	Protocol  string `json:"protocol"`
+	TokenFrom Token  `json:"token_from"`
+	TokenTo   Token  `json:"token_to"`
 }
 
 type SwapToken struct {

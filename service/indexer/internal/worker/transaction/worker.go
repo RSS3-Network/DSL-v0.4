@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
@@ -24,14 +24,14 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/mrc20"
-	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
+	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/coinmarketcap"
 	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
@@ -50,8 +50,10 @@ var _ worker.Worker = (*service)(nil)
 var asseFS embed.FS
 
 type service struct {
-	databaseClient *gorm.DB
-	zksyncClient   *zksync.Client
+	databaseClient    *gorm.DB
+	zksyncClient      *zksync.Client
+	ethereumClientMap map[string]*ethclient.Client
+	tokenClient       *token.Client
 }
 
 func (s *service) Name() string {
@@ -378,26 +380,31 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 
 	if address == nil {
 		// Native
-		nativeToken := NativeTokenMap[message.Network]
-		tokenMetadata.Name = nativeToken.Name
-		tokenMetadata.Symbol = nativeToken.Symbol
-		tokenMetadata.Decimals = uint8(nativeToken.Decimal)
-		tokenMetadata.TokenStandard = nativeToken.Standard
+		native, err := s.tokenClient.Native(ctx, message.Network)
+		if err != nil {
+			return &transfer, nil
+		}
+
+		tokenMetadata.Name = native.Name
+		tokenMetadata.Symbol = native.Symbol
+		tokenMetadata.Decimals = native.Decimals
+		tokenMetadata.Standard = protocol.TokenStandardNative
+		tokenMetadata.Image = native.Logo
 		tokenValue := decimal.NewFromBigInt(value, 0)
-		tokenMetadata.TokenValue = &tokenValue
+		tokenMetadata.Value = &tokenValue
 
 		transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 	} else {
-		tokenInfo, err := coinmarketcap.CachedGetCoinInfo(ctx, message.Network, *address)
-		if err == nil && tokenInfo.Symbol != "" {
+		erc20Token, err := s.tokenClient.ERC20(ctx, message.Network, *address)
+		if err == nil && erc20Token.Symbol != "" {
 			// Common ERC-20
-			tokenMetadata.Name = tokenInfo.Name
-			tokenMetadata.Symbol = tokenInfo.Symbol
-			tokenMetadata.Logo = tokenInfo.Logo
-			tokenMetadata.Decimals = tokenInfo.Decimals
-			tokenMetadata.TokenStandard = protocol.TokenStandardERC20
+			tokenMetadata.Name = erc20Token.Name
+			tokenMetadata.Symbol = erc20Token.Symbol
+			tokenMetadata.Image = erc20Token.Logo
+			tokenMetadata.Decimals = erc20Token.Decimals
+			tokenMetadata.Standard = protocol.TokenStandardERC20
 			tokenValue := decimal.NewFromBigInt(value, 0)
-			tokenMetadata.TokenValue = &tokenValue
+			tokenMetadata.Value = &tokenValue
 
 			transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 		} else {
@@ -407,35 +414,39 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			}
 
 			// ERC-721 / ERC-1155
-			nftMetadata, err := nft.GetMetadata(message.Network, common.HexToAddress(*address), id)
+			nft, err := s.tokenClient.NFT(ctx, message.Network, *address, id)
 			if err != nil {
-				// logger.Global().Error("worker_token:buildEthereumTokenMetadata", zap.Error(err))
-				return &transfer, nil
+				return nil, err
 			}
 
-			tokenMetadata.NFTMetadata = nftMetadata
+			tokenMetadata.Name = nft.Name
+			tokenMetadata.Symbol = nft.Symbol
+			tokenMetadata.ID = nft.ID
+			tokenMetadata.Standard = nft.Standard
+			tokenMetadata.Metadata = nft.Metadata
 
-			tokenID := decimal.NewFromBigInt(id, 0)
-			tokenMetadata.TokenID = &tokenID
+			if strings.HasPrefix(nft.Image, "ipfs://") {
+				tokenMetadata.Image = ipfs.GetDirectURL(ctx, nft.Image)
+			}
 
 			var tokenValue decimal.Decimal
 
 			if value == nil {
 				tokenValue = decimal.NewFromInt(1)
-				tokenMetadata.TokenStandard = protocol.TokenStandardERC721
+				tokenMetadata.Standard = protocol.TokenStandardERC721
 			} else {
 				tokenValue = decimal.NewFromBigInt(value, 0)
-				tokenMetadata.TokenStandard = protocol.TokenStandardERC1155
+				tokenMetadata.Standard = protocol.TokenStandardERC1155
 			}
 
-			tokenMetadata.TokenValue = &tokenValue
+			tokenMetadata.Value = &tokenValue
 
 			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
 			transfer.RelatedUrls = append(transfer.RelatedUrls, ethereum.BuildTokenURL(message.Network, *address, id.String()))
 		}
 
-		tokenMetadata.TokenAddress = *address
+		tokenMetadata.ContractAddress = *address
 	}
 
 	metadataRaw, err := json.Marshal(tokenMetadata)
@@ -452,17 +463,16 @@ func (s *service) buildZkSyncTokenMetadata(ctx context.Context, message *protoco
 	var tokenMetadata metadata.Token
 
 	tokenMetadata.Symbol = erc20Token.Symbol
-	tokenMetadata.Symbol = erc20Token.Symbol
 	tokenMetadata.Decimals = erc20Token.Decimals
-	tokenMetadata.TokenAddress = erc20Token.Address
-	tokenMetadata.TokenStandard = protocol.TokenStandardERC20
+	tokenMetadata.ContractAddress = erc20Token.Address
+	tokenMetadata.Standard = protocol.TokenStandardERC20
 
 	tokenValue, err := decimal.NewFromString(value)
 	if err != nil {
 		return nil, err
 	}
 
-	tokenMetadata.TokenValue = &tokenValue
+	tokenMetadata.Value = &tokenValue
 
 	transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 
@@ -480,17 +490,15 @@ func (s *service) buildZkSyncNFTMetadata(ctx context.Context, message *protocol.
 	var tokenMetadata metadata.Token
 
 	tokenMetadata.Symbol = nftToken.Symbol
-	tokenMetadata.TokenAddress = nftToken.Address
-	tokenMetadata.NFTMetadata = nftToken.Bytes()
-	tokenID, err := decimal.NewFromString(id)
-	if err != nil {
-		return nil, err
-	}
+	tokenMetadata.ContractAddress = nftToken.Address
+	tokenMetadata.Metadata = nftToken.Bytes()
+	tokenID := big.NewInt(0)
+	tokenID.SetString(id, 0)
 
-	tokenMetadata.TokenID = &tokenID
+	tokenMetadata.ID = tokenID
 
 	// TODO ERC-1155
-	tokenMetadata.TokenStandard = protocol.TokenStandardERC721
+	tokenMetadata.Standard = protocol.TokenStandardERC721
 
 	transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
@@ -596,9 +604,11 @@ func keyOfCheckCexWallet(address string) string {
 	return fmt.Sprintf("check_exchange_wallet.%s", address)
 }
 
-func New(databaseClient *gorm.DB) worker.Worker {
+func New(databaseClient *gorm.DB, ethereumClientMap map[string]*ethclient.Client) worker.Worker {
 	return &service{
-		databaseClient: databaseClient,
-		zksyncClient:   zksync.New(),
+		databaseClient:    databaseClient,
+		zksyncClient:      zksync.New(),
+		tokenClient:       token.New(databaseClient, ethereumClientMap),
+		ethereumClientMap: ethereumClientMap,
 	}
 }

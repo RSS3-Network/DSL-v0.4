@@ -4,15 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"math/big"
+	"strings"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
+	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/zerox"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/shopspring/decimal"
 )
 
@@ -29,10 +32,21 @@ var (
 	}
 )
 
-func TestName(t *testing.T) {
-	ethereumClient, err := ethclient.Dial("https://rpc.rss3.dev/networks/ethereum")
+func TestBuildTransferMetadata(t *testing.T) {
+	ethereumClientMap, err := ethereum.New(&configx.RPC{
+		General: configx.RPCNetwork{
+			Ethereum: &configx.RPCEndpoint{
+				HTTP: "https://rpc.rss3.dev/networks/ethereum",
+			},
+		},
+	})
 	if err != nil {
-		t.Fatalf("failed to connect to ethereum client: %v", err)
+		t.Fatalf("failed to create ethereum client: %v", err)
+	}
+
+	ethereumClient, exists := ethereumClientMap[protocol.NetworkEthereum]
+	if !exists {
+		t.Fatalf("failed to find ethereum client")
 	}
 
 	transaction, _, err := ethereumClient.TransactionByHash(context.Background(), common.HexToHash("0x4b37b3dcb3014a9f09d0ce9ced7385a9662f0464b738c5957a96cd8c4af12160"))
@@ -46,7 +60,8 @@ func TestName(t *testing.T) {
 		return
 	}
 
-	if _, exist := RouterMap[*transaction.To()]; !exist {
+	router, exist := RouterMap[*transaction.To()]
+	if !exist {
 		t.Errorf("not is a swap transaction")
 
 		return
@@ -173,44 +188,44 @@ func TestName(t *testing.T) {
 		}
 	}
 
-	swapMetadata := metadata.Swap{}
+	swapMetadata := metadata.Swap{
+		Protocol: router,
+	}
 
-	for token, value := range tokenMap {
-		t.Log(token, value)
+	for internalToken, value := range tokenMap {
+		t.Log(internalToken, value)
 
-		erc20Contract, err := erc20.NewERC20(token, ethereumClient)
+		tokenClient := token.New(nil, ethereumClientMap)
+		erc20, err := tokenClient.ERC20(context.Background(), protocol.NetworkEthereum, strings.ToLower(internalToken.String()))
 		if err != nil {
 			t.Fatalf("failed to get erc20 contract: %v", err)
 		}
 
-		tokenSymbol, err := erc20Contract.Symbol(&bind.CallOpts{})
-		if err != nil {
-			t.Fatalf("failed to get token symbol: %v", err)
-		}
-
-		tokenDecimals, err := erc20Contract.Decimals(&bind.CallOpts{})
-		if err != nil {
-			t.Fatalf("failed to get token decimals: %v", err)
-		}
-
-		tokenValue := decimal.NewFromBigInt(value, 0).DivRound(decimal.NewFromBigInt(big.NewInt(1), int32(tokenDecimals)), int32(tokenDecimals))
+		tokenValueTo := decimal.NewFromBigInt(value, 0)
+		tokenValueFrom := tokenValueTo.Abs()
 
 		switch value.Cmp(big.NewInt(0)) {
 		case -1:
-			swapMetadata.TokenFrom = metadata.SwapToken{
-				Address:  token.String(),
-				Symbol:   tokenSymbol,
-				Decimals: tokenDecimals,
-				Value:    tokenValue.Abs(),
+			swapMetadata.TokenFrom = metadata.Token{
+				Name:            erc20.Name,
+				Image:           erc20.Logo,
+				Symbol:          erc20.Symbol,
+				Decimals:        erc20.Decimals,
+				Standard:        protocol.TokenStandardERC20,
+				ContractAddress: erc20.ContractAddress,
+				Value:           &tokenValueFrom,
 			}
 		case 0:
 			continue
 		case 1:
-			swapMetadata.TokenTo = metadata.SwapToken{
-				Address:  token.String(),
-				Symbol:   tokenSymbol,
-				Decimals: tokenDecimals,
-				Value:    tokenValue,
+			swapMetadata.TokenTo = metadata.Token{
+				Name:            erc20.Name,
+				Image:           erc20.Logo,
+				Symbol:          erc20.Symbol,
+				Decimals:        erc20.Decimals,
+				Standard:        protocol.TokenStandardERC20,
+				ContractAddress: erc20.ContractAddress,
+				Value:           &tokenValueTo,
 			}
 		}
 	}
