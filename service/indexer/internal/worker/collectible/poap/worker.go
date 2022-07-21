@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
@@ -13,7 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/worker/poap"
+	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -28,7 +29,7 @@ var ContractAddress = common.HexToAddress("0x22C1f6050E56d2876009903609a2cC3fEf8
 var _ worker.Worker = (*service)(nil)
 
 type service struct {
-	poapClient *poap.Client
+	tokenClient *token.Client
 }
 
 func (s *service) Name() string {
@@ -94,22 +95,33 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			token, err := s.poapClient.GetToken(ctx, event.TokenId.Int64())
+			nft, err := s.tokenClient.NFT(ctx, message.Network, ContractAddress.String(), event.TokenId)
 			if err != nil {
 				return nil, err
 			}
 
-			rawMetadata, err := json.Marshal(&metadata.POAP{
-				ID:          token.Event.ID,
-				Name:        token.Event.Name,
-				ImageURL:    token.Event.ImageURL,
-				Description: token.Event.Description,
-				Year:        token.Event.Year,
-				StartDate:   token.Event.StartDate,
-				EndDate:     token.Event.EndDate,
-				ExpiryDate:  token.Event.ExpiryDate,
-				TokenID:     token.TokenID,
-			})
+			var tokenMetadata metadata.Token
+
+			tokenMetadata.Name = nft.Name
+			tokenMetadata.Symbol = nft.Symbol
+			tokenMetadata.Description = nft.Description
+			tokenMetadata.ID = nft.ID
+			tokenMetadata.AnimationURL = nft.AnimationURL
+			tokenMetadata.ExternalLink = nft.ExternalLink
+			tokenMetadata.Standard = nft.Standard
+
+			// The `home_url` and `year` fields are ignored for now
+
+			for _, attribute := range nft.Attributes {
+				tokenMetadata.Attributes = append(tokenMetadata.Attributes, metadata.TokenAttribute{
+					TraitType: attribute.TraitType,
+					Value:     attribute.Value,
+				})
+			}
+
+			tokenMetadata.Metadata = nft.Metadata
+
+			rawMetadata, err := json.Marshal(tokenMetadata)
 			if err != nil {
 				return nil, err
 			}
@@ -146,8 +158,8 @@ func (s *service) Jobs() []worker.Job {
 	return nil
 }
 
-func New() worker.Worker {
+func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
 	return &service{
-		poapClient: poap.New(),
+		tokenClient: token.New(nil, ethereumClientMap),
 	}
 }
