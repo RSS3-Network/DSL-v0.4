@@ -285,7 +285,7 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 
 		internalTransaction, transfer = s.buildType(internalTransaction, transfer)
 		internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
-		internalTransaction.Tag = filter.UpdateTag(transfer.Tag, internalTransaction.Tag)
+		internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(transfer.Tag, internalTransaction.Tag, transfer.Type, internalTransaction.Type)
 	}
 
 	return &internalTransaction, nil
@@ -586,8 +586,11 @@ func (s *service) checkCexWallet(ctx context.Context, address string, transfer *
 		}
 	}
 
-	if wallet.Name != "" {
-		transfer.Tag = filter.UpdateTag(filter.TagExchange, transfer.Tag)
+	if len(wallet.Name) == 0 {
+		return nil
+	}
+
+	if transfer.Tag = filter.UpdateTag(filter.TagExchange, transfer.Tag); transfer.Tag == filter.TagExchange {
 		transfer.Platform = wallet.Name
 
 		if transfer.AddressTo == address {
