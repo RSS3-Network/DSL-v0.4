@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
 func (c *Client) ERC721(ctx context.Context, network, contractAddress string, tokenID *big.Int) (*ERC721, error) {
@@ -54,8 +55,34 @@ func (c *Client) ERC721(ctx context.Context, network, contractAddress string, to
 		return nil, err
 	}
 
-	result.Name = metadata.Name
-	result.Image = metadata.Image
-
 	return &result, nil
+}
+
+func (c *Client) erc721ToNFT(erc721 *ERC721, tokenID *big.Int) (*NFT, error) {
+	var metadata Metadata
+
+	if err := json.Unmarshal(erc721.Metadata, &metadata); err != nil {
+		return nil, err
+	}
+
+	nft := NFT{
+		Name:            metadata.Name,
+		Symbol:          erc721.Symbol,
+		Description:     metadata.Description,
+		ContractAddress: erc721.ContractAddress,
+		ID:              tokenID,
+		Image:           metadata.Image,
+		Attributes:      c.metadataToAttributes(metadata),
+		Standard:        protocol.TokenStandardERC721,
+		Metadata:        erc721.Metadata,
+		AnimationURL:    metadata.AnimationURL,
+		ExternalLink:    metadata.ExternalLink,
+	}
+
+	// POAP
+	if metadata.ImageURL != "" {
+		nft.Image = metadata.ImageURL
+	}
+
+	return &nft, nil
 }
