@@ -313,6 +313,7 @@ func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networ
 	if err := s.databaseClient.
 		Model(&governance.SnapshotSpace{}).
 		Where("id in (?)", spaces).
+		Where("network in (?)", networkNum).
 		Find(&snapshotSpaces).Error; err != nil {
 		return nil, err
 	}
