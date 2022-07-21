@@ -452,7 +452,13 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 				continue
 			}
 			transfers = append(transfers, transfer)
-			addresses.Add(transfer.AddressFrom, transfer.AddressTo)
+
+			if transfer.AddressFrom != "" && transfer.AddressFrom != ethereum.AddressGenesis.String() {
+				addresses.Add(transfer.AddressFrom)
+			}
+			if transfer.AddressTo != "" && transfer.AddressTo != ethereum.AddressGenesis.String() {
+				addresses.Add(transfer.AddressTo)
+			}
 		}
 		transaction.Addresses = addresses.List()
 		updatedTransactions = append(updatedTransactions, transaction)
