@@ -16,5 +16,9 @@ package contract
 //go:generate abigen --abi ./uniswap/pool_v3.abi --pkg uniswap --type PoolV3 --out ./uniswap/pool_v3.go
 // https://etherscan.io/address/0xdef1c0ded9bec7f1a1670819833240f027b25eff
 //go:generate abigen --abi ./zerox/zerox.abi --pkg zerox --type ZeroX --out ./zerox/zerox.go
-// https://etherscan.io/address/0x7d655c57f71464b6f83811c55d84009cd9f5221c#code
+// https://etherscan.io/address/0x7d655c57f71464b6f83811c55d84009cd9f5221c
 //go:generate abigen --abi ./gitcoin/gitcoin.abi --pkg gitcoin --type Gitcoin --out ./gitcoin/gitcoin.go
+// https://polygonscan.com/token/0xdb46d1dc155634fbc732f92e853b10b288ad5a1d
+//go:generate abigen --abi ./lens/hub.abi --pkg lens --type Hub --out ./lens/hub.go
+// https://scan.crossbell.io/address/0xa6f969045641Cf486a747A2688F3a5A6d43cd0D8
+//go:generate abigen --abi ./crossbell/character.abi --pkg crossbell --type Character --out ./crossbell/character.go
