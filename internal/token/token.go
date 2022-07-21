@@ -111,7 +111,11 @@ func (c *Client) NFT(ctx context.Context, network, contractAddress string, token
 	if err == nil {
 		var metadata Metadata
 
-		if err := json.Unmarshal(erc721.Metadata, &metadata); err != nil {
+		if erc1155.Metadata == nil {
+			return nil, ErrorInvalidMetadataFormat
+		}
+
+		if err := json.Unmarshal(erc1155.Metadata, &metadata); err != nil {
 			return nil, err
 		}
 
