@@ -67,6 +67,7 @@ type Metadata struct {
 	Description  string                      `json:"description"`
 	AnimationURL string                      `json:"animation_url"`
 	Image        string                      `json:"image"`
+	ImageURL     string                      `json:"image_url"` // POAP
 	Type         string                      `json:"type"`
 	Attributes   []MetadataAttribute         `json:"attributes"`
 	Properties   map[string]MetadataProperty `json:"properties"`
