@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
 const MaxSize = 1024 * 8
@@ -35,7 +34,6 @@ type ERC721 struct {
 	Name            string          `json:"name"`
 	Symbol          string          `json:"symbol"`
 	ContractAddress string          `json:"contract_address"`
-	Image           string          `json:"image"`
 	ID              *big.Int        `json:"id"`
 	Metadata        json.RawMessage `json:"metadata"`
 	URI             string          `json:"uri"`
@@ -44,38 +42,45 @@ type ERC721 struct {
 type ERC1155 struct {
 	Name            string          `json:"name"`
 	ContractAddress string          `json:"contract_address"`
-	Image           string          `json:"image"`
 	ID              *big.Int        `json:"id"`
 	Metadata        json.RawMessage `json:"metadata"`
 	URI             string          `json:"uri"`
 }
 
 type NFT struct {
-	Name        string          `json:"name"`
-	Symbol      string          `json:"symbol,omitempty"`
-	Description string          `json:"description"`
-	ID          *big.Int        `json:"id"`
-	Image       string          `json:"image"`
-	Standard    string          `json:"standard"`
-	Metadata    json.RawMessage `json:"metadata"`
+	Name         string              `json:"name"`
+	Symbol       string              `json:"symbol,omitempty"`
+	Description  string              `json:"description"`
+	ID           *big.Int            `json:"id"`
+	Image        string              `json:"image"`
+	Attributes   []MetadataAttribute `json:"attributes"`
+	Standard     string              `json:"standard"`
+	Metadata     json.RawMessage     `json:"metadata"`
+	AnimationURL string              `json:"animation_url"`
+	ExternalLink string              `json:"external_link"`
 }
 
 type Metadata struct {
-	Name         string                     `json:"name"`
-	Title        string                     `json:"title"`
-	Description  string                     `json:"description"`
-	AnimationURL string                     `json:"animation_url"`
-	Image        string                     `json:"image"`
-	Type         string                     `json:"type"`
-	Attributes   []MetadataAttribute        `json:"attributes"`
-	Properties   map[string]json.RawMessage `json:"properties"`
-	Traits       []MetadataTrait            `json:"traits"`
-	ExternalLink string                     `json:"external_link"`
+	Name         string                      `json:"name"`
+	Title        string                      `json:"title"`
+	Description  string                      `json:"description"`
+	AnimationURL string                      `json:"animation_url"`
+	Image        string                      `json:"image"`
+	Type         string                      `json:"type"`
+	Attributes   []MetadataAttribute         `json:"attributes"`
+	Properties   map[string]MetadataProperty `json:"properties"`
+	Traits       []MetadataTrait             `json:"traits"`
+	ExternalLink string                      `json:"external_link"`
 }
 
 type MetadataAttribute struct {
 	TraitType string `json:"trait_type"`
-	Value     string `json:"value"`
+	Value     any    `json:"value"`
+}
+
+type MetadataProperty struct {
+	Type        string `json:"type"`
+	Description any    `json:"description"`
 }
 
 type MetadataTrait struct {
@@ -90,45 +95,43 @@ type MetadataTrait struct {
 func (c *Client) NFT(ctx context.Context, network, contractAddress string, tokenID *big.Int) (*NFT, error) {
 	erc721, err := c.ERC721(ctx, network, contractAddress, tokenID)
 	if err == nil {
-		var metadata Metadata
-
-		if err := json.Unmarshal(erc721.Metadata, &metadata); err != nil {
-			return nil, err
-		}
-
-		return &NFT{
-			Name:     metadata.Name,
-			Symbol:   erc721.Symbol,
-			ID:       tokenID,
-			Image:    erc721.Image,
-			Standard: protocol.TokenStandardERC721,
-			Metadata: erc721.Metadata,
-		}, err
+		return c.erc721ToNFT(erc721, tokenID)
 	}
 
 	erc1155, err := c.ERC1155(ctx, network, contractAddress, tokenID)
 
 	if err == nil {
-		var metadata Metadata
-
-		if erc1155.Metadata == nil {
-			return nil, ErrorInvalidMetadataFormat
-		}
-
-		if err := json.Unmarshal(erc1155.Metadata, &metadata); err != nil {
-			return nil, err
-		}
-
-		return &NFT{
-			Name:     metadata.Name,
-			ID:       tokenID,
-			Image:    erc1155.Image,
-			Standard: protocol.TokenStandardERC1155,
-			Metadata: erc1155.Metadata,
-		}, err
+		return c.erc1155ToNFT(erc1155, tokenID)
 	}
 
 	return nil, ErrorTokenNotFound
+}
+
+func (c *Client) metadataToAttributes(metadata Metadata) []MetadataAttribute {
+	attributeMap := make(map[string]any)
+
+	for _, attribute := range metadata.Attributes {
+		attributeMap[attribute.TraitType] = attribute.Value
+	}
+
+	for key, value := range metadata.Properties {
+		attributeMap[key] = value.Description
+	}
+
+	for _, trait := range metadata.Traits {
+		attributeMap[trait.TraitType] = trait.Value
+	}
+
+	var attributes []MetadataAttribute
+
+	for traitType, value := range attributeMap {
+		attributes = append(attributes, MetadataAttribute{
+			TraitType: traitType,
+			Value:     value,
+		})
+	}
+
+	return attributes
 }
 
 func (c *Client) URI(contractAddress string, tokenID *big.Int, tokenURI string) (string, error) {

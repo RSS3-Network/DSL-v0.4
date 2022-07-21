@@ -35,19 +35,24 @@ type Metadata struct {
 }
 
 type Token struct {
-	Name            string            `json:"name"`
-	Symbol          string            `json:"symbol"`
-	Decimals        uint8             `json:"decimals,omitempty"`
-	Standard        string            `json:"standard"`
-	ContractAddress string            `json:"contract_address,omitempty"`
-	Image           string            `json:"image,omitempty"`
-	ID              *big.Int          `json:"id,omitempty"`
-	Value           *decimal.Decimal  `json:"value,omitempty"`
-	Description     string            `json:"description,omitempty"`
-	Attributes      map[string]string `json:"attributes,omitempty"`
-	ExternalLink    string            `json:"external_link,omitempty"`
-	AnimationURL    string            `json:"animation_url,omitempty"`
-	Metadata        json.RawMessage   `json:"metadata,omitempty"`
+	Name            string           `json:"name"`
+	Symbol          string           `json:"symbol"`
+	Decimals        uint8            `json:"decimals,omitempty"`
+	Standard        string           `json:"standard"`
+	ContractAddress string           `json:"contract_address,omitempty"`
+	Image           string           `json:"image,omitempty"`
+	ID              *big.Int         `json:"id,omitempty"`
+	Value           *decimal.Decimal `json:"value,omitempty"`
+	Description     string           `json:"description,omitempty"`
+	Attributes      []TokenAttribute `json:"attributes,omitempty"`
+	ExternalLink    string           `json:"external_link,omitempty"`
+	AnimationURL    string           `json:"animation_url,omitempty"`
+	Metadata        json.RawMessage  `json:"metadata,omitempty"`
+}
+
+type TokenAttribute struct {
+	TraitType string `json:"trait_type"`
+	Value     any    `json:"value"`
 }
 
 type Swap struct {

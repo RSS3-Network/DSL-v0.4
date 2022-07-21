@@ -421,8 +421,19 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 
 			tokenMetadata.Name = nft.Name
 			tokenMetadata.Symbol = nft.Symbol
+			tokenMetadata.Description = nft.Description
 			tokenMetadata.ID = nft.ID
+			tokenMetadata.AnimationURL = nft.AnimationURL
+			tokenMetadata.ExternalLink = nft.ExternalLink
 			tokenMetadata.Standard = nft.Standard
+
+			for _, attribute := range nft.Attributes {
+				tokenMetadata.Attributes = append(tokenMetadata.Attributes, metadata.TokenAttribute{
+					TraitType: attribute.TraitType,
+					Value:     attribute.Value,
+				})
+			}
+
 			tokenMetadata.Metadata = nft.Metadata
 
 			if strings.HasPrefix(nft.Image, "ipfs://") {
