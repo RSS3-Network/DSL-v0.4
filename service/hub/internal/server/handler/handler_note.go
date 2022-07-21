@@ -314,12 +314,14 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	}
 
 	// publish mq message
-	if request.Refresh || len(transactions) == 0 {
-		for _, list := range request.List {
-			go h.publishIndexerMessage(ctx, list.Address)
-			time.Sleep(500 * time.Millisecond)
+	go func() {
+		if request.Refresh || len(transactions) == 0 {
+			for _, list := range request.List {
+				go h.publishIndexerMessage(ctx, list.Address)
+				time.Sleep(500 * time.Millisecond)
+			}
 		}
-	}
+	}()
 
 	transactionHashes := make([]string, 0)
 	for _, transactionHash := range transactions {
