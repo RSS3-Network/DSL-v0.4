@@ -66,15 +66,16 @@ func (c *Client) erc721ToNFT(erc721 *ERC721, tokenID *big.Int) (*NFT, error) {
 	}
 
 	return &NFT{
-		Name:         metadata.Name,
-		Symbol:       erc721.Symbol,
-		Description:  metadata.Description,
-		ID:           tokenID,
-		Image:        metadata.Image,
-		Attributes:   c.metadataToAttributes(metadata),
-		Standard:     protocol.TokenStandardERC721,
-		Metadata:     erc721.Metadata,
-		AnimationURL: metadata.AnimationURL,
-		ExternalLink: metadata.ExternalLink,
+		Name:            metadata.Name,
+		Symbol:          erc721.Symbol,
+		Description:     metadata.Description,
+		ContractAddress: erc721.ContractAddress,
+		ID:              tokenID,
+		Image:           metadata.Image,
+		Attributes:      c.metadataToAttributes(metadata),
+		Standard:        protocol.TokenStandardERC721,
+		Metadata:        erc721.Metadata,
+		AnimationURL:    metadata.AnimationURL,
+		ExternalLink:    metadata.ExternalLink,
 	}, nil
 }

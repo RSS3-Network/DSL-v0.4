@@ -3,6 +3,7 @@ package poap
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -104,7 +105,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			tokenMetadata.Name = nft.Name
 			tokenMetadata.Symbol = nft.Symbol
+			tokenMetadata.Image = nft.Image
 			tokenMetadata.Description = nft.Description
+			tokenMetadata.ContractAddress = strings.ToLower(ContractAddress.String())
 			tokenMetadata.ID = nft.ID
 			tokenMetadata.AnimationURL = nft.AnimationURL
 			tokenMetadata.ExternalLink = nft.ExternalLink

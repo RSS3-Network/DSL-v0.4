@@ -48,16 +48,17 @@ type ERC1155 struct {
 }
 
 type NFT struct {
-	Name         string              `json:"name"`
-	Symbol       string              `json:"symbol,omitempty"`
-	Description  string              `json:"description"`
-	ID           *big.Int            `json:"id"`
-	Image        string              `json:"image"`
-	Attributes   []MetadataAttribute `json:"attributes"`
-	Standard     string              `json:"standard"`
-	Metadata     json.RawMessage     `json:"metadata"`
-	AnimationURL string              `json:"animation_url"`
-	ExternalLink string              `json:"external_link"`
+	Name            string              `json:"name"`
+	Symbol          string              `json:"symbol,omitempty"`
+	Description     string              `json:"description"`
+	ContractAddress string              `json:"contract_address"`
+	ID              *big.Int            `json:"id"`
+	Image           string              `json:"image"`
+	Attributes      []MetadataAttribute `json:"attributes"`
+	Standard        string              `json:"standard"`
+	Metadata        json.RawMessage     `json:"metadata"`
+	AnimationURL    string              `json:"animation_url"`
+	ExternalLink    string              `json:"external_link"`
 }
 
 type Metadata struct {

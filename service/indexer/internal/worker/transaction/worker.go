@@ -403,6 +403,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenMetadata.Image = erc20Token.Logo
 			tokenMetadata.Decimals = erc20Token.Decimals
 			tokenMetadata.Standard = protocol.TokenStandardERC20
+			tokenMetadata.ContractAddress = erc20Token.ContractAddress
 			tokenValue := decimal.NewFromBigInt(value, 0)
 			tokenMetadata.Value = &tokenValue
 
@@ -423,6 +424,9 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenMetadata.Symbol = nft.Symbol
 			tokenMetadata.Description = nft.Description
 			tokenMetadata.ID = nft.ID
+			tokenMetadata.Image = nft.Image
+			tokenMetadata.Description = nft.Description
+			tokenMetadata.ContractAddress = nft.ContractAddress
 			tokenMetadata.AnimationURL = nft.AnimationURL
 			tokenMetadata.ExternalLink = nft.ExternalLink
 			tokenMetadata.Standard = nft.Standard
