@@ -67,12 +67,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			transfer.Platform = Name
 
-			var metadataModel metadata.Metadata
-
-			if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-				continue
-			}
-
 			mirrorMetadata := Mirror{}
 
 			for _, tag := range transactionEdge.Node.Tags {
@@ -106,12 +100,10 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			metadataModel.Post = &metadata.Post{
+			rawMetadata, err := json.Marshal(&metadata.Post{
 				Title: mirrorContent.Content.Title,
 				Body:  mirrorContent.Content.Body,
-			}
-
-			rawMetadata, err := json.Marshal(metadataModel)
+			})
 			if err != nil {
 				return nil, err
 			}

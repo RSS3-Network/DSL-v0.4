@@ -133,15 +133,7 @@ func (s *service) handleGitcoin(ctx context.Context, transfer model.Transfer) (d
 
 	transfer.RelatedUrls = append(transfer.RelatedUrls, "https://gitcoin.co/grants"+strconv.Itoa(project.ID)+"/"+project.Slug)
 
-	// format metadata
-	var metadataModel metadata.Metadata
-
-	if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-		logrus.Errorf("[gitcoin handle] json unmarshal transfer metadata error: %v", err)
-		return transfer, err
-	}
-
-	metadata, err := json.Marshal(&metadata.Donation{
+	metadataRaw, err := json.Marshal(&metadata.Donation{
 		ID:          project.ID,
 		Title:       project.Title,
 		Description: project.Description,
@@ -152,7 +144,7 @@ func (s *service) handleGitcoin(ctx context.Context, transfer model.Transfer) (d
 		return transfer, err
 	}
 
-	transfer.Metadata = metadata
+	transfer.Metadata = metadataRaw
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagDonation, transfer.Tag, filter.DonationDonate, transfer.Type)
 
 	if transfer.Tag == filter.TagDonation {

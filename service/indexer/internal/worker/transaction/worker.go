@@ -438,8 +438,6 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 				})
 			}
 
-			tokenMetadata.Metadata = nft.Metadata
-
 			if strings.HasPrefix(nft.Image, "ipfs://") {
 				tokenMetadata.Image = ipfs.GetDirectURL(ctx, nft.Image)
 			}
@@ -506,7 +504,6 @@ func (s *service) buildZkSyncNFTMetadata(ctx context.Context, message *protocol.
 
 	tokenMetadata.Symbol = nftToken.Symbol
 	tokenMetadata.ContractAddress = nftToken.Address
-	tokenMetadata.Metadata = nftToken.Bytes()
 	tokenID := big.NewInt(0)
 	tokenID.SetString(id, 0)
 
