@@ -139,7 +139,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 
 	characterMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.CharacterId)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
 		Event: contract.EventNameSetHandle,
 		Character: &metadata.CrossbellCharacter{
 			ID:       event.CharacterId,
@@ -221,7 +221,7 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 	fromCharacterMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.FromCharacterId)
 	toCharacterMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToCharacterId)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
 		Event: contract.EventNameLinkCharacter,
 		Link: &metadata.CrossbellLink{
 			Type: contract.LinkTypeMap[event.LinkType],
@@ -258,7 +258,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 	fromCharacterMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.FromCharacterId)
 	toCharacterMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToCharacterId)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
 		Event: contract.EventNameUnlinkCharacter,
 		Link: &metadata.CrossbellLink{
 			Type: contract.LinkTypeMap[event.LinkType],
@@ -294,7 +294,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 
 	characterMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.CharacterId)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
 		Event: contract.EventNameSetCharacterUri,
 		Character: &metadata.CrossbellCharacter{
 			ID:       event.CharacterId,
@@ -343,7 +343,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		return nil, err
 	}
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
 		Event: contract.EventNameSetNoteUri,
 		Note: &metadata.CrossbellNote{
 			ID:           event.NoteId,

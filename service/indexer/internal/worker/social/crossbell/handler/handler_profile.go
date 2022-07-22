@@ -104,7 +104,7 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 	fromProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.FromProfileId)
 	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToProfileId)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
 		Event: contract.EventNameLinkCharacter,
 		Link: &metadata.CrossbellLink{
 			Type: contract.LinkTypeMap[event.LinkType],
@@ -141,7 +141,7 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 	fromProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.FromProfileId)
 	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToProfileId)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
 		Event: contract.EventNameUnlinkCharacter,
 		Link: &metadata.CrossbellLink{
 			Type: contract.LinkTypeMap[event.LinkType],
@@ -177,7 +177,7 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 
 	profileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ProfileId)
 
-	if transfer.Metadata, err = metadata.BuildMetadataRawMessage(transfer.Metadata, &metadata.Crossbell{
+	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
 		Event: contract.EventNameSetCharacterUri,
 		Character: &metadata.CrossbellCharacter{
 			ID:       event.ProfileId,

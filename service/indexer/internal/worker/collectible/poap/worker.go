@@ -80,12 +80,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				internalTransactionMap[transaction.Hash] = transaction
 			}
 
-			var metadataModel metadata.Metadata
-
-			if err := json.Unmarshal(transfer.Metadata, &metadataModel); err != nil {
-				return nil, err
-			}
-
 			erc721Filterer, err := erc721.NewERC721Filterer(dataSource.Address, nil)
 			if err != nil {
 				return nil, err
@@ -121,8 +115,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 					Value:     attribute.Value,
 				})
 			}
-
-			tokenMetadata.Metadata = nft.Metadata
 
 			rawMetadata, err := json.Marshal(tokenMetadata)
 			if err != nil {
