@@ -67,11 +67,10 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	profileMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.ProfileId)
 
 	profile := &model.Profile{
-		Address:    transfer.AddressFrom,
-		Platform:   transfer.Platform,
-		Network:    transfer.Network,
-		Source:     transfer.Network,
-		SourceData: profileMetadata,
+		Address:  transfer.AddressFrom,
+		Platform: transfer.Platform,
+		Network:  transfer.Network,
+		Source:   transfer.Network,
 	}
 
 	if err = BuildProfileMetadata(profileMetadata, profile); err != nil {
@@ -106,11 +105,10 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToProfileId)
 
 	profile := &model.Profile{
-		Address:    transfer.AddressFrom,
-		Platform:   transfer.Platform,
-		Network:    transfer.Network,
-		Source:     transfer.Network,
-		SourceData: toProfileMetadata,
+		Address:  transfer.AddressFrom,
+		Platform: transfer.Platform,
+		Network:  transfer.Network,
+		Source:   transfer.Network,
 	}
 
 	if err = BuildProfileMetadata(toProfileMetadata, profile); err != nil {
@@ -147,11 +145,10 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToProfileId)
 
 	profile := &model.Profile{
-		Address:    transfer.AddressFrom,
-		Platform:   transfer.Platform,
-		Network:    transfer.Network,
-		Source:     transfer.Network,
-		SourceData: toProfileMetadata,
+		Address:  transfer.AddressFrom,
+		Platform: transfer.Platform,
+		Network:  transfer.Network,
+		Source:   transfer.Network,
 	}
 
 	if err = BuildProfileMetadata(toProfileMetadata, profile); err != nil {

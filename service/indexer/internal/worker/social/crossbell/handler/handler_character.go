@@ -19,6 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var _ Interface = (*characterHandler)(nil)
@@ -92,11 +93,10 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 	characterMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.CharacterId)
 
 	profile := &model.Profile{
-		Address:    transfer.AddressFrom,
-		Platform:   transfer.Platform,
-		Network:    transfer.Network,
-		Source:     transfer.Network,
-		SourceData: characterMetadata,
+		Address:  transfer.AddressFrom,
+		Platform: transfer.Platform,
+		Network:  transfer.Network,
+		Source:   transfer.Network,
 	}
 
 	if err = BuildProfileMetadata(characterMetadata, profile); err != nil {
@@ -107,6 +107,10 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
+
+	c.databaseClient.Model(&model.Profile{}).Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(profile)
 
 	return &transfer, nil
 }
@@ -207,10 +211,9 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 	toCharacterMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToCharacterId)
 
 	profile := &model.Profile{
-		Platform:   transfer.Platform,
-		Network:    transfer.Network,
-		Source:     transfer.Network,
-		SourceData: toCharacterMetadata,
+		Platform: transfer.Platform,
+		Network:  transfer.Network,
+		Source:   transfer.Network,
 	}
 
 	if err = BuildProfileMetadata(toCharacterMetadata, profile); err != nil {
@@ -243,10 +246,9 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 	toCharacterMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToCharacterId)
 
 	profile := &model.Profile{
-		Platform:   transfer.Platform,
-		Network:    transfer.Network,
-		Source:     transfer.Network,
-		SourceData: toCharacterMetadata,
+		Platform: transfer.Platform,
+		Network:  transfer.Network,
+		Source:   transfer.Network,
 	}
 
 	if err = BuildProfileMetadata(toCharacterMetadata, profile); err != nil {
