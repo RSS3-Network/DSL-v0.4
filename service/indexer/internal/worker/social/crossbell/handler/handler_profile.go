@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -67,10 +66,13 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	profileMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.ProfileId)
 
 	profile := &model.Profile{
-		Address:  transfer.AddressFrom,
-		Platform: transfer.Platform,
+		Address: transfer.AddressFrom,
+		// TODO: use appId from CSB
+		// Platform: transfer.Platform,
+		Platform: transfer.Network,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
+		Type:     filter.SocialProfileCreate,
 	}
 
 	if err = BuildProfileMetadata(profileMetadata, profile); err != nil {
@@ -105,8 +107,9 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToProfileId)
 
 	profile := &model.Profile{
-		Address:  transfer.AddressFrom,
-		Platform: transfer.Platform,
+		// TODO: use appId from CSB
+		// Platform: transfer.Platform,
+		Platform: transfer.Network,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 	}
@@ -145,8 +148,9 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToProfileId)
 
 	profile := &model.Profile{
-		Address:  transfer.AddressFrom,
-		Platform: transfer.Platform,
+		// TODO: use appId from CSB
+		// Platform: transfer.Platform,
+		Platform: transfer.Network,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 	}
@@ -180,14 +184,17 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 
 	profileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ProfileId)
 
-	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
-		Event: contract.EventNameSetCharacterUri,
-		Character: &metadata.CrossbellCharacter{
-			ID:       event.ProfileId,
-			URI:      event.NewUri,
-			Metadata: profileMetadata,
-		},
-	}); err != nil {
+	profile := &model.Profile{
+		Address: transfer.AddressFrom,
+		// TODO: use appId from CSB
+		// Platform: transfer.Platform,
+		Platform: transfer.Network,
+		Network:  transfer.Network,
+		Source:   transfer.Network,
+		Type:     filter.SocialProfileUpdate,
+	}
+
+	if err = BuildProfileMetadata(profileMetadata, profile); err != nil {
 		return nil, err
 	}
 

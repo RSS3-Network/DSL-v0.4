@@ -28,6 +28,10 @@ const (
 	SocialUnfollow string = "unfollow"
 	SocialLike     string = "like"
 
+	// two sub-types for profile
+	SocialProfileCreate string = "create"
+	SocialProfileUpdate string = "update"
+
 	// Governance types: propose | vote
 	GovernancePropose string = "propose"
 	GovernanceVote    string = "vote"
