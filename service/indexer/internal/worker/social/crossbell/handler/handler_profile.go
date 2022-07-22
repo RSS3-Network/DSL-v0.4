@@ -3,7 +3,9 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -101,23 +103,27 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 		return nil, err
 	}
 
-	fromProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.FromProfileId)
 	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToProfileId)
 
-	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
-		Event: contract.EventNameLinkCharacter,
-		Link: &metadata.CrossbellLink{
-			Type: contract.LinkTypeMap[event.LinkType],
-			From: &metadata.CrossbellCharacter{
-				ID:       event.FromProfileId,
-				Metadata: fromProfileMetadata,
-			},
-			To: &metadata.CrossbellCharacter{
-				ID:       event.ToProfileId,
-				Metadata: toProfileMetadata,
-			},
-		},
-	}); err != nil {
+	profile := &model.Profile{
+		Address:    transfer.AddressFrom,
+		Platform:   transfer.Platform,
+		Network:    transfer.Network,
+		Source:     transfer.Network,
+		SourceData: toProfileMetadata,
+	}
+
+	if err = BuildProfileMetadata(toProfileMetadata, profile); err != nil {
+		return nil, err
+	}
+
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{}, event.ToProfileId)
+	if err != nil {
+		return nil, err
+	}
+	profile.Address = strings.ToLower(characterOwner.String())
+
+	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
 	}
 

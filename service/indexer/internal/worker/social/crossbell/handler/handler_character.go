@@ -3,8 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
-
-	"gorm.io/gorm"
+	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/datasource/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
@@ -19,6 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"go.opentelemetry.io/otel"
+	"gorm.io/gorm"
 )
 
 var _ Interface = (*characterHandler)(nil)
@@ -75,20 +75,6 @@ func (c *characterHandler) Handle(ctx context.Context, transaction model.Transac
 	default:
 		return nil, contract.ErrorUnknownEvent
 	}
-}
-
-type T struct {
-	Crossbell struct {
-		Event     string `json:"event"`
-		Character struct {
-			Id       int `json:"id"`
-			Metadata struct {
-				Bio     string   `json:"bio"`
-				Name    string   `json:"name"`
-				Avatars []string `json:"avatars"`
-			} `json:"metadata"`
-		} `json:"character"`
-	} `json:"crossbell"`
 }
 
 func (c *characterHandler) handleCharacterCreated(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
@@ -218,25 +204,24 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 		return nil, err
 	}
 
-	fromCharacterMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.FromCharacterId)
 	toCharacterMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToCharacterId)
 
-	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
-		Event: contract.EventNameLinkCharacter,
-		Link: &metadata.CrossbellLink{
-			Type: contract.LinkTypeMap[event.LinkType],
-			From: &metadata.CrossbellCharacter{
-				ID:       event.FromCharacterId,
-				Metadata: fromCharacterMetadata,
-			},
-			To: &metadata.CrossbellCharacter{
-				ID:       event.ToCharacterId,
-				Metadata: toCharacterMetadata,
-			},
-		},
-	}); err != nil {
+	profile := &model.Profile{
+		Platform:   transfer.Platform,
+		Network:    transfer.Network,
+		Source:     transfer.Network,
+		SourceData: toCharacterMetadata,
+	}
+
+	if err = BuildProfileMetadata(toCharacterMetadata, profile); err != nil {
 		return nil, err
 	}
+
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.ToCharacterId)
+	if err != nil {
+		return nil, err
+	}
+	profile.Address = strings.ToLower(characterOwner.String())
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialFollow, transfer.Type)
 
