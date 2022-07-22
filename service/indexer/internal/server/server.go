@@ -490,8 +490,8 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 }
 
 func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction, transactionsMap map[string]model.Transaction) error {
-	tracer := otel.Tracer("ethereum")
-	ctx, trace := tracer.Start(ctx, "ethereum:BuildTransactions")
+	tracer := otel.Tracer("indexer")
+	ctx, trace := tracer.Start(ctx, "indexer:handleWorkers")
 
 	var err error
 	defer func() { opentelemetry.Log(trace, message, transactions, err) }()
