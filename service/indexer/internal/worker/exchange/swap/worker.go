@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math/big"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -20,6 +21,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -74,31 +76,38 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	defer opentelemetry.Log(trace, transactions, data, err)
 
 	internalTransactionMap := make(map[string]model.Transaction)
+	opt := lop.NewOption().WithConcurrency(ethereum.RPCMaxConcurrency)
 
-	for _, transaction := range transactions {
+	var mu sync.Mutex
+
+	lop.ForEach(transactions, func(transaction model.Transaction, i int) {
 		address := message.Address
 
 		// Exclude transfers to self
 		if transaction.AddressTo == address {
-			continue
+			return
 		}
 
 		// Handle swap entry
+		mu.Lock()
 		router, exist := routerMap[transaction.AddressTo]
+		mu.Unlock()
 		if !exist {
-			continue
+			return
 		}
 
 		if transaction.Transfers, err = s.handleEthereumTransaction(ctx, message, transaction, router); err != nil {
 			logger.Global().Warn("failed to handle ethereum transaction", zap.Error(err), zap.String("network", message.Network), zap.String("transaction_hash", transaction.Hash), zap.String("address", message.Address))
 
-			continue
+			return
 		}
 
 		transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagExchange, transaction.Tag, filter.ExchangeSwap, transaction.Type)
 
+		mu.Lock()
 		internalTransactionMap[transaction.Hash] = transaction
-	}
+		mu.Unlock()
+	}, opt)
 
 	// Lay the map flat
 	internalTransactions := make([]model.Transaction, 0)
@@ -110,13 +119,17 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	return internalTransactions, nil
 }
 
-func (s *service) handleEthereumTransaction(ctx context.Context, message *protocol.Message, transaction model.Transaction, router Router) ([]model.Transfer, error) {
+func (s *service) handleEthereumTransaction(ctx context.Context, message *protocol.Message, transaction model.Transaction, router Router) (internalTransfers []model.Transfer, err error) {
+	tracer := otel.Tracer("worker_swap")
+	_, trace := tracer.Start(ctx, "worker_swap:handleEthereumTransaction")
+
+	defer opentelemetry.Log(trace, transaction, internalTransfers, err)
+
 	ethereumClient, exist := s.ethereumClientMap[message.Network]
 	if !exist {
 		return nil, errors.New("not supported network")
 	}
 
-	internalTransfers := make([]model.Transfer, 0)
 	tokenMap := map[common.Address]*big.Int{}
 
 	for _, transfer := range transaction.Transfers {

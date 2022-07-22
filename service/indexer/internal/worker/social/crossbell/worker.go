@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/handler"
@@ -69,6 +70,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	defer snap.End()
 
 	internalTransactions := make([]model.Transaction, 0)
+	opt := lop.NewOption().WithConcurrency(ethereum.RPCMaxConcurrency)
 
 	lop.ForEach(transactions, func(transaction model.Transaction, i int) {
 		addressTo := common.HexToAddress(transaction.AddressTo)
@@ -111,7 +113,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		}
 
 		internalTransactions = append(internalTransactions, transaction)
-	})
+	}, opt)
 
 	return internalTransactions, nil
 }
