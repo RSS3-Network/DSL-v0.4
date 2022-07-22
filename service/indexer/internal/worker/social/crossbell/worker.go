@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/handler"
+	"github.com/sirupsen/logrus"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -19,6 +20,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	lop "github.com/samber/lo/parallel"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -68,12 +70,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	internalTransactions := make([]model.Transaction, 0)
 
-	for _, transaction := range transactions {
+	lop.ForEach(transactions, func(transaction model.Transaction, i int) {
 		addressTo := common.HexToAddress(transaction.AddressTo)
 
 		// Processing of transactions for contracts Profile and LinkList only
 		if addressTo != contract.AddressCharacter && addressTo != contract.AddressLinkList {
-			continue
+			return
 		}
 
 		transaction.Platform = s.Name()
@@ -92,12 +94,14 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		// Get the raw data directly via Ethereum RPC node
 		receipt, err := s.ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
 		if err != nil {
-			return nil, err
+			logrus.Errorf("[crossbell worker] ethereumClient TransactionReceipt error, %v", err)
+			return
 		}
 
 		internalTransfers, err := s.handleReceipt(ctx, message, transaction, receipt, transferMap)
 		if err != nil {
-			return nil, err
+			logrus.Errorf("[crossbell worker] handleReceipt error, %v", err)
+			return
 		}
 
 		transaction.Transfers = append(transaction.Transfers, internalTransfers...)
@@ -107,7 +111,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		}
 
 		internalTransactions = append(internalTransactions, transaction)
-	}
+	})
 
 	return internalTransactions, nil
 }
