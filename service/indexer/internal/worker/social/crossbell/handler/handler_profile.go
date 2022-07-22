@@ -144,25 +144,25 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	fromProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.FromProfileId)
 	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToProfileId)
 
-	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
-		Event: contract.EventNameUnlinkCharacter,
-		Link: &metadata.CrossbellLink{
-			Type: contract.LinkTypeMap[event.LinkType],
-			From: &metadata.CrossbellCharacter{
-				ID:       event.FromProfileId,
-				Metadata: fromProfileMetadata,
-			},
-			To: &metadata.CrossbellCharacter{
-				ID:       event.ToProfileId,
-				Metadata: toProfileMetadata,
-			},
-		},
-	}); err != nil {
+	profile := &model.Profile{
+		Address:    transfer.AddressFrom,
+		Platform:   transfer.Platform,
+		Network:    transfer.Network,
+		Source:     transfer.Network,
+		SourceData: toProfileMetadata,
+	}
+
+	if err = BuildProfileMetadata(toProfileMetadata, profile); err != nil {
 		return nil, err
 	}
+
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{}, event.ToProfileId)
+	if err != nil {
+		return nil, err
+	}
+	profile.Address = strings.ToLower(characterOwner.String())
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialUnfollow, transfer.Type)
 
