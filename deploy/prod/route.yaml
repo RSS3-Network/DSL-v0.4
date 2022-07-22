@@ -13,8 +13,8 @@ spec:
     - name: pregod-1-1-hub-api
       port: 80
     middlewares:
-      - name: pregod-hub-ratelimit
-      - name: pregod-hub-cors
+      - name: pregod-1-1-hub-ratelimit
+      - name: pregod-1-1-hub-cors
       - name: rm-prefix-v110
 ---
 apiVersion: traefik.containo.us/v1alpha1
