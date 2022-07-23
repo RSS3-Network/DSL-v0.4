@@ -139,34 +139,20 @@ func New(ethRPCEndpoint string) *Client {
 	}
 }
 
-type NameServiceResult struct {
-	ENS     string `json:"ens"`
-	Address string `json:"address"`
-}
-
-func Resolve(ethRPCEndpoint string, input string) (NameServiceResult, error) {
+func Resolve(ethRPCEndpoint string, input string) (string, error) {
 	client := New(ethRPCEndpoint)
 
-	result := NameServiceResult{}
+	var result string
+	var err error
 
 	if strings.HasSuffix(input, ".eth") {
-		result.ENS = input
-
-		address, err := client.GetResolvedAddress(input)
-		if err != nil {
-			return result, err
-		}
-
-		result.Address = address
+		result, err = client.GetResolvedAddress(input)
 	} else {
-		result.Address = input
+		result, err = client.GetReverseResolve(input)
+	}
 
-		ensDomain, err := client.GetReverseResolve(input)
-		if err != nil {
-			return result, err
-		}
-
-		result.ENS = ensDomain
+	if err != nil {
+		return "", err
 	}
 
 	return result, nil

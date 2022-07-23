@@ -23,6 +23,12 @@ func AddressIsEmpty(c echo.Context) error {
 	})
 }
 
+func AddressIsInvalid(c echo.Context) error {
+	return c.JSON(http.StatusBadRequest, &ErrorResponse{
+		Error: "The address provided is invalid. You can use 0x, ENS, Crossbell, or Lens addresses.",
+	})
+}
+
 func InternalError(c echo.Context) error {
 	return c.JSON(http.StatusInternalServerError, &ErrorResponse{
 		Error: "An internal error has occurred, please try again later.",
