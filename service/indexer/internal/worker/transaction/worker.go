@@ -425,7 +425,6 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenMetadata.Description = nft.Description
 			tokenMetadata.ID = nft.ID
 			tokenMetadata.Image = nft.Image
-			tokenMetadata.Description = nft.Description
 			tokenMetadata.ContractAddress = nft.ContractAddress
 			tokenMetadata.AnimationURL = nft.AnimationURL
 			tokenMetadata.ExternalLink = nft.ExternalLink
