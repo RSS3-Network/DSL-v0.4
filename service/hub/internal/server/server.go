@@ -116,10 +116,10 @@ func (s *Server) Initialize() (err error) {
 	})
 
 	// GET
-	s.httpServer.GET("/notes/:address", s.httpHandler.GetNotesFunc, middlewarex.GetParamMiddleware)
-	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetsFunc, middlewarex.GetParamMiddleware)
+	s.httpServer.GET("/notes/:address", s.httpHandler.GetNotesFunc, middlewarex.TranslateAddressMiddleware, middlewarex.ValidateParamsMiddleware)
+	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetsFunc, middlewarex.TranslateAddressMiddleware, middlewarex.ValidateParamsMiddleware)
 	s.httpServer.GET("/exchanges/:exchange_type", s.httpHandler.GetExchangeListFunc)
-	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfileListFunc, middlewarex.GetParamMiddleware)
+	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfileListFunc, middlewarex.TranslateAddressMiddleware, middlewarex.ValidateParamsMiddleware)
 	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolve)
 
 	// POST

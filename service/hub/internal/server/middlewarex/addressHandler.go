@@ -10,7 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 )
 
-func GetParamMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+func TranslateAddressMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		address := c.Param("address")
 		if address != "" {

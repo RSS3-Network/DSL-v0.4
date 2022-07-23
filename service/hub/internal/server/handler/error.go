@@ -43,7 +43,7 @@ func (h *Handler) ErrorFunc(err error, c echo.Context) {
 
 	if httpError, ok := err.(*echo.HTTPError); ok {
 		httpCode = httpError.Code
-		errorMessage = "An internal error has occurred, please try again later."
+		errorMessage = httpError.Message.(string)
 	}
 
 	_ = c.JSON(httpCode, &ErrorResponse{
