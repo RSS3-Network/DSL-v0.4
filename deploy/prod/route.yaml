@@ -13,8 +13,8 @@ spec:
     - name: pregod2-hub-api
       port: 80
     middlewares:
-      - name: pregod-hub-ratelimit
-      - name: pregod-hub-cors
+      - name: pregod2-hub-ratelimit
+      - name: pregod2-hub-cors
       - name: rm-prefix-v100
 ---
 apiVersion: traefik.containo.us/v1alpha1
@@ -35,7 +35,8 @@ metadata:
 spec:
   rateLimit:
     period: 1m
-    average: 600
+    average: 200
+    burst: 200
     sourceCriterion:
       ipStrategy:
         depth: 2
