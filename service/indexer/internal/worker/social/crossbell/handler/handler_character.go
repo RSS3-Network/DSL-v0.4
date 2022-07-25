@@ -111,6 +111,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
 	c.databaseClient.Model(&model.Profile{}).Clauses(clause.OnConflict{
 		UpdateAll: true,
@@ -152,7 +153,6 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
-
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
 	return &transfer, nil
@@ -243,6 +243,7 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 	profile.Address = strings.ToLower(characterOwner.String())
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialFollow, transfer.Type)
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
 	return &transfer, nil
 }
@@ -280,6 +281,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 	profile.Address = strings.ToLower(characterOwner.String())
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialUnfollow, transfer.Type)
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
 	return &transfer, nil
 }
@@ -313,6 +315,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
 	return &transfer, nil
 }
@@ -370,6 +373,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
 	return &transfer, nil
 }

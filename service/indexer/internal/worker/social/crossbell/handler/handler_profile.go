@@ -85,6 +85,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
 	p.databaseClient.Model(&model.Profile{}).Clauses(clause.OnConflict{
 		UpdateAll: true,
@@ -169,6 +170,7 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 	profile.Address = strings.ToLower(characterOwner.String())
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialUnfollow, transfer.Type)
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
 	return &transfer, nil
 }
@@ -202,6 +204,7 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
 	return &transfer, nil
 }
