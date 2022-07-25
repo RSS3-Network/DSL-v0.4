@@ -191,6 +191,10 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 				return nil, err
 			}
 
+			if sourceData.Transaction.Value().Cmp(big.NewInt(0)) == 0 {
+				continue
+			}
+
 			internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transfer, nil, nil, sourceData.Transaction.Value())
 			if err != nil {
 				continue
