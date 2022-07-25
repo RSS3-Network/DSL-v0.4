@@ -27,7 +27,7 @@ type Token struct {
 	Standard        string           `json:"standard"`
 	ContractAddress string           `json:"contract_address,omitempty"`
 	Image           string           `json:"image,omitempty"`
-	ID              *big.Int         `json:"id,omitempty"`
+	ID              string           `json:"id,omitempty"`
 	Value           *decimal.Decimal `json:"value,omitempty"`
 	Description     string           `json:"description,omitempty"`
 	Attributes      []TokenAttribute `json:"attributes,omitempty"`

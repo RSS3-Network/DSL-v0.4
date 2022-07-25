@@ -107,7 +107,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			tokenMetadata.Image = nft.Image
 			tokenMetadata.Description = nft.Description
 			tokenMetadata.ContractAddress = strings.ToLower(ContractAddress.String())
-			tokenMetadata.ID = nft.ID
+			tokenMetadata.ID = nft.ID.String()
 			tokenMetadata.AnimationURL = nft.AnimationURL
 			tokenMetadata.ExternalLink = nft.ExternalLink
 			tokenMetadata.Standard = nft.Standard

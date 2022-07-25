@@ -427,7 +427,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenMetadata.Name = nft.Name
 			tokenMetadata.Symbol = nft.Symbol
 			tokenMetadata.Description = nft.Description
-			tokenMetadata.ID = nft.ID
+			tokenMetadata.ID = nft.ID.String()
 			tokenMetadata.Image = nft.Image
 			tokenMetadata.ContractAddress = nft.ContractAddress
 			tokenMetadata.AnimationURL = nft.AnimationURL
@@ -510,7 +510,7 @@ func (s *service) buildZkSyncNFTMetadata(ctx context.Context, message *protocol.
 	tokenID := big.NewInt(0)
 	tokenID.SetString(id, 0)
 
-	tokenMetadata.ID = tokenID
+	tokenMetadata.ID = tokenID.String()
 
 	// TODO ERC-1155
 	tokenMetadata.Standard = protocol.TokenStandardERC721
