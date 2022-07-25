@@ -48,6 +48,10 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		if filter.CheckTypeValid(request.Tag, t) {
 			types = append(types, t)
 		}
+		// by default POAPs are not returned
+		if t == filter.CollectiblePoap {
+			request.IncludePoap = true
+		}
 	}
 
 	request.Type = types
@@ -133,6 +137,10 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 	if len(request.Type) > 0 {
 		// type was already converted to lowercase
 		sql = sql.Where("\"type\" IN ?", request.Type)
+	}
+
+	if !request.IncludePoap {
+		sql = sql.Where("type != ?", filter.CollectiblePoap)
 	}
 
 	if len(request.Network) > 0 {
@@ -286,6 +294,11 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 		if filter.CheckTypeValid(request.Global.Tag, t) {
 			types = append(types, t)
 		}
+
+		// by default POAPs are not returned
+		if t == filter.CollectiblePoap {
+			request.IncludePoap = true
+		}
 	}
 
 	request.Global.Type = types
@@ -293,6 +306,10 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	if len(request.Global.Type) > 0 {
 		// type was already converted to lowercase
 		sql = sql.Where("\"type\" IN ?", request.Global.Type)
+	}
+
+	if !request.IncludePoap {
+		sql = sql.Where("type != ?", filter.CollectiblePoap)
 	}
 
 	if len(request.Global.Network) > 0 {

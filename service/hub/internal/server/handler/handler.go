@@ -27,16 +27,17 @@ type Response struct {
 }
 
 type GetRequest struct {
-	Address   string    `param:"address" validate:"required"`
-	Limit     int       `query:"limit"`
-	Cursor    string    `query:"cursor"`
-	Type      []string  `query:"type"`
-	Tag       string    `query:"tag" validate:"required_with=Type"`
-	Network   []string  `query:"network"`
-	Platform  []string  `query:"platform"`
-	Timestamp time.Time `query:"timestamp"`
-	Hash      string    `query:"hash"`
-	Refresh   bool      `query:"refresh"`
+	Address     string    `param:"address" validate:"required"`
+	Limit       int       `query:"limit"`
+	Cursor      string    `query:"cursor"`
+	Type        []string  `query:"type"`
+	Tag         string    `query:"tag" validate:"required_with=Type"`
+	Network     []string  `query:"network"`
+	Platform    []string  `query:"platform"`
+	Timestamp   time.Time `query:"timestamp"`
+	Hash        string    `query:"hash"`
+	IncludePoap bool      `query:"include_poap"`
+	Refresh     bool      `query:"refresh"`
 }
 
 type GetExchangeRequest struct {
@@ -47,13 +48,13 @@ type GetExchangeRequest struct {
 }
 
 type BatchGetNotesRequest struct {
-	Timestamp  time.Time     `json:"timestamp"`
-	Limit      int           `json:"limit"`
-	Cursor     string        `json:"cursor"`
-	Refresh    bool          `json:"refresh"`
-	Global     *GlobalFilter `json:"global" validate:"required"`
-	List       []*Filter     `json:"list"`
-	ConvertENS bool          `json:"convert_ens"`
+	Timestamp   time.Time     `json:"timestamp"`
+	Limit       int           `json:"limit"`
+	Cursor      string        `json:"cursor"`
+	Refresh     bool          `json:"refresh"`
+	Global      *GlobalFilter `json:"global" validate:"required"`
+	List        []*Filter     `json:"list"`
+	IncludePoap bool          `json:"include_poap"`
 }
 
 type GlobalFilter struct {
