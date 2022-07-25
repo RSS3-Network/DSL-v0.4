@@ -30,7 +30,7 @@ type GetRequest struct {
 	Address   string    `param:"address" validate:"required"`
 	Limit     int       `query:"limit"`
 	Cursor    string    `query:"cursor"`
-	Type      []string  `query:"type" validate:"required_with=Tag"`
+	Type      []string  `query:"type"`
 	Tag       string    `query:"tag" validate:"required_with=Type"`
 	Network   []string  `query:"network"`
 	Platform  []string  `query:"platform"`
@@ -58,7 +58,7 @@ type BatchGetNotesRequest struct {
 
 type GlobalFilter struct {
 	Address  []string `json:"address" validate:"required"`
-	Type     []string `query:"type" validate:"required_with=Tag"`
+	Type     []string `query:"type"`
 	Tag      string   `query:"tag" validate:"required_with=Type"`
 	Network  []string `json:"network"`
 	Platform []string `json:"platform"`
@@ -66,7 +66,7 @@ type GlobalFilter struct {
 
 type Filter struct {
 	Address  string   `json:"address" validate:"required"`
-	Type     []string `query:"type" validate:"required_with=Tag"`
+	Type     []string `query:"type"`
 	Tag      string   `query:"tag" validate:"required_with=Type"`
 	Network  []string `json:"network"`
 	Platform []string `json:"platform"`
