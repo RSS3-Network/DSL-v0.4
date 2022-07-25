@@ -169,6 +169,10 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 	}
 	profile.Address = strings.ToLower(characterOwner.String())
 
+	if transfer.Metadata, err = json.Marshal(profile); err != nil {
+		return nil, err
+	}
+
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialUnfollow, transfer.Type)
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
@@ -200,6 +204,10 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 	}
 
 	if err = BuildProfileMetadata(profileMetadata, profile); err != nil {
+		return nil, err
+	}
+
+	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
 	}
 

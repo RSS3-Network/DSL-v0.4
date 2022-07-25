@@ -314,6 +314,10 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		return nil, err
 	}
 
+	if transfer.Metadata, err = json.Marshal(profile); err != nil {
+		return nil, err
+	}
+
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
