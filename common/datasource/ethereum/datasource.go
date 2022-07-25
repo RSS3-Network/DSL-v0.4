@@ -46,6 +46,8 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 
 	blocks, err := lop.MapWithError(transactions, makeBlockHandlerFunc(ctx, message, ethereumClient), lop.NewOption().WithConcurrency(MaxConcurrency))
 	if err != nil {
+		logger.Global().Error("failed to handle blocks", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
+
 		return nil, err
 	}
 
@@ -57,10 +59,12 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 	// Error topic/field count mismatch
 	transactions, err = lop.MapWithError(transactions, makeTransactionHandlerFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
 	if err != nil {
-		logger.Global().Error("failed to handle transaction", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
+		logger.Global().Error("failed to handle transactions", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
+
+		return nil, err
 	}
 
-	return transactions, err
+	return transactions, nil
 }
 
 func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message, ethereumClient *ethclient.Client) func(transaction *model.Transaction, i int) (*types.Block, error) {
@@ -120,6 +124,8 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 
 		receipt, err := ethereumClient.TransactionReceipt(ctx, internalTransaction.Hash())
 		if err != nil {
+			logger.Global().Error("failed to get transaction receipt", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
+
 			return nil, err
 		}
 
@@ -136,6 +142,8 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 		}
 
 		if transaction.Transfers, err = handleReceipt(ctx, message, transaction, receipt); err != nil {
+			logger.Global().Error("failed to handle receipt", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
+
 			return nil, err
 		}
 

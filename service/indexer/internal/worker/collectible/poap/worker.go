@@ -1,6 +1,7 @@
 package poap
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"strings"
@@ -61,11 +62,15 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				continue
 			}
 
+			if !bytes.Equal(transfer.Metadata, metadata.Default) {
+				continue
+			}
+
 			dataSource := types.Log{}
 			if err := json.Unmarshal(transfer.SourceData, &dataSource); err != nil {
 				logger.Global().Error("failed to unmarshal source data", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("source_data", string(transfer.SourceData)))
 
-				return nil, err
+				continue
 			}
 
 			if dataSource.Address != ContractAddress {
