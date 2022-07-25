@@ -33,6 +33,10 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		return BadRequest(c)
 	}
 
+	if err := c.Validate(&request); err != nil {
+		return err
+	}
+
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
 		request.Limit = DefaultLimit
 	}
@@ -40,6 +44,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 	var types []string
 	for _, t := range request.Type {
 		t = strings.ToLower(t)
+
 		if filter.CheckTypeValid(request.Tag, t) {
 			types = append(types, t)
 		}

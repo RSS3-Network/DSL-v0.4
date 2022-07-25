@@ -26,6 +26,10 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 		return BadRequest(c)
 	}
 
+	if err := c.Validate(&request); err != nil {
+		return err
+	}
+
 	profileList, err := h.getProfileListDatabase(ctx, request)
 	if err != nil {
 		return InternalError(c)

@@ -27,6 +27,10 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 		return InternalError(c)
 	}
 
+	if err := c.Validate(&request); err != nil {
+		return err
+	}
+
 	var cursor string
 	switch strings.ToLower(request.ExchangeType) {
 	case "cex":

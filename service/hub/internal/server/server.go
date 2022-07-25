@@ -19,6 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/validatorx"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -105,6 +106,8 @@ func (s *Server) Initialize() (err error) {
 
 	s.httpServer.HTTPErrorHandler = s.httpHandler.ErrorFunc
 
+	s.httpServer.Validator = validatorx.Default
+
 	s.httpServer.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
 
 	s.httpServer.GET("/", func(c echo.Context) error {
@@ -116,10 +119,10 @@ func (s *Server) Initialize() (err error) {
 	})
 
 	// GET
-	s.httpServer.GET("/notes/:address", s.httpHandler.GetNotesFunc, middlewarex.TranslateAddressMiddleware, middlewarex.ValidateParamsMiddleware)
-	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetsFunc, middlewarex.TranslateAddressMiddleware, middlewarex.ValidateParamsMiddleware)
+	s.httpServer.GET("/notes/:address", s.httpHandler.GetNotesFunc, middlewarex.TranslateAddressMiddleware)
+	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetsFunc, middlewarex.TranslateAddressMiddleware)
 	s.httpServer.GET("/exchanges/:exchange_type", s.httpHandler.GetExchangeListFunc)
-	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfileListFunc, middlewarex.TranslateAddressMiddleware, middlewarex.ValidateParamsMiddleware)
+	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfileListFunc, middlewarex.TranslateAddressMiddleware)
 	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolve)
 
 	// POST

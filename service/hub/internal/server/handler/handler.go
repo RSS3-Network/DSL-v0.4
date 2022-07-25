@@ -27,11 +27,11 @@ type Response struct {
 }
 
 type GetRequest struct {
-	Address   string    `param:"address"`
+	Address   string    `param:"address" validate:"required"`
 	Limit     int       `query:"limit"`
 	Cursor    string    `query:"cursor"`
-	Type      []string  `query:"type"`
-	Tag       string    `query:"tag"`
+	Type      []string  `query:"type" validate:"required_with=Tag"`
+	Tag       string    `query:"tag" validate:"required_with=Type"`
 	Network   []string  `query:"network"`
 	Platform  []string  `query:"platform"`
 	Timestamp time.Time `query:"timestamp"`
@@ -51,23 +51,23 @@ type BatchGetNotesRequest struct {
 	Limit      int           `json:"limit"`
 	Cursor     string        `json:"cursor"`
 	Refresh    bool          `json:"refresh"`
-	Global     *GlobalFilter `json:"global"`
+	Global     *GlobalFilter `json:"global" validate:"required"`
 	List       []*Filter     `json:"list"`
 	ConvertENS bool          `json:"convert_ens"`
 }
 
 type GlobalFilter struct {
-	Address  []string `json:"address"`
-	Type     []string `json:"type"`
-	Tag      string   `json:"tag"`
+	Address  []string `json:"address" validate:"required"`
+	Type     []string `query:"type" validate:"required_with=Tag"`
+	Tag      string   `query:"tag" validate:"required_with=Type"`
 	Network  []string `json:"network"`
 	Platform []string `json:"platform"`
 }
 
 type Filter struct {
-	Address  string   `json:"address"`
-	Type     []string `json:"type"`
-	Tag      string   `json:"tag"`
+	Address  string   `json:"address" validate:"required"`
+	Type     []string `query:"type" validate:"required_with=Tag"`
+	Tag      string   `query:"tag" validate:"required_with=Type"`
 	Network  []string `json:"network"`
 	Platform []string `json:"platform"`
 }

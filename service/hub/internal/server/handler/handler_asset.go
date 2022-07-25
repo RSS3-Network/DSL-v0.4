@@ -29,6 +29,10 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 		return BadRequest(c)
 	}
 
+	if err := c.Validate(&request); err != nil {
+		return err
+	}
+
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
 		request.Limit = DefaultLimit
 	}

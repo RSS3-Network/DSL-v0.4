@@ -37,6 +37,10 @@ func (h *Handler) GetNameResolve(c echo.Context) error {
 		return BadRequest(c)
 	}
 
+	if err := c.Validate(&request); err != nil {
+		return err
+	}
+
 	if len(request.Address) == 0 {
 		return AddressIsEmpty(c)
 	}
