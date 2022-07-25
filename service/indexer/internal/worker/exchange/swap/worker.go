@@ -96,7 +96,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 			return
 		}
 
-		if transaction.Transfers, err = s.handleEthereumTransaction(ctx, message, transaction, router); err != nil {
+		if transaction.Transfers, err = s.handleEthereumTransaction(ctx, message, &transaction, router); err != nil {
 			logger.Global().Warn("failed to handle ethereum transaction", zap.Error(err), zap.String("network", message.Network), zap.String("transaction_hash", transaction.Hash), zap.String("address", message.Address))
 
 			return
@@ -119,7 +119,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 	return internalTransactions, nil
 }
 
-func (s *service) handleEthereumTransaction(ctx context.Context, message *protocol.Message, transaction model.Transaction, router Router) (internalTransfers []model.Transfer, err error) {
+func (s *service) handleEthereumTransaction(ctx context.Context, message *protocol.Message, transaction *model.Transaction, router Router) (internalTransfers []model.Transfer, err error) {
 	tracer := otel.Tracer("worker_swap")
 	_, trace := tracer.Start(ctx, "worker_swap:handleEthereumTransaction")
 
@@ -210,6 +210,8 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 	if err != nil {
 		return nil, err
 	}
+
+	transaction.Platform = router.Name
 
 	internalTransfers = append(internalTransfers, model.Transfer{
 		TransactionHash: transaction.Hash,
