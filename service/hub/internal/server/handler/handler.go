@@ -48,29 +48,16 @@ type GetExchangeRequest struct {
 }
 
 type BatchGetNotesRequest struct {
-	Timestamp   time.Time     `json:"timestamp"`
-	Limit       int           `json:"limit"`
-	Cursor      string        `json:"cursor"`
-	Refresh     bool          `json:"refresh"`
-	Global      *GlobalFilter `json:"global" validate:"required"`
-	List        []*Filter     `json:"list"`
-	IncludePoap bool          `json:"include_poap"`
-}
-
-type GlobalFilter struct {
-	Address  []string `json:"address" validate:"required"`
-	Type     []string `query:"type"`
-	Tag      string   `query:"tag" validate:"required_with=Type"`
-	Network  []string `json:"network"`
-	Platform []string `json:"platform"`
-}
-
-type Filter struct {
-	Address  string   `json:"address" validate:"required"`
-	Type     []string `query:"type"`
-	Tag      string   `query:"tag" validate:"required_with=Type"`
-	Network  []string `json:"network"`
-	Platform []string `json:"platform"`
+	Address     []string  `json:"address" validate:"required"`
+	Type        []string  `query:"type"`
+	Tag         string    `query:"tag" validate:"required_with=Type"`
+	Network     []string  `json:"network"`
+	Platform    []string  `json:"platform"`
+	Timestamp   time.Time `json:"timestamp"`
+	Limit       int       `json:"limit"`
+	Cursor      string    `json:"cursor"`
+	Refresh     bool      `json:"refresh"`
+	IncludePoap bool      `json:"include_poap"`
 }
 
 type Transactions []model.Transaction
