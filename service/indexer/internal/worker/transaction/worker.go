@@ -151,8 +151,16 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	transactions = make([]model.Transaction, 0)
 
+	transactionMap := make(map[string]*model.Transaction)
+
 	for _, internalTransaction := range internalTransactions {
 		if internalTransaction != nil {
+			if _, exists := transactionMap[internalTransaction.Hash]; exists {
+				continue
+			} else {
+				transactionMap[internalTransaction.Hash] = internalTransaction
+			}
+
 			transactions = append(transactions, *internalTransaction)
 		}
 	}
