@@ -47,6 +47,11 @@ type GetExchangeRequest struct {
 	Network      []string `query:"network"`
 }
 
+type GetPlatformRequest struct {
+	PlatformType string   `param:"platform_type"`
+	Network      []string `query:"network"`
+}
+
 type BatchGetNotesRequest struct {
 	Address     []string  `json:"address" validate:"required"`
 	Type        []string  `query:"type"`
