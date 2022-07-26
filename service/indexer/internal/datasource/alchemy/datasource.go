@@ -2,10 +2,13 @@ package alchemy
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"math/big"
 	"strings"
+	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
@@ -154,8 +157,24 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 	}
 
 	for {
-		result, err := alchemyClient.GetAssetTransfers(context.Background(), parameter)
-		if err != nil {
+		var result *alchemy.GetAssetTransfersResult
+
+		if err := retry.Do(func() error {
+			result, err = alchemyClient.GetAssetTransfers(context.Background(), parameter)
+
+			return err
+		},
+			retry.Attempts(60*2), // ~ 2 minutes
+			retry.DelayType(func(_ uint, _ error, _ *retry.Config) time.Duration {
+				delay, err := rand.Int(rand.Reader, big.NewInt(250))
+				if err != nil {
+					delay = big.NewInt(0)
+				}
+
+				return time.Second + time.Duration(delay.Int64())*time.Millisecond
+			})); err != nil {
+			logger.Global().Error("failed to get asset transfers", zap.Error(err))
+
 			return nil, err
 		}
 
