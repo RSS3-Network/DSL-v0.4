@@ -175,6 +175,16 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 	internalTransaction := transaction
 	internalTransaction.Transfers = make([]model.Transfer, 0)
 
+	if internalTransaction.Type != "" || internalTransaction.Tag != "" {
+		for _, transfer := range transaction.Transfers {
+			if transfer.Index != protocol.IndexVirtual {
+				internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+			}
+		}
+
+		return &internalTransaction, nil
+	}
+
 	for _, transfer := range transaction.Transfers {
 		if !(transfer.Metadata == nil || bytes.Equal(transfer.Metadata, metadata.Default)) {
 			internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
