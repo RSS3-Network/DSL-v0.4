@@ -1,17 +1,17 @@
 package protocol
 
 const (
-	PlatfromMirror    = "mirror"
-	PlatfromLens      = "lens"
-	PlatfromCrossbell = "crossbell"
+	PlatfromMirror    = "Mirror"
+	PlatfromLens      = "Lens"
+	PlatfromCrossbell = "Crossbell"
 	PlatfromPOAP      = "POAP"
-	PlatfromGitcoin   = "gitcoin"
-	PlatfromSnapshot  = "snapshot"
+	PlatfromGitcoin   = "Gitcoin"
+	PlatfromSnapshot  = "Snapshot"
 
 	// dex
-	PlatformUniswap     = "uniswap"
-	PlatformSushiswap   = "sushiswap"
-	PlatformPancakeswap = "pancakeswap"
+	PlatformUniswap     = "Uniswap"
+	PlatformSushiswap   = "SushiSwap"
+	PlatformPancakeswap = "PancakeSwap"
 	Platform1inch       = "1inch"
-	PlatformMetamask    = "metamask"
+	PlatformMetamask    = "MetaMask"
 )
