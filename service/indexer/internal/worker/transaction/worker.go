@@ -293,7 +293,7 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 
 		var wallet exchange.CexWallet
 
-		if err := s.checkCexWallet(ctx, message.Address, &transfer, &wallet); err != nil {
+		if err := s.checkCexWallet(ctx, message.Address, &transaction, &transfer, &wallet); err != nil {
 			return nil, err
 		}
 
@@ -579,7 +579,7 @@ func (s *service) Jobs() []worker.Job {
 }
 
 // Check address (from / to) is a WalletAddress. If true, update transfer
-func (s *service) checkCexWallet(ctx context.Context, address string, transfer *model.Transfer, wallet *exchange.CexWallet) error {
+func (s *service) checkCexWallet(ctx context.Context, address string, transaction *model.Transaction, transfer *model.Transfer, wallet *exchange.CexWallet) error {
 	// get from redis cache (to)
 	exists, err := cache.GetMsgPack(ctx, keyOfCheckCexWallet(strings.ToLower(transfer.AddressTo)), wallet)
 	if err != nil {
@@ -617,6 +617,7 @@ func (s *service) checkCexWallet(ctx context.Context, address string, transfer *
 
 	if transfer.Tag = filter.UpdateTag(filter.TagExchange, transfer.Tag); transfer.Tag == filter.TagExchange {
 		transfer.Platform = wallet.Name
+		transaction.Platform = wallet.Name
 
 		if transfer.AddressTo == address {
 			transfer.Type = filter.ExchangeWithdraw
