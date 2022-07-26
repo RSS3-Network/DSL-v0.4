@@ -145,7 +145,7 @@ func (s *Server) Initialize() (err error) {
 		swapWorker,
 		poap.New(ethereumClientMap),
 		mirror.New(),
-		gitcoin.New(s.databaseClient, s.redisClient),
+		gitcoin.New(s.databaseClient, s.redisClient, ethereumClientMap),
 		crossbell.New(s.databaseClient),
 		snapshot.New(s.databaseClient, s.redisClient),
 		transaction.New(s.databaseClient, ethereumClientMap),

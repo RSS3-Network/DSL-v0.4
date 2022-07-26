@@ -278,7 +278,7 @@ func handleLog(ctx context.Context, message *protocol.Message, transaction *mode
 
 		transfer.AddressFrom = strings.ToLower(event.From.String())
 		transfer.AddressTo = strings.ToLower(event.To.String())
-	case gitcoin.EventHashDonation:
+	case gitcoin.EventHashDonationSent:
 		flterer, err := gitcoin.NewGitcoinFilterer(log.Address, nil)
 		if err != nil {
 			return nil, err
