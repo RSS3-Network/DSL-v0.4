@@ -4,19 +4,19 @@ package protocol
 // - service/hub/internal/server/handler/handler_platform.go
 const (
 	// social
-	PlatfromMirror    = "Mirror"
-	PlatfromLens      = "Lens"
-	PlatfromCrossbell = "Crossbell"
+	PlatformMirror    = "Mirror"
+	PlatformLens      = "Lens"
+	PlatformCrossbell = "Crossbell"
 
 	// collectible
-	PlatfromPOAP   = "POAP"
-	PlatfromGalaxy = "Galaxy"
+	PlatformPOAP   = "POAP"
+	PlatformGalaxy = "Galaxy"
 
 	// donation
-	PlatfromGitcoin = "Gitcoin"
+	PlatformGitcoin = "Gitcoin"
 
 	// governance
-	PlatfromSnapshot = "Snapshot"
+	PlatformSnapshot = "Snapshot"
 
 	// exchange
 	// dex

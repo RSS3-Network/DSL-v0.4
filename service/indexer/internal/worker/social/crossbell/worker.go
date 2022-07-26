@@ -80,7 +80,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			return
 		}
 
-		transaction.Platform = protocol.PlatfromCrossbell
+		transaction.Platform = protocol.PlatformCrossbell
 
 		// Retain the action model of the transfer type
 		transferMap := make(map[int64]model.Transfer)

@@ -106,7 +106,7 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 		return nil, err
 	}
 
-	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToProfileId)
+	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatformCrossbell, contract.AddressCharacter, event.ToProfileId)
 
 	profile := &model.Profile{
 		// TODO: use appId from CSB
@@ -149,7 +149,7 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ToProfileId)
+	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatformCrossbell, contract.AddressCharacter, event.ToProfileId)
 
 	profile := &model.Profile{
 		// TODO: use appId from CSB
@@ -191,7 +191,7 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	profileMetadata, _ := nft.GetMetadata(protocol.PlatfromCrossbell, contract.AddressCharacter, event.ProfileId)
+	profileMetadata, _ := nft.GetMetadata(protocol.PlatformCrossbell, contract.AddressCharacter, event.ProfileId)
 
 	profile := &model.Profile{
 		Address: transfer.AddressFrom,

@@ -16,21 +16,21 @@ import (
 // NOTE: if you update the list, also update the list in the following files:
 // - common/protocol/platform.go
 
-var exchangeList = map[string][]string{
+var platformList = map[string][]string{
 	filter.TagSocial: {
-		protocol.PlatfromMirror,
-		protocol.PlatfromLens,
-		protocol.PlatfromCrossbell,
+		protocol.PlatformMirror,
+		protocol.PlatformLens,
+		protocol.PlatformCrossbell,
 	},
 	filter.TagCollectible: {
-		protocol.PlatfromPOAP,
-		protocol.PlatfromGalaxy,
+		protocol.PlatformPOAP,
+		protocol.PlatformGalaxy,
 	},
 	filter.TagDonation: {
-		protocol.PlatfromGitcoin,
+		protocol.PlatformGitcoin,
 	},
 	filter.TagGovernance: {
-		protocol.PlatfromSnapshot,
+		protocol.PlatformSnapshot,
 	},
 	filter.TagExchange: {
 		protocol.PlatformUniswap,
@@ -65,7 +65,7 @@ func (h *Handler) GetPlatformListFunc(c echo.Context) error {
 	switch request.PlatformType {
 	case "exchange":
 		// get DEX from the list
-		for _, v := range exchangeList[request.PlatformType] {
+		for _, v := range platformList[request.PlatformType] {
 			result = append(result, PlatformResult{
 				Name: v,
 				Tag:  request.PlatformType,
@@ -80,7 +80,7 @@ func (h *Handler) GetPlatformListFunc(c echo.Context) error {
 			result = append(result, dbResult...)
 		}
 	case "all":
-		for k, t := range exchangeList {
+		for k, t := range platformList {
 			for _, v := range t {
 				temp := PlatformResult{
 					Name: v,
@@ -101,7 +101,7 @@ func (h *Handler) GetPlatformListFunc(c echo.Context) error {
 			result = append(result, dbResult...)
 		}
 	default:
-		for _, v := range exchangeList[request.PlatformType] {
+		for _, v := range platformList[request.PlatformType] {
 			result = append(result, PlatformResult{
 				Name: v,
 				Tag:  request.PlatformType,

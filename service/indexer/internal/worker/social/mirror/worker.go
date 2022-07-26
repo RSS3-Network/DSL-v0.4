@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	Name = protocol.PlatfromMirror
+	Name = protocol.PlatformMirror
 )
 
 var _ worker.Worker = &service{}

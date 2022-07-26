@@ -122,6 +122,7 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.GET("/notes/:address", s.httpHandler.GetNotesFunc, middlewarex.TranslateAddressMiddleware)
 	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetsFunc, middlewarex.TranslateAddressMiddleware)
 	s.httpServer.GET("/exchanges/:exchange_type", s.httpHandler.GetExchangeListFunc)
+	s.httpServer.GET("/platforms/:platform_type", s.httpHandler.GetPlatformListFunc)
 	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfileListFunc, middlewarex.TranslateAddressMiddleware)
 	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolve)
 

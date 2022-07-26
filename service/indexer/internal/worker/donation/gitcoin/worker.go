@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	Name                          = protocol.PlatfromGitcoin
+	Name                          = protocol.PlatformGitcoin
 	ContractAddressPolygon        = "0xb99080b9407436ebb2b8fe56d45ffa47e9bb8877"
 	ContractAddressEth            = "0x7d655c57f71464b6f83811c55d84009cd9f5221c"
 	ContractAddressEthereumNative = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
@@ -258,7 +258,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 			Title:       project.Title,
 			Description: project.Description,
 			Logo:        project.Logo,
-			Platform:    protocol.PlatfromGitcoin,
+			Platform:    protocol.PlatformGitcoin,
 			Token:       tokenMetadata,
 		})
 		if err != nil {
