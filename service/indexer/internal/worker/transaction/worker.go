@@ -518,6 +518,7 @@ func (s *service) buildZkSyncTokenMetadata(ctx context.Context, message *protoco
 		tokenMetadata.Name = erc20Token.Name
 		tokenMetadata.Symbol = erc20Token.Symbol
 		tokenMetadata.Decimals = erc20Token.Decimals
+		tokenMetadata.Image = erc20Token.Logo
 		tokenMetadata.ContractAddress = erc20Token.ContractAddress
 		tokenMetadata.Standard = protocol.TokenStandardERC20
 	}
