@@ -565,8 +565,6 @@ func (s *service) buildType(transaction model.Transaction, transfer model.Transf
 		case filter.TagCollectible:
 			transfer.Type = filter.CollectibleBurn
 		}
-	case transfer.AddressFrom == transfer.AddressTo:
-		transfer.Type = filter.TransactionSelf
 	case transfer.Tag == filter.TagExchange:
 		transaction.Platform = transfer.Platform
 	default:

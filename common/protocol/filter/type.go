@@ -5,7 +5,6 @@ const (
 	TransactionTransfer string = "transfer"
 	TransactionMint     string = "mint"
 	TransactionBurn     string = "burn"
-	TransactionSelf     string = "self"
 
 	// exchange types:  withdraw | deposit | swap
 	ExchangeWithdraw string = "withdraw"
@@ -43,7 +42,7 @@ const (
 )
 
 var ValidTypeMap = map[string][]string{
-	TagTransaction: {TransactionTransfer, TransactionMint, TransactionBurn, TransactionSelf},
+	TagTransaction: {TransactionTransfer, TransactionMint, TransactionBurn},
 	TagExchange:    {ExchangeWithdraw, ExchangeDeposit, ExchangeSwap},
 	TagCollectible: {CollectibleTrade, CollectibleMint, CollectibleBurn, CollectiblePoap},
 	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike},
