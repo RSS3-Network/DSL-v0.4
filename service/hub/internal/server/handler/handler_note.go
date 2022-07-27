@@ -135,7 +135,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 	}
 
 	if !request.IncludePoap {
-		sql = sql.Where("type != ?", filter.CollectiblePoap)
+		sql = sql.Where("\"type\" != ?", filter.CollectiblePoap)
 	}
 
 	if len(request.Network) > 0 {
@@ -292,7 +292,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	}
 
 	if !request.IncludePoap {
-		sql = sql.Where("type != ?", filter.CollectiblePoap)
+		sql = sql.Where("\"type\" != ?", filter.CollectiblePoap)
 	}
 
 	if len(request.Network) > 0 {
