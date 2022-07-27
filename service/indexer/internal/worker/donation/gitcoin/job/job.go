@@ -86,10 +86,6 @@ func (job *GitcoinProjectJob) SetCache() {
 	}
 
 	for _, project := range projectList {
-		if !project.Active {
-			continue
-		}
-
 		projectByte, _ := json.Marshal(project)
 		// set redis
 		if err := job.RedisClient.HSet(
