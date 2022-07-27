@@ -122,11 +122,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	}
 
 	if len(votes) == 0 && len(proposalsByAuthorMap) == 0 {
-		return nil, nil
+		return transactions, nil
 	}
 
 	if isVoteError && isProposalsByAuthorError {
-		return nil, errors.New("failed to get snapshot votes and proposals by author")
+		return transactions, errors.New("failed to get snapshot votes and proposals by author")
 	}
 
 	proposalIDSet := mapset.NewSet()
@@ -167,7 +167,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	spaceMap, err := s.getSnapshotSpaces(ctx, spaceIDs, snapshotNetworkNum)
 	if err != nil {
-		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot spaces: %w", err)
+		return transactions, fmt.Errorf("[snapshot worker] failed to get snapshot spaces: %w", err)
 	}
 
 	if !isVoteError {
@@ -419,7 +419,7 @@ func (s *service) getVote(
 				Tag:             filter.TagGovernance,
 				Type:            filter.GovernanceVote,
 				Timestamp:       vote.DateCreated,
-				Index:           protocol.IndexVirtual,
+				Index:           0, // cannot use -1
 				AddressFrom:     lowerAddress,
 				Metadata:        rawMetadata,
 				Platform:        Name,
@@ -487,7 +487,7 @@ func (s *service) getProposal(
 				Tag:             filter.TagGovernance,
 				Type:            filter.GovernancePropose,
 				Timestamp:       proposal.DateCreated,
-				Index:           protocol.IndexVirtual,
+				Index:           0, // cannot use -1
 				AddressFrom:     message.Address,
 				Metadata:        rawMetadata,
 				Platform:        Name,

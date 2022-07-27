@@ -35,10 +35,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
+
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
@@ -321,13 +321,13 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 				if err := s.databaseClient.
 					Model((*model.Transaction)(nil)).
 					Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp").
-					Where("? = ANY(addresses)", message.Address).
+					Where("owner = ?", message.Address).
 					Where("network = ?", message.Network).
 					Order("timestamp DESC").
 					Limit(1).
 					Pluck("timestamp", &timestamp).
 					Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-					return err
+					continue
 				}
 
 				message.Timestamp = timestamp
@@ -534,7 +534,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 				if err != nil {
 					logger.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
 
-					return err
+					continue
 				}
 
 				if len(internalTransactions) == 0 {
