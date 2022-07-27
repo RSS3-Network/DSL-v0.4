@@ -127,6 +127,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				value = transaction
 				value.AddressTo = strings.ToLower(string(transactionEdge.Node.Owner.Address))
 				value.AddressFrom = strings.ToLower(mirrorMetadata.Contributor)
+				value.Owner = strings.ToLower(mirrorMetadata.Contributor)
 
 				// Ignore transfers data that will not be updated
 				value.Transfers = make([]model.Transfer, 0)

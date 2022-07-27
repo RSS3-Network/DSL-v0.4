@@ -161,6 +161,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				transactionMap[internalTransaction.Hash] = internalTransaction
 			}
 
+			internalTransaction.Owner = internalTransaction.AddressFrom
+
 			transactions = append(transactions, *internalTransaction)
 		}
 	}

@@ -112,6 +112,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
 		}
 
+		transaction.Owner = transaction.AddressFrom
+
 		internalTransactions = append(internalTransactions, transaction)
 	}, opt)
 

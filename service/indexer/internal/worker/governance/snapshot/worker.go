@@ -405,6 +405,7 @@ func (s *service) getVote(
 	currTransaction := model.Transaction{
 		Hash:        strings.ToLower(vote.ID),
 		Timestamp:   vote.DateCreated,
+		Owner:       message.Address,
 		AddressFrom: lowerAddress,
 		Platform:    Name,
 		Network:     message.Network,
@@ -472,6 +473,7 @@ func (s *service) getProposal(
 	currTransaction := model.Transaction{
 		Hash:        strings.ToLower(proposal.ID),
 		Timestamp:   proposal.DateCreated,
+		Owner:       message.Address,
 		AddressFrom: message.Address,
 		Platform:    Name,
 		Network:     message.Network,

@@ -109,6 +109,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				value.Platform = Name
 			}
 
+			value.Owner = transaction.AddressFrom
+
 			internalTransactionMap[transaction.Hash] = value
 		}
 	}

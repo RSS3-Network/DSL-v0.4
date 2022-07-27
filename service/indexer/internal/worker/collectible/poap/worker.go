@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -137,6 +138,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			value.Tag, value.Type = filter.UpdateTagAndType(transfer.Tag, value.Tag, transfer.Type, value.Type)
 			if value.Tag == transfer.Tag {
 				value.Platform = transfer.Platform
+			}
+
+			if common.HexToAddress(transfer.AddressFrom) == ethereum.AddressGenesis {
+				value.Owner = transfer.AddressTo
+			} else {
+				value.Owner = transaction.AddressFrom
 			}
 
 			value.Transfers = append(value.Transfers, transfer)
