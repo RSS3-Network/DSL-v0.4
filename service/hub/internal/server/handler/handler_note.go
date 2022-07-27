@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
@@ -317,6 +318,16 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	if err := sql.Count(&total).Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
 		return nil, 0, err
 	}
+
+	// publish mq message
+	go func() {
+		if request.Refresh || len(transactions) == 0 {
+			for _, address := range request.Address {
+				go h.publishIndexerMessage(ctx, address)
+				time.Sleep(500 * time.Millisecond)
+			}
+		}
+	}()
 
 	transactionHashes := make([]string, 0)
 	for _, transactionHash := range transactions {
