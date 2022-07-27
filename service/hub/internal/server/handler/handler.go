@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	DefaultLimit         = 500
-	DefaultBatchGetLimit = 20
+	DefaultLimit = 500
 )
 
 type Handler struct {

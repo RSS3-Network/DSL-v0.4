@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
-	"github.com/lib/pq"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -110,7 +109,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 	total := int64(0)
 	sql := h.DatabaseClient.
 		Model(&dbModel.Transaction{}).
-		Where("? = ANY(addresses)", request.Address) // address was already converted to lowercase
+		Where("owner = ?", request.Address) // address was already converted to lowercase
 
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
@@ -256,7 +255,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 
 	sql := h.DatabaseClient.
 		Model(&dbModel.Transaction{}).
-		Where("addresses && ?", pq.Array(request.Address))
+		Where("owner IN ?", request.Address)
 
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
