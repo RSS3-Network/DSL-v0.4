@@ -13,10 +13,11 @@ const (
 	ExchangeSwap     string = "swap"
 
 	// NFT types: transfer | mint | burn | poap
-	CollectibleTrade string = "trade"
-	CollectibleMint  string = "mint"
-	CollectibleBurn  string = "burn"
-	CollectiblePoap  string = "poap"
+	CollectibleTransfer string = "transfer"
+	CollectibleTrade    string = "trade"
+	CollectibleMint     string = "mint"
+	CollectibleBurn     string = "burn"
+	CollectiblePoap     string = "poap"
 
 	// social types: post | comment | share (retweet) | profile | follow | unfollow | like
 	SocialPost     string = "post"

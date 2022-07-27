@@ -575,7 +575,7 @@ func (s *service) buildType(transaction model.Transaction, transfer model.Transf
 		case filter.TagTransaction:
 			transfer.Type = filter.TransactionTransfer
 		case filter.TagCollectible:
-			transfer.Type = filter.CollectibleTrade
+			transfer.Type = filter.CollectibleTransfer
 		}
 	}
 
