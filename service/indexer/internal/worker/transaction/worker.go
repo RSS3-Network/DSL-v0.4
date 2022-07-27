@@ -161,9 +161,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				transactionMap[internalTransaction.Hash] = internalTransaction
 			}
 
-			internalTransaction.Owner = internalTransaction.AddressFrom
-
-			transactions = append(transactions, *internalTransaction)
+			// POAP is a special case, owner must be set to the recipient
+			// otherwise it will be shown in the result
+			if internalTransaction.Type != filter.CollectiblePoap {
+				internalTransaction.Owner = internalTransaction.AddressFrom
+				transactions = append(transactions, *internalTransaction)
+			}
 		}
 	}
 
