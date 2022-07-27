@@ -28,10 +28,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	Name = "swap"
-)
-
 var _ worker.Worker = &service{}
 
 type service struct {
@@ -42,7 +38,7 @@ type service struct {
 }
 
 func (s *service) Name() string {
-	return Name
+	return filter.ExchangeSwap
 }
 
 func (s *service) Networks() []string {
@@ -102,7 +98,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 			return
 		}
 
-		transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagExchange, transaction.Tag, filter.ExchangeSwap, transaction.Type)
+		// transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagExchange, transaction.Tag, filter.ExchangeSwap, transaction.Type)
 		transaction.Owner = transaction.AddressFrom
 
 		mu.Lock()
@@ -149,7 +145,6 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 	for _, log := range receipt.Logs {
 		for _, topic := range log.Topics {
 			var internalTokenMap map[common.Address]*big.Int
-
 			switch topic {
 			case uniswap.EventHashSwapV2:
 				internalTokenMap, err = s.handleUniswapV2(ctx, message, *log, tokenMap, ethereumClient)
@@ -167,71 +162,78 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 		}
 	}
 
-	swapMetadataModel := metadata.Swap{
-		Protocol: router.Protocol,
+	transfer := model.Transfer{
+		TransactionHash: transaction.Hash,
+		Timestamp:       transaction.Timestamp,
+		BlockNumber:     big.NewInt(transaction.BlockNumber),
+		Index:           0, // TODO
+		AddressFrom:     transaction.AddressFrom,
+		AddressTo:       transaction.AddressFrom,
+		Metadata:        metadata.Default,
+		Network:         message.Network,
+		Source:          protocol.SourceOrigin,
+		RelatedUrls: []string{
+			ethereum.BuildScanURL(message.Network, transaction.Hash),
+		},
 	}
 
-	for token, value := range tokenMap {
-		erc20, err := s.tokenClient.ERC20(ctx, message.Network, token.String())
+	if len(tokenMap) > 0 {
+		swapMetadataModel := metadata.Swap{
+			Protocol: router.Protocol,
+		}
+
+		for token, value := range tokenMap {
+			erc20, err := s.tokenClient.ERC20(ctx, message.Network, token.String())
+			if err != nil {
+				return nil, err
+			}
+
+			tokenValueTo := decimal.NewFromBigInt(value, 0)
+
+			tokenValueFrom := tokenValueTo.Abs()
+
+			switch value.Cmp(big.NewInt(0)) {
+			case -1:
+				swapMetadataModel.TokenFrom = metadata.Token{
+					Name:            erc20.Name,
+					Symbol:          erc20.Symbol,
+					Decimals:        erc20.Decimals,
+					Value:           &tokenValueFrom,
+					ContractAddress: token.String(),
+					Standard:        protocol.TokenStandardERC20,
+					Image:           erc20.Logo,
+				}
+			case 0:
+				continue
+			case 1:
+				swapMetadataModel.TokenTo = metadata.Token{
+					Name:            erc20.Name,
+					Symbol:          erc20.Symbol,
+					Decimals:        erc20.Decimals,
+					Value:           &tokenValueTo,
+					ContractAddress: token.String(),
+					Standard:        protocol.TokenStandardERC20,
+					Image:           erc20.Logo,
+				}
+			}
+		}
+
+		swapMetadata, err := json.Marshal(swapMetadataModel)
 		if err != nil {
 			return nil, err
 		}
 
-		tokenValueTo := decimal.NewFromBigInt(value, 0)
-
-		tokenValueFrom := tokenValueTo.Abs()
-
-		switch value.Cmp(big.NewInt(0)) {
-		case -1:
-			swapMetadataModel.TokenFrom = metadata.Token{
-				Name:            erc20.Name,
-				Symbol:          erc20.Symbol,
-				Decimals:        erc20.Decimals,
-				Value:           &tokenValueFrom,
-				ContractAddress: token.String(),
-				Standard:        protocol.TokenStandardERC20,
-				Image:           erc20.Logo,
-			}
-		case 0:
-			continue
-		case 1:
-			swapMetadataModel.TokenTo = metadata.Token{
-				Name:            erc20.Name,
-				Symbol:          erc20.Symbol,
-				Decimals:        erc20.Decimals,
-				Value:           &tokenValueTo,
-				ContractAddress: token.String(),
-				Standard:        protocol.TokenStandardERC20,
-				Image:           erc20.Logo,
-			}
+		transfer.Metadata = swapMetadata
+		transfer.Tag = filter.TagExchange
+		transfer.Type = filter.ExchangeSwap
+		transaction.Platform = router.Name
+		internalTransfers = append(internalTransfers, transfer)
+	} else {
+		// let transaction worker take care of it
+		if transaction.SourceData, err = json.Marshal(receipt.Logs); err != nil {
+			return nil, err
 		}
 	}
-
-	swapMetadata, err := json.Marshal(swapMetadataModel)
-	if err != nil {
-		return nil, err
-	}
-
-	transaction.Platform = router.Name
-
-	internalTransfers = append(internalTransfers, model.Transfer{
-		TransactionHash: transaction.Hash,
-		Timestamp:       transaction.Timestamp,
-		BlockNumber:     big.NewInt(transaction.BlockNumber),
-		Tag:             filter.TagExchange,
-		Type:            filter.ExchangeSwap,
-		Index:           0, // TODO
-		AddressFrom:     transaction.AddressFrom,
-		AddressTo:       transaction.AddressFrom,
-		Metadata:        swapMetadata,
-		Network:         message.Network,
-		Platform:        router.Name,
-		Source:          protocol.SourceOrigin,
-		// SourceData:      sourceDa,
-		RelatedUrls: []string{
-			ethereum.BuildScanURL(message.Network, transaction.Hash),
-		},
-	})
 
 	return internalTransfers, nil
 }
