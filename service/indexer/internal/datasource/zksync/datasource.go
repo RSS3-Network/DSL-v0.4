@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"go.opentelemetry.io/otel"
 )
@@ -24,8 +23,8 @@ const (
 
 	OperationTypeTransfer = "Transfer"
 
-	StatusSuccess  = "success"
-	StatusRejected = "rejected"
+	StatusFinalized = "finalized"
+	StatusRejected  = "rejected"
 )
 
 type Datasource struct {
@@ -84,7 +83,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 
 			success := true
 
-			if internalTransaction.Status != StatusSuccess {
+			if internalTransaction.Status != StatusFinalized {
 				success = false
 			}
 
