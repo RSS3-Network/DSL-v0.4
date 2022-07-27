@@ -433,15 +433,20 @@ func transactionsMap2Array(transactionsMap map[string]model.Transaction) []model
 	return transactions
 }
 
-func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Transaction) (err error) {
-	tracer := otel.Tracer("server_upsertTransactions")
-	_, trace := tracer.Start(ctx, "server:upsertTransactions")
-	defer func() { opentelemetry.Log(trace, len(transactions), nil, err) }()
+func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (err error) {
+	tracer := otel.Tracer("indexer")
+	_, span := tracer.Start(ctx, "indexer:upsertTransactions")
+
+	defer opentelemetry.Log(span, len(transactions), nil, err)
+
+	tx := s.databaseClient.Begin()
 
 	dbChunkSize := 800
 
-	transfers := []model.Transfer{}
-	updatedTransactions := []model.Transaction{}
+	var (
+		transfers           []model.Transfer
+		updatedTransactions []model.Transaction
+	)
 
 	for _, transaction := range transactions {
 		addresses := strset.New(transaction.AddressFrom, transaction.AddressTo)
@@ -478,41 +483,48 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 				addresses.Add(transfer.AddressTo)
 			}
 		}
+
 		transaction.Addresses = addresses.List()
 		updatedTransactions = append(updatedTransactions, transaction)
 	}
 
 	for _, ts := range lo.Chunk(updatedTransactions, dbChunkSize) {
-		if err = s.databaseClient.
+		if err = tx.
 			Clauses(clause.OnConflict{
 				UpdateAll: true,
 			}).
 			Create(ts).Error; err != nil {
+			logger.Global().Error("failed to upsert transactions", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
+
+			tx.Rollback()
+
 			return err
 		}
 	}
+
 	for _, ts := range lo.Chunk(transfers, dbChunkSize) {
-		if err = s.databaseClient.
+		if err = tx.
 			Clauses(clause.OnConflict{
 				UpdateAll: true,
 				DoUpdates: clause.AssignmentColumns([]string{"metadata"}),
 			}).
 			Create(ts).Error; err != nil {
-			logger.Global().Error("failed to upsert transfers", zap.Error(err), zap.String("network", transactions[0].Network))
+			logger.Global().Error("failed to upsert transfers", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
+
+			tx.Rollback()
 
 			return err
 		}
 	}
 
-	return nil
+	return tx.Commit().Error
 }
 
-func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction, transactionsMap map[string]model.Transaction) error {
+func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction, transactionsMap map[string]model.Transaction) (err error) {
 	tracer := otel.Tracer("indexer")
-	ctx, trace := tracer.Start(ctx, "indexer:handleWorkers")
+	ctx, span := tracer.Start(ctx, "indexer:handleWorkers")
 
-	var err error
-	defer func() { opentelemetry.Log(trace, message, transactions, err) }()
+	defer opentelemetry.Log(span, message, transactions, err)
 
 	// Using workers to clean data
 	for _, worker := range s.workers {
@@ -539,7 +551,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 		}
 	}
 
-	return s.upsertTransactions(ctx, transactions)
+	return s.upsertTransactions(ctx, message, transactions)
 }
 
 func New(config *config.Config) *Server {
