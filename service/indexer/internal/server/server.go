@@ -335,7 +335,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 				internalTransactions, err := datasource.Handle(ctx, message)
 				// Avoid blocking indexed workers
 				if err != nil {
-					logger.Global().Error("datasource handle failed", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
+					logger.Global().Error("datasource handle failed", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("datasource", datasource.Name()))
 
 					continue
 				}
@@ -463,6 +463,11 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 
 		// Handle all transfers
 		for _, transfer := range transaction.Transfers {
+			// Ignore empty transfer
+			if bytes.Equal(transfer.Metadata, metadata.Default) {
+				continue
+			}
+
 			transfers = append(transfers, transfer)
 
 			if transfer.AddressFrom != "" && transfer.AddressFrom != ethereum.AddressGenesis.String() {

@@ -33,8 +33,9 @@ const (
 )
 
 var (
-	ErrorUnsupportedEvent = errors.New("unsupported event")
-	ErrorUnrelatedEvent   = errors.New("unrelated event")
+	ErrorUnsupportedEvent            = errors.New("unsupported event")
+	ErrorUnrelatedEvent              = errors.New("unrelated event")
+	ErrorInvalidTransactionVRSValues = errors.New("invalid transaction v, r, s values")
 )
 
 func BuildTransactions(ctx context.Context, message *protocol.Message, transactions []*model.Transaction, ethereumClient *ethclient.Client) ([]*model.Transaction, error) {
@@ -59,6 +60,19 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 	// Error topic/field count mismatch
 	transactions, err = lop.MapWithError(transactions, makeTransactionHandlerFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
 	if err != nil {
+		// Filter transactions in incompatible blocks
+		if err.Error() == ErrorInvalidTransactionVRSValues.Error() {
+			internalTransactions := make([]*model.Transaction, 0)
+
+			for _, transaction := range transactions {
+				if transaction != nil {
+					internalTransactions = append(internalTransactions, transaction)
+				}
+			}
+
+			return internalTransactions, nil
+		}
+
 		logger.Global().Error("failed to handle transactions", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
 
 		return nil, err
