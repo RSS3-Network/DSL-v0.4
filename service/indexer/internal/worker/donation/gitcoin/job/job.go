@@ -49,7 +49,7 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 		return err
 	}
 
-	for i := 1; i <= 10; i++ {
+	for i := 1; i <= 100; i++ {
 		// requeset api
 		newProject, err := job.requestGitcoinGrantApi(lastestProject.ID + 1)
 		if err != nil || newProject == nil || newProject.ID == 0 {
@@ -63,7 +63,6 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 				DoNothing: true,
 			}).
 			Create(newProject).Error; err != nil {
-			logrus.Errorf("[gitcoin job] create lastest grant, db error: %v", err)
 			continue
 		}
 

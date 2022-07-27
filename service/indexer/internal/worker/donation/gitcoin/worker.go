@@ -166,17 +166,33 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 			continue
 		}
 
-		projectStr, err := s.redisClient.HGet(ctx, s.gitcoinProjectCacheKey, strings.ToLower(event.Dest.Hex())).Result()
-		if err != nil || len(projectStr) == 0 {
+		var project donation.GitcoinProject
+
+		if err := s.databaseClient.
+			Model((*donation.GitcoinProject)(nil)).
+			Where(map[string]any{
+				"admin_address": strings.ToLower(event.Dest.Hex()),
+			}).
+			Order("id DESC").
+			First(&project).
+			Error; err != nil {
+			logger.Global().Error("get gitcoin project error", zap.Error(err))
+
 			continue
 		}
 
-		project := &donation.GitcoinProject{}
-		if err := json.Unmarshal([]byte(projectStr), &project); err != nil {
-			logger.Global().Error("unmarshal gitcoin project error", zap.Error(err))
-
-			return nil, err
-		}
+		// TODO Always return nil in non-production environments, need to refactor code involving redis
+		// projectStr, err := s.redisClient.HGet(ctx, s.gitcoinProjectCacheKey, transfer.AddressTo).Result()
+		// if err != nil || len(projectStr) == 0 {
+		// 	 return transfer, err
+		// }
+		//
+		// project := &donation.GitcoinProject{}
+		// if err := json.Unmarshal([]byte(projectStr), &project); err != nil {
+		//	 logger.Global().Error("unmarshal gitcoin project error", zap.Error(err))
+		//
+		//	 return nil, err
+		// }
 
 		sourceData, err := json.Marshal(log)
 		if err != nil {
