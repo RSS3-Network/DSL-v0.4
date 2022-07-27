@@ -442,17 +442,33 @@ func (s *Server) upsertTransactions(ctx context.Context, transactions []model.Tr
 
 	transfers := []model.Transfer{}
 	updatedTransactions := []model.Transaction{}
+
 	for _, transaction := range transactions {
 		addresses := strset.New(transaction.AddressFrom, transaction.AddressTo)
+
+		// Ignore empty transactions
+		internalTransfers := make([]model.Transfer, 0)
+
 		for _, transfer := range transaction.Transfers {
 			if bytes.Equal(transfer.Metadata, metadata.Default) {
 				continue
 			}
+
+			internalTransfers = append(internalTransfers, transfer)
+		}
+
+		if len(internalTransfers) == 0 {
+			continue
+		}
+
+		// Handle all transfers
+		for _, transfer := range transaction.Transfers {
 			transfers = append(transfers, transfer)
 
 			if transfer.AddressFrom != "" && transfer.AddressFrom != ethereum.AddressGenesis.String() {
 				addresses.Add(transfer.AddressFrom)
 			}
+
 			if transfer.AddressTo != "" && transfer.AddressTo != ethereum.AddressGenesis.String() {
 				addresses.Add(transfer.AddressTo)
 			}
