@@ -20,7 +20,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -38,7 +37,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
-
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
@@ -95,8 +93,6 @@ func (s *Server) Initialize() (err error) {
 			semconv.ServiceVersionKey.String(protocol.Version),
 		)),
 	))
-
-	nft.Initialize(s.config.Infura.ProjectID)
 
 	s.databaseClient, err = database.Dial(s.config.Postgres.String(), true)
 	if err != nil {

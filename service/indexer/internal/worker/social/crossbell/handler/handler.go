@@ -4,20 +4,19 @@ import (
 	"context"
 	"encoding/json"
 
-	"gorm.io/gorm"
-
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/character"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/linklist"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/periphery"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/profile"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/internal/token"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/character"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/linklist"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/periphery"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/profile"
 	"go.opentelemetry.io/otel"
+	"gorm.io/gorm"
 )
 
 type Interface interface {
@@ -99,6 +98,10 @@ func New(ethereumClient *ethclient.Client, databaseClient *gorm.DB) (Interface, 
 		return nil, err
 	}
 
+	tokenClient := token.New(databaseClient, map[string]*ethclient.Client{
+		protocol.NetworkCrossbell: ethereumClient,
+	})
+
 	return &handler{
 		characterHandler: &characterHandler{
 			characterContract: characterContract,
@@ -106,8 +109,10 @@ func New(ethereumClient *ethclient.Client, databaseClient *gorm.DB) (Interface, 
 			profileHandler: &profileHandler{
 				profileContract: profileContract,
 				databaseClient:  databaseClient,
+				tokenClient:     tokenClient,
 			},
 			databaseClient: databaseClient,
+			tokenClient:    tokenClient,
 		},
 		linkListHandler: &linkListHandler{
 			linkListContract: linkListContract,

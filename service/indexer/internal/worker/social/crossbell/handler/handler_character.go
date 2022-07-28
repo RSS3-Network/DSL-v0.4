@@ -5,19 +5,18 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ipfs"
-	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/character"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/periphery"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/internal/token"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/character"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/periphery"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -30,6 +29,7 @@ type characterHandler struct {
 	peripheryContract *periphery.Periphery
 	profileHandler    *profileHandler
 	databaseClient    *gorm.DB
+	tokenClient       *token.Client
 }
 
 func (c *characterHandler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
@@ -90,8 +90,12 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 	if err != nil {
 		return nil, err
 	}
+
 	// Self-hosted IPFS files may be out of date
-	characterMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.CharacterId)
+	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.CharacterId)
+	if err != nil {
+		return nil, err
+	}
 
 	profile := &model.Profile{
 		Address: transfer.AddressFrom,
@@ -103,7 +107,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 		Type:     filter.SocialProfileCreate,
 	}
 
-	if err = BuildProfileMetadata(characterMetadata, profile); err != nil {
+	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
@@ -132,7 +136,10 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 		return nil, err
 	}
 
-	characterMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.CharacterId)
+	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.CharacterId)
+	if err != nil {
+		return nil, err
+	}
 
 	profile := &model.Profile{
 		Address: transfer.AddressFrom,
@@ -144,7 +151,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 		Type:     filter.SocialProfileUpdate,
 	}
 
-	if err = BuildProfileMetadata(characterMetadata, profile); err != nil {
+	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
@@ -222,7 +229,10 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 		return nil, err
 	}
 
-	toCharacterMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.ToCharacterId)
+	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ToCharacterId)
+	if err != nil {
+		return nil, err
+	}
 
 	profile := &model.Profile{
 		// TODO: use appId from CSB
@@ -232,7 +242,7 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 		Source:   transfer.Network,
 	}
 
-	if err = BuildProfileMetadata(toCharacterMetadata, profile); err != nil {
+	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
@@ -260,7 +270,10 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 		return nil, err
 	}
 
-	toCharacterMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.ToCharacterId)
+	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ToCharacterId)
+	if err != nil {
+		return nil, err
+	}
 
 	profile := &model.Profile{
 		// TODO: use appId from CSB
@@ -270,7 +283,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 		Source:   transfer.Network,
 	}
 
-	if err = BuildProfileMetadata(toCharacterMetadata, profile); err != nil {
+	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
@@ -298,7 +311,10 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		return nil, err
 	}
 
-	characterMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.CharacterId)
+	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.CharacterId)
+	if err != nil {
+		return nil, err
+	}
 
 	profile := &model.Profile{
 		Address: transfer.AddressFrom,
@@ -310,7 +326,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		Type:     filter.SocialProfileUpdate,
 	}
 
-	if err = BuildProfileMetadata(characterMetadata, profile); err != nil {
+	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
