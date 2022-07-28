@@ -161,6 +161,49 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				transactionMap[internalTransaction.Hash] = internalTransaction
 			}
 
+			// Get cost transfer
+			if isMint(internalTransaction.Tag, internalTransaction.Type) {
+				var tokenCost *metadata.Token
+
+				for _, transfer := range internalTransaction.Transfers {
+					if transfer.Index == protocol.IndexVirtual {
+						if err := json.Unmarshal(transfer.Metadata, &tokenCost); err != nil {
+							logger.Global().Error("failed to unmarshal cost token metadata", zap.Error(err), zap.String("metadata", string(transfer.Metadata)))
+
+							return nil, err
+						}
+
+						break
+					}
+				}
+
+				if tokenCost != nil {
+					// Empty the transaction list and store only non-cost transfers
+					transfers := internalTransaction.Transfers
+					internalTransaction.Transfers = make([]model.Transfer, 0)
+
+					for _, transfer := range transfers {
+						if isMint(transfer.Tag, transfer.Type) {
+							var tokenNFT metadata.Token
+
+							if err := json.Unmarshal(transfer.Metadata, &tokenNFT); err != nil {
+								logger.Global().Error("failed to unmarshal nft token metadata", zap.Error(err), zap.String("metadata", string(transfer.Metadata)))
+
+								return nil, err
+							}
+
+							tokenNFT.Cost = tokenCost
+
+							if transfer.Metadata, err = json.Marshal(tokenNFT); err != nil {
+								return nil, err
+							}
+
+							internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+						}
+					}
+				}
+			}
+
 			// POAP is a special case, owner must be set to the recipient
 			// otherwise it will be shown in the result
 			if internalTransaction.Type != filter.CollectiblePoap {
@@ -218,7 +261,7 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 				continue
 			}
 
-			internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transfer, nil, nil, sourceData.Transaction.Value())
+			internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transaction, transfer, nil, nil, sourceData.Transaction.Value())
 			if err != nil {
 				continue
 			}
@@ -296,7 +339,7 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 				continue
 			}
 
-			internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transfer, &tokenAddress, tokenID, tokenValue)
+			internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transaction, transfer, &tokenAddress, tokenID, tokenValue)
 			if err != nil {
 				return nil, err
 			}
@@ -402,7 +445,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 	return &internalTransaction, nil
 }
 
-func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *protocol.Message, transfer model.Transfer, address *string, id *big.Int, value *big.Int) (*model.Transfer, error) {
+func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *protocol.Message, transaction model.Transaction, transfer model.Transfer, address *string, id *big.Int, value *big.Int) (*model.Transfer, error) {
 	var tokenMetadata metadata.Token
 
 	if address == nil {
@@ -667,6 +710,10 @@ func (s *service) checkCexWallet(ctx context.Context, address string, transactio
 
 func keyOfCheckCexWallet(address string) string {
 	return fmt.Sprintf("check_exchange_wallet.%s", address)
+}
+
+func isMint(actionTag, actionType string) bool {
+	return (actionTag == filter.TagTransaction && actionType == filter.TransactionMint) || (actionTag == filter.TagCollectible && actionType == filter.CollectibleMint)
 }
 
 func New(databaseClient *gorm.DB, ethereumClientMap map[string]*ethclient.Client) worker.Worker {

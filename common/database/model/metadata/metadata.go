@@ -29,6 +29,7 @@ type Token struct {
 	Image           string           `json:"image,omitempty"`
 	ID              string           `json:"id,omitempty"`
 	Value           *decimal.Decimal `json:"value,omitempty"`
+	Cost            *Token           `json:"cost,omitempty"` // TODO Differentiate between UMS
 	Description     string           `json:"description,omitempty"`
 	Attributes      []TokenAttribute `json:"attributes,omitempty"`
 	ExternalLink    string           `json:"external_link,omitempty"`
