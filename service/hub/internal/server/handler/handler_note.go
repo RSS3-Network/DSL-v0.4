@@ -165,7 +165,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 		for i, v := range request.Platform {
 			request.Platform[i] = strings.ToLower(v)
 		}
-		sql = sql.Where("platform IN ?", request.Platform)
+		sql = sql.Where("LOWER(platform) IN ?", request.Platform)
 	}
 
 	if request.Timestamp.Unix() > 0 {
@@ -337,7 +337,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 		for i, v := range request.Platform {
 			request.Platform[i] = strings.ToLower(v)
 		}
-		sql = sql.Where("platform IN ?", request.Platform)
+		sql = sql.Where("LOWER(platform) IN ?", request.Platform)
 	}
 
 	if request.Timestamp.Unix() > 0 {
