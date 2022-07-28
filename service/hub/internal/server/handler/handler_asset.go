@@ -23,7 +23,7 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := GetRequest{}
+	request := GetAssetRequest{}
 
 	if err := c.Bind(&request); err != nil {
 		return BadRequest(c)
@@ -66,7 +66,7 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 	})
 }
 
-func (h *Handler) getAssets(c context.Context, request GetRequest) ([]dbModel.Asset, int64, error) {
+func (h *Handler) getAssets(c context.Context, request GetAssetRequest) ([]dbModel.Asset, int64, error) {
 	tracer := otel.Tracer("getAssets")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
@@ -77,6 +77,21 @@ func (h *Handler) getAssets(c context.Context, request GetRequest) ([]dbModel.As
 	sql := h.DatabaseClient.
 		Model(&dbModel.Asset{}).
 		Where("owner = ?", request.Address)
+
+	if len(request.Network) > 0 {
+		for i, v := range request.Network {
+			request.Network[i] = strings.ToLower(v)
+		}
+		sql = sql.Where("network IN ?", request.Network)
+	}
+
+	if len(request.TokenAddress) > 0 {
+		sql = sql.Where("token_address = ?", strings.ToLower(request.TokenAddress))
+	}
+
+	if len(request.TokenId) > 0 {
+		sql = sql.Where("token_id = ?", request.TokenId)
+	}
 
 	if len(request.Cursor) > 0 {
 		param := strings.Split(request.Cursor, ":")

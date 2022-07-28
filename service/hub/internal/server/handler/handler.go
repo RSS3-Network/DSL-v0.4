@@ -51,6 +51,16 @@ type GetPlatformRequest struct {
 	Network      []string `query:"network"`
 }
 
+type GetAssetRequest struct {
+	Address      string   `param:"address" validate:"required"`
+	Network      []string `query:"network"`
+	TokenAddress string   `query:"token_address" validate:"required_with=TokenId"`
+	TokenId      string   `query:"token_id"`
+	Cursor       string   `query:"cursor"`
+	Limit        int      `query:"limit"`
+	Refresh      bool     `query:"refresh"`
+}
+
 type BatchGetNotesRequest struct {
 	Address     []string  `json:"address" validate:"required"`
 	Type        []string  `query:"type"`
