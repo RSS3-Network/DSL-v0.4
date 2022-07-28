@@ -19,7 +19,8 @@ import (
 var platformList = map[string][]string{
 	filter.TagSocial: {
 		protocol.PlatformMirror,
-		protocol.PlatformLens,
+		// Lens support is not yet available
+		// protocol.PlatformLens,
 		protocol.PlatformCrossbell,
 	},
 	filter.TagCollectible: {
