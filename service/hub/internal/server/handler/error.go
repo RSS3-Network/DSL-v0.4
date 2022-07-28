@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -14,6 +15,12 @@ type ErrorResponse struct {
 func BadRequest(c echo.Context) error {
 	return c.JSON(http.StatusBadRequest, &ErrorResponse{
 		Error: "Please check your request and try again.",
+	})
+}
+
+func BadParams(c echo.Context, tag []string, typeX []string) error {
+	return c.JSON(http.StatusBadRequest, &ErrorResponse{
+		Error: fmt.Sprintf("Please check your param combination and try again. Tag: %s. Type: %s", tag, typeX),
 	})
 }
 
