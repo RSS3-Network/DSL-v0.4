@@ -22,6 +22,7 @@ func init() {
 
 type Token struct {
 	Name            string           `json:"name"`
+	Collection      string           `json:"collection,omitempty"` // ERC-1155
 	Symbol          string           `json:"symbol"`
 	Decimals        uint8            `json:"decimals,omitempty"`
 	Standard        string           `json:"standard"`

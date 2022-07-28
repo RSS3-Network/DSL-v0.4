@@ -483,6 +483,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			}
 
 			tokenMetadata.Name = nft.Name
+			tokenMetadata.Collection = nft.Collection
 			tokenMetadata.Symbol = nft.Symbol
 			tokenMetadata.Description = nft.Description
 			tokenMetadata.ID = nft.ID.String()
@@ -517,7 +518,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 
 			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
-			transfer.RelatedUrls = append(transfer.RelatedUrls, ethereum.BuildTokenURL(message.Network, *address, id.String()))
+			transfer.RelatedUrls = ethereum.BuildURL(transfer.RelatedUrls, ethereum.BuildTokenURL(message.Network, *address, id.String()))
 		}
 
 		tokenMetadata.ContractAddress = *address

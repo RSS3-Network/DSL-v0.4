@@ -41,6 +41,7 @@ type ERC721 struct {
 
 type ERC1155 struct {
 	Name            string          `json:"name"`
+	Symbol          string          `json:"symbol"`
 	ContractAddress string          `json:"contract_address"`
 	ID              *big.Int        `json:"id"`
 	Metadata        json.RawMessage `json:"metadata"`
@@ -49,6 +50,7 @@ type ERC1155 struct {
 
 type NFT struct {
 	Name            string              `json:"name"`
+	Collection      string              `json:"collection,omitempty"` // ERC-1155
 	Symbol          string              `json:"symbol,omitempty"`
 	Description     string              `json:"description"`
 	ContractAddress string              `json:"contract_address"`

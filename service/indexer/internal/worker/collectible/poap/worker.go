@@ -103,6 +103,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 			var tokenMetadata metadata.Token
 
+			tokenMetadata.Collection = nft.Collection
 			tokenMetadata.Name = nft.Name
 			tokenMetadata.Symbol = nft.Symbol
 			tokenMetadata.Image = nft.Image

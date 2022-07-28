@@ -27,6 +27,9 @@ func (c *Client) ERC1155(context context.Context, network, contractAddress strin
 		ID:              tokenID,
 	}
 
+	result.Name, _ = erc1155Contract.Name(&bind.CallOpts{})
+	result.Symbol, _ = erc1155Contract.Symbol(&bind.CallOpts{})
+
 	tokenURI, err := erc1155Contract.Uri(&bind.CallOpts{}, tokenID)
 	if err != nil {
 		return nil, err
@@ -62,7 +65,9 @@ func (c *Client) erc1155ToNFT(erc1155 *ERC1155, tokenID *big.Int) (*NFT, error) 
 	}
 
 	return &NFT{
+		Collection:      erc1155.Name,
 		Name:            metadata.Name,
+		Symbol:          erc1155.Symbol,
 		Description:     metadata.Description,
 		ID:              tokenID,
 		ContractAddress: erc1155.ContractAddress,

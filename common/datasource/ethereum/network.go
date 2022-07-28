@@ -35,3 +35,11 @@ func BuildTokenURL(network, address, id string) string {
 		return ""
 	}
 }
+
+func BuildURL(urls []string, url string) []string {
+	if url == "" {
+		return urls
+	}
+
+	return append(urls, url)
+}
