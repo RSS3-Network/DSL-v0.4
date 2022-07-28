@@ -60,25 +60,20 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 	// Error topic/field count mismatch
 	transactions, err = lop.MapWithError(transactions, makeTransactionHandlerFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
 	if err != nil {
-		// Filter transactions in incompatible blocks
-		if err.Error() == ErrorInvalidTransactionVRSValues.Error() {
-			internalTransactions := make([]*model.Transaction, 0)
-
-			for _, transaction := range transactions {
-				if transaction != nil {
-					internalTransactions = append(internalTransactions, transaction)
-				}
-			}
-
-			return internalTransactions, nil
-		}
-
 		logger.Global().Error("failed to handle transactions", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
 
 		return nil, err
 	}
 
-	return transactions, nil
+	internalTransactions := make([]*model.Transaction, 0)
+
+	for _, transaction := range transactions {
+		if transaction != nil {
+			internalTransactions = append(internalTransactions, transaction)
+		}
+	}
+
+	return internalTransactions, nil
 }
 
 func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message, ethereumClient *ethclient.Client) func(transaction *model.Transaction, i int) (*types.Block, error) {
@@ -108,6 +103,11 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 
 		internalTransaction, _, err := ethereumClient.TransactionByHash(ctx, common.HexToHash(transaction.Hash))
 		if err != nil {
+			// Filter transactions in incompatible blocks
+			if err.Error() == ErrorInvalidTransactionVRSValues.Error() {
+				return nil, nil
+			}
+
 			return nil, err
 		}
 
@@ -207,6 +207,7 @@ func handleReceipt(ctx context.Context, message *protocol.Message, transaction *
 func handleLog(ctx context.Context, message *protocol.Message, transaction *model.Transaction, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("ethereum")
 	_, trace := tracer.Start(ctx, "ethereum:handleLog")
+
 	transfer := model.Transfer{
 		TransactionHash: transaction.Hash,
 		Timestamp:       transaction.Timestamp,
@@ -218,8 +219,13 @@ func handleLog(ctx context.Context, message *protocol.Message, transaction *mode
 			BuildScanURL(message.Network, transaction.Hash),
 		},
 	}
+
 	var err error
-	defer func() { opentelemetry.Log(trace, message, transfer, err) }()
+	defer opentelemetry.Log(trace, message, transfer, err)
+
+	if len(log.Topics) == 0 {
+		return nil, ErrorUnsupportedEvent
+	}
 
 	switch log.Topics[0] {
 	case erc20.EventHashTransfer, erc721.EventHashTransfer:

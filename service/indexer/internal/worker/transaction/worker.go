@@ -431,6 +431,11 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenMetadata.Decimals = erc20Token.Decimals
 			tokenMetadata.Standard = protocol.TokenStandardERC20
 			tokenMetadata.ContractAddress = erc20Token.ContractAddress
+
+			if value == nil {
+				value = big.NewInt(0)
+			}
+
 			tokenValue := decimal.NewFromBigInt(value, 0)
 			tokenMetadata.Value = &tokenValue
 
