@@ -23,7 +23,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/mrc20"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -310,18 +309,6 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 
 					tokenID = event.TokenId
 				}
-			case mrc20.EventHashLogTransfer:
-				filterer, err := mrc20.NewMRC20Filterer(sourceData.Address, nil)
-				if err != nil {
-					return nil, err
-				}
-
-				event, err := filterer.ParseLogTransfer(sourceData)
-				if err != nil {
-					return nil, err
-				}
-
-				tokenValue = event.Amount
 			case erc1155.EventHashTransferSingle:
 				filterer, err := erc1155.NewERC1155Filterer(sourceData.Address, nil)
 				if err != nil {
