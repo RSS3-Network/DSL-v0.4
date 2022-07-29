@@ -67,7 +67,6 @@ type Server struct {
 	datasources        []datasource.Datasource
 	datasourcesAsset   []datasource_asset.Datasource
 	workers            []worker.Worker
-	indexedWorker      []worker.Worker
 	employer           *shedlock.Employer
 }
 
@@ -121,11 +120,6 @@ func (s *Server) Initialize() (err error) {
 		alchemyDatasource, moralis.New(s.config.Moralis.Key, s.config.RPC), arweave.New(), blockscoutDatasource, zksync.New(),
 	}
 
-	s.indexedWorker = []worker.Worker{
-		snapshot.New(s.databaseClient, s.redisClient),
-		profileworker.New(s.databaseClient),
-	}
-
 	swapWorker, err := swap.New(s.config.RPC, s.employer, s.databaseClient)
 	if err != nil {
 		return err
@@ -137,6 +131,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
+		profileworker.New(s.databaseClient),
 		swapWorker,
 		poap.New(ethereumClientMap),
 		mirror.New(),
@@ -168,6 +163,7 @@ func (s *Server) Initialize() (err error) {
 	if err != nil {
 		return err
 	}
+
 	s.datasourcesAsset = []datasource_asset.Datasource{
 		alchemyAssetDatasource,
 	}
