@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -56,6 +57,9 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 	if err != nil {
 		return InternalError(c)
 	}
+
+	b, _ := json.Marshal(transactions)
+	fmt.Println(string(b))
 
 	// publish mq message
 	if request.Refresh || len(transactions) == 0 {
@@ -115,7 +119,8 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
 
-		if err := h.DatabaseClient.Where("hash = ?", strings.ToLower(request.Cursor)).First(&lastItem).Error; err != nil {
+		// no need to lowercase
+		if err := h.DatabaseClient.Where("hash = ?", request.Cursor).First(&lastItem).Error; err != nil {
 			return nil, 0, err
 		}
 
@@ -123,7 +128,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 	}
 
 	if len(request.Hash) > 0 {
-		sql = sql.Where("hash = ?", strings.ToLower(request.Hash))
+		sql = sql.Where("hash = ?", request.Hash) // no need to lowercase
 	}
 
 	if len(request.Tag) > 0 {
@@ -261,7 +266,8 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
 
-		if err := h.DatabaseClient.Where("hash = ?", strings.ToLower(request.Cursor)).First(&lastItem).Error; err != nil {
+		// no need to lowercase
+		if err := h.DatabaseClient.Where("hash = ?", request.Cursor).First(&lastItem).Error; err != nil {
 			return nil, 0, err
 		}
 
@@ -359,7 +365,8 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, address string) {
 	defer rabbitmqSnap.End()
 
 	networks := []string{
-		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
+		protocol.NetworkEthereum,
+		protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
 	}
 
