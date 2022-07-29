@@ -90,6 +90,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	internalTransactions := make([]model.Transaction, 0)
 
 	for _, transaction := range indexedTransactions {
+		if transaction.Timestamp.Before(message.Timestamp) {
+			continue
+		}
+
 		internalTransactions = append(internalTransactions, *transaction)
 	}
 

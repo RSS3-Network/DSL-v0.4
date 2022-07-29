@@ -116,6 +116,10 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 	internalTransactions := make([]*model.Transaction, 0)
 
 	for _, transaction := range transactionsMap {
+		if transaction.BlockNumber < message.BlockNumber {
+			continue
+		}
+
 		internalTransactions = append(internalTransactions, transaction)
 	}
 

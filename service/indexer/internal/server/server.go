@@ -306,21 +306,25 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		for _, network := range datasource.Networks() {
 			if network == message.Network {
 				// Get the time of the latest data for this address and network
-				var timestamp time.Time
+				var result struct {
+					Timestamp   time.Time `gorm:"column:timestamp"`
+					BlockNumber int64     `gorm:"column:block_number"`
+				}
 
 				if err := s.databaseClient.
 					Model((*model.Transaction)(nil)).
-					Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp").
+					Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
 					Where("owner = ?", message.Address).
 					Where("network = ?", message.Network).
 					Order("timestamp DESC").
 					Limit(1).
-					Pluck("timestamp", &timestamp).
+					First(&result).
 					Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 					continue
 				}
 
-				message.Timestamp = timestamp
+				message.Timestamp = result.Timestamp
+				message.BlockNumber = result.BlockNumber
 
 				internalTransactions, err := datasource.Handle(ctx, message)
 				// Avoid blocking indexed workers
