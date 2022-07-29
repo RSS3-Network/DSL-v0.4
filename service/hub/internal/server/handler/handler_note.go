@@ -130,7 +130,8 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
 
-		if err := h.DatabaseClient.Where("hash = ?", strings.ToLower(request.Cursor)).First(&lastItem).Error; err != nil {
+		// no need to lowercase
+		if err := h.DatabaseClient.Where("hash = ?", request.Cursor).First(&lastItem).Error; err != nil {
 			return nil, 0, err
 		}
 
@@ -138,7 +139,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 	}
 
 	if len(request.Hash) > 0 {
-		sql = sql.Where("hash = ?", strings.ToLower(request.Hash))
+		sql = sql.Where("hash = ?", request.Hash) // no need to lowercase
 	}
 
 	if len(request.Tag) > 0 {
@@ -306,7 +307,8 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
 
-		if err := h.DatabaseClient.Where("hash = ?", strings.ToLower(request.Cursor)).First(&lastItem).Error; err != nil {
+		// no need to lowercase
+		if err := h.DatabaseClient.Where("hash = ?", request.Cursor).First(&lastItem).Error; err != nil {
 			return nil, 0, err
 		}
 
