@@ -64,6 +64,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		}
 
 		for _, internalTransaction := range internalTransactions.List {
+			if internalTransaction.CreatedAt.Before(message.Timestamp) {
+				continue
+			}
+
 			transactionData, _, err := d.zksyncClient.GetTransactionData(ctx, common.HexToHash(internalTransaction.TransactionHash))
 			if err != nil {
 				return nil, err
@@ -113,7 +117,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 					},
 				},
 			})
-
 		}
 
 		// If the condition is met, then all data has been obtained

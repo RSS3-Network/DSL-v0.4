@@ -12,7 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	arweave2 "github.com/naturalselectionlabs/pregod/common/worker/arweave"
+	"github.com/naturalselectionlabs/pregod/common/worker/arweave"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/arweave/graphql"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"go.opentelemetry.io/otel"
@@ -25,7 +25,7 @@ const (
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
-	arweaveClient *arweave2.Client
+	arweaveClient *arweave.Client
 }
 
 func (d *Datasource) Name() string {
@@ -66,6 +66,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 
 		timestamp := time.Unix(int64(edge.Node.Block.Timestamp), 0)
 
+		if timestamp.Before(message.Timestamp) {
+			continue
+		}
+
 		// Mirror's transactions don't have a recipient address
 		addressTo := ""
 
@@ -99,10 +103,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	return transactions, nil
 }
 
-func (d *Datasource) buildGetTransactionsVariable(ctx context.Context, address string) arweave2.GetTransactionsVariable {
-	return arweave2.GetTransactionsVariable{
+func (d *Datasource) buildGetTransactionsVariable(ctx context.Context, address string) arweave.GetTransactionsVariable {
+	return arweave.GetTransactionsVariable{
 		Owners: []graphql.String{
-			arweave2.AddressMirror,
+			arweave.AddressMirror,
 		},
 		Tags: []graphqlx.TagFilter{
 			{
@@ -125,6 +129,6 @@ func (d *Datasource) buildGetTransactionsVariable(ctx context.Context, address s
 
 func New() datasource.Datasource {
 	return &Datasource{
-		arweaveClient: arweave2.NewClient(),
+		arweaveClient: arweave.NewClient(),
 	}
 }

@@ -74,6 +74,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	for _, transaction := range transactionMap {
 		internalTransaction := transaction
 
+		if internalTransaction.BlockNumber < message.BlockNumber {
+			continue
+		}
+
 		transactions = append(transactions, &internalTransaction)
 	}
 
