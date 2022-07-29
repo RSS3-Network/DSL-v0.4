@@ -86,13 +86,13 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	if s.rabbitmqQueue, err = s.rabbitmqChannel.QueueDeclare(
-		"", false, false, false, false, nil,
+		protocol.IndexerWorkQueue, false, false, false, false, nil,
 	); err != nil {
 		return err
 	}
 
 	if err := s.rabbitmqChannel.QueueBind(
-		s.rabbitmqQueue.Name, "", protocol.ExchangeJob, false, nil,
+		s.rabbitmqQueue.Name, protocol.IndexerWorkRoutingKey, protocol.ExchangeJob, false, nil,
 	); err != nil {
 		return err
 	}

@@ -143,18 +143,7 @@ func (c *Client) URI(contractAddress string, tokenID *big.Int, tokenURI string) 
 		// TODO Move it to config
 		tokenURI = strings.Replace(tokenURI, "ipfs://", "https://ipfs.rss3.page/ipfs/", 1)
 	} else if strings.Contains(tokenURI, ";base64,") {
-		contents := strings.Split(tokenURI, ";base64,")
-
-		if len(contents) < 2 {
-			return "", ErrorInvalidMetadataFormat
-		}
-
-		result, err := base64.StdEncoding.DecodeString(contents[1])
-		if err != nil {
-			return "", err
-		}
-
-		return string(result), nil
+		return tokenURI, nil
 	}
 
 	switch common.HexToAddress(contractAddress) {
@@ -171,6 +160,21 @@ func (c *Client) URI(contractAddress string, tokenID *big.Int, tokenURI string) 
 }
 
 func (c *Client) Metadata(tokenURI string) ([]byte, error) {
+	if strings.Contains(tokenURI, ";base64,") {
+		contents := strings.Split(tokenURI, ";base64,")
+
+		if len(contents) < 2 {
+			return nil, ErrorInvalidMetadataFormat
+		}
+
+		result, err := base64.StdEncoding.DecodeString(contents[1])
+		if err != nil {
+			return nil, err
+		}
+
+		return result, nil
+	}
+
 	response, err := http.Get(tokenURI)
 	if err != nil {
 		return nil, err

@@ -30,7 +30,7 @@ type GetRequest struct {
 	Limit       int       `query:"limit"`
 	Cursor      string    `query:"cursor"`
 	Type        []string  `query:"type"`
-	Tag         string    `query:"tag" validate:"required_with=Type"`
+	Tag         []string  `query:"tag" validate:"required_with=Type"`
 	Network     []string  `query:"network"`
 	Platform    []string  `query:"platform"`
 	Timestamp   time.Time `query:"timestamp"`
@@ -51,10 +51,20 @@ type GetPlatformRequest struct {
 	Network      []string `query:"network"`
 }
 
+type GetAssetRequest struct {
+	Address      string   `param:"address" validate:"required"`
+	Network      []string `query:"network"`
+	TokenAddress string   `query:"token_address" validate:"required_with=TokenId"`
+	TokenId      string   `query:"token_id"`
+	Cursor       string   `query:"cursor"`
+	Limit        int      `query:"limit"`
+	Refresh      bool     `query:"refresh"`
+}
+
 type BatchGetNotesRequest struct {
 	Address     []string  `json:"address" validate:"required"`
 	Type        []string  `query:"type"`
-	Tag         string    `query:"tag" validate:"required_with=Type"`
+	Tag         []string  `query:"tag" validate:"required_with=Type"`
 	Network     []string  `json:"network"`
 	Platform    []string  `json:"platform"`
 	Timestamp   time.Time `json:"timestamp"`

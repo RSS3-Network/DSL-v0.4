@@ -9,9 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/profile"
 	"go.opentelemetry.io/otel"
@@ -24,6 +24,7 @@ var _ Interface = (*profileHandler)(nil)
 type profileHandler struct {
 	profileContract *profile.Profile
 	databaseClient  *gorm.DB
+	tokenClient     *token.Client
 }
 
 func (p *profileHandler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
@@ -64,7 +65,10 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	}
 
 	// Self-hosted IPFS files may be out of date
-	profileMetadata, _ := nft.GetMetadata(protocol.NetworkCrossbell, contract.AddressCharacter, event.ProfileId)
+	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ProfileId)
+	if err != nil {
+		return nil, err
+	}
 
 	profile := &model.Profile{
 		Address: transfer.AddressFrom,
@@ -76,7 +80,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 		Type:     filter.SocialProfileCreate,
 	}
 
-	if err = BuildProfileMetadata(profileMetadata, profile); err != nil {
+	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
@@ -106,7 +110,10 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 		return nil, err
 	}
 
-	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatformCrossbell, contract.AddressCharacter, event.ToProfileId)
+	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ToProfileId)
+	if err != nil {
+		return nil, err
+	}
 
 	profile := &model.Profile{
 		// TODO: use appId from CSB
@@ -116,7 +123,7 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 		Source:   transfer.Network,
 	}
 
-	if err = BuildProfileMetadata(toProfileMetadata, profile); err != nil {
+	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
@@ -149,7 +156,10 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	toProfileMetadata, _ := nft.GetMetadata(protocol.PlatformCrossbell, contract.AddressCharacter, event.ToProfileId)
+	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ToProfileId)
+	if err != nil {
+		return nil, err
+	}
 
 	profile := &model.Profile{
 		// TODO: use appId from CSB
@@ -159,7 +169,7 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 		Source:   transfer.Network,
 	}
 
-	if err = BuildProfileMetadata(toProfileMetadata, profile); err != nil {
+	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
@@ -191,7 +201,10 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	profileMetadata, _ := nft.GetMetadata(protocol.PlatformCrossbell, contract.AddressCharacter, event.ProfileId)
+	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ProfileId)
+	if err != nil {
+		return nil, err
+	}
 
 	profile := &model.Profile{
 		Address: transfer.AddressFrom,
@@ -203,7 +216,7 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 		Type:     filter.SocialProfileUpdate,
 	}
 
-	if err = BuildProfileMetadata(profileMetadata, profile); err != nil {
+	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 

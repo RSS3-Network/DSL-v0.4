@@ -20,7 +20,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/datasource/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -38,9 +37,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
-
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	profileworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/profile"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
@@ -96,8 +93,6 @@ func (s *Server) Initialize() (err error) {
 		)),
 	))
 
-	nft.Initialize(s.config.Infura.ProjectID)
-
 	s.databaseClient, err = database.Dial(s.config.Postgres.String(), true)
 	if err != nil {
 		return err
@@ -146,7 +141,6 @@ func (s *Server) Initialize() (err error) {
 		poap.New(ethereumClientMap),
 		mirror.New(),
 		gitcoin.New(s.databaseClient, s.redisClient, ethereumClientMap),
-		crossbell.New(s.databaseClient),
 		snapshot.New(s.databaseClient, s.redisClient),
 		transaction.New(s.databaseClient, ethereumClientMap),
 	}

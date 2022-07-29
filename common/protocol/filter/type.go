@@ -44,7 +44,7 @@ const (
 var ValidTypeMap = map[string][]string{
 	TagTransaction: {TransactionTransfer, TransactionMint, TransactionBurn},
 	TagExchange:    {ExchangeWithdraw, ExchangeDeposit, ExchangeSwap},
-	TagCollectible: {CollectibleTrade, CollectibleMint, CollectibleBurn, CollectiblePoap},
+	TagCollectible: {CollectibleTransfer, CollectibleMint, CollectibleBurn, CollectiblePoap},
 	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike},
 	TagDonation:    {DonationLaunch, DonationDonate},
 	TagGovernance:  {GovernancePropose, GovernanceVote},

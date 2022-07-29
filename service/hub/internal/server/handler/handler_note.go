@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -38,28 +37,40 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		request.Limit = DefaultLimit
 	}
 
+	// support many-many relationship between tag and type
+	var tags []string
 	var types []string
-	for _, t := range request.Type {
-		t = strings.ToLower(t)
+	if len(request.Tag) > 0 {
+		for _, tag := range request.Tag {
+			tag = strings.ToLower(tag)
+			if len(request.Type) > 0 {
+				for _, typeX := range request.Type {
+					typeX = strings.ToLower(typeX)
 
-		if filter.CheckTypeValid(request.Tag, t) {
-			types = append(types, t)
+					if filter.CheckTypeValid(tag, typeX) {
+						tags = append(tags, tag)
+						types = append(types, typeX)
+						// by default POAPs are not returned
+						if typeX == filter.CollectiblePoap {
+							request.IncludePoap = true
+						}
+					}
+				}
+			} else {
+				tags = append(tags, tag)
+			}
 		}
-		// by default POAPs are not returned
-		if t == filter.CollectiblePoap {
-			request.IncludePoap = true
+		if len(tags) == 0 {
+			return BadParams(c, request.Tag, request.Type)
 		}
+		request.Tag = tags
+		request.Type = types
 	}
-
-	request.Type = types
 
 	transactions, total, err := h.getTransactions(ctx, request)
 	if err != nil {
 		return InternalError(c)
 	}
-
-	b, _ := json.Marshal(transactions)
-	fmt.Println(string(b))
 
 	// publish mq message
 	if request.Refresh || len(transactions) == 0 {
@@ -132,12 +143,11 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 	}
 
 	if len(request.Tag) > 0 {
-		sql = sql.Where("tag = ?", strings.ToLower(request.Tag))
-	}
-
-	if len(request.Type) > 0 {
-		// type was already converted to lowercase
-		sql = sql.Where("\"type\" IN ?", request.Type)
+		sql = sql.Where("tag IN ?", request.Tag)
+		if len(request.Type) > 0 {
+			// type was already converted to lowercase
+			sql = sql.Where("\"type\" IN ?", request.Type)
+		}
 	}
 
 	if !request.IncludePoap {
@@ -156,7 +166,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 		for i, v := range request.Platform {
 			request.Platform[i] = strings.ToLower(v)
 		}
-		sql = sql.Where("platform IN ?", request.Platform)
+		sql = sql.Where("LOWER(platform) IN ?", request.Platform)
 	}
 
 	if request.Timestamp.Unix() > 0 {
@@ -222,6 +232,37 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	if len(request.Address) > DefaultLimit {
 		request.Address = request.Address[:DefaultLimit]
 	}
+
+	// support many-many relationship between tag and type
+	var tags []string
+	var types []string
+	if len(request.Tag) > 0 {
+		for _, tag := range request.Tag {
+			tag = strings.ToLower(tag)
+			if len(request.Type) > 0 {
+				for _, typeX := range request.Type {
+					typeX = strings.ToLower(typeX)
+
+					if filter.CheckTypeValid(tag, typeX) {
+						tags = append(tags, tag)
+						types = append(types, typeX)
+						// by default POAPs are not returned
+						if typeX == filter.CollectiblePoap {
+							request.IncludePoap = true
+						}
+					}
+				}
+			} else {
+				tags = append(tags, tag)
+			}
+		}
+		if len(tags) == 0 {
+			return BadParams(c, request.Tag, request.Type)
+		}
+		request.Tag = tags
+		request.Type = types
+	}
+
 	transactions, total, err = h.batchGetTransactions(ctx, request)
 
 	if err != nil {
@@ -275,27 +316,11 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	}
 
 	if len(request.Tag) > 0 {
-		sql = sql.Where("tag = ?", strings.ToLower(request.Tag))
-	}
-
-	var types []string
-	for _, t := range request.Type {
-		t = strings.ToLower(t)
-		if filter.CheckTypeValid(request.Tag, t) {
-			types = append(types, t)
+		sql = sql.Where("tag IN ?", request.Tag)
+		if len(request.Type) > 0 {
+			// type was already converted to lowercase
+			sql = sql.Where("\"type\" IN ?", request.Type)
 		}
-
-		// by default POAPs are not returned
-		if t == filter.CollectiblePoap {
-			request.IncludePoap = true
-		}
-	}
-
-	request.Type = types
-
-	if len(request.Type) > 0 {
-		// type was already converted to lowercase
-		sql = sql.Where("\"type\" IN ?", request.Type)
 	}
 
 	if !request.IncludePoap {
@@ -314,7 +339,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 		for i, v := range request.Platform {
 			request.Platform[i] = strings.ToLower(v)
 		}
-		sql = sql.Where("platform IN ?", request.Platform)
+		sql = sql.Where("LOWER(platform) IN ?", request.Platform)
 	}
 
 	if request.Timestamp.Unix() > 0 {
@@ -365,8 +390,7 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, address string) {
 	defer rabbitmqSnap.End()
 
 	networks := []string{
-		protocol.NetworkEthereum,
-		protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
+		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
 	}
 

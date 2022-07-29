@@ -3,10 +3,9 @@ package handler
 import (
 	"context"
 
+	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/linklist"
-
-	"github.com/naturalselectionlabs/pregod/common/database/model"
 )
 
 var _ Interface = (*linkListHandler)(nil)
