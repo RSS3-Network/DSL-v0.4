@@ -34,7 +34,7 @@ func (d *Datasource) Name() string {
 
 func (d *Datasource) Networks() []string {
 	return []string{
-		protocol.NetworkEthereumClassic, protocol.NetworkXDAI, protocol.NetworkCrossbell,
+		protocol.NetworkEthereumClassic, protocol.NetworkXDAI,
 	}
 }
 
