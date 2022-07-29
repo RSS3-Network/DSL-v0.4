@@ -2,16 +2,23 @@ package alchemy
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/ethclient"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/alchemy"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
+	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 )
@@ -29,6 +36,7 @@ var _ datasource_asset.Datasource = &Datasource{}
 
 type Datasource struct {
 	rpcClientMap map[string]*alchemy.Client // Alchemy
+	tokenClient  *token.Client
 }
 
 func (d *Datasource) Name() string {
@@ -83,9 +91,9 @@ func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) (as
 			break
 		}
 
-		for _, nft := range result.OwnedNFTs {
+		lop.ForEach(result.OwnedNFTs, func(nft alchemy.NFTResult, k int) {
 			if len(nft.Title) == 0 {
-				continue
+				return
 			}
 
 			asset := model.Asset{
@@ -99,20 +107,43 @@ func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) (as
 				Timestamp:     nft.TimeLastUpdated,
 			}
 
+			// token id
 			tokenID := big.NewInt(0)
 			tokenID.SetString(nft.ID.TokenID, 0)
 			asset.TokenID = tokenID.String()
 
-			for _, url := range nft.Media {
-				if len(url.Raw) > 0 {
-					asset.FileURLs = append(asset.FileURLs, url.Raw)
-				}
-				if len(url.Gateway) > 0 && strings.Compare(url.Raw, url.Gateway) != 0 {
-					asset.FileURLs = append(asset.FileURLs, url.Gateway)
-				}
+			// attribute
+			attributes := []metadata.TokenAttribute{}
+			for _, attribute := range nft.Metadata.Attributes {
+				attributes = append(attributes, metadata.TokenAttribute{
+					TraitType: attribute.TraitType,
+					Value:     attribute.Value,
+				})
 			}
+			if asset.Attributes, err = json.Marshal(attributes); err != nil {
+				return
+			}
+
+			// metadata
+			uri, err := d.tokenClient.URI(nft.Contract.Address, tokenID, nft.TokenURI.Raw)
+			if err != nil {
+				return
+			}
+			result, err := d.tokenClient.Metadata(uri)
+			if err != nil {
+				return
+			}
+			var metadata token.Metadata
+			if err := json.Unmarshal(result, &metadata); err != nil {
+				return
+			}
+			asset.Image = metadata.Image
+			if strings.HasPrefix(asset.Image, "ipfs://") {
+				asset.Image = ipfs.GetDirectURL(ctx, asset.Image)
+			}
+			asset.RelatedUrls = append(asset.RelatedUrls, ethereum.BuildTokenURL(message.Network, asset.TokenAddress, tokenID.String()))
 			assets = append(assets, asset)
-		}
+		})
 
 		if result.PageKey == "" {
 			break
@@ -124,9 +155,10 @@ func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) (as
 	return assets, err
 }
 
-func New(config *configx.RPC) (datasource_asset.Datasource, error) {
+func New(config *configx.RPC, ethereumClientMap map[string]*ethclient.Client) (datasource_asset.Datasource, error) {
 	internalDatasource := Datasource{
 		rpcClientMap: map[string]*alchemy.Client{},
+		tokenClient:  token.New(nil, ethereumClientMap),
 	}
 
 	var err error

@@ -111,28 +111,40 @@ type GetNFTsParameter struct {
 }
 
 type GetNFTsResult struct {
-	OwnedNFTs []struct {
-		Contract struct {
-			Address string `json:"address"`
-		} `json:"contract"`
-		ID struct {
-			TokenID       string `json:"tokenId"`
-			TokenMetadata struct {
-				TokenType string `json:"tokenType"`
-			} `json:"tokenMetadata"`
-		} `json:"id"`
-		Title       string      `json:"title"`
-		Description string      `json:"description"`
-		TokenURI    interface{} `json:"tokenUri"`
-		Media       []struct {
-			Raw     string `json:"raw"`
-			Gateway string `json:"gateway"`
-		} `json:"media"`
-		TimeLastUpdated time.Time `json:"timeLastUpdated"`
-	} `json:"ownedNfts"`
-	PageKey    string `json:"pageKey"`
-	TotalCount int    `json:"totalCount"`
-	BlockHash  string `json:"blockHash"`
+	OwnedNFTs  []NFTResult `json:"ownedNfts"`
+	PageKey    string      `json:"pageKey"`
+	TotalCount int         `json:"totalCount"`
+	BlockHash  string      `json:"blockHash"`
+}
+
+type NFTResult struct {
+	Contract struct {
+		Address string `json:"address"`
+	} `json:"contract"`
+	ID struct {
+		TokenID       string `json:"tokenId"`
+		TokenMetadata struct {
+			TokenType string `json:"tokenType"`
+		} `json:"tokenMetadata"`
+	} `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	TokenURI    struct {
+		Raw     string `json:"raw"`
+		Gateway string `json:"gateway"`
+	} `json:"tokenUri"`
+	Media []struct {
+		Raw     string `json:"raw"`
+		Gateway string `json:"gateway"`
+	} `json:"media"`
+	Metadata struct {
+		Image      string `json:"image"`
+		Attributes []struct {
+			Value     any    `json:"value"`
+			TraitType string `json:"trait_type"`
+		} `json:"attributes"`
+	} `json:"metadata"`
+	TimeLastUpdated time.Time `json:"timeLastUpdated"`
 }
 
 func (c *Client) GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter) (*GetAssetTransfersResult, error) {
