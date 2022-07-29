@@ -159,7 +159,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	// asset
-	alchemyAssetDatasource, err := alchemy_asset.New(s.config.RPC)
+	alchemyAssetDatasource, err := alchemy_asset.New(s.config.RPC, ethereumClientMap)
 	if err != nil {
 		return err
 	}
