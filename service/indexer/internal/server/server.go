@@ -38,7 +38,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	profileworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/profile"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
@@ -142,7 +141,6 @@ func (s *Server) Initialize() (err error) {
 		poap.New(ethereumClientMap),
 		mirror.New(),
 		gitcoin.New(s.databaseClient, s.redisClient, ethereumClientMap),
-		crossbell.New(s.databaseClient),
 		snapshot.New(s.databaseClient, s.redisClient),
 		transaction.New(s.databaseClient, ethereumClientMap),
 	}
