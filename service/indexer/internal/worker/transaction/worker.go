@@ -433,6 +433,11 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 }
 
 func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *protocol.Message, transaction model.Transaction, transfer model.Transfer, address *string, id *big.Int, value *big.Int) (*model.Transfer, error) {
+	tracer := otel.Tracer("worker_token")
+	_, snap := tracer.Start(ctx, "worker_token:buildEthereumTokenMetadata")
+
+	defer snap.End()
+
 	var tokenMetadata metadata.Token
 
 	if address == nil {
@@ -535,6 +540,11 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 }
 
 func (s *service) buildZkSyncTokenMetadata(ctx context.Context, message *protocol.Message, transfer model.Transfer, tokenInfo *model.GetTokenInfo, value string) (*model.Transfer, error) {
+	tracer := otel.Tracer("worker_token")
+	_, snap := tracer.Start(ctx, "worker_token:buildEthereumTokenMetadata")
+
+	defer snap.End()
+
 	var tokenMetadata metadata.Token
 
 	if tokenInfo.Address == ethereum.AddressGenesis.String() {
