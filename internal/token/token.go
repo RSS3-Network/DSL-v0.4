@@ -56,25 +56,32 @@ type NFT struct {
 	ContractAddress string              `json:"contract_address"`
 	ID              *big.Int            `json:"id"`
 	Image           string              `json:"image"`
+	ImageData       string              `json:"image_data,omitempty"`
 	Attributes      []MetadataAttribute `json:"attributes"`
 	Standard        string              `json:"standard"`
-	Metadata        json.RawMessage     `json:"metadata"`
-	AnimationURL    string              `json:"animation_url"`
-	ExternalLink    string              `json:"external_link"`
+	BackgroundColor string              `json:"background_color,omitempty"`
+	AnimationURL    string              `json:"animation_url,omitempty"`
+	ExternalLink    string              `json:"external_link,omitempty"`
+	ExternalURL     string              `json:"external_url,omitempty"`
+	YoutubeURL      string              `json:"youtube_url,omitempty"`
 }
 
 type Metadata struct {
-	Name         string                      `json:"name"`
-	Title        string                      `json:"title"`
-	Description  string                      `json:"description"`
-	AnimationURL string                      `json:"animation_url"`
-	Image        string                      `json:"image"`
-	ImageURL     string                      `json:"image_url"` // POAP
-	Type         string                      `json:"type"`
-	Attributes   []MetadataAttribute         `json:"attributes"`
-	Properties   map[string]MetadataProperty `json:"properties"`
-	Traits       []MetadataTrait             `json:"traits"`
-	ExternalLink string                      `json:"external_link"`
+	Name            string                      `json:"name"`
+	ImageData       string                      `json:"image_data"`
+	Title           string                      `json:"title"`
+	Description     string                      `json:"description"`
+	AnimationURL    string                      `json:"animation_url"`
+	Image           string                      `json:"image"`
+	ImageURL        string                      `json:"image_url"` // POAP
+	Type            string                      `json:"type"`
+	Attributes      []MetadataAttribute         `json:"attributes"`
+	Properties      map[string]MetadataProperty `json:"properties"`
+	Traits          []MetadataTrait             `json:"traits"`
+	BackgroundColor string                      `json:"background_color"`
+	ExternalLink    string                      `json:"external_link"`
+	ExternalURL     string                      `json:"external_url"`
+	YoutubeURL      string                      `json:"youtube_url"`
 }
 
 type MetadataAttribute struct {

@@ -67,16 +67,24 @@ func (c *Client) erc721ToNFT(erc721 *ERC721, tokenID *big.Int) (*NFT, error) {
 
 	nft := NFT{
 		Name:            metadata.Name,
+		Collection:      erc721.Name,
 		Symbol:          erc721.Symbol,
 		Description:     metadata.Description,
 		ContractAddress: erc721.ContractAddress,
 		ID:              tokenID,
 		Image:           metadata.Image,
+		ImageData:       metadata.ImageData,
 		Attributes:      c.metadataToAttributes(metadata),
 		Standard:        protocol.TokenStandardERC721,
-		Metadata:        erc721.Metadata,
+		BackgroundColor: metadata.BackgroundColor,
 		AnimationURL:    metadata.AnimationURL,
 		ExternalLink:    metadata.ExternalLink,
+		ExternalURL:     metadata.ExternalURL,
+		YoutubeURL:      metadata.YoutubeURL,
+	}
+
+	if metadata.ExternalLink != "" {
+		metadata.ExternalURL = metadata.ExternalLink
 	}
 
 	// POAP
