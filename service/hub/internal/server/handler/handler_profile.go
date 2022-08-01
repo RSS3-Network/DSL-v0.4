@@ -15,6 +15,7 @@ import (
 // - network
 // - platform
 func (h *Handler) GetProfileListFunc(c echo.Context) error {
+	go APIReport(GetProfiles)
 	tracer := otel.Tracer("GetProfileListFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -29,6 +30,8 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 	if err := c.Validate(&request); err != nil {
 		return err
 	}
+
+	go FilterReport(GetProfiles, request)
 
 	profileList, err := h.getProfileListDatabase(ctx, request)
 	if err != nil {

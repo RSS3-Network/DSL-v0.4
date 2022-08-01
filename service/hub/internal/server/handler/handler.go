@@ -1,15 +1,25 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	utils "github.com/naturalselectionlabs/pregod/common/utils/reflect"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"gorm.io/gorm"
 )
 
 const (
 	DefaultLimit = 500
+
+	// path
+	GetNotes    = "/notes/"
+	PostNotes   = "/notes"
+	GetProfiles = "/profiles/"
+	GetNS       = "/ns/"
 )
 
 type Handler struct {
@@ -90,4 +100,80 @@ func (t Transactions) Less(i, j int) bool {
 // Swap()
 func (t Transactions) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
+}
+
+func APIReport(path string) {
+	report := map[string]interface{}{
+		"index": "pregod-hub-1",
+		"path":  path,
+		"ts":    time.Now().Format("2006-01-02 15:04:05"),
+		"count": true,
+	}
+
+	output, _ := json.Marshal(report)
+	fmt.Printf("[DATABEAT]%v\n", string(output))
+}
+
+func FilterReport(path string, request interface{}) {
+	types := reflect.TypeOf(request)
+	values := reflect.ValueOf(request)
+	report := map[string]interface{}{
+		"index": "pregod-hub-1",
+		"path":  path,
+		"ts":    time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	var addresses interface{}
+
+	if kind := values.Kind(); kind != reflect.Struct {
+		return
+	}
+
+	for i := 0; i < values.NumField(); i++ {
+		key := types.Field(i).Tag.Get("query")
+		value := values.Field(i)
+
+		if len(key) == 0 {
+			key = types.Field(i).Tag.Get("json")
+		}
+
+		if value.IsZero() {
+			continue
+		}
+
+		// address
+		if types.Field(i).Tag.Get("param") == "address" {
+			addresses = value.String()
+			continue
+		}
+
+		if v := utils.GetReflectValue(value); v != nil {
+			if key == "address" {
+				addresses = v
+				continue
+			}
+			report[key] = v
+		}
+	}
+
+	switch path {
+	case PostNotes:
+		for _, address := range addresses.([]string) {
+			batchReport := map[string]interface{}{
+				"index":   "pregod-hub-1",
+				"path":    path,
+				"ts":      time.Now().Format("2006-01-02 15:04:05"),
+				"address": address,
+			}
+			output, _ := json.Marshal(batchReport)
+			fmt.Printf("[DATABEAT]%v\n", string(output))
+		}
+	default:
+		if addresses != nil {
+			report["address"] = addresses
+		}
+	}
+
+	output, _ := json.Marshal(report)
+	fmt.Printf("[DATABEAT]%v\n", string(output))
 }

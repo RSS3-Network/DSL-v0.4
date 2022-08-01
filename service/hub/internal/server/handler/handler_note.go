@@ -18,6 +18,7 @@ import (
 // GetNotesFunc HTTP handler for action API
 // parse query parameters, query and assemble data
 func (h *Handler) GetNotesFunc(c echo.Context) error {
+	go APIReport(GetNotes)
 	tracer := otel.Tracer("GetNotesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -32,6 +33,8 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 	if err := c.Validate(&request); err != nil {
 		return err
 	}
+
+	go FilterReport(GetNotes, request)
 
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
 		request.Limit = DefaultLimit
@@ -206,6 +209,7 @@ func (h *Handler) getTransfers(c context.Context, transactionHashes []string, re
 
 // BatchGetNotesFunc query multiple addresses and filters
 func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
+	go APIReport(PostNotes)
 	tracer := otel.Tracer("BatchGetNotesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "BatchGetNotesFunc:http")
 
@@ -231,6 +235,10 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 
 	if len(request.Address) > DefaultLimit {
 		request.Address = request.Address[:DefaultLimit]
+	}
+
+	if len(request.Cursor) == 0 {
+		go FilterReport(PostNotes, request)
 	}
 
 	// support many-many relationship between tag and type
