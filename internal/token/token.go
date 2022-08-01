@@ -78,8 +78,9 @@ type Metadata struct {
 }
 
 type MetadataAttribute struct {
-	TraitType string `json:"trait_type"`
-	Value     any    `json:"value"`
+	DisplayType string `json:"display_type"`
+	TraitType   string `json:"trait_type"`
+	Value       any    `json:"value"`
 }
 
 type MetadataProperty struct {
@@ -116,6 +117,7 @@ func (c *Client) metadataToAttributes(metadata Metadata) []MetadataAttribute {
 
 	for _, attribute := range metadata.Attributes {
 		attributeMap[attribute.TraitType] = attribute.Value
+		attributeMap[attribute.DisplayType] = attribute.DisplayType
 	}
 
 	for key, value := range metadata.Properties {
@@ -124,6 +126,7 @@ func (c *Client) metadataToAttributes(metadata Metadata) []MetadataAttribute {
 
 	for _, trait := range metadata.Traits {
 		attributeMap[trait.TraitType] = trait.Value
+		attributeMap[trait.DisplayType] = trait.DisplayType
 	}
 
 	var attributes []MetadataAttribute
