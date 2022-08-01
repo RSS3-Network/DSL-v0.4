@@ -23,6 +23,7 @@ const (
 
 	OperationTypeTransfer = "Transfer"
 
+	StatusCommitted = "committed"
 	StatusFinalized = "finalized"
 	StatusRejected  = "rejected"
 )
@@ -86,6 +87,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 			}
 
 			success := true
+
+			if internalTransaction.Status == StatusCommitted {
+				continue
+			}
 
 			if internalTransaction.Status != StatusFinalized {
 				success = false
