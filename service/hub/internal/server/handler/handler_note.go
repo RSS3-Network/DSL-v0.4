@@ -33,6 +33,8 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		return err
 	}
 
+	go EsReport(GetNotes, request)
+
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
 		request.Limit = DefaultLimit
 	}
@@ -232,6 +234,8 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	if len(request.Address) > DefaultLimit {
 		request.Address = request.Address[:DefaultLimit]
 	}
+
+	go EsReport(PostNotes, request)
 
 	// support many-many relationship between tag and type
 	var tags []string

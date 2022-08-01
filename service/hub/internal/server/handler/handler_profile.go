@@ -30,6 +30,8 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 		return err
 	}
 
+	go EsReport(GetProfiles, request)
+
 	profileList, err := h.getProfileListDatabase(ctx, request)
 	if err != nil {
 		return InternalError(c)

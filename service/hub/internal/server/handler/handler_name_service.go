@@ -45,6 +45,8 @@ func (h *Handler) GetNameResolve(c echo.Context) error {
 		return AddressIsEmpty(c)
 	}
 
+	go EsReport(GetNS, request)
+
 	splits := strings.Split(request.Address, ".")
 
 	result := NameServiceResult{}
