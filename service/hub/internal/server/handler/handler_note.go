@@ -34,7 +34,9 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		return err
 	}
 
-	go FilterReport(GetNotes, request)
+	if len(request.Cursor) == 0 {
+		go FilterReport(GetNotes, request)
+	}
 
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
 		request.Limit = DefaultLimit
