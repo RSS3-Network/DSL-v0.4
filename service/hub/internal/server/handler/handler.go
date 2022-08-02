@@ -3,11 +3,10 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	utils "github.com/naturalselectionlabs/pregod/common/utils/reflect"
+	utils "github.com/naturalselectionlabs/pregod/common/utils/interface"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"gorm.io/gorm"
 )
@@ -20,6 +19,8 @@ const (
 	PostNotes   = "/notes"
 	GetProfiles = "/profiles/"
 	GetNS       = "/ns/"
+
+	EsIndex = "pregod-v1-visit-path"
 )
 
 type Handler struct {
@@ -104,7 +105,7 @@ func (t Transactions) Swap(i, j int) {
 
 func APIReport(path string) {
 	report := map[string]interface{}{
-		"index": "pregod-hub-1",
+		"index": EsIndex,
 		"path":  path,
 		"ts":    time.Now().Format("2006-01-02 15:04:05"),
 		"count": true,
@@ -115,52 +116,18 @@ func APIReport(path string) {
 }
 
 func FilterReport(path string, request interface{}) {
-	types := reflect.TypeOf(request)
-	values := reflect.ValueOf(request)
-	report := map[string]interface{}{
-		"index": "pregod-hub-1",
-		"path":  path,
-		"ts":    time.Now().Format("2006-01-02 15:04:05"),
-	}
+	b, _ := json.Marshal(request)
+	report := make(map[string]interface{})
 
-	var addresses interface{}
-
-	if kind := values.Kind(); kind != reflect.Struct {
+	err := json.Unmarshal(b, &report)
+	if err != nil {
 		return
 	}
 
-	for i := 0; i < values.NumField(); i++ {
-		key := types.Field(i).Tag.Get("query")
-		value := values.Field(i)
-
-		if len(key) == 0 {
-			key = types.Field(i).Tag.Get("json")
-		}
-
-		if value.IsZero() {
-			continue
-		}
-
-		// address
-		if types.Field(i).Tag.Get("param") == "address" {
-			addresses = value.String()
-			continue
-		}
-
-		if v := utils.GetReflectValue(value); v != nil {
-			if key == "address" {
-				addresses = v
-				continue
-			}
-			report[key] = v
-		}
-	}
-
-	switch path {
-	case PostNotes:
-		for _, address := range addresses.([]string) {
+	if path == PostNotes {
+		for _, address := range report["address"].([]interface{}) {
 			batchReport := map[string]interface{}{
-				"index":   "pregod-hub-1",
+				"index":   EsIndex,
 				"path":    path,
 				"ts":      time.Now().Format("2006-01-02 15:04:05"),
 				"address": address,
@@ -168,11 +135,18 @@ func FilterReport(path string, request interface{}) {
 			output, _ := json.Marshal(batchReport)
 			fmt.Printf("[DATABEAT]%v\n", string(output))
 		}
-	default:
-		if addresses != nil {
-			report["address"] = addresses
+		delete(report, "address")
+	}
+
+	for k, v := range report {
+		if utils.IfInterfaceValueIsNil(v) {
+			delete(report, k)
 		}
 	}
+
+	report["index"] = EsIndex
+	report["path"] = path
+	report["ts"] = time.Now().Format("2006-01-02 15:04:05")
 
 	output, _ := json.Marshal(report)
 	fmt.Printf("[DATABEAT]%v\n", string(output))
