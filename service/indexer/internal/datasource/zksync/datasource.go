@@ -3,6 +3,7 @@ package zksync
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -11,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"go.opentelemetry.io/otel"
 )
@@ -66,6 +68,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 
 		for _, internalTransaction := range internalTransactions.List {
 			if internalTransaction.CreatedAt.Before(message.Timestamp) {
+				continue
+			}
+
+			if internalTransaction.Operation.From != "" && !strings.EqualFold(internalTransaction.Operation.From, message.Address) && allowlist.Allow(internalTransaction.Operation.From) {
 				continue
 			}
 

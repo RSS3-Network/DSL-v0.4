@@ -18,6 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -75,6 +76,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		internalTransaction := transaction
 
 		if internalTransaction.BlockNumber < message.BlockNumber {
+			continue
+		}
+
+		if internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) && allowlist.Allow(internalTransaction.AddressFrom) {
 			continue
 		}
 
@@ -193,13 +198,20 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 				return nil, ErrorFailedToParseBlockNumber
 			}
 
-			internalTransactions = append(internalTransactions, model.Transaction{
+			transaction := model.Transaction{
 				BlockNumber: blockNumber.Int64(),
 				Hash:        transfer.Hash,
 				Network:     message.Network,
 				Source:      d.Name(),
 				Transfers:   make([]model.Transfer, 0),
-			})
+			}
+
+			if transfer.Category == alchemy.CategoryExternal {
+				transaction.AddressFrom = transfer.From
+				transaction.AddressTo = transfer.To
+			}
+
+			internalTransactions = append(internalTransactions, transaction)
 		}
 
 		if result.PageKey == "" {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -13,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"go.opentelemetry.io/otel"
 )
@@ -79,6 +81,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	unindexedTransactions := make([]*model.Transaction, 0)
 
 	for _, transaction := range transactionMap {
+		if transaction.AddressFrom != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) && allowlist.Allow(transaction.AddressFrom) {
+			continue
+		}
+
 		unindexedTransactions = append(unindexedTransactions, transaction)
 	}
 
@@ -125,6 +131,8 @@ func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.M
 		transactions = append(transactions, model.Transaction{
 			Hash:        internalTransaction.Hash,
 			BlockNumber: internalTransaction.BlockNumber.IntPart(),
+			AddressFrom: strings.ToLower(internalTransaction.From),
+			AddressTo:   strings.ToLower(internalTransaction.To),
 			Network:     message.Network,
 			Source:      d.Name(),
 			SourceData:  sourceData,

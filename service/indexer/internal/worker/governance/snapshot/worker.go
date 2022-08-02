@@ -8,25 +8,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
-
-	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/worker/snapshot"
-	job2 "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot/job"
-
-	"github.com/shopspring/decimal"
-
 	mapset "github.com/deckarep/golang-set"
 	"github.com/go-redis/redis/v8"
-	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
-	"gorm.io/gorm"
-
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/worker/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot/job"
+	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 const (
@@ -201,8 +198,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 func (s *service) Jobs() []worker.Job {
 	return []worker.Job{
-		&job2.SnapshotSpaceJob{
-			SnapshotJobBase: job2.SnapshotJobBase{
+		&job.SnapshotSpaceJob{
+			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_space_job",
 				DatabaseClient: s.databaseClient,
 				RedisClient:    s.redisClient,
@@ -212,8 +209,8 @@ func (s *service) Jobs() []worker.Job {
 				LowUpdateTime:  time.Minute * 5,
 			},
 		},
-		&job2.SnapshotProposalJob{
-			SnapshotJobBase: job2.SnapshotJobBase{
+		&job.SnapshotProposalJob{
+			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_proposal_job",
 				DatabaseClient: s.databaseClient,
 				RedisClient:    s.redisClient,
@@ -223,8 +220,8 @@ func (s *service) Jobs() []worker.Job {
 				LowUpdateTime:  time.Minute * 5,
 			},
 		},
-		&job2.SnapshotVoteJob{
-			SnapshotJobBase: job2.SnapshotJobBase{
+		&job.SnapshotVoteJob{
+			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_vote_job",
 				DatabaseClient: s.databaseClient,
 				RedisClient:    s.redisClient,
@@ -358,20 +355,22 @@ func (s *service) getVote(
 ) (*model.Transaction, error) {
 	proposal, ok := proposalMap[vote.ProposalID]
 	if !ok {
-		logrus.Warnf("[snapshot worker] failed to get proposal:%v", vote.ProposalID)
+		zap.L().Warn("proposal not found", zap.String("proposal_id", vote.ProposalID), zap.String("network", message.Network))
+
 		return nil, nil
 	}
 
 	space, ok := spaceMap[vote.SpaceID]
 	if !ok {
-		logrus.Warnf("[snapshot worker] failed to get space:%v, network:%v", vote.SpaceID, message.Network)
+		zap.L().Warn("space not found", zap.String("space_id", vote.SpaceID), zap.String("network", message.Network))
 
 		return nil, nil
 	}
 
 	formattedProposal, err := s.formatProposal(&proposal, &space)
 	if err != nil {
-		logrus.Warnf("[snapshot worker] failed to format proposal:%v", proposal.ID)
+		zap.L().Warn("failed to format proposal", zap.String("proposal_id", vote.ProposalID), zap.String("network", message.Network))
+
 		return nil, nil
 	}
 
@@ -383,7 +382,8 @@ func (s *service) getVote(
 
 	rawMetadata, err := json.Marshal(metadataModel)
 	if err != nil {
-		logrus.Warnf("[snapshot worker] failed to marshal metadata:%v", err)
+		zap.L().Warn("failed to marshal metadata", zap.String("proposal_id", vote.ProposalID), zap.String("network", message.Network))
+
 		return nil, nil
 	}
 
@@ -395,7 +395,8 @@ func (s *service) getVote(
 
 	sourceData, err := json.Marshal(snapShotSourceData)
 	if err != nil {
-		logrus.Warnf("[snapshot worker] failed to marshal sourcedata:%v", err)
+		zap.L().Warn("failed to marshal sourcedata", zap.String("proposal_id", vote.ProposalID), zap.String("network", message.Network))
+
 		return nil, nil
 	}
 

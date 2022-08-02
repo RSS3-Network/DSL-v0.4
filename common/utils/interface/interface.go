@@ -5,13 +5,13 @@ func IfInterfaceValueIsNil(v interface{}) bool {
 		return true
 	}
 
-	switch v.(type) {
+	switch t := v.(type) {
 	case int:
-		return v.(int) == 0
+		return t == 0
 	case bool:
-		return v.(bool) == false
+		return !t
 	case string:
-		return v.(string) == "" || v.(string) == "0001-01-01T00:00:00Z"
+		return t == "" || t == "0001-01-01T00:00:00Z"
 	}
 
 	return false
