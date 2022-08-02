@@ -37,17 +37,17 @@ type Response struct {
 }
 
 type GetRequest struct {
-	Address     string    `param:"address" validate:"required"`
-	Limit       int       `query:"limit"`
-	Cursor      string    `query:"cursor"`
-	Type        []string  `query:"type"`
-	Tag         []string  `query:"tag" validate:"required_with=Type"`
-	Network     []string  `query:"network"`
-	Platform    []string  `query:"platform"`
-	Timestamp   time.Time `query:"timestamp"`
-	Hash        string    `query:"hash"`
-	IncludePoap bool      `query:"include_poap"`
-	Refresh     bool      `query:"refresh"`
+	Address     string    `param:"address" json:"address" validate:"required"`
+	Limit       int       `query:"limit" json:"limit"`
+	Cursor      string    `query:"cursor" json:"cursor"`
+	Type        []string  `query:"type" json:"type"`
+	Tag         []string  `query:"tag" json:"tag" validate:"required_with=Type"`
+	Network     []string  `query:"network" json:"network"`
+	Platform    []string  `query:"platform" json:"platform"`
+	Timestamp   time.Time `query:"timestamp" json:"timestamp"`
+	Hash        string    `query:"hash" json:"hash"`
+	IncludePoap bool      `query:"include_poap" json:"include_poap"`
+	Refresh     bool      `query:"refresh" json:"refresh"`
 }
 
 type GetExchangeRequest struct {

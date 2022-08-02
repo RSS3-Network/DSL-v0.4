@@ -8,6 +8,8 @@ func IfInterfaceValueIsNil(v interface{}) bool {
 	switch t := v.(type) {
 	case int:
 		return t == 0
+	case float64:
+		return t == 0
 	case bool:
 		return !t
 	case string:
