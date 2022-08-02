@@ -21,6 +21,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	lop "github.com/samber/lo/parallel"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -40,10 +41,11 @@ var (
 
 func BuildTransactions(ctx context.Context, message *protocol.Message, transactions []*model.Transaction, ethereumClient *ethclient.Client) ([]*model.Transaction, error) {
 	tracer := otel.Tracer("ethereum")
-	ctx, trace := tracer.Start(ctx, "ethereum:BuildTransactions")
+	ctx, span := tracer.Start(ctx, "ethereum:BuildTransactions")
 
 	var err error
-	defer func() { opentelemetry.Log(trace, message, transactions, err) }()
+
+	defer opentelemetry.Log(span, message, transactions, err)
 
 	blocks, err := lop.MapWithError(transactions, makeBlockHandlerFunc(ctx, message, ethereumClient), lop.NewOption().WithConcurrency(MaxConcurrency))
 	if err != nil {
@@ -108,6 +110,8 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 				return nil, nil
 			}
 
+			zap.L().Error("failed to get transaction", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
+
 			return nil, err
 		}
 
@@ -123,10 +127,21 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 		}
 
 		if err != nil {
+			// Filter transactions in incompatible blocks
+			if err.Error() == ErrorInvalidTransactionVRSValues.Error() {
+				return nil, nil
+			}
+
+			zap.L().Error("failed to get transaction message", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
+
 			return nil, err
 		}
 
 		transaction.AddressFrom = strings.ToLower(transactionMessage.From().String())
+
+		if transaction.AddressFrom != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) && allowlist.Allow(transaction.AddressFrom) {
+			return nil, nil
+		}
 
 		addressTo := AddressGenesis.String()
 

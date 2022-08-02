@@ -3,6 +3,7 @@ package moralis
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -13,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
@@ -120,6 +122,10 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 			continue
 		}
 
+		if transaction.AddressFrom != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) && allowlist.Allow(transaction.AddressFrom) {
+			continue
+		}
+
 		internalTransactions = append(internalTransactions, transaction)
 	}
 
@@ -184,6 +190,8 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 		transactions = append(transactions, model.Transaction{
 			BlockNumber: blockNumer.IntPart(),
 			Hash:        transaction.Hash,
+			AddressFrom: transaction.FromAddress,
+			AddressTo:   transaction.ToAddress,
 			Network:     message.Network,
 			Source:      d.Name(),
 			SourceData:  sourceData,
