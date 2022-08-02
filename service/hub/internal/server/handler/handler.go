@@ -1,15 +1,26 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	utils "github.com/naturalselectionlabs/pregod/common/utils/interface"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"gorm.io/gorm"
 )
 
 const (
 	DefaultLimit = 500
+
+	// path
+	GetNotes    = "/notes/"
+	PostNotes   = "/notes"
+	GetProfiles = "/profiles/"
+	GetNS       = "/ns/"
+
+	EsIndex = "pregod-v1-visit-path"
 )
 
 type Handler struct {
@@ -90,4 +101,53 @@ func (t Transactions) Less(i, j int) bool {
 // Swap()
 func (t Transactions) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
+}
+
+func APIReport(path string) {
+	report := map[string]interface{}{
+		"index": EsIndex,
+		"path":  path,
+		"ts":    time.Now().Format("2006-01-02 15:04:05"),
+		"count": true,
+	}
+
+	output, _ := json.Marshal(report)
+	fmt.Printf("[DATABEAT]%v\n", string(output))
+}
+
+func FilterReport(path string, request interface{}) {
+	b, _ := json.Marshal(request)
+	report := make(map[string]interface{})
+
+	err := json.Unmarshal(b, &report)
+	if err != nil {
+		return
+	}
+
+	if path == PostNotes {
+		for _, address := range report["address"].([]interface{}) {
+			batchReport := map[string]interface{}{
+				"index":   EsIndex,
+				"path":    path,
+				"ts":      time.Now().Format("2006-01-02 15:04:05"),
+				"address": address,
+			}
+			output, _ := json.Marshal(batchReport)
+			fmt.Printf("[DATABEAT]%v\n", string(output))
+		}
+		delete(report, "address")
+	}
+
+	for k, v := range report {
+		if utils.IfInterfaceValueIsNil(v) {
+			delete(report, k)
+		}
+	}
+
+	report["index"] = EsIndex
+	report["path"] = path
+	report["ts"] = time.Now().Format("2006-01-02 15:04:05")
+
+	output, _ := json.Marshal(report)
+	fmt.Printf("[DATABEAT]%v\n", string(output))
 }
