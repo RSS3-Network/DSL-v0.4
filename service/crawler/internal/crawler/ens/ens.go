@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/json"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -12,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
@@ -28,6 +30,8 @@ var (
 
 	//go:embed contract/event.abi
 	abiFileSystem embed.FS
+
+	blockTimestampCacheKey = "crawler:ens:block_timestamp"
 )
 
 type service struct {
@@ -36,17 +40,20 @@ type service struct {
 	databaseClient  *gorm.DB
 	rabbitmqChannel *rabbitmq.Channel
 	employer        *shedlock.Employer
+	redisClient     *redis.Client
 }
 
 func New(databaseClient *gorm.DB,
 	rabbitmqChannel *rabbitmq.Channel,
 	employer *shedlock.Employer,
 	config *config.Config,
+	redisClient *redis.Client,
 ) crawler.Crawler {
 	crawler := &service{
 		databaseClient:  databaseClient,
 		rabbitmqChannel: rabbitmqChannel,
 		employer:        employer,
+		redisClient:     redisClient,
 	}
 
 	var err error
@@ -82,15 +89,7 @@ func (s *service) Name() string {
 }
 
 func (s *service) Run() error {
-	ctx := context.Background()
-
-	go func() {
-		time.Sleep(time.Second)
-
-		if err := s.employer.Renewal(ctx, s.Name(), 10*time.Second); err != nil {
-			logrus.Errorf("[crawler] ens: employer renewal error, %v", err)
-		}
-	}()
+	go s.loadExistingEns()
 
 	if err := s.subscribeEns(); err != nil {
 		return err
@@ -196,4 +195,68 @@ func (s *service) createRabbitmqJob(address string) error {
 	}
 
 	return nil
+}
+
+// loadExistingEns load existing ens address and get notes
+func (s *service) loadExistingEns() {
+	var page int
+	ctx := context.Background()
+	blockTimestamp, _ := s.redisClient.Get(ctx, blockTimestampCacheKey).Result() // redis cache
+
+	for {
+		domains := make([]model.Domains, 0)
+
+		sql := s.databaseClient.Model(&model.Domains{})
+
+		if len(blockTimestamp) > 0 {
+			sql = sql.Where("block_timestamp >= ?", blockTimestamp)
+		}
+
+		if err := sql.Order("block_timestamp").
+			Limit(1000).
+			Offset(page * 1000).
+			Find(&domains).Error; err != nil {
+			logrus.Errorf("[crawler] loadExistingEns: database get err: %v", err)
+
+			return
+		}
+
+		if len(domains) == 0 {
+			return
+		}
+
+		for _, ens := range domains {
+			input, _ := json.Marshal(ens)
+			logrus.Info(string(input))
+
+			if ens.ExpiredAt.Unix() < time.Now().Unix() {
+				continue
+			}
+
+			address := common.BytesToAddress(ens.AddressOwner).String()
+
+			// get address feed
+			var count int64
+			if err := s.databaseClient.
+				Where("owner = ?", strings.ToLower(address)).
+				Model(&model.Transaction{}).
+				Count(&count).Error; err == nil && count > 0 {
+				continue
+			}
+
+			// create a rabbitmq job to index the latest user data
+			go func() {
+				if err := s.createRabbitmqJob(address); err != nil {
+					logrus.Errorf("[crawler] ens: createRabbitmqJob error, %v", err)
+				}
+			}()
+
+			time.Sleep(10 * time.Second)
+		}
+
+		// set cache
+		s.redisClient.Set(ctx, blockTimestampCacheKey, domains[len(domains)-1].BlockTimestamp, 7*24*time.Hour)
+
+		page += 1
+	}
 }
