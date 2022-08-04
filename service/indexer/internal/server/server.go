@@ -283,6 +283,13 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		return fmt.Errorf("%v lock", lockKey)
 	}
 
+	go func(cctx context.Context) {
+		time.Sleep(time.Second)
+		if err := s.employer.Renewal(cctx, lockKey, time.Minute); err != nil {
+			return
+		}
+	}(context.Background())
+
 	defer s.employer.UnLock(lockKey)
 
 	// convert address to lowercase
@@ -360,6 +367,13 @@ func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (er
 	if !s.employer.DoLock(lockKey, 2*time.Minute) {
 		return fmt.Errorf("%v lock", lockKey)
 	}
+
+	go func(cctx context.Context) {
+		time.Sleep(time.Second)
+		if err := s.employer.Renewal(cctx, lockKey, time.Minute); err != nil {
+			return
+		}
+	}(context.Background())
 
 	defer s.employer.UnLock(lockKey)
 
