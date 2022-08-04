@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -95,27 +94,21 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 
 		transaction.Timestamp = time.Unix(int64(block.Time()), 0)
 
+		var internalTransaction *types.Transaction
+
 		for index, blockTransaction := range block.Transactions() {
 			if blockTransaction.Hash().String() == transaction.Hash {
 				transaction.Index = int64(index)
+				internalTransaction = blockTransaction
 
 				break
 			}
 		}
 
-		internalTransaction, _, err := ethereumClient.TransactionByHash(ctx, common.HexToHash(transaction.Hash))
-		if err != nil {
-			// Filter transactions in incompatible blocks
-			if err.Error() == ErrorInvalidTransactionVRSValues.Error() {
-				return nil, nil
-			}
-
-			zap.L().Error("failed to get transaction", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
-
-			return nil, err
-		}
-
-		var transactionMessage types.Message
+		var (
+			transactionMessage types.Message
+			err                error
+		)
 
 		switch internalTransaction.Type() {
 		case types.LegacyTxType:

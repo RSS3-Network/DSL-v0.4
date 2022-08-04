@@ -123,6 +123,7 @@ func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *pro
 		FromAddress: strings.ToLower(message.Address),
 		MaxCount:    hexutil.EncodeBig(big.NewInt(alchemy.MaxCount)),
 		Category:    category,
+		FromBlock:   hexutil.EncodeUint64(uint64(message.BlockNumber)),
 	}
 
 	// Get the transactions sent from this address
@@ -135,18 +136,21 @@ func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *pro
 		internalTransactionMap[transaction.Hash] = transaction
 	}
 
-	// Get the transactions received at this address
-	parameter.FromAddress = ""
-	parameter.ToAddress = strings.ToLower(message.Address)
+	// Find POAP transactions from XDAI
+	if message.Network == protocol.NetworkXDAI {
+		// Get the transactions received at this address
+		parameter.FromAddress = ""
+		parameter.ToAddress = strings.ToLower(message.Address)
 
-	internalTransactions, err = d.getAssetTransactionHashes(ctx, message, parameter)
-	if err != nil {
-		return nil, err
-	}
+		internalTransactions, err = d.getAssetTransactionHashes(ctx, message, parameter)
+		if err != nil {
+			return nil, err
+		}
 
-	// Transaction hash de-duplication
-	for _, transaction := range internalTransactions {
-		internalTransactionMap[transaction.Hash] = transaction
+		// Transaction hash de-duplication
+		for _, transaction := range internalTransactions {
+			internalTransactionMap[transaction.Hash] = transaction
+		}
 	}
 
 	return internalTransactionMap, nil
