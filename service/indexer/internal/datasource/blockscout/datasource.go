@@ -117,7 +117,9 @@ func (d *Datasource) handleTransactions(ctx context.Context, message *protocol.M
 	// Use a different Client for different networks
 	blockscoutClient := d.blockscoutClientMap[message.Network]
 
-	internalTransactions, _, err := blockscoutClient.GetTransactionList(ctx, common.HexToAddress(message.Address), &blockscout.GetTransactionListOption{})
+	internalTransactions, _, err := blockscoutClient.GetTransactionList(ctx, common.HexToAddress(message.Address), &blockscout.GetTransactionListOption{
+		StartBlock: message.BlockNumber,
+	})
 	if err != nil {
 		return nil, err
 	}

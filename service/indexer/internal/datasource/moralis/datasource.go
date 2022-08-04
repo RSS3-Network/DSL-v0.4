@@ -3,6 +3,7 @@ package moralis
 import (
 	"context"
 	"encoding/json"
+	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -162,8 +163,9 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 		var nextInternalTransactions []moralis.Transaction
 
 		nextInternalTransactions, response, err = d.moralisClient.GetTransactions(ctx, address, &moralis.GetTransactionsOption{
-			Chain:  protocol.NetworkToID(message.Network),
-			Cursor: response.Cursor,
+			Chain:     protocol.NetworkToID(message.Network),
+			Cursor:    response.Cursor,
+			FromBlock: big.NewInt(message.BlockNumber).String(),
 		})
 		if err != nil {
 			return nil, err
@@ -211,7 +213,8 @@ func (d *Datasource) handleEthereumTokenTransfers(ctx context.Context, message *
 
 	// Get transaction transfers from Moralis
 	internalTokenTransfers, response, err := d.moralisClient.GetTokenTransfers(ctx, address, &moralis.GetTokenTransfersOption{
-		Chain: protocol.NetworkToID(message.Network),
+		Chain:     protocol.NetworkToID(message.Network),
+		FromBlock: big.NewInt(message.BlockNumber).String(),
 	})
 	if err != nil {
 		return nil, err
