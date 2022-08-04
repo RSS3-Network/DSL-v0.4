@@ -121,29 +121,15 @@ func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) (as
 						Value:     attribute.Value,
 					})
 				}
-				if asset.Attributes, err = json.Marshal(attributes); err != nil {
-					return
-				}
+				asset.Attributes, _ = json.Marshal(attributes)
 			}
 
-			// metadata
-			uri, err := d.tokenClient.URI(nft.Contract.Address, tokenID, nft.TokenURI.Raw)
-			if err != nil {
-				return
-			}
-			result, err := d.tokenClient.Metadata(uri)
-			if err != nil {
-				return
-			}
-			var metadata token.Metadata
-			if err := json.Unmarshal(result, &metadata); err != nil {
-				return
-			}
-			asset.Image = metadata.Image
+			asset.Image = nft.Metadata.Image
 			if strings.HasPrefix(asset.Image, "ipfs://") {
 				asset.Image = ipfs.GetDirectURL(ctx, asset.Image)
 			}
 			asset.RelatedUrls = append(asset.RelatedUrls, ethereum.BuildTokenURL(message.Network, asset.TokenAddress, tokenID.String()))
+
 			assets = append(assets, asset)
 		})
 
