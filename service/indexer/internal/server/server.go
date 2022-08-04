@@ -283,14 +283,23 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		return fmt.Errorf("%v lock", lockKey)
 	}
 
+	cctx, cancel := context.WithCancel(context.Background())
 	go func(cctx context.Context) {
-		time.Sleep(time.Second)
-		if err := s.employer.Renewal(cctx, lockKey, time.Minute); err != nil {
+		select {
+		case <-cctx.Done():
 			return
+		default:
+			for {
+				time.Sleep(time.Second)
+				if err := s.employer.Renewal(cctx, lockKey, time.Minute); err != nil {
+					return
+				}
+			}
 		}
-	}(context.Background())
+	}(cctx)
 
 	defer s.employer.UnLock(lockKey)
+	defer cancel()
 
 	// convert address to lowercase
 	message.Address = strings.ToLower(message.Address)
@@ -368,14 +377,23 @@ func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (er
 		return fmt.Errorf("%v lock", lockKey)
 	}
 
+	cctx, cancel := context.WithCancel(context.Background())
 	go func(cctx context.Context) {
-		time.Sleep(time.Second)
-		if err := s.employer.Renewal(cctx, lockKey, time.Minute); err != nil {
+		select {
+		case <-cctx.Done():
 			return
+		default:
+			for {
+				time.Sleep(time.Second)
+				if err := s.employer.Renewal(cctx, lockKey, time.Minute); err != nil {
+					return
+				}
+			}
 		}
-	}(context.Background())
+	}(cctx)
 
 	defer s.employer.UnLock(lockKey)
+	defer cancel()
 
 	// convert address to lowercase
 	message.Address = strings.ToLower(message.Address)
