@@ -48,6 +48,7 @@ type GetRequest struct {
 	Hash        string    `query:"hash" json:"hash"`
 	IncludePoap bool      `query:"include_poap" json:"include_poap"`
 	Refresh     bool      `query:"refresh" json:"refresh"`
+	Page        int       `query:"page" json:"page"`
 }
 
 type GetExchangeRequest struct {
@@ -83,6 +84,7 @@ type BatchGetNotesRequest struct {
 	Cursor      string    `json:"cursor"`
 	Refresh     bool      `json:"refresh"`
 	IncludePoap bool      `json:"include_poap"`
+	Page        int       `json:"page"`
 }
 
 type Transactions []model.Transaction

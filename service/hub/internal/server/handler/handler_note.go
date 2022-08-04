@@ -178,7 +178,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 		sql = sql.Where("timestamp > ?", request.Timestamp)
 	}
 
-	if err := sql.Count(&total).Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
+	if err := sql.Count(&total).Limit(request.Limit).Offset(request.Page * request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -356,7 +356,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 		sql = sql.Where("timestamp > ?", request.Timestamp)
 	}
 
-	if err := sql.Count(&total).Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
+	if err := sql.Count(&total).Limit(request.Limit).Offset(request.Page * request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
 		return nil, 0, err
 	}
 
