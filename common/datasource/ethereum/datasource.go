@@ -120,6 +120,8 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 		switch internalTransaction.Type() {
 		case types.LegacyTxType:
 			transactionMessage, err = internalTransaction.AsMessage(types.NewEIP155Signer(internalTransaction.ChainId()), nil)
+		case types.AccessListTxType:
+			transactionMessage, err = internalTransaction.AsMessage(types.NewEIP2930Signer(internalTransaction.ChainId()), nil)
 		case types.DynamicFeeTxType:
 			transactionMessage, err = internalTransaction.AsMessage(types.LatestSignerForChainID(internalTransaction.ChainId()), nil)
 		default:
