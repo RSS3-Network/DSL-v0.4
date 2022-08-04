@@ -71,7 +71,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 				continue
 			}
 
-			if internalTransaction.Operation.From != "" && !strings.EqualFold(internalTransaction.Operation.From, message.Address) && allowlist.Allow(internalTransaction.Operation.From) {
+			if internalTransaction.Operation.From != "" && !strings.EqualFold(internalTransaction.Operation.From, message.Address) && !allowlist.Allow(internalTransaction.Operation.From) {
 				continue
 			}
 

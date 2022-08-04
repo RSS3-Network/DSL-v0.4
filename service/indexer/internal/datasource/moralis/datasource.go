@@ -122,7 +122,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 			continue
 		}
 
-		if transaction.AddressFrom != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) && allowlist.Allow(transaction.AddressFrom) {
+		if transaction.AddressFrom != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) && !allowlist.Allow(transaction.AddressFrom) {
 			continue
 		}
 
