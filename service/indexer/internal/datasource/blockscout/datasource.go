@@ -153,7 +153,9 @@ func (d *Datasource) handleTokenTransfers(ctx context.Context, message *protocol
 	// Use a different Client for different networks
 	blockscoutClient := d.blockscoutClientMap[message.Network]
 
-	internalTokenTransfers, _, err := blockscoutClient.GetTokenTransactionList(ctx, common.HexToAddress(message.Address), &blockscout.GetTokenTransactionListOption{})
+	internalTokenTransfers, _, err := blockscoutClient.GetTokenTransactionList(ctx, common.HexToAddress(message.Address), &blockscout.GetTokenTransactionListOption{
+		StartBlock: message.BlockNumber,
+	})
 	if err != nil {
 		return nil, err
 	}
