@@ -138,11 +138,8 @@ type NFTResult struct {
 		Gateway string `json:"gateway"`
 	} `json:"media"`
 	Metadata struct {
-		Image      string `json:"image"`
-		Attributes []struct {
-			Value     any    `json:"value"`
-			TraitType string `json:"trait_type"`
-		} `json:"attributes"`
+		Image      string      `json:"image"`
+		Attributes interface{} `json:"attributes"`
 	} `json:"metadata"`
 	TimeLastUpdated time.Time `json:"timeLastUpdated"`
 }

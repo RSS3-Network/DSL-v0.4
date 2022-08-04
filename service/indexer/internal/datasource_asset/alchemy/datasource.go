@@ -114,14 +114,16 @@ func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) (as
 
 			// attribute
 			attributes := []metadata.TokenAttribute{}
-			for _, attribute := range nft.Metadata.Attributes {
-				attributes = append(attributes, metadata.TokenAttribute{
-					TraitType: attribute.TraitType,
-					Value:     attribute.Value,
-				})
-			}
-			if asset.Attributes, err = json.Marshal(attributes); err != nil {
-				return
+			if list, ok := nft.Metadata.Attributes.([]metadata.TokenAttribute); ok {
+				for _, attribute := range list {
+					attributes = append(attributes, metadata.TokenAttribute{
+						TraitType: attribute.TraitType,
+						Value:     attribute.Value,
+					})
+				}
+				if asset.Attributes, err = json.Marshal(attributes); err != nil {
+					return
+				}
 			}
 
 			// metadata
