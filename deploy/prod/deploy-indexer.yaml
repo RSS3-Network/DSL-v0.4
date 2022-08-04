@@ -24,8 +24,8 @@ spec:
             - indexer
           resources:
             requests:
-              memory: "400Mi"
-              cpu: "500m"
+              memory: "800Mi"
+              cpu: "1"
             limits:
               memory: "4000Mi"
-              cpu: "2"
+              cpu: "3"
