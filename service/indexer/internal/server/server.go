@@ -285,15 +285,10 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	cctx, cancel := context.WithCancel(context.Background())
 	go func(cctx context.Context) {
-		select {
-		case <-cctx.Done():
-			return
-		default:
-			for {
-				time.Sleep(time.Second)
-				if err := s.employer.Renewal(cctx, lockKey, time.Minute); err != nil {
-					return
-				}
+		for {
+			time.Sleep(time.Second)
+			if err := s.employer.Renewal(cctx, lockKey, time.Minute); err != nil {
+				return
 			}
 		}
 	}(cctx)
@@ -379,15 +374,10 @@ func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (er
 
 	cctx, cancel := context.WithCancel(context.Background())
 	go func(cctx context.Context) {
-		select {
-		case <-cctx.Done():
-			return
-		default:
-			for {
-				time.Sleep(time.Second)
-				if err := s.employer.Renewal(cctx, lockKey, time.Minute); err != nil {
-					return
-				}
+		for {
+			time.Sleep(time.Second)
+			if err := s.employer.Renewal(cctx, lockKey, time.Minute); err != nil {
+				return
 			}
 		}
 	}(cctx)
