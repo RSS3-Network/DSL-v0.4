@@ -22,6 +22,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	lop "github.com/samber/lo/parallel"
+	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -151,6 +152,15 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 			logger.Global().Error("failed to get transaction receipt", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
 
 			return nil, err
+		}
+
+		switch internalTransaction.Type() {
+		case types.LegacyTxType, types.AccessListTxType:
+			fee := decimal.NewFromBigInt(internalTransaction.GasPrice(), 0).Mul(decimal.NewFromInt(int64(receipt.GasUsed))).Shift(-18)
+			transaction.Fee = &fee
+		case types.DynamicFeeTxType:
+			fee := (decimal.NewFromBigInt(block.BaseFee(), 0).Add(decimal.NewFromBigInt(internalTransaction.GasTipCap(), 0))).Mul(decimal.NewFromInt(int64(receipt.GasUsed))).Shift(-18)
+			transaction.Fee = &fee
 		}
 
 		transactionSuccess := receipt.Status == types.ReceiptStatusSuccessful
