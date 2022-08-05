@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/sirupsen/logrus"
 	goens "github.com/wealdtech/go-ens/v3"
 )
 
@@ -42,11 +43,13 @@ func (c *Client) GetProfile(address string) (*model.Profile, error) {
 
 	err = c.GetENSTextValue(primaryENS, profile)
 	if err != nil {
+		logrus.Errorf("[profile] GetProfile: GetENSTextValue error, %v", err)
 		return nil, err
 	}
 
 	expiry, err := c.GetENSExpiry(primaryENS)
 	if err != nil {
+		logrus.Errorf("[profile] GetProfile: GetENSExpiry error, %v", err)
 		return nil, err
 	}
 
@@ -58,6 +61,7 @@ func (c *Client) GetProfile(address string) (*model.Profile, error) {
 func (c *Client) GetReverseResolve(address string) (string, error) {
 	target, err := goens.ReverseResolve(c.ethClient, common.HexToAddress(address))
 	if err != nil {
+		logrus.Errorf("[profile] GetReverseResolve: goens.ReverseResolve error, %v", err)
 		return "", err
 	}
 
@@ -67,6 +71,7 @@ func (c *Client) GetReverseResolve(address string) (string, error) {
 func (c *Client) GetResolvedAddress(domain string) (string, error) {
 	address, err := goens.Resolve(c.ethClient, domain)
 	if err != nil {
+		logrus.Errorf("[profile] GetResolvedAddress: goens.Resolve error, %v", err)
 		return "", err
 	}
 	return address.String(), nil
@@ -75,11 +80,13 @@ func (c *Client) GetResolvedAddress(domain string) (string, error) {
 func (c *Client) GetENSExpiry(domain string) (time.Time, error) {
 	name, err := goens.NewName(c.ethClient, domain)
 	if err != nil {
+		logrus.Errorf("[profile] GetENSExpiry: goens.NewName error, %v", err)
 		return time.Time{}, err
 	}
 
 	expiry, err := name.Expires()
 	if err != nil {
+		logrus.Errorf("[profile] GetENSExpiry: name.Expires error, %v", err)
 		return time.Time{}, err
 	}
 	return expiry, nil

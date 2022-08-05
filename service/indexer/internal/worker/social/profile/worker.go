@@ -8,6 +8,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
+	"github.com/sirupsen/logrus"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -60,11 +61,14 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	// get ENS profile
 	profile, err := s.ensClient.GetProfile(message.Address)
-	if err == nil {
-		s.databaseClient.Model(&model.Profile{}).Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(profile)
+	if err != nil {
+		logrus.Errorf("[profile] Handle: ensClient.GetProfile error, %v", err)
+		return transactions, nil
 	}
+
+	s.databaseClient.Model(&model.Profile{}).Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(profile)
 
 	return transactions, nil
 }
