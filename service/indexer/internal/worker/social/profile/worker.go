@@ -41,7 +41,7 @@ func (s *service) Name() string {
 
 func (s *service) Networks() []string {
 	return []string{
-		protocol.NetworkEthereum,
+		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkZkSync, protocol.NetworkCrossbell, protocol.NetworkXDAI,
 	}
 }
 
