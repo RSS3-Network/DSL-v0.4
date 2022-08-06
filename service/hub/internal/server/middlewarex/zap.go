@@ -25,6 +25,7 @@ func ZapLogger(logger *zap.Logger) echo.MiddlewareFunc {
 				zap.Int("status", c.Response().Status),
 				zap.String("method", c.Request().Method),
 				zap.String("uri", c.Request().RequestURI),
+				zap.String("user_agent", c.Request().UserAgent()),
 				zap.String("client_ip", c.RealIP()),
 			)
 
