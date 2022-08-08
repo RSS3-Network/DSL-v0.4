@@ -3,6 +3,7 @@ package database
 import (
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -34,6 +35,27 @@ var tables = []any{
 }
 
 var Client *gorm.DB
+
+var (
+	globalLocker         sync.RWMutex
+	globalDatabaseClient *gorm.DB
+)
+
+func Global() *gorm.DB {
+	globalLocker.RLock()
+
+	defer globalLocker.RUnlock()
+
+	return globalDatabaseClient
+}
+
+func ReplaceGlobal(db *gorm.DB) {
+	globalLocker.Lock()
+
+	defer globalLocker.Unlock()
+
+	globalDatabaseClient = db
+}
 
 func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {
 	var err error

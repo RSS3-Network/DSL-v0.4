@@ -33,13 +33,14 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger/ens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
-	profileworker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/profile"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/samber/lo"
@@ -67,6 +68,7 @@ type Server struct {
 	datasources        []datasource.Datasource
 	datasourcesAsset   []datasource_asset.Datasource
 	workers            []worker.Worker
+	triggers           []trigger.Trigger
 	employer           *shedlock.Employer
 }
 
@@ -96,6 +98,8 @@ func (s *Server) Initialize() (err error) {
 	if err != nil {
 		return err
 	}
+
+	database.ReplaceGlobal(s.databaseClient)
 
 	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
 		return err
@@ -130,8 +134,11 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	s.triggers = []trigger.Trigger{
+		ens.New(),
+	}
+
 	s.workers = []worker.Worker{
-		profileworker.New(s.databaseClient),
 		swapWorker,
 		poap.New(ethereumClientMap),
 		mirror.New(),
@@ -309,6 +316,21 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	defer handlerSpan.End()
 
 	logger.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
+
+	// Get data from trigger
+	for _, internalTrigger := range s.triggers {
+		for _, network := range internalTrigger.Networks() {
+			if message.Network == network {
+				go func(internalTrigger trigger.Trigger) {
+					if err := internalTrigger.Handle(ctx, message); err != nil {
+						logger.Global().Error("failed to handle trigger", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
+					}
+				}(internalTrigger)
+
+				break
+			}
+		}
+	}
 
 	// Get data from datasources
 	var transactions []model.Transaction

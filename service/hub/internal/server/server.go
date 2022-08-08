@@ -104,6 +104,7 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.Validator = validatorx.Default
 
 	s.httpServer.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
+	s.httpServer.Use(middlewarex.ZapLogger(s.logger))
 
 	s.httpServer.GET("/", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
