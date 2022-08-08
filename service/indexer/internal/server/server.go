@@ -97,6 +97,8 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	database.ReplaceGlobal(s.databaseClient)
+
 	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
 		return err
 	}

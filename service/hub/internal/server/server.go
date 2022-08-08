@@ -75,6 +75,8 @@ func (s *Server) Initialize() (err error) {
 		logger.Global().Error("database dail failed", zap.Error(err))
 	}
 
+	database.ReplaceGlobal(s.databaseClient)
+
 	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
 	if err != nil {
 		logger.Global().Error("rabbitmq dail failed", zap.Error(err))
