@@ -5,12 +5,13 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 )
 
-func TranslateAddressMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		address := c.Param("address")
 		if address != "" {
@@ -21,8 +22,41 @@ func TranslateAddressMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 		}
 
+		err := CheckAPIKey(c)
+		if err != nil {
+			// return err
+		}
+
 		return next(c)
 	}
+}
+
+func CheckAPIKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		err := CheckAPIKey(c)
+		if err != nil {
+			// return err
+		}
+
+		return next(c)
+	}
+}
+
+func CheckAPIKey(c echo.Context) error {
+	var item model.APIKey
+	var apiKey = c.Request().Header.Get("X-API-KEY")
+
+	if len(apiKey) == 0 {
+		return fmt.Errorf("miss X-API-KEY header")
+	}
+
+	if err := config.ConfigHub.DatabaseClient.
+		Where("uuid = ?", apiKey).
+		First(&item).Error; err != nil {
+		return fmt.Errorf("X-API-KEY is invaild")
+	}
+
+	return nil
 }
 
 // TranslateAddress translate handles into an address

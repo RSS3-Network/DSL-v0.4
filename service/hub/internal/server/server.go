@@ -12,7 +12,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
-	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -32,7 +31,6 @@ import (
 var _ command.Interface = &Server{}
 
 type Server struct {
-	config             *config.Config
 	httpServer         *echo.Echo
 	httpHandler        *handler.Handler
 	databaseClient     *gorm.DB
@@ -51,12 +49,12 @@ func (s *Server) Initialize() (err error) {
 
 	var exporter trace.SpanExporter
 
-	if s.config.OpenTelemetry == nil {
+	if config.ConfigHub.OpenTelemetry == nil {
 		if exporter, err = opentelemetry.DialWithPath(opentelemetry.DefaultPath); err != nil {
 			logger.Global().Error("opentelemetry DialWithPath failed", zap.Error(err))
 		}
-	} else if s.config.OpenTelemetry.Enabled {
-		if exporter, err = opentelemetry.DialWithURL(s.config.OpenTelemetry.String()); err != nil {
+	} else if config.ConfigHub.OpenTelemetry.Enabled {
+		if exporter, err = opentelemetry.DialWithURL(config.ConfigHub.OpenTelemetry.String()); err != nil {
 			logger.Global().Error("opentelemetry DialWithURL failed", zap.Error(err))
 		}
 	}
@@ -70,12 +68,9 @@ func (s *Server) Initialize() (err error) {
 		)),
 	))
 
-	s.databaseClient, err = database.Dial(s.config.Postgres.String(), true)
-	if err != nil {
-		logger.Global().Error("database dail failed", zap.Error(err))
-	}
+	s.databaseClient = config.ConfigHub.DatabaseClient
 
-	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
+	s.rabbitmqConnection, err = rabbitmq.Dial(config.ConfigHub.RabbitMQ.String())
 	if err != nil {
 		logger.Global().Error("rabbitmq dail failed", zap.Error(err))
 	}
@@ -89,7 +84,7 @@ func (s *Server) Initialize() (err error) {
 		logger.Global().Error("rabbitmqChannel ExchangeDeclare failed", zap.Error(err))
 	}
 
-	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
+	if s.redisClient, err = cache.Dial(config.ConfigHub.Redis); err != nil {
 		logger.Global().Error("redis dial failed", zap.Error(err))
 	}
 
@@ -119,15 +114,19 @@ func (s *Server) Initialize() (err error) {
 	})
 
 	// GET
-	s.httpServer.GET("/notes/:address", s.httpHandler.GetNotesFunc, middlewarex.TranslateAddressMiddleware)
-	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetsFunc, middlewarex.TranslateAddressMiddleware)
+	s.httpServer.GET("/notes/:address", s.httpHandler.GetNotesFunc, middlewarex.APIMiddleware)
+	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetsFunc, middlewarex.APIMiddleware)
 	s.httpServer.GET("/exchanges/:exchange_type", s.httpHandler.GetExchangeListFunc)
 	s.httpServer.GET("/platforms/:platform_type", s.httpHandler.GetPlatformListFunc)
-	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfileListFunc, middlewarex.TranslateAddressMiddleware)
+	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfileListFunc, middlewarex.APIMiddleware)
 	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolve)
 
 	// POST
-	s.httpServer.POST("/notes", s.httpHandler.BatchGetNotesFunc)
+	s.httpServer.POST("/notes", s.httpHandler.BatchGetNotesFunc, middlewarex.CheckAPIKeyMiddleware)
+
+	// API KEY
+	s.httpServer.POST("/apikey/apply", s.httpHandler.PostAPIKeyFunc)
+	s.httpServer.GET("/apikey", s.httpHandler.GetAPIKeyFunc)
 
 	return nil
 }
@@ -137,11 +136,5 @@ func (s *Server) Run() error {
 		return err
 	}
 
-	return s.httpServer.Start(net.JoinHostPort(s.config.HTTP.Host, strconv.Itoa(s.config.HTTP.Port)))
-}
-
-func New(config *config.Config) *Server {
-	return &Server{
-		config: config,
-	}
+	return s.httpServer.Start(net.JoinHostPort(config.ConfigHub.HTTP.Host, strconv.Itoa(config.ConfigHub.HTTP.Port)))
 }

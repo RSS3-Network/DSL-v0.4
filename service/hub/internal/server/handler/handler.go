@@ -87,6 +87,10 @@ type BatchGetNotesRequest struct {
 	Page        int       `json:"page"`
 }
 
+type APIKeyRequest struct {
+	Address string `json:"address" validate:"required"`
+}
+
 type Transactions []model.Transaction
 
 // Len()
