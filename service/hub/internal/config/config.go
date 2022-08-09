@@ -4,8 +4,10 @@ import (
 	"strings"
 
 	configx "github.com/naturalselectionlabs/pregod/common/config"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"gorm.io/gorm"
 )
 
 type Config struct {
@@ -17,6 +19,8 @@ type Config struct {
 	Redis         *configx.Redis         `mapstructure:"redis"`
 	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
 	RPC           *configx.RPC           `mapstructure:"rpc"`
+
+	DatabaseClient *gorm.DB
 }
 
 var ConfigHub Config
@@ -38,5 +42,11 @@ func Initialize() {
 
 	if err := viper.Unmarshal(&ConfigHub); err != nil {
 		logrus.Fatalln(err)
+	}
+
+	var err error
+	ConfigHub.DatabaseClient, err = database.Dial(ConfigHub.Postgres.String(), true)
+	if err != nil {
+		panic(err)
 	}
 }

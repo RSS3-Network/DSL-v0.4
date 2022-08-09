@@ -24,7 +24,7 @@ func main() {
 		logrus.Fatalln(err)
 	}
 
-	srv := server.New(&config.ConfigHub)
+	srv := &server.Server{}
 
 	rootCommand.RunE = func(cmd *cobra.Command, args []string) error {
 		return srv.Run()
