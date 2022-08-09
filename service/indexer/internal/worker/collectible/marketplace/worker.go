@@ -189,6 +189,7 @@ func (i *internal) handleOpenSea(ctx context.Context, message *protocol.Message,
 	}
 
 	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
+	internalTransaction.Platform = opensea.PlatformOpenSea
 
 	return &internalTransaction, nil
 }
@@ -235,6 +236,13 @@ func (i *internal) handleLooksRare(ctx context.Context, message *protocol.Messag
 
 		internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
 	}
+
+	if len(internalTransaction.Transfers) == 0 {
+		return nil, errors.New("not found nft trade")
+	}
+
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
+	internalTransaction.Platform = looksrare.PlatformLooksrare
 
 	return &internalTransaction, nil
 }
