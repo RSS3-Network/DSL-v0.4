@@ -109,12 +109,13 @@ func (t Transactions) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-func APIReport(path string) {
+func APIReport(path string, apiKey string) {
 	report := map[string]interface{}{
-		"index": EsIndex,
-		"path":  path,
-		"ts":    time.Now().Format("2006-01-02 15:04:05"),
-		"count": true,
+		"index":   EsIndex,
+		"path":    path,
+		"ts":      time.Now().Format("2006-01-02 15:04:05"),
+		"count":   true,
+		"api_key": apiKey,
 	}
 
 	output, _ := json.Marshal(report)

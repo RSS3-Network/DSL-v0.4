@@ -22,10 +22,15 @@ func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 		}
 
-		err := CheckAPIKey(c)
-		if err != nil {
-			// return err
-		}
+		apiKey := c.Request().Header.Get("X-API-KEY")
+		c.Set("API-KEY", apiKey)
+
+		_ = CheckAPIKey(apiKey)
+
+		// err := CheckAPIKey(apiKey)
+		// if err != nil {
+		// 	return err
+		// }
 
 		return next(c)
 	}
@@ -33,18 +38,21 @@ func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 func CheckAPIKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		err := CheckAPIKey(c)
-		if err != nil {
-			// return err
-		}
+		apiKey := c.Request().Header.Get("X-API-KEY")
+		c.Set("API-KEY", apiKey)
+
+		_ = CheckAPIKey(apiKey)
+		// err := CheckAPIKey(apiKey)
+		// if err != nil {
+		// 	return err
+		// }
 
 		return next(c)
 	}
 }
 
-func CheckAPIKey(c echo.Context) error {
+func CheckAPIKey(apiKey string) error {
 	var item model.APIKey
-	var apiKey = c.Request().Header.Get("X-API-KEY")
 
 	if len(apiKey) == 0 {
 		return fmt.Errorf("miss X-API-KEY header")

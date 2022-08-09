@@ -49,5 +49,4 @@ func Initialize() {
 	if err != nil {
 		panic(err)
 	}
-
 }
