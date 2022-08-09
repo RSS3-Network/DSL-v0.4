@@ -7,10 +7,10 @@ initialize:
 build:
 	mkdir -p ./build
 	go build \
-    	-ldflags "-w -s -X github.com/naturalselectionlabs/pregod/common/constant.Version=$(VERSION)" \
+    	-ldflags "-w -s -X github.com/naturalselectionlabs/pregod/common/protocol.Build=$(VERSION)" \
     	-o ./build/pregod_hub ./service/hub/cmd/main.go
 	go build \
-    	-ldflags "-w -s -X github.com/naturalselectionlabs/pregod/common/constant.Version=$(VERSION)" \
+    	-ldflags "-w -s -X github.com/naturalselectionlabs/pregod/common/protocol.Build=$(VERSION)" \
 		-o ./build/pregod_indexer ./service/indexer/cmd/main.go
 
 # fail coverage report under xx percent
