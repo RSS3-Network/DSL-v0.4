@@ -22,3 +22,7 @@ package contract
 //go:generate abigen --abi ./lens/hub.abi --pkg lens --type Hub --out ./lens/hub.go
 // https://scan.crossbell.io/address/0xa6f969045641Cf486a747A2688F3a5A6d43cd0D8
 //go:generate abigen --abi ./crossbell/character.abi --pkg crossbell --type Character --out ./crossbell/character.go
+// https://etherscan.io/address/0x00000000006c3852cbef3e08e8df289169ede581
+//go:generate abigen --abi ./opensea/seaport.abi --pkg opensea --type Seaport --out ./opensea/seaport.go
+// https://etherscan.io/address/0x59728544b08ab483533076417fbbb2fd0b17ce3a
+//go:generate abigen --abi ./looksrare/exchange.abi --pkg looksrare --type Exchange --out ./looksrare/exchange.go

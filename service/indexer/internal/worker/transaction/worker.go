@@ -523,7 +523,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 
 			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
-			transfer.RelatedUrls = ethereum.BuildURL(transfer.RelatedUrls, ethereum.BuildTokenURL(message.Network, *address, id.String()))
+			transfer.RelatedUrls = ethereum.BuildURL(transfer.RelatedUrls, ethereum.BuildTokenURL(message.Network, *address, id.String())...)
 		}
 
 		tokenMetadata.ContractAddress = *address

@@ -34,6 +34,7 @@ type Token struct {
 	Description     string           `json:"description,omitempty"`
 	Attributes      []TokenAttribute `json:"attributes,omitempty"`
 	ExternalLink    string           `json:"external_link,omitempty"`
+	ExternalURL     string           `json:"external_url,omitempty"`
 	AnimationURL    string           `json:"animation_url,omitempty"`
 }
 

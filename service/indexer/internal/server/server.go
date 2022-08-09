@@ -36,6 +36,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger/ens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/marketplace"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
@@ -140,6 +141,7 @@ func (s *Server) Initialize() (err error) {
 
 	s.workers = []worker.Worker{
 		swapWorker,
+		marketplace.New(s.databaseClient, ethereumClientMap),
 		poap.New(ethereumClientMap),
 		mirror.New(),
 		gitcoin.New(s.databaseClient, s.redisClient, ethereumClientMap),

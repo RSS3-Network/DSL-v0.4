@@ -23,23 +23,30 @@ func BuildScanURL(network string, transactionHash string) string {
 	}
 }
 
-func BuildTokenURL(network, address, id string) string {
+func BuildTokenURL(network, address, id string) []string {
 	switch network {
 	case protocol.NetworkEthereum:
-		return fmt.Sprintf("https://opensea.io/assets/%s/%s", address, id)
+		return []string{
+			fmt.Sprintf("https://opensea.io/assets/%s/%s", address, id),
+			fmt.Sprintf("https://looksrare.org/collections/%s/%s", address, id),
+		}
 	case protocol.NetworkPolygon:
-		return fmt.Sprintf("https://opensea.io/assets/matic/%s/%s", address, id)
+		return []string{
+			fmt.Sprintf("https://opensea.io/assets/matic/%s/%s", address, id),
+		}
 	case protocol.NetworkBinanceSmartChain:
-		return fmt.Sprintf("https://tofunft.com/nft/bsc/%s/%s", address, id)
+		return []string{
+			fmt.Sprintf("https://tofunft.com/nft/bsc/%s/%s", address, id),
+		}
 	default:
-		return ""
+		return []string{}
 	}
 }
 
-func BuildURL(urls []string, url string) []string {
-	if url == "" {
-		return urls
+func BuildURL(old []string, new ...string) []string {
+	if len(new) == 0 {
+		return old
 	}
 
-	return append(urls, url)
+	return append(old, new...)
 }
