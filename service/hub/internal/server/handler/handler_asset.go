@@ -10,7 +10,9 @@ import (
 	"github.com/labstack/echo/v4"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
+	"github.com/samber/lo"
 	"go.opentelemetry.io/otel"
 )
 
@@ -41,6 +43,10 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 	if err != nil {
 		return InternalError(c)
 	}
+
+	assetList = lo.Filter(assetList, func(asset dbModel.Asset, _ int) bool {
+		return !allowlist.SpamList.Contains(asset.TokenAddress)
+	})
 
 	// publish mq message
 	if request.Refresh || len(assetList) == 0 {

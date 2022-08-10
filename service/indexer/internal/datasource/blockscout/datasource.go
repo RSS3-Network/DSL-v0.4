@@ -81,7 +81,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	unindexedTransactions := make([]*model.Transaction, 0)
 
 	for _, transaction := range transactionMap {
-		if transaction.AddressFrom != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) && !allowlist.Allow(transaction.AddressFrom) {
+		if transaction.AddressFrom != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) && !allowlist.AllowList.Contains(transaction.AddressFrom) {
 			continue
 		}
 

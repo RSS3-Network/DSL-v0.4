@@ -79,7 +79,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			continue
 		}
 
-		if internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) && !allowlist.Allow(internalTransaction.AddressFrom) {
+		if internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) && !allowlist.AllowList.Contains(internalTransaction.AddressFrom) {
 			continue
 		}
 
