@@ -109,7 +109,7 @@ func (t Transactions) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-func APIReport(path string, apiKey string) {
+func APIReport(path string, apiKey interface{}) {
 	report := map[string]interface{}{
 		"index":   EsIndex,
 		"path":    path,

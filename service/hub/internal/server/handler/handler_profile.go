@@ -15,7 +15,7 @@ import (
 // - network
 // - platform
 func (h *Handler) GetProfileListFunc(c echo.Context) error {
-	go APIReport(GetProfiles, c.Get("API-KEY").(string))
+	go APIReport(GetProfiles, c.Get("API-KEY"))
 	tracer := otel.Tracer("GetProfileListFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
