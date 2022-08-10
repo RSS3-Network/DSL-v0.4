@@ -80,8 +80,8 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 					return nil, err
 				}
 
-				internalTransfer.Tag, internalTransfer.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransfer.Tag, filter.ExchangeAddLiquidity, internalTransfer.Type)
-				internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransaction.Tag, filter.ExchangeAddLiquidity, internalTransaction.Type)
+				internalTransfer.Tag, internalTransfer.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransfer.Tag, filter.ExchangeLiquidity, internalTransfer.Type)
+				internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransaction.Tag, filter.ExchangeLiquidity, internalTransaction.Type)
 				internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
 			case uniswap.EventHashBurnV3:
 				internalTransfer, err := i.handleUniswapV3Burn(ctx, message, internalTransaction, *log, router)
@@ -89,8 +89,8 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 					return nil, err
 				}
 
-				internalTransfer.Tag, internalTransfer.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransfer.Tag, filter.ExchangeRemoveLiquidity, internalTransfer.Type)
-				internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransaction.Tag, filter.ExchangeRemoveLiquidity, internalTransaction.Type)
+				internalTransfer.Tag, internalTransfer.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransfer.Tag, filter.ExchangeLiquidity, internalTransfer.Type)
+				internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransaction.Tag, filter.ExchangeLiquidity, internalTransaction.Type)
 				internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
 			case uniswap.EventHashCollectV3:
 				// TODO Fee = Collect - Remove
@@ -105,8 +105,8 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 					return nil, err
 				}
 
-				internalTransfer.Tag, internalTransfer.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransfer.Tag, filter.ExchangeCollect, internalTransfer.Type)
-				internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransaction.Tag, filter.ExchangeCollect, internalTransaction.Type)
+				internalTransfer.Tag, internalTransfer.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransfer.Tag, filter.ExchangeLiquidity, internalTransfer.Type)
+				internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagExchange, internalTransaction.Tag, filter.ExchangeLiquidity, internalTransaction.Type)
 				internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
 			}
 		}
@@ -139,7 +139,7 @@ func (i *internal) handleUniswapV3Mint(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, tokenLeft, event.Amount0, tokenRight, event.Amount1)
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, tokenLeft, event.Amount0, tokenRight, event.Amount1, filter.ExchangeLiquidityAdd)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (i *internal) handleUniswapV3Burn(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, tokenLeft, event.Amount0, tokenRight, event.Amount1)
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, tokenLeft, event.Amount0, tokenRight, event.Amount1, filter.ExchangeLiquidityRemove)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (i *internal) handleUniswapV3Collect(ctx context.Context, message *protocol
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, tokenLeft, event.Amount0, tokenRight, event.Amount1)
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, tokenLeft, event.Amount0, tokenRight, event.Amount1, filter.ExchangeLiquidityCollect)
 	if err != nil {
 		return nil, err
 	}
@@ -255,13 +255,14 @@ func (i *internal) buildTokenPairV3(ctx context.Context, network string, poolCon
 	return tokenLeft, tokenRight, nil
 }
 
-func (i *internal) buildLiquidityMetadata(ctx context.Context, router Router, tokenLeft *token.ERC20, tokenLeftValue *big.Int, tokenRight *token.ERC20, tokenRightValue *big.Int) (json.RawMessage, error) {
+func (i *internal) buildLiquidityMetadata(ctx context.Context, router Router, tokenLeft *token.ERC20, tokenLeftValue *big.Int, tokenRight *token.ERC20, tokenRightValue *big.Int, liquidityAction string) (json.RawMessage, error) {
 	internalTokenLeftValue := decimal.NewFromBigInt(tokenLeftValue, 0)
 	internalTokenRightValue := decimal.NewFromBigInt(tokenRightValue, 0)
 
 	return json.Marshal(&metadata.Liquidity{
 		Protocol: router.Protocol,
-		TokenLeft: metadata.Token{
+		Action:   liquidityAction,
+		Token1: metadata.Token{
 			Name:            tokenLeft.Name,
 			Symbol:          tokenLeft.Symbol,
 			Decimals:        tokenLeft.Decimals,
@@ -270,7 +271,7 @@ func (i *internal) buildLiquidityMetadata(ctx context.Context, router Router, to
 			ContractAddress: tokenLeft.ContractAddress,
 			Value:           &internalTokenLeftValue,
 		},
-		TokenRight: metadata.Token{
+		Token2: metadata.Token{
 			Name:            tokenLeft.Name,
 			Symbol:          tokenRight.Symbol,
 			Decimals:        tokenRight.Decimals,
