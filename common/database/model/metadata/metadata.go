@@ -43,6 +43,12 @@ type TokenAttribute struct {
 	Value     any    `json:"value"`
 }
 
+type Liquidity struct {
+	Protocol   string `json:"protocol"`
+	TokenLeft  Token  `json:"token_left"`
+	TokenRight Token  `json:"token_right"`
+}
+
 type Swap struct {
 	Protocol  string `json:"protocol"`
 	TokenFrom Token  `json:"from"`

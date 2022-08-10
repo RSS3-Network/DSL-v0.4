@@ -6,10 +6,13 @@ const (
 	TransactionMint     string = "mint"
 	TransactionBurn     string = "burn"
 
-	// exchange types:  withdraw | deposit | swap
-	ExchangeWithdraw string = "withdraw"
-	ExchangeDeposit  string = "deposit"
-	ExchangeSwap     string = "swap"
+	// exchange types:  withdraw | deposit | swap | add_liquidity | remove_liquidity | collect
+	ExchangeWithdraw        string = "withdraw"
+	ExchangeDeposit         string = "deposit"
+	ExchangeSwap            string = "swap"
+	ExchangeAddLiquidity    string = "add_liquidity"
+	ExchangeRemoveLiquidity string = "remove_liquidity"
+	ExchangeCollect         string = "collect"
 
 	// NFT types: transfer | mint | burn | poap
 	CollectibleTransfer string = "transfer"

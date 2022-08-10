@@ -82,6 +82,8 @@ func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message, ethere
 	return func(transaction *model.Transaction, i int) (*types.Block, error) {
 		block, err := ethereumClient.BlockByNumber(ctx, big.NewInt(transaction.BlockNumber))
 		if err != nil {
+			zap.L().Error("failed to get block", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.Int64("block_number", transaction.BlockNumber))
+
 			return nil, err
 		}
 

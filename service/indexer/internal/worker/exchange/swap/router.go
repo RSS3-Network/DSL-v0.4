@@ -19,7 +19,7 @@ var (
 
 	routerUniswapV3 = Router{
 		Name:     protocol.PlatformUniswap,
-		Protocol: "Uniswap V2",
+		Protocol: "Uniswap V3",
 	}
 
 	routerSushiSwap = Router{
