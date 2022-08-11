@@ -1,6 +1,7 @@
 package swap
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -82,6 +83,13 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 		// Exclude transfers to self
 		if transaction.AddressTo == address {
 			return
+		}
+
+		//
+		for _, transfer := range transaction.Transfers {
+			if !(transfer.Metadata == nil || bytes.Equal(transfer.Metadata, metadata.Default)) {
+				return
+			}
 		}
 
 		// Handle swap entry
