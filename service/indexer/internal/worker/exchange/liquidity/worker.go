@@ -139,7 +139,10 @@ func (i *internal) handleUniswapV3Mint(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, tokenLeft, event.Amount0, tokenRight, event.Amount1, filter.ExchangeLiquidityAdd)
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityAdd, map[*token.ERC20]*big.Int{
+		tokenLeft:  event.Amount0,
+		tokenRight: event.Amount1,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +178,10 @@ func (i *internal) handleUniswapV3Burn(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, tokenLeft, event.Amount0, tokenRight, event.Amount1, filter.ExchangeLiquidityRemove)
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityRemove, map[*token.ERC20]*big.Int{
+		tokenLeft:  event.Amount0,
+		tokenRight: event.Amount1,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +217,10 @@ func (i *internal) handleUniswapV3Collect(ctx context.Context, message *protocol
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, tokenLeft, event.Amount0, tokenRight, event.Amount1, filter.ExchangeLiquidityCollect)
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityCollect, map[*token.ERC20]*big.Int{
+		tokenLeft:  event.Amount0,
+		tokenRight: event.Amount1,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -255,32 +264,28 @@ func (i *internal) buildTokenPairV3(ctx context.Context, network string, poolCon
 	return tokenLeft, tokenRight, nil
 }
 
-func (i *internal) buildLiquidityMetadata(ctx context.Context, router Router, tokenLeft *token.ERC20, tokenLeftValue *big.Int, tokenRight *token.ERC20, tokenRightValue *big.Int, liquidityAction string) (json.RawMessage, error) {
-	internalTokenLeftValue := decimal.NewFromBigInt(tokenLeftValue, 0)
-	internalTokenRightValue := decimal.NewFromBigInt(tokenRightValue, 0)
-
-	return json.Marshal(&metadata.Liquidity{
+func (i *internal) buildLiquidityMetadata(ctx context.Context, router Router, action string, tokenMap map[*token.ERC20]*big.Int) (json.RawMessage, error) {
+	liquidityMetadata := metadata.Liquidity{
 		Protocol: router.Protocol,
-		Action:   liquidityAction,
-		Token1: metadata.Token{
-			Name:            tokenLeft.Name,
-			Symbol:          tokenLeft.Symbol,
-			Decimals:        tokenLeft.Decimals,
-			Image:           tokenLeft.Logo,
+		Action:   action,
+		Tokens:   make([]metadata.Token, 0),
+	}
+
+	for internalToken, value := range tokenMap {
+		internalTokenValue := decimal.NewFromBigInt(value, 0)
+
+		liquidityMetadata.Tokens = append(liquidityMetadata.Tokens, metadata.Token{
+			Name:            internalToken.Name,
+			Symbol:          internalToken.Symbol,
+			Decimals:        internalToken.Decimals,
+			Image:           internalToken.Logo,
 			Standard:        protocol.TokenStandardERC20,
-			ContractAddress: tokenLeft.ContractAddress,
-			Value:           &internalTokenLeftValue,
-		},
-		Token2: metadata.Token{
-			Name:            tokenLeft.Name,
-			Symbol:          tokenRight.Symbol,
-			Decimals:        tokenRight.Decimals,
-			Image:           tokenRight.Logo,
-			Standard:        protocol.TokenStandardERC20,
-			ContractAddress: tokenRight.ContractAddress,
-			Value:           &internalTokenRightValue,
-		},
-	})
+			ContractAddress: internalToken.ContractAddress,
+			Value:           &internalTokenValue,
+		})
+	}
+
+	return json.Marshal(&liquidityMetadata)
 }
 
 func (i *internal) Jobs() []worker.Job {

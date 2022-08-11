@@ -44,10 +44,9 @@ type TokenAttribute struct {
 }
 
 type Liquidity struct {
-	Protocol string `json:"protocol"`
-	Action   string `json:"action"`
-	Token1   Token  `json:"token_1"`
-	Token2   Token  `json:"token_2"`
+	Protocol string  `json:"protocol"`
+	Action   string  `json:"action"`
+	Tokens   []Token `json:"tokens"`
 }
 
 type Swap struct {
