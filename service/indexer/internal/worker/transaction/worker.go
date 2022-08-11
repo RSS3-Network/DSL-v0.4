@@ -452,8 +452,11 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 		tokenMetadata.Decimals = native.Decimals
 		tokenMetadata.Standard = protocol.TokenStandardNative
 		tokenMetadata.Image = native.Logo
+
 		tokenValue := decimal.NewFromBigInt(value, 0)
 		tokenMetadata.Value = &tokenValue
+		tokenValueDisplay := tokenValue.Shift(-int32(native.Decimals))
+		tokenMetadata.ValueDisplay = &tokenValueDisplay
 
 		transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 	} else {
@@ -473,6 +476,9 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 
 			tokenValue := decimal.NewFromBigInt(value, 0)
 			tokenMetadata.Value = &tokenValue
+
+			tokenValueDisplay := tokenValue.Shift(-int32(erc20Token.Decimals))
+			tokenMetadata.ValueDisplay = &tokenValueDisplay
 
 			transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 		} else {
@@ -519,7 +525,10 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 				tokenMetadata.Standard = protocol.TokenStandardERC1155
 			}
 
+			tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
+
 			tokenMetadata.Value = &tokenValue
+			tokenMetadata.ValueDisplay = &tokenValueDisplay
 
 			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
@@ -577,7 +586,10 @@ func (s *service) buildZkSyncTokenMetadata(ctx context.Context, message *protoco
 		return nil, err
 	}
 
+	tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
+
 	tokenMetadata.Value = &tokenValue
+	tokenMetadata.ValueDisplay = &tokenValueDisplay
 
 	transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 

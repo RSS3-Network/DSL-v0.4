@@ -189,8 +189,10 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 			}
 
 			tokenValueTo := decimal.NewFromBigInt(value, 0)
+			tokenValueDisplayTo := tokenValueTo.Shift(-int32(erc20.Decimals))
 
 			tokenValueFrom := tokenValueTo.Abs()
+			tokenValueDisplayFrom := tokenValueFrom.Shift(-int32(erc20.Decimals))
 
 			switch value.Cmp(big.NewInt(0)) {
 			case -1:
@@ -199,6 +201,7 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 					Symbol:          erc20.Symbol,
 					Decimals:        erc20.Decimals,
 					Value:           &tokenValueFrom,
+					ValueDisplay:    &tokenValueDisplayFrom,
 					ContractAddress: token.String(),
 					Standard:        protocol.TokenStandardERC20,
 					Image:           erc20.Logo,
@@ -211,6 +214,7 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 					Symbol:          erc20.Symbol,
 					Decimals:        erc20.Decimals,
 					Value:           &tokenValueTo,
+					ValueDisplay:    &tokenValueDisplayTo,
 					ContractAddress: token.String(),
 					Standard:        protocol.TokenStandardERC20,
 					Image:           erc20.Logo,

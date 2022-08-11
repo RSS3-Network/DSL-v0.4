@@ -202,7 +202,10 @@ func TestBuildTransferMetadata(t *testing.T) {
 		}
 
 		tokenValueTo := decimal.NewFromBigInt(value, 0)
+		tokenValueDisplayTo := tokenValueTo.Shift(-int32(erc20.Decimals))
+
 		tokenValueFrom := tokenValueTo.Abs()
+		tokenValueDisplayFrom := tokenValueFrom.Shift(-int32(erc20.Decimals))
 
 		switch value.Cmp(big.NewInt(0)) {
 		case -1:
@@ -214,6 +217,7 @@ func TestBuildTransferMetadata(t *testing.T) {
 				Standard:        protocol.TokenStandardERC20,
 				ContractAddress: erc20.ContractAddress,
 				Value:           &tokenValueFrom,
+				ValueDisplay:    &tokenValueDisplayFrom,
 			}
 		case 0:
 			continue
@@ -226,6 +230,7 @@ func TestBuildTransferMetadata(t *testing.T) {
 				Standard:        protocol.TokenStandardERC20,
 				ContractAddress: erc20.ContractAddress,
 				Value:           &tokenValueTo,
+				ValueDisplay:    &tokenValueDisplayTo,
 			}
 		}
 	}

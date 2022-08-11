@@ -274,6 +274,8 @@ func (i *internal) buildLiquidityMetadata(ctx context.Context, router Router, ac
 	for internalToken, value := range tokenMap {
 		internalTokenValue := decimal.NewFromBigInt(value, 0)
 
+		internalTokenDisplay := internalTokenValue.Shift(-int32(internalToken.Decimals))
+
 		liquidityMetadata.Tokens = append(liquidityMetadata.Tokens, metadata.Token{
 			Name:            internalToken.Name,
 			Symbol:          internalToken.Symbol,
@@ -282,6 +284,7 @@ func (i *internal) buildLiquidityMetadata(ctx context.Context, router Router, ac
 			Standard:        protocol.TokenStandardERC20,
 			ContractAddress: internalToken.ContractAddress,
 			Value:           &internalTokenValue,
+			ValueDisplay:    &internalTokenDisplay,
 		})
 	}
 

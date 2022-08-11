@@ -253,8 +253,10 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 		}
 
 		tokenValue := decimal.NewFromBigInt(event.Amount, 0)
+		tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
 
 		tokenMetadata.Value = &tokenValue
+		tokenMetadata.ValueDisplay = &tokenValueDisplay
 
 		metadataRaw, err := json.Marshal(&metadata.Donation{
 			ID:          project.ID,
