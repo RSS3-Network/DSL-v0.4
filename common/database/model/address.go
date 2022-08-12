@@ -9,8 +9,6 @@ const (
 
 type Address struct {
 	Address   string    `gorm:"column:address;primaryKey" json:"address"`
-	Network   string    `gorm:"column:network;primaryKey" json:"network"`
-	Status    string    `gorm:"column:status;not null;default:done" json:"status"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime;not null;default:now();index" json:"-"`
 	UpdatedAt time.Time `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index" json:"updated_at"`
 }

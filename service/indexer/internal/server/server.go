@@ -327,13 +327,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	logger.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
-	// upsert address status
-	go s.upsertAddress(model.Address{
-		Address: message.Address,
-		Network: message.Network,
-		Status:  model.AddressStatusRunning,
-	})
-
 	// Get data from trigger
 	for _, internalTrigger := range s.triggers {
 		for _, network := range internalTrigger.Networks() {
@@ -433,8 +426,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		// upsert address status
 		go s.upsertAddress(model.Address{
 			Address: message.Address,
-			Network: message.Network,
-			Status:  model.AddressStatusDone,
 		})
 	}()
 
@@ -651,7 +642,7 @@ func (s *Server) upsertAddress(address model.Address) {
 			DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
 		}).
 		Create(&address).Error; err != nil {
-		logger.Global().Error("failed to upsert address", zap.Error(err), zap.String("network", address.Network), zap.String("address", address.Address))
+		logger.Global().Error("failed to upsert address", zap.Error(err), zap.String("address", address.Address))
 	}
 }
 

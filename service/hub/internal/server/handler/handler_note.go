@@ -116,7 +116,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	var addressStatus []dbModel.Address
 	if request.QueryStatus {
-		addressStatus, _ = h.getAddress(ctx, []string{request.Address}, request.Network)
+		addressStatus, _ = h.getAddress(ctx, []string{request.Address})
 	}
 
 	return c.JSON(http.StatusOK, &Response{
@@ -301,7 +301,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 
 	var addressStatus []dbModel.Address
 	if request.QueryStatus {
-		addressStatus, _ = h.getAddress(ctx, request.Address, request.Network)
+		addressStatus, _ = h.getAddress(ctx, request.Address)
 	}
 
 	return c.JSON(http.StatusOK, &Response{
@@ -442,7 +442,7 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, address string, rei
 }
 
 // getAddress
-func (h *Handler) getAddress(ctx context.Context, address []string, network []string) ([]dbModel.Address, error) {
+func (h *Handler) getAddress(ctx context.Context, address []string) ([]dbModel.Address, error) {
 	tracer := otel.Tracer("getAddress")
 	_, postgresSnap := tracer.Start(ctx, "postgres")
 
@@ -451,10 +451,6 @@ func (h *Handler) getAddress(ctx context.Context, address []string, network []st
 	addressStatus := make([]dbModel.Address, 0)
 
 	sql := h.DatabaseClient.Model(&dbModel.Address{})
-
-	if len(network) > 0 {
-		sql = sql.Where("network IN ? ", network)
-	}
 
 	if err := sql.
 		Where("address IN ?", address).
