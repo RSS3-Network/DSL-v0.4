@@ -34,6 +34,8 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		return err
 	}
 
+	request.Address = strings.ToLower(request.Address)
+
 	if len(request.Cursor) == 0 {
 		go FilterReport(GetNotes, request)
 	}
@@ -112,10 +114,16 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		cursor = transactions[len(transactions)-1].Hash
 	}
 
+	var addressStatus []dbModel.Address
+	if request.QueryStatus {
+		addressStatus, _ = h.getAddress(ctx, []string{request.Address}, request.Network)
+	}
+
 	return c.JSON(http.StatusOK, &Response{
-		Total:  total,
-		Cursor: cursor,
-		Result: transactions,
+		Total:         total,
+		Cursor:        cursor,
+		Result:        transactions,
+		AddressStatus: addressStatus,
 	})
 }
 
@@ -290,10 +298,16 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 		cursor = transactions[len(transactions)-1].Hash
 	}
 
+	var addressStatus []dbModel.Address
+	if request.QueryStatus {
+		addressStatus, _ = h.getAddress(ctx, request.Address, request.Network)
+	}
+
 	return c.JSON(http.StatusOK, &Response{
-		Total:  total,
-		Cursor: cursor,
-		Result: transactions,
+		Total:         total,
+		Cursor:        cursor,
+		Result:        transactions,
+		AddressStatus: addressStatus,
 	})
 }
 
@@ -422,4 +436,28 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, address string) {
 			return
 		}
 	}
+}
+
+// getAddress
+func (h *Handler) getAddress(ctx context.Context, address []string, network []string) ([]dbModel.Address, error) {
+	tracer := otel.Tracer("getAddress")
+	_, postgresSnap := tracer.Start(ctx, "postgres")
+
+	defer postgresSnap.End()
+
+	addressStatus := make([]dbModel.Address, 0)
+
+	sql := h.DatabaseClient.Model(&dbModel.Address{})
+
+	if len(network) > 0 {
+		sql = sql.Where("network IN ? ", network)
+	}
+
+	if err := sql.
+		Where("address IN ?", address).
+		Find(&addressStatus).Error; err != nil {
+		return nil, err
+	}
+
+	return addressStatus, nil
 }

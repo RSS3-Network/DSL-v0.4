@@ -75,7 +75,6 @@ func (h *Handler) GetAPIKeyFunc(c echo.Context) error {
 
 	hash := wallet.Values["hash"].(string)
 	signature := wallet.Values["signature"].(string)
-	addressReq := wallet.Values["address"].(string)
 
 	sigPublicKeyECDSA, err := crypto.SigToPub([]byte(hash), []byte(signature))
 	if err != nil {
@@ -85,7 +84,7 @@ func (h *Handler) GetAPIKeyFunc(c echo.Context) error {
 
 	address := crypto.PubkeyToAddress(*sigPublicKeyECDSA)
 
-	if address.String() != addressReq {
+	if address.String() != request.Address {
 		return InternalError(c)
 	}
 
