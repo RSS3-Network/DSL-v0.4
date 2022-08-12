@@ -130,7 +130,8 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 	total := int64(0)
 	sql := h.DatabaseClient.
 		Model(&dbModel.Transaction{}).
-		Where("owner = ?", request.Address) // address was already converted to lowercase
+		Where("owner = ?", request.Address). // address was already converted to lowercase
+		Where("success IS TRUE")             // Hide failed transactions
 
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
@@ -312,7 +313,8 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 
 	sql := h.DatabaseClient.
 		Model(&dbModel.Transaction{}).
-		Where("owner IN ?", request.Address)
+		Where("owner IN ?", request.Address).
+		Where("success IS TRUE") // Hide failed transactions
 
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
