@@ -319,6 +319,13 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	logger.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
+	// upsert address status
+	go s.upsertAddress(model.Address{
+		Address: message.Address,
+		Network: message.Network,
+		Status:  model.AddressStatusRunning,
+	})
+
 	// Get data from trigger
 	for _, internalTrigger := range s.triggers {
 		for _, network := range internalTrigger.Networks() {
@@ -384,6 +391,13 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		}
 
 		logger.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
+
+		// upsert address status
+		go s.upsertAddress(model.Address{
+			Address: message.Address,
+			Network: message.Network,
+			Status:  model.AddressStatusDone,
+		})
 	}()
 
 	return s.handleWorkers(ctx, message, transactions, transactionsMap)
@@ -592,6 +606,19 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	}
 
 	return s.upsertTransactions(ctx, message, transactions)
+}
+
+func (s *Server) upsertAddress(address model.Address) error {
+	if err := s.databaseClient.
+		Clauses(clause.OnConflict{
+			UpdateAll: true,
+			DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
+		}).
+		Create(&address).Error; err != nil {
+		logger.Global().Error("failed to upsert address", zap.Error(err), zap.String("network", address.Network), zap.String("address", address.Address))
+		return err
+	}
+	return nil
 }
 
 func New(config *config.Config) *Server {
