@@ -12,7 +12,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
-	"github.com/samber/lo"
 	"go.opentelemetry.io/otel"
 )
 
@@ -43,10 +42,6 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 	if err != nil {
 		return InternalError(c)
 	}
-
-	assetList = lo.Filter(assetList, func(asset dbModel.Asset, _ int) bool {
-		return !allowlist.SpamList.Contains(asset.TokenAddress)
-	})
 
 	// publish mq message
 	if request.Refresh || len(assetList) == 0 {
@@ -83,6 +78,10 @@ func (h *Handler) getAssets(c context.Context, request GetAssetRequest) ([]dbMod
 	sql := h.DatabaseClient.
 		Model(&dbModel.Asset{}).
 		Where("owner = ?", request.Address)
+
+	if request.BlockSpam == nil || *request.BlockSpam {
+		sql = sql.Where("token_address NOT IN ?", allowlist.SpamList.Keys())
+	}
 
 	if len(request.Network) > 0 {
 		for i, v := range request.Network {

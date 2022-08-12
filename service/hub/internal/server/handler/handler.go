@@ -72,6 +72,7 @@ type GetAssetRequest struct {
 	Cursor       string   `query:"cursor"`
 	Limit        int      `query:"limit"`
 	Refresh      bool     `query:"refresh"`
+	BlockSpam    *bool    `query:"block_spam"` // Default true
 }
 
 type BatchGetNotesRequest struct {
