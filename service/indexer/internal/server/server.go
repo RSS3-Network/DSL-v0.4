@@ -644,7 +644,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	return s.upsertTransactions(ctx, message, tx, transactions)
 }
 
-func (s *Server) upsertAddress(address model.Address) error {
+func (s *Server) upsertAddress(address model.Address) {
 	if err := s.databaseClient.
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
@@ -652,9 +652,7 @@ func (s *Server) upsertAddress(address model.Address) error {
 		}).
 		Create(&address).Error; err != nil {
 		logger.Global().Error("failed to upsert address", zap.Error(err), zap.String("network", address.Network), zap.String("address", address.Address))
-		return err
 	}
-	return nil
 }
 
 func New(config *config.Config) *Server {
