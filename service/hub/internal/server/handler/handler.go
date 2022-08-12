@@ -30,10 +30,11 @@ type Handler struct {
 }
 
 type Response struct {
-	Total   int64  `json:"total,omitempty"`
-	Cursor  string `json:"cursor,omitempty"`
-	Result  any    `json:"result,omitempty"`
-	Message string `json:"message,omitempty"`
+	Total         int64           `json:"total,omitempty"`
+	Cursor        string          `json:"cursor,omitempty"`
+	Result        any             `json:"result,omitempty"`
+	AddressStatus []model.Address `json:"address_status,omitempty"`
+	Message       string          `json:"message,omitempty"`
 }
 
 type GetRequest struct {
@@ -50,6 +51,7 @@ type GetRequest struct {
 	Refresh     bool      `query:"refresh" json:"refresh"`
 	Reindex     bool      `query:"reindex" json:"reindex"`
 	Page        int       `query:"page" json:"page"`
+	QueryStatus bool      `query:"query_status" json:"query_status"`
 }
 
 type GetExchangeRequest struct {
@@ -87,6 +89,7 @@ type BatchGetNotesRequest struct {
 	Refresh     bool      `json:"refresh"`
 	IncludePoap bool      `json:"include_poap"`
 	Page        int       `json:"page"`
+	QueryStatus bool      `json:"query_status"`
 }
 
 type APIKeyRequest struct {

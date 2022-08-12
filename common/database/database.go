@@ -32,6 +32,7 @@ var tables = []any{
 	&model.Token{},
 	&model.Domains{},
 	&model.APIKey{},
+	&model.Address{},
 }
 
 var Client *gorm.DB
