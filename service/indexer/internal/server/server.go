@@ -154,9 +154,15 @@ func (s *Server) Initialize() (err error) {
 	s.employer = shedlock.New(s.redisClient)
 
 	for _, internalWorker := range s.workers {
+		logger.Global().Info("start initializing worker", zap.String("worker", internalWorker.Name()))
+
+		startTime := time.Now()
+
 		if err := internalWorker.Initialize(context.Background()); err != nil {
 			return err
 		}
+
+		logger.Global().Info("initialize worker completion", zap.String("worker", internalWorker.Name()), zap.Duration("duration", time.Since(startTime)))
 
 		if internalWorker.Jobs() == nil {
 			continue
