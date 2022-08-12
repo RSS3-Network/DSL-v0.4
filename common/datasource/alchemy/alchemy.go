@@ -15,5 +15,5 @@ const (
 	CategoryERC721   = "erc721"
 	CategoryERC1155  = "erc1155"
 
-	MaxCount = 255
+	MaxCount = 1000
 )
