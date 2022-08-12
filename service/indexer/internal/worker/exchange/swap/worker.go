@@ -85,7 +85,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 			return
 		}
 
-		//
+		// Exclude indexed transactions
 		for _, transfer := range transaction.Transfers {
 			if !(transfer.Metadata == nil || bytes.Equal(transfer.Metadata, metadata.Default)) {
 				return
