@@ -10,7 +10,7 @@ import (
 
 type Transaction struct {
 	BlockNumber int64            `gorm:"column:block_number" json:"-"`
-	Timestamp   time.Time        `gorm:"column:timestamp" json:"timestamp"`
+	Timestamp   time.Time        `gorm:"column:timestamp;index:,sort:desc" json:"timestamp"`
 	Hash        string           `gorm:"column:hash;primaryKey" json:"hash"`
 	Index       int64            `gorm:"column:index;index;default:0" json:"-"`
 	Owner       string           `gorm:"column:owner;index;primaryKey" json:"owner"`
