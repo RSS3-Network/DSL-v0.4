@@ -336,6 +336,9 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		}
 	}
 
+	// Open a database transaction
+	tx := database.Global().WithContext(ctx).Begin()
+
 	// Get data from datasources
 	var transactions []model.Transaction
 
@@ -348,7 +351,34 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 					BlockNumber int64     `gorm:"column:block_number"`
 				}
 
-				if err := s.databaseClient.
+				// Delete data from this address and reindex it
+				if message.Reindex {
+					var hashes []string
+
+					// TODO Use the owner to replace hashes field
+					// Get all hashes of this address on this network
+					if err := tx.
+						Model((*model.Transaction)(nil)).
+						Where("network = ? AND owner = ?", message.Network, message.Address).
+						Pluck("hash", &hashes).
+						Error; err != nil {
+						return err
+					}
+
+					if err := tx.Where("network = ? AND hash IN ?", message.Network, hashes).Delete(&model.Transaction{}).Error; err != nil {
+						tx.Rollback()
+
+						return err
+					}
+
+					if err := tx.Where("network = ? AND transaction_hash IN ?", message.Network, hashes).Delete(&model.Transfer{}).Error; err != nil {
+						tx.Rollback()
+
+						return err
+					}
+				}
+
+				if err := tx.
 					Model((*model.Transaction)(nil)).
 					Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
 					Where("owner = ?", message.Address).
@@ -388,7 +418,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		logger.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
 	}()
 
-	return s.handleWorkers(ctx, message, transactions, transactionsMap)
+	return s.handleWorkers(ctx, message, tx, transactions, transactionsMap)
 }
 
 func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (err error) {
@@ -475,13 +505,11 @@ func transactionsMap2Array(transactionsMap map[string]model.Transaction) []model
 	return transactions
 }
 
-func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (err error) {
+func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Message, tx *gorm.DB, transactions []model.Transaction) (err error) {
 	tracer := otel.Tracer("indexer")
 	_, span := tracer.Start(ctx, "indexer:upsertTransactions")
 
 	defer opentelemetry.Log(span, len(transactions), nil, err)
-
-	tx := s.databaseClient.Begin()
 
 	dbChunkSize := 800
 
@@ -562,7 +590,7 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 	return tx.Commit().Error
 }
 
-func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction, transactionsMap map[string]model.Transaction) (err error) {
+func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, tx *gorm.DB, transactions []model.Transaction, transactionsMap map[string]model.Transaction) (err error) {
 	tracer := otel.Tracer("indexer")
 	ctx, span := tracer.Start(ctx, "indexer:handleWorkers")
 
@@ -593,7 +621,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 		}
 	}
 
-	return s.upsertTransactions(ctx, message, transactions)
+	return s.upsertTransactions(ctx, message, tx, transactions)
 }
 
 func New(config *config.Config) *Server {

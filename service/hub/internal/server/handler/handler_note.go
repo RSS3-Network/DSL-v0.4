@@ -79,7 +79,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		go h.publishIndexerMessage(ctx, request.Address)
+		go h.publishIndexerMessage(ctx, request.Address, request.Reindex)
 	}
 
 	if len(transactions) == 0 {
@@ -364,7 +364,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	go func() {
 		if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
 			for _, address := range request.Address {
-				go h.publishIndexerMessage(ctx, address)
+				go h.publishIndexerMessage(ctx, address, false)
 				time.Sleep(500 * time.Millisecond)
 			}
 		}
@@ -393,7 +393,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 }
 
 // publishIndexerMessage create a rabbitmq job to index the latest user data
-func (h *Handler) publishIndexerMessage(ctx context.Context, address string) {
+func (h *Handler) publishIndexerMessage(ctx context.Context, address string, reindex bool) {
 	tracer := otel.Tracer("publishIndexerMessage")
 	_, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")
 
@@ -408,6 +408,7 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, address string) {
 		message := protocol.Message{
 			Address: address,
 			Network: network,
+			Reindex: reindex,
 		}
 
 		messageData, err := json.Marshal(&message)

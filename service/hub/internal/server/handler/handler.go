@@ -48,6 +48,7 @@ type GetRequest struct {
 	Hash        string    `query:"hash" json:"hash"`
 	IncludePoap bool      `query:"include_poap" json:"include_poap"`
 	Refresh     bool      `query:"refresh" json:"refresh"`
+	Reindex     bool      `query:"reindex" json:"reindex"`
 	Page        int       `query:"page" json:"page"`
 }
 

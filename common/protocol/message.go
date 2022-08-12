@@ -9,4 +9,5 @@ type Message struct {
 	Network     string    `json:"network"`
 	Timestamp   time.Time `json:"timestamp"`
 	BlockNumber int64     `json:"block_number"`
+	Reindex     bool      `json:"reindex"`
 }
