@@ -151,6 +151,7 @@ func (i *internal) handleOpenSea(ctx context.Context, message *protocol.Message,
 					Image:           nft.Image,
 					ID:              nft.ID.String(),
 					Value:           &tokenValue,
+					ValueDisplay:    &tokenValue,
 					Cost:            costToken,
 					Description:     nft.Description,
 					Attributes:      tokenAttributes,
@@ -284,6 +285,7 @@ func (i *internal) handleLooksRareTakerAsk(ctx context.Context, message *protoco
 		Image:           nft.Image,
 		ID:              nft.ID.String(),
 		Value:           &nftValue,
+		ValueDisplay:    &nftValue,
 		Cost:            costToken,
 		Description:     nft.Description,
 		Attributes:      tokenAttributes,
@@ -352,6 +354,7 @@ func (i *internal) handleLooksRareTakerBid(ctx context.Context, message *protoco
 		Image:           nft.Image,
 		ID:              nft.ID.String(),
 		Value:           &nftValue,
+		ValueDisplay:    &nftValue,
 		Cost:            costToken,
 		Description:     nft.Description,
 		Attributes:      tokenAttributes,
@@ -393,14 +396,16 @@ func (i *internal) buildToken(ctx context.Context, message *protocol.Message, ad
 		}
 
 		costValue := decimal.NewFromBigInt(value, 0)
+		costValueDisplay := costValue.Shift(-int32(nativeToken.Decimals))
 
 		costToken = metadata.Token{
-			Name:     nativeToken.Name,
-			Symbol:   nativeToken.Symbol,
-			Decimals: nativeToken.Decimals,
-			Standard: protocol.TokenStandardNative,
-			Image:    nativeToken.Logo,
-			Value:    &costValue,
+			Name:         nativeToken.Name,
+			Symbol:       nativeToken.Symbol,
+			Decimals:     nativeToken.Decimals,
+			Standard:     protocol.TokenStandardNative,
+			Image:        nativeToken.Logo,
+			Value:        &costValue,
+			ValueDisplay: &costValueDisplay,
 		}
 	} else {
 		erc20Token, err := i.tokenClient.ERC20(ctx, message.Network, address.String())
@@ -409,6 +414,7 @@ func (i *internal) buildToken(ctx context.Context, message *protocol.Message, ad
 		}
 
 		costValue := decimal.NewFromBigInt(value, 0)
+		costValueDisplay := costValue.Shift(-int32(erc20Token.Decimals))
 
 		costToken = metadata.Token{
 			Name:            erc20Token.Name,
@@ -418,6 +424,7 @@ func (i *internal) buildToken(ctx context.Context, message *protocol.Message, ad
 			ContractAddress: erc20Token.ContractAddress,
 			Image:           erc20Token.Logo,
 			Value:           &costValue,
+			ValueDisplay:    &costValueDisplay,
 		}
 	}
 

@@ -19,7 +19,7 @@ var (
 
 	routerUniswapV3 = Router{
 		Name:     protocol.PlatformUniswap,
-		Protocol: "Uniswap V2",
+		Protocol: "Uniswap V3",
 	}
 
 	routerSushiSwap = Router{
@@ -57,6 +57,16 @@ var (
 		Protocol: "Metamask V1",
 	}
 
+	zeroXV4 = Router{
+		Name:     protocol.Platform0x,
+		Protocol: "0x Protocol V4",
+	}
+
+	zeroXV3 = Router{
+		Name:     protocol.Platform0x,
+		Protocol: "0x Protocol V3",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -83,5 +93,9 @@ var (
 		// https://etherscan.io/accounts/label/metamask
 		strings.ToLower("0x881d40237659c251811cec9c364ef91dc08d300c"): metamask, // Metamask Ethereum
 		strings.ToLower("0x1a1ec25DC08e98e5E93F1104B5e5cdD298707d31"): metamask, // Metamask Polygon
+		// 0x
+		// https://docs.0x.org/developer-resources/contract-addresses
+		strings.ToLower("0xDef1C0ded9bec7F1a1670819833240f027b25EfF"): zeroXV4, // 0x Exchange V4
+		strings.ToLower("0x61935CbDd02287B511119DDb11Aeb42F1593b7Ef"): zeroXV3, // 0x Exchange V3
 	}
 )

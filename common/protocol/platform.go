@@ -25,4 +25,5 @@ const (
 	PlatformPancakeswap = "PancakeSwap"
 	Platform1inch       = "1inch"
 	PlatformMetamask    = "MetaMask"
+	Platform0x          = "0x"
 )

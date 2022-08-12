@@ -46,6 +46,18 @@ func (l *List) Contains(address string) bool {
 	return exists
 }
 
+func (l *List) Keys() []string {
+	keys := make([]string, 0)
+
+	l.addressMap.Range(func(key, value interface{}) bool {
+		keys = append(keys, key.(string))
+
+		return true
+	})
+
+	return keys
+}
+
 func New() *List {
 	return &List{
 		addressMap: sync.Map{},

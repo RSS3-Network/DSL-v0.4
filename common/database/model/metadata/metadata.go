@@ -20,6 +20,7 @@ func init() {
 	}
 }
 
+// TODO Token constructor
 type Token struct {
 	Name            string           `json:"name"`
 	Collection      string           `json:"collection,omitempty"` // ERC-1155
@@ -30,6 +31,7 @@ type Token struct {
 	Image           string           `json:"image,omitempty"`
 	ID              string           `json:"id,omitempty"`
 	Value           *decimal.Decimal `json:"value,omitempty"`
+	ValueDisplay    *decimal.Decimal `json:"value_display"`  // TODO Refactor it
 	Cost            *Token           `json:"cost,omitempty"` // TODO Differentiate between UMS
 	Description     string           `json:"description,omitempty"`
 	Attributes      []TokenAttribute `json:"attributes,omitempty"`
@@ -41,6 +43,12 @@ type Token struct {
 type TokenAttribute struct {
 	TraitType string `json:"trait_type"`
 	Value     any    `json:"value"`
+}
+
+type Liquidity struct {
+	Protocol string  `json:"protocol"`
+	Action   string  `json:"action"`
+	Tokens   []Token `json:"tokens"`
 }
 
 type Swap struct {

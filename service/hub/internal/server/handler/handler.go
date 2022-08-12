@@ -49,6 +49,7 @@ type GetRequest struct {
 	Hash        string    `query:"hash" json:"hash"`
 	IncludePoap bool      `query:"include_poap" json:"include_poap"`
 	Refresh     bool      `query:"refresh" json:"refresh"`
+	Reindex     bool      `query:"reindex" json:"reindex"`
 	Page        int       `query:"page" json:"page"`
 	QueryStatus bool      `query:"query_status" json:"query_status"`
 }
@@ -73,6 +74,7 @@ type GetAssetRequest struct {
 	Cursor       string   `query:"cursor"`
 	Limit        int      `query:"limit"`
 	Refresh      bool     `query:"refresh"`
+	BlockSpam    *bool    `query:"block_spam"` // Default true
 }
 
 type BatchGetNotesRequest struct {
