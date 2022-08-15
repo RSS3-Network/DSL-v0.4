@@ -10,13 +10,13 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-// GetProfileListFunc supported filter:
+// GetProfilesFunc supported filter:
 // - address
 // - network
 // - platform
-func (h *Handler) GetProfileListFunc(c echo.Context) error {
+func (h *Handler) GetProfilesFunc(c echo.Context) error {
 	go APIReport(GetProfiles, c.Get("API-KEY"))
-	tracer := otel.Tracer("GetProfileListFunc")
+	tracer := otel.Tracer("GetProfilesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
 	defer httpSnap.End()
@@ -33,16 +33,15 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 
 	go FilterReport(GetProfiles, request)
 
-	profileList, err := h.getProfileListDatabase(ctx, request)
+	profileList, err := h.getProfiles(ctx, request)
 	if err != nil {
 		return InternalError(c)
 	}
 
-	if len(profileList) == 0 {
-		return c.JSON(http.StatusOK, &Response{
-			Result: make([]dbModel.Transfer, 0),
-		})
-	}
+	// if len(profileList) == 0 || request.Refresh {
+	// 	// refresh profile
+	// 	// todo
+	// }
 
 	return c.JSON(http.StatusOK, &Response{
 		Total:  int64(len(profileList)),
@@ -50,9 +49,48 @@ func (h *Handler) GetProfileListFunc(c echo.Context) error {
 	})
 }
 
-// getTransferListDatabase get transfer data from database
-func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) ([]dbModel.Profile, error) {
-	tracer := otel.Tracer("getProfileListDatabase")
+func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
+	go APIReport(PostProfiles, c.Get("API-KEY"))
+	tracer := otel.Tracer("BatchGetProfilesFunc")
+	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
+
+	defer httpSnap.End()
+
+	request := BatchGetProfilesRequest{}
+
+	if err := c.Bind(&request); err != nil {
+		return BadRequest(c)
+	}
+
+	if err := c.Validate(&request); err != nil {
+		return err
+	}
+
+	go FilterReport(PostProfiles, request)
+
+	if len(request.Address) > DefaultLimit {
+		request.Address = request.Address[:DefaultLimit]
+	}
+
+	profileList, err := h.batchGetProfiles(ctx, request)
+	if err != nil {
+		return InternalError(c)
+	}
+
+	// if len(profileList) == 0 || request.Refresh {
+	// 	// refresh profile
+	// 	// todo
+	// }
+
+	return c.JSON(http.StatusOK, &Response{
+		Total:  int64(len(profileList)),
+		Result: profileList,
+	})
+}
+
+// getProfiles get profile data from database
+func (h *Handler) getProfiles(c context.Context, request GetRequest) ([]dbModel.Profile, error) {
+	tracer := otel.Tracer("getProfiles")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
@@ -60,7 +98,7 @@ func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) 
 	dbResult := make([]dbModel.Profile, 0)
 
 	sql := h.DatabaseClient.Model(&dbModel.Profile{}).Where("LOWER(address) = ? ",
-		request.Address,
+		strings.ToLower(request.Address),
 	)
 
 	if len(request.Network) > 0 {
@@ -78,6 +116,46 @@ func (h *Handler) getProfileListDatabase(c context.Context, request GetRequest) 
 	}
 
 	sql = sql.Limit(DefaultLimit)
+
+	if err := sql.Find(&dbResult).Error; err != nil {
+		return nil, err
+	}
+
+	return dbResult, nil
+}
+
+// batchGetProfiles get profile data from database
+func (h *Handler) batchGetProfiles(c context.Context, request BatchGetProfilesRequest) ([]dbModel.Profile, error) {
+	tracer := otel.Tracer("batchGetProfiles")
+	_, postgresSnap := tracer.Start(c, "postgres")
+
+	defer postgresSnap.End()
+
+	dbResult := make([]dbModel.Profile, 0)
+
+	if len(request.Address) > DefaultLimit {
+		request.Address = request.Address[:DefaultLimit]
+	}
+
+	for i, v := range request.Address {
+		request.Address[i] = strings.ToLower(v)
+	}
+
+	sql := h.DatabaseClient.Model(&dbModel.Profile{}).Where("LOWER(address) IN ? ", request.Address)
+
+	if len(request.Network) > 0 {
+		for i, v := range request.Network {
+			request.Network[i] = strings.ToLower(v)
+		}
+		sql = sql.Where("network IN ?", request.Network)
+	}
+
+	if len(request.Platform) > 0 {
+		for i, v := range request.Platform {
+			request.Platform[i] = strings.ToLower(v)
+		}
+		sql = sql.Where("platform IN ?", request.Platform)
+	}
 
 	if err := sql.Find(&dbResult).Error; err != nil {
 		return nil, err

@@ -119,11 +119,12 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetsFunc, middlewarex.APIMiddleware)
 	s.httpServer.GET("/exchanges/:exchange_type", s.httpHandler.GetExchangeListFunc)
 	s.httpServer.GET("/platforms/:platform_type", s.httpHandler.GetPlatformListFunc)
-	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfileListFunc, middlewarex.APIMiddleware)
+	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfilesFunc, middlewarex.APIMiddleware)
 	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolve)
 
 	// POST
 	s.httpServer.POST("/notes", s.httpHandler.BatchGetNotesFunc, middlewarex.CheckAPIKeyMiddleware)
+	s.httpServer.POST("/profiles", s.httpHandler.BatchGetProfilesFunc, middlewarex.CheckAPIKeyMiddleware)
 
 	// API KEY
 	s.httpServer.POST("/apikey/apply", s.httpHandler.PostAPIKeyFunc)

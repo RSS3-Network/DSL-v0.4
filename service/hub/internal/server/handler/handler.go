@@ -15,10 +15,11 @@ const (
 	DefaultLimit = 500
 
 	// path
-	GetNotes    = "/notes/"
-	PostNotes   = "/notes"
-	GetProfiles = "/profiles/"
-	GetNS       = "/ns/"
+	GetNotes     = "/notes/"
+	PostNotes    = "/notes"
+	GetProfiles  = "/profiles/"
+	PostProfiles = "/profiles"
+	GetNS        = "/ns/"
 
 	EsIndex = "pregod-v1-visit-path"
 )
@@ -79,8 +80,8 @@ type GetAssetRequest struct {
 
 type BatchGetNotesRequest struct {
 	Address     []string  `json:"address" validate:"required"`
-	Type        []string  `query:"type" json:"type"`
-	Tag         []string  `query:"tag" json:"tag" validate:"required_with=Type"`
+	Type        []string  `json:"type"`
+	Tag         []string  `json:"tag" validate:"required_with=Type"`
 	Network     []string  `json:"network"`
 	Platform    []string  `json:"platform"`
 	Timestamp   time.Time `json:"timestamp"`
@@ -90,6 +91,13 @@ type BatchGetNotesRequest struct {
 	IncludePoap bool      `json:"include_poap"`
 	Page        int       `json:"page"`
 	QueryStatus bool      `json:"query_status"`
+}
+
+type BatchGetProfilesRequest struct {
+	Address  []string `json:"address" validate:"required"`
+	Network  []string `json:"network"`
+	Platform []string `json:"platform"`
+	Refresh  bool     `query:"refresh"`
 }
 
 type APIKeyRequest struct {
