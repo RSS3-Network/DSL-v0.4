@@ -38,6 +38,11 @@ var (
 		Protocol: "AAVE V3",
 	}
 
+	routerCurve = Router{
+		Name:     protocol.PlatformCurve,
+		Protocol: "Curve",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V3
 		strings.ToLower("0xC36442b4a4522E871399CD717aBDD847Ab11FE88"): routerUniswapV3, // Uniswap V3 Positions NFT
@@ -50,5 +55,7 @@ var (
 		strings.ToLower("0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"): routerAAVEV2, // AAVE Lending Pool V2
 		strings.ToLower("0x9BdB5fcc80A49640c7872ac089Cc0e00A98451B6"): routerAAVEV3, // AAVE WETH Gateway V3 Polygon
 		strings.ToLower("0x794a61358D6845594F94dc1DB02A252b5b4814aD"): routerAAVEV3, // AAVE Pool V3
+		// Curve
+		strings.ToLower("0x1d8b86e3D88cDb2d34688e87E72F388Cb541B7C8"): routerCurve, // Curve Polygon ATriCrypto3 Zap
 	}
 )
