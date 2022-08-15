@@ -12,9 +12,13 @@ const (
 	ExchangeSwap      string = "swap"
 	ExchangeLiquidity string = "liquidity"
 	// three sub-types for Exchange-Liquidity
-	ExchangeLiquidityAdd     string = "add"
-	ExchangeLiquidityRemove  string = "remove"
-	ExchangeLiquidityCollect string = "collect"
+	ExchangeLiquidityAdd      string = "add"
+	ExchangeLiquidityRemove   string = "remove"
+	ExchangeLiquidityCollect  string = "collect"
+	ExchangeLiquiditySupply   string = "supply"
+	ExchangeLiquidityBorrow   string = "borrow"
+	ExchangeLiquidityRepay    string = "repay"
+	ExchangeLiquidityWithdraw string = "withdraw"
 
 	// NFT types: transfer | mint | burn | poap
 	CollectibleTransfer string = "transfer"

@@ -26,4 +26,6 @@ const (
 	Platform1inch       = "1inch"
 	PlatformMetamask    = "MetaMask"
 	Platform0x          = "0x"
+	PlatformAAVE        = "AAVE"
+	PlatformCurve       = "Curve"
 )

@@ -28,3 +28,7 @@ package contract
 //go:generate abigen --abi ./opensea/seaport.abi --pkg opensea --type Seaport --out ./opensea/seaport.go
 // https://etherscan.io/address/0x59728544b08ab483533076417fbbb2fd0b17ce3a
 //go:generate abigen --abi ./looksrare/exchange.abi --pkg looksrare --type Exchange --out ./looksrare/exchange.go
+// https://etherscan.io/address/0xc6845a5c768bf8d7681249f8927877efda425baf
+//go:generate abigen --abi ./aave/pool_v2.abi --pkg aave --type PoolV2 --alias DataTypes.ReserveConfigurationMap=DataTypes.ReserveConfigurationMapV2 --out ./aave/pool_v2.go
+// https://polygonscan.com/address/0xdf9e4abdbd94107932265319479643d3b05809dc
+//go:generate abigen --abi ./aave/pool_v3.abi --pkg aave --type PoolV3 --out ./aave/pool_v3.go
