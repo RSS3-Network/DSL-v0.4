@@ -327,19 +327,16 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	logger.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
-	// Get data from trigger
-	for _, internalTrigger := range s.triggers {
-		for _, network := range internalTrigger.Networks() {
-			if message.Network == network {
-				go func(internalTrigger trigger.Trigger) {
-					if err := internalTrigger.Handle(ctx, message); err != nil {
-						logger.Global().Error("failed to handle trigger", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
-					}
-				}(internalTrigger)
-
-				break
-			}
+	// Ignore triggers
+	if !message.IgnoreTrigger {
+		if err := s.executeTriggers(ctx, message); err != nil {
+			zap.L().Error("failed to execute trigger", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
 		}
+	}
+
+	// Ignore notes
+	if message.IgnoreNote {
+		return nil
 	}
 
 	// Open a database transaction
@@ -430,6 +427,25 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	}()
 
 	return s.handleWorkers(ctx, message, tx, transactions, transactionsMap)
+}
+
+func (s *Server) executeTriggers(ctx context.Context, message *protocol.Message) error {
+	// Get data from trigger
+	for _, internalTrigger := range s.triggers {
+		for _, network := range internalTrigger.Networks() {
+			if message.Network == network {
+				go func(internalTrigger trigger.Trigger) {
+					if err := internalTrigger.Handle(ctx, message); err != nil {
+						logger.Global().Error("failed to handle trigger", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
+					}
+				}(internalTrigger)
+
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (err error) {
