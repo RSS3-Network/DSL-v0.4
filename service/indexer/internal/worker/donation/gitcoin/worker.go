@@ -59,13 +59,13 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) error {
-	gitcoinProjectJob := &job.GitcoinProjectJob{
-		DatabaseClient:         s.databaseClient,
-		RedisClient:            s.redisClient,
-		GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
-	}
-
-	gitcoinProjectJob.SetCache()
+	//gitcoinProjectJob := &job.GitcoinProjectJob{
+	//	DatabaseClient:         s.databaseClient,
+	//	RedisClient:            s.redisClient,
+	//	GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
+	//}
+	//
+	//gitcoinProjectJob.SetCache()
 
 	return nil
 }
