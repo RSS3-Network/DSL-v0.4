@@ -5,6 +5,11 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+const (
+	ProtocolUniswapV2 = "Uniswap V2"
+	ProtocolUniswapV3 = "Uniswap V3"
+)
+
 var (
 	EventHashTransfer            = common.BytesToHash(crypto.Keccak256([]byte("Transfer(address,address,uint256)")))
 	EventHashSwapV2              = common.BytesToHash(crypto.Keccak256([]byte("Swap(address,uint256,uint256,uint256,uint256,address)")))

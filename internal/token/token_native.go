@@ -17,7 +17,7 @@ var nativeMap = map[string]Native{
 		Name:     "Polygon", // https://www.coingecko.com/en/coins/polygon
 		Symbol:   "MATIC",
 		Decimals: 18,
-		Logo:     "https://assets.coingecko.com/coins/images/2713/large/matic-token-icon.png",
+		Logo:     "https://assets.coingecko.com/coins/images/4713/large/matic-token-icon.png",
 	},
 	protocol.NetworkBinanceSmartChain: {
 		Name:     "BNB", // https://www.coingecko.com/en/coins/bnb
@@ -28,7 +28,7 @@ var nativeMap = map[string]Native{
 	protocol.NetworkXDAI: {
 		Name:     "XDAI", // https://www.coingecko.com/en/coins/xdai
 		Symbol:   "XDAI",
-		Logo:     "https://assets.coingecko.com/coins/images/11062/large/bnb-icon2_2x.png",
+		Logo:     "https://assets.coingecko.com/coins/images/11062/large/Identity-Primary-DarkBG.png",
 		Decimals: 18,
 	},
 	protocol.NetworkCrossbell: {
