@@ -11,6 +11,7 @@ RUN apk add \
 RUN go build -o dist/hub ./service/hub/cmd
 RUN go build -o dist/indexer ./service/indexer/cmd
 RUN go build -o dist/crawler ./service/crawler/cmd
+RUN go build -o dist/beat ./service/beat/cmd
 
 FROM alpine:latest AS RUNNER
 
