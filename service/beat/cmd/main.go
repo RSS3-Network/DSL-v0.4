@@ -73,7 +73,7 @@ func beat(cmd *cobra.Command, args []string) error {
 	report := map[string]interface{}{
 		"index":           EsIndex,
 		"notes_count":     notesCount,
-		"addresses_count": addressesCount,
+		"addresses_count": int64(addressesCount),
 	}
 
 	output, err := json.Marshal(report)
