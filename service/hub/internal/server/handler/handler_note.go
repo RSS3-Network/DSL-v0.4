@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
@@ -11,14 +10,13 @@ import (
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 )
 
 // GetNotesFunc HTTP handler for action API
 // parse query parameters, query and assemble data
 func (h *Handler) GetNotesFunc(c echo.Context) error {
-	go APIReport(GetNotes, c.Get("API-KEY"))
+	go h.apiReport(GetNotes, c.Get("API-KEY"))
 	tracer := otel.Tracer("GetNotesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -37,7 +35,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 	request.Address = strings.ToLower(request.Address)
 
 	if len(request.Cursor) == 0 {
-		go FilterReport(GetNotes, request)
+		go h.filterReport(GetNotes, request)
 	}
 
 	if request.Limit <= 0 || request.Limit > DefaultLimit {
@@ -81,7 +79,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		go h.publishIndexerMessage(ctx, request.Address, request.Reindex)
+		go h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
 	}
 
 	if len(transactions) == 0 {
@@ -220,7 +218,7 @@ func (h *Handler) getTransfers(c context.Context, transactionHashes []string, re
 
 // BatchGetNotesFunc query multiple addresses and filters
 func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
-	go APIReport(PostNotes, c.Get("API-KEY"))
+	go h.apiReport(PostNotes, c.Get("API-KEY"))
 	tracer := otel.Tracer("BatchGetNotesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "BatchGetNotesFunc:http")
 
@@ -249,7 +247,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	}
 
 	if len(request.Cursor) == 0 {
-		go FilterReport(PostNotes, request)
+		go h.filterReport(PostNotes, request)
 	}
 
 	// support many-many relationship between tag and type
@@ -380,7 +378,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	go func() {
 		if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
 			for _, address := range request.Address {
-				go h.publishIndexerMessage(ctx, address, false)
+				go h.publishIndexerMessage(ctx, protocol.Message{Address: address})
 				time.Sleep(500 * time.Millisecond)
 			}
 		}
@@ -406,39 +404,6 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	}
 
 	return transactions, total, nil
-}
-
-// publishIndexerMessage create a rabbitmq job to index the latest user data
-func (h *Handler) publishIndexerMessage(ctx context.Context, address string, reindex bool) {
-	tracer := otel.Tracer("publishIndexerMessage")
-	_, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")
-
-	defer rabbitmqSnap.End()
-
-	networks := []string{
-		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
-		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
-	}
-
-	for _, network := range networks {
-		message := protocol.Message{
-			Address: address,
-			Network: network,
-			Reindex: reindex,
-		}
-
-		messageData, err := json.Marshal(&message)
-		if err != nil {
-			return
-		}
-
-		if err := h.RabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
-			ContentType: protocol.ContentTypeJSON,
-			Body:        messageData,
-		}); err != nil {
-			return
-		}
-	}
 }
 
 // getAddress

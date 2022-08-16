@@ -26,7 +26,7 @@ type NameServiceResult struct {
 }
 
 func (h *Handler) GetNameResolve(c echo.Context) error {
-	go APIReport(GetNS, c.Get("API-KEY"))
+	go h.apiReport(GetNS, c.Get("API-KEY"))
 	tracer := otel.Tracer("GetENSResolve")
 	_, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -46,7 +46,7 @@ func (h *Handler) GetNameResolve(c echo.Context) error {
 		return AddressIsEmpty(c)
 	}
 
-	go FilterReport(GetNS, request)
+	go h.filterReport(GetNS, request)
 
 	splits := strings.Split(request.Address, ".")
 

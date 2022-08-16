@@ -1,13 +1,16 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	utils "github.com/naturalselectionlabs/pregod/common/utils/interface"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 )
 
@@ -122,7 +125,7 @@ func (t Transactions) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-func APIReport(path string, apiKey interface{}) {
+func (h *Handler) apiReport(path string, apiKey interface{}) {
 	report := map[string]interface{}{
 		"index":   EsIndex,
 		"path":    path,
@@ -135,7 +138,7 @@ func APIReport(path string, apiKey interface{}) {
 	fmt.Printf("[DATABEAT]%v\n", string(output))
 }
 
-func FilterReport(path string, request interface{}) {
+func (h *Handler) filterReport(path string, request interface{}) {
 	b, _ := json.Marshal(request)
 	report := make(map[string]interface{})
 
@@ -170,4 +173,33 @@ func FilterReport(path string, request interface{}) {
 
 	output, _ := json.Marshal(report)
 	fmt.Printf("[DATABEAT]%v\n", string(output))
+}
+
+// publishIndexerMessage create a rabbitmq job to index the latest user data
+func (h *Handler) publishIndexerMessage(ctx context.Context, message protocol.Message) {
+	tracer := otel.Tracer("publishIndexerMessage")
+	_, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")
+
+	defer rabbitmqSnap.End()
+
+	networks := []string{
+		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
+		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
+	}
+
+	for _, network := range networks {
+		message.Network = network
+
+		messageData, err := json.Marshal(&message)
+		if err != nil {
+			return
+		}
+
+		if err := h.RabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
+			ContentType: protocol.ContentTypeJSON,
+			Body:        messageData,
+		}); err != nil {
+			return
+		}
+	}
 }
