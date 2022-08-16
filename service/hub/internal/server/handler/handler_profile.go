@@ -4,9 +4,11 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"go.opentelemetry.io/otel"
 )
 
@@ -15,7 +17,7 @@ import (
 // - network
 // - platform
 func (h *Handler) GetProfilesFunc(c echo.Context) error {
-	go APIReport(GetProfiles, c.Get("API-KEY"))
+	go h.apiReport(GetProfiles, c.Get("API-KEY"))
 	tracer := otel.Tracer("GetProfilesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -31,17 +33,17 @@ func (h *Handler) GetProfilesFunc(c echo.Context) error {
 		return err
 	}
 
-	go FilterReport(GetProfiles, request)
+	go h.filterReport(GetProfiles, request)
 
 	profileList, err := h.getProfiles(ctx, request)
 	if err != nil {
 		return InternalError(c)
 	}
 
-	// if len(profileList) == 0 || request.Refresh {
-	// 	// refresh profile
-	// 	// todo
-	// }
+	if len(profileList) == 0 || request.Refresh {
+		// refresh profile
+		go h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, IgnoreNote: true})
+	}
 
 	return c.JSON(http.StatusOK, &Response{
 		Total:  int64(len(profileList)),
@@ -50,7 +52,7 @@ func (h *Handler) GetProfilesFunc(c echo.Context) error {
 }
 
 func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
-	go APIReport(PostProfiles, c.Get("API-KEY"))
+	go h.apiReport(PostProfiles, c.Get("API-KEY"))
 	tracer := otel.Tracer("BatchGetProfilesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -66,7 +68,7 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 		return err
 	}
 
-	go FilterReport(PostProfiles, request)
+	go h.filterReport(PostProfiles, request)
 
 	if len(request.Address) > DefaultLimit {
 		request.Address = request.Address[:DefaultLimit]
@@ -77,10 +79,15 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 		return InternalError(c)
 	}
 
-	// if len(profileList) == 0 || request.Refresh {
-	// 	// refresh profile
-	// 	// todo
-	// }
+	if len(profileList) == 0 || request.Refresh {
+		// publish mq message
+		go func() {
+			for _, address := range request.Address {
+				go h.publishIndexerMessage(ctx, protocol.Message{Address: address, IgnoreNote: true})
+				time.Sleep(500 * time.Millisecond)
+			}
+		}()
+	}
 
 	return c.JSON(http.StatusOK, &Response{
 		Total:  int64(len(profileList)),
