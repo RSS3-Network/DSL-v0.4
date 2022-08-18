@@ -148,6 +148,7 @@ func (s *Server) Initialize() (err error) {
 		mirror.New(),
 		gitcoin.New(s.databaseClient, s.redisClient, ethereumClientMap),
 		snapshot.New(s.databaseClient, s.redisClient),
+		// lens.New(ethereumClientMap),
 		transaction.New(s.databaseClient, ethereumClientMap),
 	}
 
