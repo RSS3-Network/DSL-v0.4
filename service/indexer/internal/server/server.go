@@ -30,6 +30,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
@@ -122,8 +123,18 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	lensDatasource, err := lens.New(s.config.RPC)
+	if err != nil {
+		return err
+	}
+
 	s.datasources = []datasource.Datasource{
-		alchemyDatasource, moralis.New(s.config.Moralis.Key, s.config.RPC), arweave.New(), blockscoutDatasource, zksync.New(),
+		alchemyDatasource,
+		moralis.New(s.config.Moralis.Key, s.config.RPC),
+		arweave.New(),
+		blockscoutDatasource,
+		zksync.New(),
+		lensDatasource,
 	}
 
 	swapWorker, err := swap.New(s.config.RPC, s.employer, s.databaseClient)

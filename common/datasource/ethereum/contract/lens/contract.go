@@ -1,4 +1,4 @@
-package contract
+package lens
 
 import (
 	"github.com/ethereum/go-ethereum/common"
@@ -16,3 +16,5 @@ var (
 	EventHashCommentCreated = crypto.Keccak256Hash([]byte("CommentCreated(uint256,uint256,string,uint256,uint256,bytes,address,bytes,address,bytes,uint256)"))
 	EventHashFollow         = crypto.Keccak256Hash([]byte("FollowNFTTransferred(uint256,uint256,address,address,uint256)"))
 )
+
+var SupportLensEvents = []common.Hash{EventHashCommentCreated, EventHashProfileCreated, EventHashPostCreated}
