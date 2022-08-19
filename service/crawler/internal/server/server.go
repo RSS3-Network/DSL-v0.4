@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
-	"gorm.io/gorm"
 )
 
 var _ command.Interface = &Server{}
@@ -32,7 +31,6 @@ type Server struct {
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
 	rabbitmqQueue      rabbitmq.Queue
-	databaseClient     *gorm.DB
 	redisClient        *redis.Client
 	crawlers           []crawler.Crawler
 	employer           *shedlock.Employer
@@ -60,12 +58,12 @@ func (s *Server) Initialize() (err error) {
 		)),
 	))
 
-	s.databaseClient, err = database.Dial(s.config.Postgres.String(), true)
+	databaseClient, err := database.Dial(s.config.Postgres.String(), true)
 	if err != nil {
 		return err
 	}
 
-	database.ReplaceGlobal(s.databaseClient)
+	database.ReplaceGlobal(databaseClient)
 
 	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
 		return err

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
@@ -58,7 +59,7 @@ func CheckAPIKey(apiKey string) error {
 		return fmt.Errorf("miss X-API-KEY header")
 	}
 
-	if err := config.ConfigHub.DatabaseClient.
+	if err := database.Global().
 		Where("uuid = ?", apiKey).
 		First(&item).Error; err != nil {
 		return fmt.Errorf("X-API-KEY is invaild")

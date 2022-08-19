@@ -9,7 +9,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"gorm.io/gorm"
 )
 
 func TestNew(t *testing.T) {
@@ -32,7 +31,6 @@ func TestNew(t *testing.T) {
 
 func Test_service_Name(t *testing.T) {
 	type fields struct {
-		databaseClient         *gorm.DB
 		redisClient            *redis.Client
 		gitcoinProjectCacheKey string
 	}
@@ -56,7 +54,6 @@ func Test_service_Name(t *testing.T) {
 
 func Test_service_Networks(t *testing.T) {
 	type fields struct {
-		databaseClient         *gorm.DB
 		redisClient            *redis.Client
 		gitcoinProjectCacheKey string
 	}
@@ -80,7 +77,6 @@ func Test_service_Networks(t *testing.T) {
 
 func Test_service_Initialize(t *testing.T) {
 	type fields struct {
-		databaseClient         *gorm.DB
 		redisClient            *redis.Client
 		gitcoinProjectCacheKey string
 	}
@@ -108,7 +104,6 @@ func Test_service_Initialize(t *testing.T) {
 
 func Test_service_Handle(t *testing.T) {
 	type fields struct {
-		databaseClient         *gorm.DB
 		redisClient            *redis.Client
 		gitcoinProjectCacheKey string
 	}
@@ -144,7 +139,6 @@ func Test_service_Handle(t *testing.T) {
 
 func Test_service_Jobs(t *testing.T) {
 	type fields struct {
-		databaseClient         *gorm.DB
 		redisClient            *redis.Client
 		gitcoinProjectCacheKey string
 	}

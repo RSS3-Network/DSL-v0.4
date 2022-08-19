@@ -26,7 +26,6 @@ import (
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 var _ worker.Worker = &service{}
@@ -261,7 +260,7 @@ func (s *service) Jobs() []worker.Job {
 	}
 }
 
-func New(config *configx.RPC, employer *shedlock.Employer, databaseClient *gorm.DB) (worker.Worker, error) {
+func New(config *configx.RPC, employer *shedlock.Employer) (worker.Worker, error) {
 	var err error
 
 	svc := service{

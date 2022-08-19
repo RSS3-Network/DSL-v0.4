@@ -67,7 +67,6 @@ type Server struct {
 	rabbitmqChannel    *rabbitmq.Channel
 	rabbitmqQueue      rabbitmq.Queue
 	rabbitmqAssetQueue rabbitmq.Queue
-	databaseClient     *gorm.DB
 	redisClient        *redis.Client
 	datasources        []datasource.Datasource
 	datasourcesAsset   []datasource_asset.Datasource
@@ -98,12 +97,12 @@ func (s *Server) Initialize() (err error) {
 		)),
 	))
 
-	s.databaseClient, err = database.Dial(s.config.Postgres.String(), true)
+	databaseClient, err := database.Dial(s.config.Postgres.String(), true)
 	if err != nil {
 		return err
 	}
 
-	database.ReplaceGlobal(s.databaseClient)
+	database.ReplaceGlobal(databaseClient)
 
 	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
 		return err
@@ -138,7 +137,7 @@ func (s *Server) Initialize() (err error) {
 		lensDatasource,
 	}
 
-	swapWorker, err := swap.New(s.config.RPC, s.employer, s.databaseClient)
+	swapWorker, err := swap.New(s.config.RPC, s.employer)
 	if err != nil {
 		return err
 	}
@@ -514,7 +513,7 @@ func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (er
 	}
 
 	// set db
-	if err := s.databaseClient.
+	if err := database.Global().
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).
@@ -665,7 +664,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 }
 
 func (s *Server) upsertAddress(address model.Address) {
-	if err := s.databaseClient.
+	if err := database.Global().
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
 			DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),

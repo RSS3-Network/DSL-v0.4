@@ -12,15 +12,13 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 var _ trigger.Trigger = (*internal)(nil)
 
 type internal struct {
-	databaseClient *gorm.DB
-	ensClient      *ens.Client
+	ensClient *ens.Client
 }
 
 func (i *internal) Name() string {
@@ -49,7 +47,7 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message) (err e
 		return err
 	}
 
-	return i.databaseClient.
+	return database.Global().
 		Model(&model.Profile{}).
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
@@ -60,7 +58,6 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message) (err e
 
 func New() trigger.Trigger {
 	return &internal{
-		databaseClient: database.Global(),
-		ensClient:      ens.New(config.ConfigIndexer.RPC.General.Ethereum.HTTP),
+		ensClient: ens.New(config.ConfigIndexer.RPC.General.Ethereum.HTTP),
 	}
 }
