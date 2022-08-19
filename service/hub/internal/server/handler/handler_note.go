@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -140,7 +141,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 
 	transactions := make([]dbModel.Transaction, 0)
 	total := int64(0)
-	sql := h.DatabaseClient.
+	sql := database.Global().
 		Model(&dbModel.Transaction{}).
 		Where("owner = ?", request.Address). // address was already converted to lowercase
 		Where("success IS TRUE")             // Hide failed transactions
@@ -149,7 +150,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 		var lastItem dbModel.Transaction
 
 		// no need to lowercase
-		if err := h.DatabaseClient.Where("hash = ?", request.Cursor).First(&lastItem).Error; err != nil {
+		if err := database.Global().Where("hash = ?", request.Cursor).First(&lastItem).Error; err != nil {
 			return nil, 0, err
 		}
 
@@ -207,7 +208,7 @@ func (h *Handler) getTransfers(c context.Context, transactionHashes []string, re
 
 	transfers := make([]dbModel.Transfer, 0)
 
-	sql := h.DatabaseClient.Model(&dbModel.Transfer{})
+	sql := database.Global().Model(&dbModel.Transfer{})
 
 	if len(requestType) > 0 {
 		sql = sql.Where("\"type\" IN ? ", requestType)
@@ -335,7 +336,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 		request.Address[i] = strings.ToLower(v)
 	}
 
-	sql := h.DatabaseClient.
+	sql := database.Global().
 		Model(&dbModel.Transaction{}).
 		Where("owner IN ?", request.Address).
 		Where("success IS TRUE") // Hide failed transactions
@@ -344,7 +345,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 		var lastItem dbModel.Transaction
 
 		// no need to lowercase
-		if err := h.DatabaseClient.Where("hash = ?", request.Cursor).First(&lastItem).Error; err != nil {
+		if err := database.Global().Where("hash = ?", request.Cursor).First(&lastItem).Error; err != nil {
 			return nil, 0, err
 		}
 
@@ -427,7 +428,7 @@ func (h *Handler) getAddress(ctx context.Context, address []string) ([]dbModel.A
 
 	addressStatus := make([]dbModel.Address, 0)
 
-	sql := h.DatabaseClient.Model(&dbModel.Address{})
+	sql := database.Global().Model(&dbModel.Address{})
 
 	if err := sql.
 		Where("address IN ?", address).

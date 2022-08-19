@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/database"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,7 +24,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens/contract"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 var (
@@ -37,20 +38,18 @@ var (
 type service struct {
 	ethClient       *ethclient.Client
 	abiClient       abi.ABI
-	databaseClient  *gorm.DB
 	rabbitmqChannel *rabbitmq.Channel
 	employer        *shedlock.Employer
 	redisClient     *redis.Client
 }
 
-func New(databaseClient *gorm.DB,
+func New(
 	rabbitmqChannel *rabbitmq.Channel,
 	employer *shedlock.Employer,
 	config *config.Config,
 	redisClient *redis.Client,
 ) crawler.Crawler {
 	crawler := &service{
-		databaseClient:  databaseClient,
 		rabbitmqChannel: rabbitmqChannel,
 		employer:        employer,
 		redisClient:     redisClient,
@@ -151,7 +150,7 @@ func (s *service) subscribeEns() error {
 					BlockTimestamp:  time.Unix(int64(block.Time()), 0),
 				}
 
-				if err := s.databaseClient.Create(ens).Error; err != nil {
+				if err := database.Global().Create(ens).Error; err != nil {
 					logrus.Errorf("[crawler] ens: db insert error, %v", err)
 
 					continue
@@ -206,7 +205,7 @@ func (s *service) loadExistingEns() {
 	for {
 		domains := make([]model.Domains, 0)
 
-		sql := s.databaseClient.Model(&model.Domains{})
+		sql := database.Global().Model(&model.Domains{})
 
 		if len(blockTimestamp) > 0 {
 			sql = sql.Where("block_timestamp >= ?", blockTimestamp)
@@ -237,7 +236,7 @@ func (s *service) loadExistingEns() {
 
 			// get address feed
 			var count int64
-			if err := s.databaseClient.
+			if err := database.Global().
 				Where("owner = ?", strings.ToLower(address)).
 				Model(&model.Transaction{}).
 				Count(&count).Error; err == nil && count > 0 {

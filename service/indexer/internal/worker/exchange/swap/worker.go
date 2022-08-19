@@ -33,7 +33,6 @@ var _ worker.Worker = &service{}
 
 type service struct {
 	employer          *shedlock.Employer
-	databaseClient    *gorm.DB
 	tokenClient       *token.Client
 	ethereumClientMap map[string]*ethclient.Client
 }
@@ -258,9 +257,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 
 func (s *service) Jobs() []worker.Job {
 	return []worker.Job{
-		&Job{
-			databaseClient: s.databaseClient,
-		},
+		&Job{},
 	}
 }
 
@@ -270,7 +267,6 @@ func New(config *configx.RPC, employer *shedlock.Employer, databaseClient *gorm.
 	svc := service{
 		ethereumClientMap: make(map[string]*ethclient.Client),
 		employer:          employer,
-		databaseClient:    databaseClient,
 	}
 
 	if svc.ethereumClientMap[protocol.NetworkEthereum], err = ethclient.Dial(config.General.Ethereum.HTTP); err != nil {
@@ -289,7 +285,7 @@ func New(config *configx.RPC, employer *shedlock.Employer, databaseClient *gorm.
 		return nil, err
 	}
 
-	svc.tokenClient = token.New(svc.databaseClient, svc.ethereumClientMap)
+	svc.tokenClient = token.New(svc.ethereumClientMap)
 
 	return &svc, nil
 }

@@ -147,7 +147,7 @@ func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) (as
 func New(config *configx.RPC, ethereumClientMap map[string]*ethclient.Client) (datasource_asset.Datasource, error) {
 	internalDatasource := Datasource{
 		rpcClientMap: map[string]*alchemy.Client{},
-		tokenClient:  token.New(nil, ethereumClientMap),
+		tokenClient:  token.New(ethereumClientMap),
 	}
 
 	var err error

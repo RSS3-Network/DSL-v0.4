@@ -98,7 +98,7 @@ func New(ethereumClient *ethclient.Client, databaseClient *gorm.DB) (Interface, 
 		return nil, err
 	}
 
-	tokenClient := token.New(databaseClient, map[string]*ethclient.Client{
+	tokenClient := token.New(map[string]*ethclient.Client{
 		protocol.NetworkCrossbell: ethereumClient,
 	})
 
@@ -111,8 +111,7 @@ func New(ethereumClient *ethclient.Client, databaseClient *gorm.DB) (Interface, 
 				databaseClient:  databaseClient,
 				tokenClient:     tokenClient,
 			},
-			databaseClient: databaseClient,
-			tokenClient:    tokenClient,
+			tokenClient: tokenClient,
 		},
 		linkListHandler: &linkListHandler{
 			linkListContract: linkListContract,

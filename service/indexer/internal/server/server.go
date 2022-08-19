@@ -153,15 +153,15 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		liquidity.New(s.databaseClient, ethereumClientMap),
+		liquidity.New(ethereumClientMap),
 		swapWorker,
-		marketplace.New(s.databaseClient, ethereumClientMap),
+		marketplace.New(ethereumClientMap),
 		poap.New(ethereumClientMap),
 		mirror.New(),
-		gitcoin.New(s.databaseClient, s.redisClient, ethereumClientMap),
-		snapshot.New(s.databaseClient, s.redisClient),
-		lens_worker.New(ethereumClientMap),
-		transaction.New(s.databaseClient, ethereumClientMap),
+		gitcoin.New(s.redisClient, ethereumClientMap),
+		snapshot.New(s.redisClient),
+		// lens.New(ethereumClientMap),
+		transaction.New(ethereumClientMap),
 	}
 
 	s.employer = shedlock.New(s.redisClient)

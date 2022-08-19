@@ -65,6 +65,8 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	database.ReplaceGlobal(s.databaseClient)
+
 	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
 		return err
 	}
@@ -100,7 +102,7 @@ func (s *Server) Initialize() (err error) {
 	s.employer = shedlock.New(s.redisClient)
 
 	s.crawlers = []crawler.Crawler{
-		ens.New(s.databaseClient, s.rabbitmqChannel, s.employer, s.config, s.redisClient),
+		ens.New(s.rabbitmqChannel, s.employer, s.config, s.redisClient),
 	}
 
 	return nil

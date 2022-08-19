@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
@@ -75,7 +76,7 @@ func (h *Handler) getAssets(c context.Context, request GetAssetRequest) ([]dbMod
 
 	assetList := make([]dbModel.Asset, 0)
 	total := int64(0)
-	sql := h.DatabaseClient.
+	sql := database.Global().
 		Model(&dbModel.Asset{}).
 		Where("owner = ?", request.Address)
 
@@ -106,7 +107,7 @@ func (h *Handler) getAssets(c context.Context, request GetAssetRequest) ([]dbMod
 
 		var lastItem dbModel.Asset
 
-		if err := h.DatabaseClient.
+		if err := database.Global().
 			Where("network = ?", param[0]).
 			Where("token_address = ?", param[1]).
 			Where("token_id", param[2]).

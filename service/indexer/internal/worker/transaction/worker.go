@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/cache"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -49,7 +50,6 @@ var _ worker.Worker = (*service)(nil)
 var asseFS embed.FS
 
 type service struct {
-	databaseClient    *gorm.DB
 	zksyncClient      *zksync.Client
 	ethereumClientMap map[string]*ethclient.Client
 	tokenClient       *token.Client
@@ -92,14 +92,14 @@ func (s *service) Initialize(ctx context.Context) error {
 
 		file.Close()
 
-		wallentModels := make([]exchange.CexWallet, 0)
+		walletModels := make([]exchange.CexWallet, 0)
 
 		for i, record := range records {
 			if i == 0 {
 				continue
 			}
 
-			wallentModels = append(wallentModels, exchange.CexWallet{
+			walletModels = append(walletModels, exchange.CexWallet{
 				WalletAddress: record[0],
 				Name:          record[1],
 				Source:        record[2],
@@ -107,16 +107,16 @@ func (s *service) Initialize(ctx context.Context) error {
 			})
 		}
 
-		if len(wallentModels) == 0 {
+		if len(walletModels) == 0 {
 			return nil
 		}
 
-		if err := s.databaseClient.
+		if err := database.Global().
 			Model((*exchange.CexWallet)(nil)).
 			Clauses(clause.OnConflict{
 				DoNothing: true,
 			}).
-			Create(wallentModels).
+			Create(walletModels).
 			Error; err != nil {
 			return err
 		}
@@ -675,7 +675,7 @@ func (s *service) checkCexWallet(ctx context.Context, address string, transactio
 	}
 
 	if !exists {
-		err := s.databaseClient.Model((*exchange.CexWallet)(nil)).Where("wallet_address = ?", strings.ToLower(transfer.AddressTo)).Or("wallet_address = ?", strings.ToLower(transfer.AddressFrom)).First(&wallet).Error
+		err := database.Global().Model((*exchange.CexWallet)(nil)).Where("wallet_address = ?", strings.ToLower(transfer.AddressTo)).Or("wallet_address = ?", strings.ToLower(transfer.AddressFrom)).First(&wallet).Error
 		switch {
 		case err == nil: // exists, set WalletAddress' cache
 			if err := cache.SetMsgPack(ctx, keyOfCheckCexWallet(wallet.WalletAddress), wallet, 7*24*time.Hour); err != nil {
@@ -719,11 +719,10 @@ func isMint(actionTag, actionType string) bool {
 	return (actionTag == filter.TagTransaction && actionType == filter.TransactionMint) || (actionTag == filter.TagCollectible && actionType == filter.CollectibleMint)
 }
 
-func New(databaseClient *gorm.DB, ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
 	return &service{
-		databaseClient:    databaseClient,
 		zksyncClient:      zksync.New(),
-		tokenClient:       token.New(databaseClient, ethereumClientMap),
+		tokenClient:       token.New(ethereumClientMap),
 		ethereumClientMap: ethereumClientMap,
 	}
 }

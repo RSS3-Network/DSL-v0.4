@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -32,7 +33,7 @@ func (h *Handler) PostAPIKeyFunc(c echo.Context) error {
 
 	// check if key already exists
 	item := model.APIKey{}
-	if err := h.DatabaseClient.
+	if err := database.Global().
 		Where("address = ?").
 		First(&item).Error; err == nil && len(item.UUID) > 0 {
 		return fmt.Errorf("This address has already applied for API-KEY.")
@@ -43,7 +44,7 @@ func (h *Handler) PostAPIKeyFunc(c echo.Context) error {
 		Address: request.Address,
 		UUID:    uuid.New().String(),
 	}
-	if err := h.DatabaseClient.Create(&item).Error; err != nil {
+	if err := database.Global().Create(&item).Error; err != nil {
 		logrus.Errorf("PostAPIKeyFunc: create sql error, %v", err)
 		return InternalError(c)
 	}
@@ -89,7 +90,7 @@ func (h *Handler) GetAPIKeyFunc(c echo.Context) error {
 	}
 
 	item := model.APIKey{}
-	h.DatabaseClient.Where("address = ?").First(&item)
+	database.Global().Where("address = ?").First(&item)
 
 	return c.JSON(http.StatusOK, &item)
 }

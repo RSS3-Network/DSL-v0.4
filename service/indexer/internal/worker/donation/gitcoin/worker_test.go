@@ -14,19 +14,16 @@ import (
 
 func TestNew(t *testing.T) {
 	type args struct {
-		databaseClient *gorm.DB
-		redisClient    *redis.Client
+		redisClient *redis.Client
 	}
-	tests := []struct {
+	var tests []struct {
 		name string
 		args args
 		want worker.Worker
-	}{
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := New(tt.args.databaseClient, tt.args.redisClient); !reflect.DeepEqual(got, tt.want) {
+			if got := New(tt.args.redisClient, nil); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("New() = %v, want %v", got, tt.want)
 			}
 		})
@@ -39,17 +36,14 @@ func Test_service_Name(t *testing.T) {
 		redisClient            *redis.Client
 		gitcoinProjectCacheKey string
 	}
-	tests := []struct {
+	var tests []struct {
 		name   string
 		fields fields
 		want   string
-	}{
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &service{
-				databaseClient:         tt.fields.databaseClient,
 				redisClient:            tt.fields.redisClient,
 				gitcoinProjectCacheKey: tt.fields.gitcoinProjectCacheKey,
 			}
@@ -66,17 +60,14 @@ func Test_service_Networks(t *testing.T) {
 		redisClient            *redis.Client
 		gitcoinProjectCacheKey string
 	}
-	tests := []struct {
+	var tests []struct {
 		name   string
 		fields fields
 		want   []string
-	}{
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &service{
-				databaseClient:         tt.fields.databaseClient,
 				redisClient:            tt.fields.redisClient,
 				gitcoinProjectCacheKey: tt.fields.gitcoinProjectCacheKey,
 			}
@@ -96,18 +87,15 @@ func Test_service_Initialize(t *testing.T) {
 	type args struct {
 		ctx context.Context
 	}
-	tests := []struct {
+	var tests []struct {
 		name    string
 		fields  fields
 		args    args
 		wantErr bool
-	}{
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &service{
-				databaseClient:         tt.fields.databaseClient,
 				redisClient:            tt.fields.redisClient,
 				gitcoinProjectCacheKey: tt.fields.gitcoinProjectCacheKey,
 			}
@@ -129,19 +117,16 @@ func Test_service_Handle(t *testing.T) {
 		message      *protocol.Message
 		transactions []model.Transaction
 	}
-	tests := []struct {
+	var tests []struct {
 		name    string
 		fields  fields
 		args    args
 		want    []model.Transaction
 		wantErr bool
-	}{
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &service{
-				databaseClient:         tt.fields.databaseClient,
 				redisClient:            tt.fields.redisClient,
 				gitcoinProjectCacheKey: tt.fields.gitcoinProjectCacheKey,
 			}
@@ -163,17 +148,14 @@ func Test_service_Jobs(t *testing.T) {
 		redisClient            *redis.Client
 		gitcoinProjectCacheKey string
 	}
-	tests := []struct {
+	var tests []struct {
 		name   string
 		fields fields
 		want   []worker.Job
-	}{
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &service{
-				databaseClient:         tt.fields.databaseClient,
 				redisClient:            tt.fields.redisClient,
 				gitcoinProjectCacheKey: tt.fields.gitcoinProjectCacheKey,
 			}

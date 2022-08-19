@@ -4,20 +4,18 @@ import (
 	"context"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
 	exchange2 "github.com/naturalselectionlabs/pregod/common/worker/exchange"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 var _ worker.Job = (*Job)(nil)
 
-type Job struct {
-	databaseClient *gorm.DB
-}
+type Job struct{}
 
 func (j *Job) Name() string {
 	return "Update Swap Pools"
@@ -53,7 +51,7 @@ func (j *Job) Run(renewal worker.RenewalFunc) error {
 				}
 
 				if len(pools) > 0 {
-					if err := j.databaseClient.
+					if err := database.Global().
 						Model((*exchange.SwapPool)(nil)).
 						Clauses(clause.OnConflict{
 							DoNothing: true,

@@ -8,17 +8,16 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/go-resty/resty/v2"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model/donation"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 var _ worker.Job = (*GitcoinProjectJob)(nil)
 
 type GitcoinProjectJob struct {
-	DatabaseClient         *gorm.DB
 	RedisClient            *redis.Client
 	GitcoinProjectCacheKey string
 }
@@ -38,26 +37,26 @@ func (job *GitcoinProjectJob) Timeout() time.Duration {
 func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 	logrus.Info("[gitcoin job] run")
 
-	// query lastest gitcoin project id
-	lastestProject := &donation.GitcoinProject{}
+	// query latest gitcoin project id
+	latestProject := &donation.GitcoinProject{}
 
-	if err := job.DatabaseClient.
+	if err := database.Global().
 		Model(&donation.GitcoinProject{}).
 		Order("id DESC").
-		First(&lastestProject).Error; err != nil {
-		logrus.Errorf("[gitcoin job] get lastest grant, db error: %v", err)
+		First(&latestProject).Error; err != nil {
+		logrus.Errorf("[gitcoin job] get latest grant, db error: %v", err)
 		return err
 	}
 
 	for i := 1; i <= 100; i++ {
-		// requeset api
-		newProject, err := job.requestGitcoinGrantApi(lastestProject.ID + 1)
+		// request api
+		newProject, err := job.requestGitcoinGrantApi(latestProject.ID + 1)
 		if err != nil || newProject == nil || newProject.ID == 0 {
 			continue
 		}
 
 		// set db
-		if err := job.DatabaseClient.
+		if err := database.Global().
 			Model(&donation.GitcoinProject{}).
 			Clauses(clause.OnConflict{
 				DoNothing: true,
@@ -66,7 +65,7 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 			continue
 		}
 
-		lastestProject.ID += 1
+		latestProject.ID += 1
 	}
 
 	go job.SetCache()
@@ -75,8 +74,8 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 }
 
 func (job *GitcoinProjectJob) SetCache() {
-	projectList := []*donation.GitcoinProject{}
-	if err := job.DatabaseClient.
+	var projectList []*donation.GitcoinProject
+	if err := database.Global().
 		Model(&donation.GitcoinProject{}).
 		Order("id").
 		Find(&projectList).Error; err != nil {

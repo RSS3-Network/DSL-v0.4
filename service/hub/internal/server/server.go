@@ -12,6 +12,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -70,6 +71,8 @@ func (s *Server) Initialize() (err error) {
 
 	s.databaseClient = config.ConfigHub.DatabaseClient
 
+	database.ReplaceGlobal(s.databaseClient)
+
 	s.rabbitmqConnection, err = rabbitmq.Dial(config.ConfigHub.RabbitMQ.String())
 	if err != nil {
 		logger.Global().Error("rabbitmq dail failed", zap.Error(err))
@@ -94,7 +97,6 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.HidePort = true
 
 	s.httpHandler = &handler.Handler{
-		DatabaseClient:     s.databaseClient,
 		RabbitmqConnection: s.rabbitmqConnection,
 		RabbitmqChannel:    s.rabbitmqChannel,
 	}

@@ -168,6 +168,6 @@ func (s *service) Jobs() []worker.Job {
 
 func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
 	return &service{
-		tokenClient: token.New(nil, ethereumClientMap),
+		tokenClient: token.New(ethereumClientMap),
 	}
 }

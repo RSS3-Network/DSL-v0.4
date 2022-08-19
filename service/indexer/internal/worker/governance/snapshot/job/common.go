@@ -11,7 +11,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"go.opentelemetry.io/otel"
-	"gorm.io/gorm"
 )
 
 type (
@@ -30,7 +29,6 @@ type StatusStroge struct {
 
 type SnapshotJobBase struct {
 	Name           string
-	DatabaseClient *gorm.DB
 	RedisClient    *redis.Client
 	SnapshotClient *snapshot.Client
 
@@ -42,10 +40,6 @@ type SnapshotJobBase struct {
 func (job *SnapshotJobBase) Check() error {
 	if job.Name == "" {
 		return fmt.Errorf("job name is empty")
-	}
-
-	if job.DatabaseClient == nil {
-		return fmt.Errorf("database worker is nil")
 	}
 
 	if job.SnapshotClient == nil {

@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/go-redis/redis/v8"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/donation"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -26,7 +27,6 @@ import (
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 const (
@@ -41,7 +41,6 @@ var _ worker.Worker = (*service)(nil)
 type service struct {
 	ethereumClientMap      map[string]*ethclient.Client
 	tokenClient            *token.Client
-	databaseClient         *gorm.DB
 	redisClient            *redis.Client
 	gitcoinProjectCacheKey string
 }
@@ -60,7 +59,6 @@ func (s *service) Networks() []string {
 
 func (s *service) Initialize(ctx context.Context) error {
 	gitcoinProjectJob := &job.GitcoinProjectJob{
-		DatabaseClient:         s.databaseClient,
 		RedisClient:            s.redisClient,
 		GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
 	}
@@ -168,7 +166,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 
 		var project donation.GitcoinProject
 
-		if err := s.databaseClient.
+		if err := database.Global().
 			Model((*donation.GitcoinProject)(nil)).
 			Where(map[string]any{
 				"admin_address": strings.ToLower(event.Dest.Hex()),
@@ -288,19 +286,17 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 func (s *service) Jobs() []worker.Job {
 	return []worker.Job{
 		&job.GitcoinProjectJob{
-			DatabaseClient:         s.databaseClient,
 			RedisClient:            s.redisClient,
 			GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
 		},
 	}
 }
 
-func New(databaseClient *gorm.DB, redisClient *redis.Client, ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(redisClient *redis.Client, ethereumClientMap map[string]*ethclient.Client) worker.Worker {
 	return &service{
-		databaseClient:         databaseClient,
 		redisClient:            redisClient,
 		gitcoinProjectCacheKey: "gitcoin_project",
 		ethereumClientMap:      ethereumClientMap,
-		tokenClient:            token.New(databaseClient, ethereumClientMap),
+		tokenClient:            token.New(ethereumClientMap),
 	}
 }

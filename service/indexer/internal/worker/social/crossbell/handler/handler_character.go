@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -18,7 +19,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/character"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/periphery"
 	"go.opentelemetry.io/otel"
-	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -28,7 +28,6 @@ type characterHandler struct {
 	characterContract *character.Character
 	peripheryContract *periphery.Periphery
 	profileHandler    *profileHandler
-	databaseClient    *gorm.DB
 	tokenClient       *token.Client
 }
 
@@ -117,7 +116,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
-	c.databaseClient.Model(&model.Profile{}).Clauses(clause.OnConflict{
+	database.Global().Model(&model.Profile{}).Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(profile)
 
