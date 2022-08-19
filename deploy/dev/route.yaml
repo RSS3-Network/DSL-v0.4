@@ -42,9 +42,19 @@ spec:
     - name: pregod-1-1-hub-api
       port: 80
     middlewares:
-      - name: pregod-hub-ratelimit
-      - name: pregod-hub-cors
-      - name: rm-prefix-v110
+      - name: pregod-1-1-hub-cors
+      - name: pregod-v110-redirect
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: pregod-v110-redirect
+  namespace: pregod
+spec:
+  redirectRegex:
+    permanent: true
+    regex: .*/v1\.1\.0(.*)
+    replacement: https://test-pregod.rss3.dev/v1${1}
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
