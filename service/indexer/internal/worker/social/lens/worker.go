@@ -193,7 +193,7 @@ func (s *service) handlePostCreated(ctx context.Context, transaction model.Trans
 	// get content
 	content, err := s.getContent(ctx, event.ContentURI)
 	if err != nil {
-		logrus.Errorf("[mirror_worker] Handle: getContent error, %v", err)
+		logrus.Errorf("[lens worker] Handle: getContent error, %v", err)
 		return transfer, err
 	}
 

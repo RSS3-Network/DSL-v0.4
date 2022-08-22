@@ -162,8 +162,6 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 					Source:      d.Name(),
 					Transfers:   make([]model.Transfer, 0),
 					Owner:       strings.ToLower(message.Address),
-					AddressFrom: strings.ToLower(message.Address),
-					AddressTo:   contractAddress.String(),
 				}
 
 				internalTransactions = append(internalTransactions, transaction)
