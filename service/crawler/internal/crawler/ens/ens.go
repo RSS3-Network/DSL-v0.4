@@ -8,14 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/database"
-
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/go-redis/redis/v8"
+	"github.com/naturalselectionlabs/pregod/common/cache"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
@@ -40,19 +39,16 @@ type service struct {
 	abiClient       abi.ABI
 	rabbitmqChannel *rabbitmq.Channel
 	employer        *shedlock.Employer
-	redisClient     *redis.Client
 }
 
 func New(
 	rabbitmqChannel *rabbitmq.Channel,
 	employer *shedlock.Employer,
 	config *config.Config,
-	redisClient *redis.Client,
 ) crawler.Crawler {
 	crawler := &service{
 		rabbitmqChannel: rabbitmqChannel,
 		employer:        employer,
-		redisClient:     redisClient,
 	}
 
 	var err error
@@ -200,7 +196,7 @@ func (s *service) createRabbitmqJob(address string) error {
 func (s *service) loadExistingEns() {
 	var page int
 	ctx := context.Background()
-	blockTimestamp, _ := s.redisClient.Get(ctx, blockTimestampCacheKey).Result() // redis cache
+	blockTimestamp, _ := cache.Global().Get(ctx, blockTimestampCacheKey).Result() // redis cache
 
 	for {
 		domains := make([]model.Domain, 0)
@@ -254,7 +250,7 @@ func (s *service) loadExistingEns() {
 		}
 
 		// set cache
-		s.redisClient.Set(ctx, blockTimestampCacheKey, domains[len(domains)-1].BlockTimestamp, 7*24*time.Hour)
+		cache.Global().Set(ctx, blockTimestampCacheKey, domains[len(domains)-1].BlockTimestamp, 7*24*time.Hour)
 
 		page += 1
 	}

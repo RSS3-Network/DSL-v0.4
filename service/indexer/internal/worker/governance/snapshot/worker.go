@@ -9,7 +9,6 @@ import (
 	"time"
 
 	mapset "github.com/deckarep/golang-set"
-	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
@@ -47,7 +46,6 @@ var snapshotNetworkNumMap = map[string]string{
 }
 
 type service struct {
-	redisClient    *redis.Client
 	snapshotClient *snapshot.Client
 }
 
@@ -201,7 +199,6 @@ func (s *service) Jobs() []worker.Job {
 		&job.SnapshotSpaceJob{
 			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_space_job",
-				RedisClient:    s.redisClient,
 				SnapshotClient: s.snapshotClient,
 				Limit:          1000,
 				HighUpdateTime: time.Second,
@@ -211,7 +208,6 @@ func (s *service) Jobs() []worker.Job {
 		&job.SnapshotProposalJob{
 			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_proposal_job",
-				RedisClient:    s.redisClient,
 				SnapshotClient: s.snapshotClient,
 				Limit:          2000,
 				HighUpdateTime: time.Second,
@@ -221,7 +217,6 @@ func (s *service) Jobs() []worker.Job {
 		&job.SnapshotVoteJob{
 			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_vote_job",
-				RedisClient:    s.redisClient,
 				SnapshotClient: s.snapshotClient,
 				Limit:          10000,
 				HighUpdateTime: time.Second * 15,
@@ -533,11 +528,8 @@ func (s *service) formatProposal(
 	}, nil
 }
 
-func New(
-	redisClient *redis.Client,
-) worker.Worker {
+func New() worker.Worker {
 	return &service{
-		redisClient:    redisClient,
 		snapshotClient: snapshot.NewClient(),
 	}
 }

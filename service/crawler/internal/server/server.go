@@ -97,10 +97,10 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
-	s.employer = shedlock.New(s.redisClient)
+	s.employer = shedlock.New()
 
 	s.crawlers = []crawler.Crawler{
-		ens.New(s.rabbitmqChannel, s.employer, s.config, s.redisClient),
+		ens.New(s.rabbitmqChannel, s.employer, s.config),
 	}
 
 	return nil

@@ -10,7 +10,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/donation"
@@ -41,7 +40,6 @@ var _ worker.Worker = (*service)(nil)
 type service struct {
 	ethereumClientMap      map[string]*ethclient.Client
 	tokenClient            *token.Client
-	redisClient            *redis.Client
 	gitcoinProjectCacheKey string
 }
 
@@ -59,7 +57,6 @@ func (s *service) Networks() []string {
 
 func (s *service) Initialize(ctx context.Context) error {
 	gitcoinProjectJob := &job.GitcoinProjectJob{
-		RedisClient:            s.redisClient,
 		GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
 	}
 
@@ -286,15 +283,13 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 func (s *service) Jobs() []worker.Job {
 	return []worker.Job{
 		&job.GitcoinProjectJob{
-			RedisClient:            s.redisClient,
 			GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
 		},
 	}
 }
 
-func New(redisClient *redis.Client, ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
 	return &service{
-		redisClient:            redisClient,
 		gitcoinProjectCacheKey: "gitcoin_project",
 		ethereumClientMap:      ethereumClientMap,
 		tokenClient:            token.New(ethereumClientMap),

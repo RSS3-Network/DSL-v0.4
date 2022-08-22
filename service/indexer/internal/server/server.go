@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -63,7 +62,6 @@ type Server struct {
 	rabbitmqChannel    *rabbitmq.Channel
 	rabbitmqQueue      rabbitmq.Queue
 	rabbitmqAssetQueue rabbitmq.Queue
-	redisClient        *redis.Client
 	datasources        []datasource.Datasource
 	datasourcesAsset   []datasource_asset.Datasource
 	workers            []worker.Worker
@@ -100,9 +98,12 @@ func (s *Server) Initialize() (err error) {
 
 	database.ReplaceGlobal(databaseClient)
 
-	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
+	redisClient, err := cache.Dial(s.config.Redis)
+	if err != nil {
 		return err
 	}
+
+	cache.ReplaceGlobal(redisClient)
 
 	err = s.InitializeMQ()
 	if err != nil {
@@ -153,13 +154,13 @@ func (s *Server) Initialize() (err error) {
 		marketplace.New(ethereumClientMap),
 		poap.New(ethereumClientMap),
 		mirror.New(),
-		gitcoin.New(s.redisClient, ethereumClientMap),
-		snapshot.New(s.redisClient),
+		gitcoin.New(ethereumClientMap),
+		snapshot.New(),
 		lens_worker.New(ethereumClientMap),
 		transaction.New(ethereumClientMap),
 	}
 
-	s.employer = shedlock.New(s.redisClient)
+	s.employer = shedlock.New()
 
 	for _, internalWorker := range s.workers {
 		loggerx.Global().Info("start initializing worker", zap.String("worker", internalWorker.Name()))

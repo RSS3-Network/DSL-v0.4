@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hasura/go-graphql-client"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -74,7 +75,7 @@ func (job *SnapshotVoteJob) InnerJobRun() (status PullInfoStatus, err error) {
 	var statusStroge StatusStroge
 
 	// get latest vote id
-	if job.RedisClient != nil {
+	if cache.Global() != nil {
 		statusStroge, err = job.GetLastStatusFromCache(ctx)
 		if err != nil {
 			logrus.Errorf("[snapshot vote job] get last status, db error: %v", err)
@@ -83,7 +84,7 @@ func (job *SnapshotVoteJob) InnerJobRun() (status PullInfoStatus, err error) {
 		}
 	}
 
-	if job.RedisClient == nil || err != nil {
+	if cache.Global() == nil || err != nil {
 		statusStroge.Pos, err = job.getVoteTotalFromDB(ctx)
 		if err != nil {
 			return statusStroge.Status, fmt.Errorf("[snapshot vote job] get vote total from db, db error: %v", err)
@@ -126,7 +127,7 @@ func (job *SnapshotVoteJob) InnerJobRun() (status PullInfoStatus, err error) {
 	}
 
 	// set vote status in cache and db
-	if job.RedisClient != nil {
+	if cache.Global() != nil {
 		err = job.SetCurrentStatus(ctx, statusStroge)
 		if err != nil {
 			return statusStroge.Status, fmt.Errorf("[snapshot vote job] set current status, db error: %v", err)

@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/snapshot"
-
-	"github.com/go-redis/redis/v8"
 	"go.opentelemetry.io/otel"
 )
 
@@ -29,7 +28,6 @@ type StatusStroge struct {
 
 type SnapshotJobBase struct {
 	Name           string
-	RedisClient    *redis.Client
 	SnapshotClient *snapshot.Client
 
 	Limit          int32
@@ -59,7 +57,7 @@ func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (statusS
 		return StatusStroge{}, fmt.Errorf("job name is empty")
 	}
 
-	if job.RedisClient == nil {
+	if cache.Global() == nil {
 		return StatusStroge{}, fmt.Errorf("redis worker is nil")
 	}
 
@@ -69,7 +67,7 @@ func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (statusS
 		Status: PullInfoStatusNotLatest,
 	}
 
-	data, err := job.RedisClient.Get(ctx, statusKey).Result()
+	data, err := cache.Global().Get(ctx, statusKey).Result()
 	if err != nil {
 		return StatusStroge{}, err
 	}
@@ -86,7 +84,7 @@ func (job *SnapshotJobBase) SetCurrentStatus(ctx context.Context, stroge StatusS
 		return fmt.Errorf("job name is empty")
 	}
 
-	if job.RedisClient == nil {
+	if cache.Global() == nil {
 		return fmt.Errorf("redis worker is nil")
 	}
 
@@ -99,7 +97,7 @@ func (job *SnapshotJobBase) SetCurrentStatus(ctx context.Context, stroge StatusS
 		return fmt.Errorf("marshal %+v to json error:%+v", stroge, err)
 	}
 
-	job.RedisClient.Set(ctx, job.Name+"_status", data, 0)
+	cache.Global().Set(ctx, job.Name+"_status", data, 0)
 
 	return nil
 }
