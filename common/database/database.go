@@ -9,6 +9,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
 	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
+	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/database/model/transaction"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -20,7 +21,7 @@ var tables = []any{
 	&model.Transfer{},
 	&model.GetTokenInfo{},
 	&model.GetNFTTokenInfo{},
-	&model.Profile{},
+	&social.Profile{},
 	&exchange.SwapPool{},
 	&exchange.CexWallet{},
 	&transaction.Token{},

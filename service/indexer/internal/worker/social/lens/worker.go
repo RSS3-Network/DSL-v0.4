@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
@@ -314,7 +315,7 @@ func (s *service) handleProfileCreated(ctx context.Context, transaction model.Tr
 		SourceData:      sourceData,
 	}
 
-	profile := model.Profile{
+	profile := social.Profile{
 		Address:  strings.ToLower(event.To.String()),
 		Platform: transaction.Platform,
 		Network:  transaction.Network,

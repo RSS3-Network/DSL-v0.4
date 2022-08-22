@@ -1,4 +1,4 @@
-package model
+package social
 
 import (
 	"encoding/json"

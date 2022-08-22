@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
@@ -117,7 +118,7 @@ func New(ethereumClient *ethclient.Client) (Interface, error) {
 	}, nil
 }
 
-func BuildProfileMetadata(profileMetadata []byte, profile *model.Profile) error {
+func BuildProfileMetadata(profileMetadata []byte, profile *social.Profile) error {
 	tempStructure := &CrossbellProfileStruct{}
 	if err := json.Unmarshal(profileMetadata, &tempStructure); err != nil {
 		return err
