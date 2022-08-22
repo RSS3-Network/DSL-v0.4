@@ -134,7 +134,7 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 	var err error
 	defer func() { opentelemetry.Log(trace, profileID, internalTransactionMap, err) }()
 
-	internalTransactions := []model.Transaction{}
+	var internalTransactions []model.Transaction
 	hash := common.HexToHash(hexutil.EncodeBig(profileID))
 
 	var wg sync.WaitGroup
