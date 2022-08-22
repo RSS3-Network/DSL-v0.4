@@ -15,8 +15,3 @@ type APIKey struct {
 func (APIKey) TableName() string {
 	return "apikey"
 }
-
-const (
-	APIKeyTypeSpecial = -1
-	APIKeyTypeNormal  = iota + 1
-)

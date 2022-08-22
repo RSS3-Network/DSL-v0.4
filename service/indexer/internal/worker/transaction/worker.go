@@ -27,7 +27,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
@@ -145,7 +145,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	}
 
 	if err != nil {
-		logger.Global().Error("worker_token:Handle", zap.Error(err))
+		loggerx.Global().Error("worker_token:Handle", zap.Error(err))
 	}
 
 	transactions = make([]model.Transaction, 0)
@@ -167,7 +167,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				for _, transfer := range internalTransaction.Transfers {
 					if transfer.Index == protocol.IndexVirtual {
 						if err := json.Unmarshal(transfer.Metadata, &tokenCost); err != nil {
-							logger.Global().Error("failed to unmarshal cost token metadata", zap.Error(err), zap.String("metadata", string(transfer.Metadata)))
+							loggerx.Global().Error("failed to unmarshal cost token metadata", zap.Error(err), zap.String("metadata", string(transfer.Metadata)))
 
 							return nil, err
 						}
@@ -186,7 +186,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 							var tokenNFT metadata.Token
 
 							if err := json.Unmarshal(transfer.Metadata, &tokenNFT); err != nil {
-								logger.Global().Error("failed to unmarshal nft token metadata", zap.Error(err), zap.String("metadata", string(transfer.Metadata)))
+								loggerx.Global().Error("failed to unmarshal nft token metadata", zap.Error(err), zap.String("metadata", string(transfer.Metadata)))
 
 								return nil, err
 							}
@@ -244,7 +244,7 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 			var sourceData ethereum.SourceData
 
 			if err := json.Unmarshal(transfer.SourceData, &sourceData); err != nil {
-				logger.Global().Error("failed to unmarshal source data", zap.Error(err), zap.String("source_data", string(transfer.SourceData)))
+				loggerx.Global().Error("failed to unmarshal source data", zap.Error(err), zap.String("source_data", string(transfer.SourceData)))
 
 				return nil, err
 			}
@@ -263,7 +263,7 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 			var sourceData types.Log
 
 			if err := json.Unmarshal(transfer.SourceData, &sourceData); err != nil {
-				logger.Global().Error("failed to unmarshal source data", zap.Error(err), zap.String("source_data", string(transfer.SourceData)))
+				loggerx.Global().Error("failed to unmarshal source data", zap.Error(err), zap.String("source_data", string(transfer.SourceData)))
 
 				return nil, err
 			}
@@ -386,7 +386,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 
 		tokenInfo, _, err := s.zksyncClient.GetToken(ctx, uint(data.Transaction.Operation.Token))
 		if err != nil {
-			logger.Global().Error("failed to get token", zap.Error(err), zap.String("token_id", strconv.Itoa(int(data.Transaction.Operation.Token))))
+			loggerx.Global().Error("failed to get token", zap.Error(err), zap.String("token_id", strconv.Itoa(int(data.Transaction.Operation.Token))))
 
 			return nil, err
 		}
@@ -505,7 +505,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			}
 
 			if strings.HasPrefix(nft.Image, "ipfs://") {
-				tokenMetadata.Image = ipfs.GetDirectURL(ctx, nft.Image)
+				tokenMetadata.Image = ipfs.GetDirectURL(nft.Image)
 			}
 
 			var tokenValue decimal.Decimal

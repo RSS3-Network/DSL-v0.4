@@ -186,7 +186,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 	transfer.RelatedUrls = []string{note.ContentUri}
 
 	// Self-hosted IPFS files may be out of date
-	contentData, _ := ipfs.GetFileByURL(ctx, note.ContentUri)
+	contentData, _ := ipfs.GetFileByURL(note.ContentUri)
 
 	postOriginal := CrossbellPostStruct{}
 
@@ -359,7 +359,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 	}
 
 	// Self-hosted IPFS files may be out of date
-	contentData, _ := ipfs.GetFileByURL(ctx, note.ContentUri)
+	contentData, _ := ipfs.GetFileByURL(note.ContentUri)
 
 	var noteMetadata json.RawMessage
 

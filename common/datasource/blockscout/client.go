@@ -51,21 +51,6 @@ func (c *Client) DoRequest(_ context.Context, request *http.Request) (*Response,
 	return response, httpResponse, err
 }
 
-type GetTransactionListOption struct {
-	Module          string `url:"module"`
-	Action          string `url:"action"`
-	Address         string `url:"address"`
-	ContractAddress string `url:"contractaddress,omitempty"`
-	Sort            string `url:"sort,omitempty"`
-	StartBlock      int64  `url:"startblock,omitempty"`
-	EndBlock        int64  `url:"endblock,omitempty"`
-	Page            int64  `url:"page,omitempty"`
-	Offset          int64  `url:"offset,omitempty"`
-	FilterBy        string `url:"filterby,omitempty"`
-	StartTimestamp  int64  `url:"starttimestamp,omitempty"`
-	EndTimestamp    int64  `url:"endtimestamp,omitempty"`
-}
-
 func (c *Client) GetTransactionList(ctx context.Context, address common.Address, option *GetTransactionListOption) ([]Transaction, *Response, error) {
 	option.Module = "account"
 	option.Address = address.String()

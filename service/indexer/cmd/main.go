@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/server"
 	"github.com/sirupsen/logrus"
@@ -30,7 +30,7 @@ func init() {
 func main() {
 	config.Initialize()
 
-	if err := logger.Initialize(string(config.ConfigIndexer.Mode)); err != nil {
+	if err := loggerx.Initialize(string(config.ConfigIndexer.Mode)); err != nil {
 		logrus.Fatalln(err)
 	}
 
@@ -41,6 +41,6 @@ func main() {
 	}
 
 	if err := rootCommand.Execute(); err != nil {
-		logger.Global().Fatal("indexer execution failed", zap.Error(err))
+		loggerx.Global().Fatal("indexer execution failed", zap.Error(err))
 	}
 }

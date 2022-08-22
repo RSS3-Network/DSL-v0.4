@@ -13,7 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/handler"
@@ -24,8 +24,7 @@ import (
 )
 
 const (
-	Name = "crossbell"
-
+	Name     = "crossbell"
 	Endpoint = "https://rpc.crossbell.io"
 )
 
@@ -152,7 +151,7 @@ func (s *service) handleReceipt(ctx context.Context, message *protocol.Message, 
 		internalTransfer, err := s.handler.Handle(ctx, transaction, transfer)
 		if err != nil {
 			if !errors.Is(err, contract.ErrorUnknownEvent) {
-				logger.Global().Warn(
+				loggerx.Global().Warn(
 					"handle crossbell transfer failed",
 					zap.Error(err),
 					zap.String("worker", s.Name()),

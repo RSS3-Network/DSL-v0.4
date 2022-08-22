@@ -1,10 +1,12 @@
-package http
+package httpx
 
 import (
 	"context"
 	"encoding/json"
 	"io"
 	"net/http"
+
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
 func NewRequest(method, rawURL string, body interface{}) (*http.Request, error) {
@@ -21,7 +23,7 @@ func NewRequest(method, rawURL string, body interface{}) (*http.Request, error) 
 		return nil, err
 	}
 
-	request.Header.Set("Accept", "application/json")
+	request.Header.Set("Accept", protocol.ContentTypeJSON)
 
 	return request, nil
 }

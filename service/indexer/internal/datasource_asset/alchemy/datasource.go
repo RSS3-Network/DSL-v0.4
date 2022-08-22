@@ -126,7 +126,7 @@ func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) (as
 
 			asset.Image = nft.Metadata.Image
 			if strings.HasPrefix(asset.Image, "ipfs://") {
-				asset.Image = ipfs.GetDirectURL(ctx, asset.Image)
+				asset.Image = ipfs.GetDirectURL(asset.Image)
 			}
 
 			asset.RelatedUrls = append(asset.RelatedUrls, ethereum.BuildTokenURL(message.Network, asset.TokenAddress, tokenID.String())...)

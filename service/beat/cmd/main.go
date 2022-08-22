@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/service/beat/internal/config"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -23,14 +23,14 @@ func main() {
 	// init db
 	config.Initialize()
 
-	if err := logger.Initialize(string(config.ConfigBeat.Mode)); err != nil {
+	if err := loggerx.Initialize(string(config.ConfigBeat.Mode)); err != nil {
 		logrus.Fatalln(err)
 	}
 
 	rootCommand.RunE = beat
 
 	if err := rootCommand.Execute(); err != nil {
-		logger.Global().Fatal("beat execution failed", zap.Error(err))
+		loggerx.Global().Fatal("beat execution failed", zap.Error(err))
 	}
 }
 

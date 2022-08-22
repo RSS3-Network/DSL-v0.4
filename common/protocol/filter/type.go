@@ -1,17 +1,18 @@
 package filter
 
 const (
-	// transaction types:  transfer | mint | burn | cancel
+	// transaction types
 	TransactionTransfer string = "transfer"
 	TransactionMint     string = "mint"
 	TransactionBurn     string = "burn"
 
-	// exchange types:  withdraw | deposit | swap | add_liquidity | remove_liquidity | collect
+	// exchange types
 	ExchangeWithdraw  string = "withdraw"
 	ExchangeDeposit   string = "deposit"
 	ExchangeSwap      string = "swap"
 	ExchangeLiquidity string = "liquidity"
-	// three sub-types for Exchange-Liquidity
+
+	// sub-types for Exchange-Liquidity
 	ExchangeLiquidityAdd      string = "add"
 	ExchangeLiquidityRemove   string = "remove"
 	ExchangeLiquidityCollect  string = "collect"
@@ -20,14 +21,14 @@ const (
 	ExchangeLiquidityRepay    string = "repay"
 	ExchangeLiquidityWithdraw string = "withdraw"
 
-	// NFT types: transfer | mint | burn | poap
+	// NFT types
 	CollectibleTransfer string = "transfer"
 	CollectibleTrade    string = "trade"
 	CollectibleMint     string = "mint"
 	CollectibleBurn     string = "burn"
 	CollectiblePoap     string = "poap"
 
-	// social types: post | comment | share (retweet) | profile | follow | unfollow | like
+	// social types
 	SocialPost     string = "post"
 	SocialRevise   string = "revise"
 	SocialComment  string = "comment"
@@ -37,15 +38,15 @@ const (
 	SocialUnfollow string = "unfollow"
 	SocialLike     string = "like"
 
-	// two sub-types for Social-Profile
+	// sub-types for Social-Profile
 	SocialProfileCreate string = "create"
 	SocialProfileUpdate string = "update"
 
-	// Governance types: propose | vote
+	// Governance types
 	GovernancePropose string = "propose"
 	GovernanceVote    string = "vote"
 
-	// donation type: donate
+	// donation type
 	DonationLaunch string = "launch"
 	DonationDonate string = "donate"
 )

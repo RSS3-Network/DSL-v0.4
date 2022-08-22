@@ -30,7 +30,7 @@ var tables = []any{
 	&governance.SnapshotVote{},
 	&model.Asset{},
 	&model.Token{},
-	&model.Domains{},
+	&model.Domain{},
 	&model.APIKey{},
 	&model.Address{},
 }

@@ -10,14 +10,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/go-querystring/query"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/sirupsen/logrus"
 )
 
 const (
 	Scheme   = "https"
 	Endpoint = "deep-index.moralis.io"
-
-	MaxOffset = 1000
 )
 
 type Client struct {
@@ -39,7 +38,7 @@ func (c *Client) NewRequest(method, rawURL string, body interface{}) (*http.Requ
 		return nil, err
 	}
 
-	request.Header.Set("Accept", "application/json")
+	request.Header.Set("Accept", protocol.ContentTypeJSON)
 	request.Header.Set("X-API-Key", c.key)
 
 	return request, nil
@@ -65,17 +64,6 @@ func (c *Client) DoRequest(_ context.Context, request *http.Request) (*Response,
 	}
 
 	return response, httpResponse, err
-}
-
-type GetTransactionsOption struct {
-	Chain     string `url:"chain,omitempty"`
-	Address   string `url:"address,omitempty"`
-	FromDate  string `url:"from_date,omitempty"`
-	ToDate    string `url:"to_date,omitempty"`
-	FromBlock string `url:"from_block,omitempty"`
-	ToBlock   string `url:"to_block,omitempty"`
-	Cursor    string `url:"cursor,omitempty"`
-	Limit     int    `url:"limit,omitempty"`
 }
 
 func (c *Client) GetTransactions(ctx context.Context, address common.Address, option *GetTransactionsOption) ([]Transaction, *Response, error) {
@@ -113,17 +101,6 @@ func (c *Client) GetTransactions(ctx context.Context, address common.Address, op
 	return transactions, response, nil
 }
 
-type GetTokenTransfersOption struct {
-	Chain     string `url:"chain,omitempty"`
-	Address   string `url:"address,omitempty"`
-	FromDate  string `url:"from_date,omitempty"`
-	ToDate    string `url:"to_date,omitempty"`
-	FromBlock string `url:"from_block,omitempty"`
-	ToBlock   string `url:"to_block,omitempty"`
-	Cursor    string `url:"cursor,omitempty"`
-	Limit     int    `url:"limit,omitempty"`
-}
-
 func (c *Client) GetTokenTransfers(ctx context.Context, address common.Address, option *GetTokenTransfersOption) ([]TokenTransfer, *Response, error) {
 	values, err := query.Values(option)
 	if err != nil {
@@ -157,17 +134,6 @@ func (c *Client) GetTokenTransfers(ctx context.Context, address common.Address, 
 	}
 
 	return tokenTransfers, response, nil
-}
-
-type GetNFTTransfersOption struct {
-	Chain     string `url:"chain,omitempty"`
-	Address   string `url:"address,omitempty"`
-	FromDate  string `url:"from_date,omitempty"`
-	ToDate    string `url:"to_date,omitempty"`
-	FromBlock string `url:"from_block,omitempty"`
-	ToBlock   string `url:"to_block,omitempty"`
-	Cursor    string `url:"cursor,omitempty"`
-	Limit     int    `url:"limit,omitempty"`
 }
 
 func (c *Client) GetNFTTransfers(ctx context.Context, address common.Address, option *GetNFTTransfersOption) ([]NFTTransfer, *Response, error) {

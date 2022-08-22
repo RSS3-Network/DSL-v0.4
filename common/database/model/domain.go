@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-type Domains struct {
+type Domain struct {
 	BlockTimestamp      time.Time `gorm:"column:block_timestamp" json:"block_timestamp"`
 	TransactionHash     []byte    `gorm:"column:transaction_hash;type:bytea;index" json:"transaction_hash"`
 	TransactionLogIndex int       `gorm:"column:transaction_log_index;type:bigint" json:"transaction_log_index"`
@@ -16,6 +16,6 @@ type Domains struct {
 	UpdatedAt           time.Time `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index" json:"updated_at"`
 }
 
-func (Domains) TableName() string {
+func (Domain) TableName() string {
 	return "domains"
 }

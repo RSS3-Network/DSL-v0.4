@@ -20,7 +20,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	lop "github.com/samber/lo/parallel"
@@ -127,7 +127,7 @@ func (s *service) handleReceipt(ctx context.Context, transaction model.Transacti
 		case lens.EventHashPostCreated:
 			transfer, err := s.handlePostCreated(ctx, transaction, *log)
 			if err != nil {
-				logger.Global().Error("[lens worker] handleReceipt: handlePostCreated error, %v", zap.Error(err))
+				loggerx.Global().Error("[lens worker] handleReceipt: handlePostCreated error, %v", zap.Error(err))
 
 				continue
 			}
@@ -136,7 +136,7 @@ func (s *service) handleReceipt(ctx context.Context, transaction model.Transacti
 		case lens.EventHashCommentCreated:
 			transfer, err := s.handleCommentCreated(ctx, transaction, *log)
 			if err != nil {
-				logger.Global().Error("[lens worker] handleReceipt: handleCommentCreated error, %v", zap.Error(err))
+				loggerx.Global().Error("[lens worker] handleReceipt: handleCommentCreated error, %v", zap.Error(err))
 
 				continue
 			}
@@ -145,7 +145,7 @@ func (s *service) handleReceipt(ctx context.Context, transaction model.Transacti
 		case lens.EventHashProfileCreated:
 			transfer, err := s.handleProfileCreated(ctx, transaction, *log)
 			if err != nil {
-				logger.Global().Error("[lens worker] handleReceipt: handleProfileCreated error, %v", zap.Error(err))
+				loggerx.Global().Error("[lens worker] handleReceipt: handleProfileCreated error, %v", zap.Error(err))
 
 				continue
 			}
@@ -160,21 +160,21 @@ func (s *service) handleReceipt(ctx context.Context, transaction model.Transacti
 func (s *service) handlePostCreated(ctx context.Context, transaction model.Transaction, log types.Log) (transfer model.Transfer, err error) {
 	lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
 	if err != nil {
-		logger.Global().Error("[lens worker] handleReceipt: new events error, %v", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleReceipt: new events error, %v", zap.Error(err))
 
 		return transfer, err
 	}
 
 	sourceData, err := json.Marshal(log)
 	if err != nil {
-		logger.Global().Error("marshal source data error", zap.Error(err))
+		loggerx.Global().Error("marshal source data error", zap.Error(err))
 
 		return transfer, err
 	}
 
 	event, err := lensContract.EventsFilterer.ParsePostCreated(log)
 	if err != nil {
-		logger.Global().Error("[lens worker] handleReceipt: ParsePostCreated error, %v", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleReceipt: ParsePostCreated error, %v", zap.Error(err))
 
 		return transfer, err
 	}
@@ -221,21 +221,21 @@ func (s *service) handlePostCreated(ctx context.Context, transaction model.Trans
 func (s *service) handleCommentCreated(ctx context.Context, transaction model.Transaction, log types.Log) (transfer model.Transfer, err error) {
 	lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
 	if err != nil {
-		logger.Global().Error("[lens worker] handleCommentCreated: new events error, %v", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleCommentCreated: new events error, %v", zap.Error(err))
 
 		return transfer, err
 	}
 
 	sourceData, err := json.Marshal(log)
 	if err != nil {
-		logger.Global().Error("marshal source data error", zap.Error(err))
+		loggerx.Global().Error("marshal source data error", zap.Error(err))
 
 		return transfer, err
 	}
 
 	event, err := lensContract.EventsFilterer.ParseCommentCreated(log)
 	if err != nil {
-		logger.Global().Error("[lens worker] handleCommentCreated: ParsePostCreated error, %v", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleCommentCreated: ParsePostCreated error, %v", zap.Error(err))
 
 		return transfer, err
 	}
@@ -282,21 +282,21 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction model.Tr
 func (s *service) handleProfileCreated(ctx context.Context, transaction model.Transaction, log types.Log) (transfer model.Transfer, err error) {
 	lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
 	if err != nil {
-		logger.Global().Error("[lens worker] handleProfileCreated: new events error, %v", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleProfileCreated: new events error, %v", zap.Error(err))
 
 		return transfer, err
 	}
 
 	sourceData, err := json.Marshal(log)
 	if err != nil {
-		logger.Global().Error("marshal source data error", zap.Error(err))
+		loggerx.Global().Error("marshal source data error", zap.Error(err))
 
 		return transfer, err
 	}
 
 	event, err := lensContract.EventsFilterer.ParseProfileCreated(log)
 	if err != nil {
-		logger.Global().Error("[lens worker] handleProfileCreated: ParseProfileCreated error, %v", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleProfileCreated: ParseProfileCreated error, %v", zap.Error(err))
 
 		return transfer, err
 	}

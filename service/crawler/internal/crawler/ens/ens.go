@@ -140,7 +140,7 @@ func (s *service) subscribeEns() error {
 				}
 
 				// save ens data into db
-				ens := &model.Domains{
+				ens := &model.Domain{
 					TransactionHash: vLog.TxHash.Bytes(),
 					Type:            "ens",
 					Name:            data.Name,
@@ -203,9 +203,9 @@ func (s *service) loadExistingEns() {
 	blockTimestamp, _ := s.redisClient.Get(ctx, blockTimestampCacheKey).Result() // redis cache
 
 	for {
-		domains := make([]model.Domains, 0)
+		domains := make([]model.Domain, 0)
 
-		sql := database.Global().Model(&model.Domains{})
+		sql := database.Global().Model(&model.Domain{})
 
 		if len(blockTimestamp) > 0 {
 			sql = sql.Where("block_timestamp >= ?", blockTimestamp)

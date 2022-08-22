@@ -14,7 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
@@ -50,11 +50,11 @@ func (s *Server) Initialize() (err error) {
 
 	if config.ConfigHub.OpenTelemetry == nil {
 		if exporter, err = opentelemetry.DialWithPath(opentelemetry.DefaultPath); err != nil {
-			logger.Global().Error("opentelemetry DialWithPath failed", zap.Error(err))
+			loggerx.Global().Error("opentelemetry DialWithPath failed", zap.Error(err))
 		}
 	} else if config.ConfigHub.OpenTelemetry.Enabled {
 		if exporter, err = opentelemetry.DialWithURL(config.ConfigHub.OpenTelemetry.String()); err != nil {
-			logger.Global().Error("opentelemetry DialWithURL failed", zap.Error(err))
+			loggerx.Global().Error("opentelemetry DialWithURL failed", zap.Error(err))
 		}
 	}
 
@@ -71,20 +71,20 @@ func (s *Server) Initialize() (err error) {
 
 	s.rabbitmqConnection, err = rabbitmq.Dial(config.ConfigHub.RabbitMQ.String())
 	if err != nil {
-		logger.Global().Error("rabbitmq dail failed", zap.Error(err))
+		loggerx.Global().Error("rabbitmq dail failed", zap.Error(err))
 	}
 
 	s.rabbitmqChannel, err = s.rabbitmqConnection.Channel()
 	if err != nil {
-		logger.Global().Error("rabbitmqConnection failed", zap.Error(err))
+		loggerx.Global().Error("rabbitmqConnection failed", zap.Error(err))
 	}
 
 	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeJob, "direct", true, false, false, false, nil); err != nil {
-		logger.Global().Error("rabbitmqChannel ExchangeDeclare failed", zap.Error(err))
+		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare failed", zap.Error(err))
 	}
 
 	if s.redisClient, err = cache.Dial(config.ConfigHub.Redis); err != nil {
-		logger.Global().Error("redis dial failed", zap.Error(err))
+		loggerx.Global().Error("redis dial failed", zap.Error(err))
 	}
 
 	s.httpServer = echo.New()
@@ -118,7 +118,7 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.GET("/exchanges/:exchange_type", s.httpHandler.GetExchangeListFunc)
 	s.httpServer.GET("/platforms/:platform_type", s.httpHandler.GetPlatformListFunc)
 	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfilesFunc, middlewarex.APIMiddleware)
-	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolve)
+	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolveFunc)
 
 	// POST
 	s.httpServer.POST("/notes", s.httpHandler.BatchGetNotesFunc, middlewarex.CheckAPIKeyMiddleware)

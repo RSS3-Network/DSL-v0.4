@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server"
 	"github.com/sirupsen/logrus"
@@ -20,7 +20,7 @@ var rootCommand = cobra.Command{
 func main() {
 	config.Initialize()
 
-	if err := logger.Initialize(string(config.ConfigHub.Mode)); err != nil {
+	if err := loggerx.Initialize(string(config.ConfigHub.Mode)); err != nil {
 		logrus.Fatalln(err)
 	}
 
@@ -31,6 +31,6 @@ func main() {
 	}
 
 	if err := rootCommand.Execute(); err != nil {
-		logger.Global().Fatal("hub execution failed", zap.Error(err))
+		loggerx.Global().Fatal("hub execution failed", zap.Error(err))
 	}
 }

@@ -26,7 +26,7 @@ type NameServiceResult struct {
 	Address   string `json:"address"`
 }
 
-func (h *Handler) GetNameResolve(c echo.Context) error {
+func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 	go h.apiReport(GetNS, c.Get("API-KEY"))
 	tracer := otel.Tracer("GetENSResolve")
 	_, httpSnap := tracer.Start(c.Request().Context(), "http")

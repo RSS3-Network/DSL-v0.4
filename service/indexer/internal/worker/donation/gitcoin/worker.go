@@ -19,7 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/gitcoin"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -85,7 +85,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 		transfers, err := s.handleGitcoin(ctx, message, transaction)
 		if err != nil {
-			logger.Global().Error("failed to handle gitcoin transaction", zap.Error(err))
+			loggerx.Global().Error("failed to handle gitcoin transaction", zap.Error(err))
 
 			continue
 		}
@@ -136,7 +136,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 
 	receipt, err := ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
 	if err != nil {
-		logger.Global().Error("get transaction receipt error", zap.Error(err))
+		loggerx.Global().Error("get transaction receipt error", zap.Error(err))
 
 		return nil, err
 	}
@@ -148,14 +148,14 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 
 		gitcoinContract, err := gitcoin.NewGitcoin(log.Address, ethereumClient)
 		if err != nil {
-			logger.Global().Error("get gitcoin contract error", zap.Error(err))
+			loggerx.Global().Error("get gitcoin contract error", zap.Error(err))
 
 			continue
 		}
 
 		event, err := gitcoinContract.ParseDonationSent(*log)
 		if err != nil {
-			logger.Global().Error("parse donation sent event error", zap.Error(err))
+			loggerx.Global().Error("parse donation sent event error", zap.Error(err))
 
 			continue
 		}
@@ -174,7 +174,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 			Order("id DESC").
 			First(&project).
 			Error; err != nil {
-			logger.Global().Error("get gitcoin project error", zap.Error(err))
+			loggerx.Global().Error("get gitcoin project error", zap.Error(err))
 
 			continue
 		}
@@ -187,14 +187,14 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 		//
 		// project := &donation.GitcoinProject{}
 		// if err := json.Unmarshal([]byte(projectStr), &project); err != nil {
-		//	 logger.Global().Error("unmarshal gitcoin project error", zap.Error(err))
+		//	 loggerx.Global().Error("unmarshal gitcoin project error", zap.Error(err))
 		//
 		//	 return nil, err
 		// }
 
 		sourceData, err := json.Marshal(log)
 		if err != nil {
-			logger.Global().Error("marshal source data error", zap.Error(err))
+			loggerx.Global().Error("marshal source data error", zap.Error(err))
 
 			return nil, err
 		}
@@ -220,7 +220,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 		if strings.ToLower(event.Token.String()) == ContractAddressEthereumNative {
 			native, err := s.tokenClient.Native(ctx, transaction.Network)
 			if err != nil {
-				logger.Global().Error("get native token error", zap.Error(err))
+				loggerx.Global().Error("get native token error", zap.Error(err))
 
 				return nil, err
 			}
@@ -235,7 +235,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 		} else {
 			erc20, err := s.tokenClient.ERC20(ctx, transaction.Network, event.Token.String())
 			if err != nil {
-				logger.Global().Error("get erc20 error", zap.Error(err))
+				loggerx.Global().Error("get erc20 error", zap.Error(err))
 
 				continue
 			}
@@ -265,7 +265,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 			Token:       tokenMetadata,
 		})
 		if err != nil {
-			logger.Global().Error("marshal metadata error", zap.Error(err))
+			loggerx.Global().Error("marshal metadata error", zap.Error(err))
 
 			continue
 		}

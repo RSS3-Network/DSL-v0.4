@@ -2,11 +2,6 @@ package model
 
 import "time"
 
-const (
-	AddressStatusDone    = "done"
-	AddressStatusRunning = "running"
-)
-
 type Address struct {
 	Address   string    `gorm:"column:address;primaryKey" json:"address"`
 	CreatedAt time.Time `gorm:"column:created_at;autoCreateTime;not null;default:now();index" json:"-"`
