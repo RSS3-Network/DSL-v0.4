@@ -88,6 +88,12 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		})
 	}
 
+	if request.CountOnly {
+		return c.JSON(http.StatusOK, &Response{
+			Total: total,
+		})
+	}
+
 	transactionHashes := make([]string, 0)
 	for _, transactionHash := range transactions {
 		transactionHashes = append(transactionHashes, transactionHash.Hash)
@@ -289,6 +295,12 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	if total == 0 {
 		return c.JSON(http.StatusOK, &Response{
 			Result: make([]dbModel.Transaction, 0),
+		})
+	}
+
+	if request.CountOnly {
+		return c.JSON(http.StatusOK, &Response{
+			Total: total,
 		})
 	}
 

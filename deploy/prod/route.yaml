@@ -1,6 +1,35 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
+  name: pregod-hub-v1
+  namespace: pregod
+spec:
+  entryPoints:
+  - web
+  routes:
+  - kind: Rule
+    match: Host(`pregod.rss3.dev`) && PathPrefix(`/v1`)
+    services:
+    - name: pregod-1-1-hub-api
+      port: 80
+    middlewares:
+      - name: pregod-1-1-hub-ratelimit
+      - name: pregod-1-1-hub-cors
+      - name: rm-prefix-v1
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: rm-prefix-v1
+  namespace: pregod
+spec:
+  stripPrefix:
+    prefixes:
+      - /v1
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
   name: pregod-1-1-hub
   namespace: pregod
 spec:
@@ -13,9 +42,19 @@ spec:
     - name: pregod-1-1-hub-api
       port: 80
     middlewares:
-      - name: pregod-1-1-hub-ratelimit
       - name: pregod-1-1-hub-cors
-      - name: rm-prefix-v110
+      - name: pregod-v110-redirect
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: pregod-v110-redirect
+  namespace: pregod
+spec:
+  redirectRegex:
+    permanent: true
+    regex: .*/v1\.1\.0(.*)
+    replacement: https://pregod.rss3.dev/v1${1}
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware

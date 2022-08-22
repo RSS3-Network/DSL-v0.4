@@ -42,20 +42,23 @@ type Response struct {
 }
 
 type GetRequest struct {
-	Address     string    `param:"address" json:"address" validate:"required"`
-	Limit       int       `query:"limit" json:"limit"`
-	Cursor      string    `query:"cursor" json:"cursor"`
-	Type        []string  `query:"type" json:"type"`
-	Tag         []string  `query:"tag" json:"tag" validate:"required_with=Type"`
-	Network     []string  `query:"network" json:"network"`
-	Platform    []string  `query:"platform" json:"platform"`
-	Timestamp   time.Time `query:"timestamp" json:"timestamp"`
-	Hash        string    `query:"hash" json:"hash"`
-	IncludePoap bool      `query:"include_poap" json:"include_poap"`
-	Refresh     bool      `query:"refresh" json:"refresh"`
-	Reindex     bool      `query:"reindex" json:"reindex"`
-	Page        int       `query:"page" json:"page"`
-	QueryStatus bool      `query:"query_status" json:"query_status"`
+	Address   string    `param:"address" json:"address" validate:"required"`
+	Limit     int       `query:"limit" json:"limit"`
+	Cursor    string    `query:"cursor" json:"cursor"`
+	Type      []string  `query:"type" json:"type"`
+	Tag       []string  `query:"tag" json:"tag" validate:"required_with=Type"`
+	Network   []string  `query:"network" json:"network"`
+	Platform  []string  `query:"platform" json:"platform"`
+	Timestamp time.Time `query:"timestamp" json:"timestamp"`
+	Hash      string    `query:"hash" json:"hash"`
+	// includes POAP in the response
+	IncludePoap bool `query:"include_poap" json:"include_poap"`
+	Refresh     bool `query:"refresh" json:"refresh"`
+	Reindex     bool `query:"reindex" json:"reindex"`
+	Page        int  `query:"page" json:"page"`
+	QueryStatus bool `query:"query_status" json:"query_status"`
+	// returns a count of transactions only
+	CountOnly bool `query:"count_only" json:"count_only"`
 }
 
 type GetExchangeRequest struct {
@@ -94,6 +97,7 @@ type BatchGetNotesRequest struct {
 	IncludePoap bool      `json:"include_poap"`
 	Page        int       `json:"page"`
 	QueryStatus bool      `json:"query_status"`
+	CountOnly   bool      `json:"count_only"`
 }
 
 type BatchGetProfilesRequest struct {
