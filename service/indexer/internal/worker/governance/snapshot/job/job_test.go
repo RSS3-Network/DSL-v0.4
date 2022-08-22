@@ -45,7 +45,6 @@ func TestSnapshotSpaceInnerJob(t *testing.T) {
 		spaceJob := job2.SnapshotSpaceJob{
 			SnapshotJobBase: job2.SnapshotJobBase{
 				Name:           "snapshot_space_job",
-				RedisClient:    redisClient,
 				SnapshotClient: snapshotClient,
 				Limit:          100,
 			},
@@ -70,7 +69,6 @@ func TestSnapshotProposalInnerJob(t *testing.T) {
 		proposalJob := job2.SnapshotProposalJob{
 			SnapshotJobBase: job2.SnapshotJobBase{
 				Name:           "snapshot_proposal_job",
-				RedisClient:    redisClient,
 				SnapshotClient: snapshotClient,
 				Limit:          100,
 			},
@@ -94,7 +92,6 @@ func TestSnapshotVoteInnerJob(t *testing.T) {
 		voteJob := job2.SnapshotVoteJob{
 			SnapshotJobBase: job2.SnapshotJobBase{
 				Name:           "snapshot_vote_job",
-				RedisClient:    redisClient,
 				SnapshotClient: snapshotClient,
 				Limit:          100,
 			},

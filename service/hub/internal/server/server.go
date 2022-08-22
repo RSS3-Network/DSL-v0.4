@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
@@ -33,7 +32,6 @@ var _ command.Interface = &Server{}
 type Server struct {
 	httpServer         *echo.Echo
 	httpHandler        *handler.Handler
-	redisClient        *redis.Client
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
 	logger             *zap.Logger
@@ -83,9 +81,12 @@ func (s *Server) Initialize() (err error) {
 		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare failed", zap.Error(err))
 	}
 
-	if s.redisClient, err = cache.Dial(config.ConfigHub.Redis); err != nil {
-		loggerx.Global().Error("redis dial failed", zap.Error(err))
+	redisClient, err := cache.Dial(config.ConfigHub.Redis)
+	if err != nil {
+		return err
 	}
+
+	cache.ReplaceGlobal(redisClient)
 
 	s.httpServer = echo.New()
 

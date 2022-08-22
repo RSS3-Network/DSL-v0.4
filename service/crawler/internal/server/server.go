@@ -5,7 +5,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
@@ -31,7 +30,6 @@ type Server struct {
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
 	rabbitmqQueue      rabbitmq.Queue
-	redisClient        *redis.Client
 	crawlers           []crawler.Crawler
 	employer           *shedlock.Employer
 }
@@ -65,9 +63,12 @@ func (s *Server) Initialize() (err error) {
 
 	database.ReplaceGlobal(databaseClient)
 
-	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
+	redisClient, err := cache.Dial(s.config.Redis)
+	if err != nil {
 		return err
 	}
+
+	cache.ReplaceGlobal(redisClient)
 
 	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
 	if err != nil {

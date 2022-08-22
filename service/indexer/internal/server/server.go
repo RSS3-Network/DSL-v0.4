@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/cache"
+	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -68,6 +69,8 @@ type Server struct {
 	triggers           []trigger.Trigger
 	employer           *shedlock.Employer
 }
+
+var _ command.Interface = &Server{}
 
 func (s *Server) Initialize() (err error) {
 	var exporter trace.SpanExporter
