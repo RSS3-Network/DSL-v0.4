@@ -17,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils"
@@ -191,7 +192,7 @@ func (s *service) handlePostCreated(ctx context.Context, transaction model.Trans
 	}
 
 	// get content
-	content, err := s.getContent(ctx, event.ContentURI)
+	content, err := s.getContent(event.ContentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] Handle: getContent error, %v", err)
 		return transfer, err
@@ -252,7 +253,7 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction model.Tr
 	}
 
 	// get content
-	content, err := s.getContent(ctx, event.ContentURI)
+	content, err := s.getContent(event.ContentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: getContent error, %v", err)
 		return transfer, err
@@ -319,7 +320,7 @@ func (s *service) handleProfileCreated(ctx context.Context, transaction model.Tr
 		Network:  transaction.Network,
 		Source:   transaction.Platform,
 		Type:     filter.SocialProfileCreate,
-		URL:      s.getDirectURL(ctx, event.ImageURI),
+		URL:      ipfs.GetDirectURL(event.ImageURI),
 		Handle:   event.Handle,
 	}
 
@@ -335,16 +336,8 @@ func (s *service) handleProfileCreated(ctx context.Context, transaction model.Tr
 	return transfer, nil
 }
 
-func (s *service) getDirectURL(ctx context.Context, uri string) string {
-	if s := strings.Split(uri, "/ipfs/"); len(s) == 2 {
-		uri = "https://ipfs.rss3.page/ipfs/" + s[1]
-	}
-
-	return uri
-}
-
-func (s *service) getContent(ctx context.Context, uri string) (json.RawMessage, error) {
-	uri = s.getDirectURL(ctx, uri)
+func (s *service) getContent(uri string) (json.RawMessage, error) {
+	uri = ipfs.GetDirectURL(uri)
 	response, err := s.httpClient.Get(uri)
 	if err != nil {
 		return nil, err
