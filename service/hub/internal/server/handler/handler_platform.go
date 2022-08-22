@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -123,7 +124,7 @@ func (h *Handler) getCexPlatformListDatabase(c context.Context, request GetPlatf
 	defer postgresSnap.End()
 
 	result := make([]PlatformResult, 0)
-	sql := h.DatabaseClient.
+	sql := database.Global().
 		Model(&exchange.CexWallet{})
 
 	if len(request.Network) > 0 {

@@ -12,6 +12,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -25,7 +26,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 var _ command.Interface = &Server{}
@@ -33,7 +33,6 @@ var _ command.Interface = &Server{}
 type Server struct {
 	httpServer         *echo.Echo
 	httpHandler        *handler.Handler
-	databaseClient     *gorm.DB
 	redisClient        *redis.Client
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
@@ -68,7 +67,7 @@ func (s *Server) Initialize() (err error) {
 		)),
 	))
 
-	s.databaseClient = config.ConfigHub.DatabaseClient
+	database.ReplaceGlobal(config.ConfigHub.DatabaseClient)
 
 	s.rabbitmqConnection, err = rabbitmq.Dial(config.ConfigHub.RabbitMQ.String())
 	if err != nil {
@@ -94,7 +93,6 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.HidePort = true
 
 	s.httpHandler = &handler.Handler{
-		DatabaseClient:     s.databaseClient,
 		RabbitmqConnection: s.rabbitmqConnection,
 		RabbitmqChannel:    s.rabbitmqChannel,
 	}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"go.opentelemetry.io/otel"
@@ -104,7 +105,7 @@ func (h *Handler) getProfiles(c context.Context, request GetRequest) ([]dbModel.
 
 	dbResult := make([]dbModel.Profile, 0)
 
-	sql := h.DatabaseClient.Model(&dbModel.Profile{}).Where("LOWER(address) = ? ",
+	sql := database.Global().Model(&dbModel.Profile{}).Where("LOWER(address) = ? ",
 		strings.ToLower(request.Address),
 	)
 
@@ -148,7 +149,7 @@ func (h *Handler) batchGetProfiles(c context.Context, request BatchGetProfilesRe
 		request.Address[i] = strings.ToLower(v)
 	}
 
-	sql := h.DatabaseClient.Model(&dbModel.Profile{}).Where("LOWER(address) IN ? ", request.Address)
+	sql := database.Global().Model(&dbModel.Profile{}).Where("LOWER(address) IN ? ", request.Address)
 
 	if len(request.Network) > 0 {
 		for i, v := range request.Network {

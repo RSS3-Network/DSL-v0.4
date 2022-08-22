@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
-
 	"github.com/hasura/go-graphql-client"
+	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/snapshot"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/snapshot/graphql"
@@ -138,7 +138,7 @@ func (job *SnapshotProposalJob) InnerJobRun() (status PullInfoStatus, err error)
 func (job *SnapshotProposalJob) getProposalTotalFromDB(ctx context.Context) (int32, error) {
 	var count int64
 
-	if err := job.DatabaseClient.
+	if err := database.Global().
 		Model(&governance.SnapshotProposal{}).
 		Select("id").
 		Count(&count).Error; err != nil {
@@ -175,7 +175,7 @@ func (job *SnapshotProposalJob) setProposalsInDB(ctx context.Context, graphqlPro
 		proposals = append(proposals, proposal)
 	}
 
-	if err := job.DatabaseClient.Clauses(clause.OnConflict{
+	if err := database.Global().Clauses(clause.OnConflict{
 		DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
 		UpdateAll: true,
 	}).Create(&proposals).Error; err != nil {

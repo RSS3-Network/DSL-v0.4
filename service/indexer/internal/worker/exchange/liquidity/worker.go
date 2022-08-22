@@ -21,7 +21,6 @@ import (
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 const Name = "liquidity"
@@ -170,9 +169,9 @@ func (i *internal) Jobs() []worker.Job {
 	return nil
 }
 
-func New(databaseClient *gorm.DB, ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
 	return &internal{
-		tokenClient:       token.New(databaseClient, ethereumClientMap),
+		tokenClient:       token.New(ethereumClientMap),
 		ethereumClientMap: ethereumClientMap,
 	}
 }

@@ -16,7 +16,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/periphery"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/profile"
 	"go.opentelemetry.io/otel"
-	"gorm.io/gorm"
 )
 
 type Interface interface {
@@ -77,7 +76,7 @@ func (h *handler) Handle(ctx context.Context, transaction model.Transaction, tra
 	}
 }
 
-func New(ethereumClient *ethclient.Client, databaseClient *gorm.DB) (Interface, error) {
+func New(ethereumClient *ethclient.Client) (Interface, error) {
 	profileContract, err := profile.NewProfile(contract.AddressCharacter, ethereumClient)
 	if err != nil {
 		return nil, err
@@ -98,7 +97,7 @@ func New(ethereumClient *ethclient.Client, databaseClient *gorm.DB) (Interface, 
 		return nil, err
 	}
 
-	tokenClient := token.New(databaseClient, map[string]*ethclient.Client{
+	tokenClient := token.New(map[string]*ethclient.Client{
 		protocol.NetworkCrossbell: ethereumClient,
 	})
 
@@ -108,11 +107,9 @@ func New(ethereumClient *ethclient.Client, databaseClient *gorm.DB) (Interface, 
 			peripheryContract: peripheryContract,
 			profileHandler: &profileHandler{
 				profileContract: profileContract,
-				databaseClient:  databaseClient,
 				tokenClient:     tokenClient,
 			},
-			databaseClient: databaseClient,
-			tokenClient:    tokenClient,
+			tokenClient: tokenClient,
 		},
 		linkListHandler: &linkListHandler{
 			linkListContract: linkListContract,

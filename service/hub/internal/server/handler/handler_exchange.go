@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/database"
+
 	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
 
 	"github.com/labstack/echo/v4"
@@ -94,7 +96,7 @@ func (h *Handler) getCexListDatabase(c context.Context, request GetExchangeReque
 
 	dbResult := make([]exchange.CexWallet, 0)
 	total := int64(0)
-	sql := h.DatabaseClient.
+	sql := database.Global().
 		Model(&exchange.CexWallet{})
 
 	if len(request.Network) > 0 {
@@ -137,7 +139,7 @@ func (h *Handler) getDexListDatabase(c context.Context, request GetExchangeReque
 
 	dbResult := make([]exchange.SwapPool, DefaultLimit)
 	total := int64(0)
-	sql := h.DatabaseClient.
+	sql := database.Global().
 		Model(&exchange.SwapPool{})
 
 	if len(request.Network) > 0 {

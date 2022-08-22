@@ -23,7 +23,6 @@ import (
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 var _ worker.Worker = (*internal)(nil)
@@ -435,9 +434,9 @@ func (i *internal) Jobs() []worker.Job {
 	return nil
 }
 
-func New(databaseClient *gorm.DB, ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
 	return &internal{
-		tokenClient:       token.New(databaseClient, ethereumClientMap),
+		tokenClient:       token.New(ethereumClientMap),
 		ethereumClientMap: ethereumClientMap,
 	}
 }

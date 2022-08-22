@@ -11,7 +11,6 @@ import (
 	utils "github.com/naturalselectionlabs/pregod/common/utils/interface"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
-	"gorm.io/gorm"
 )
 
 const (
@@ -28,7 +27,6 @@ const (
 )
 
 type Handler struct {
-	DatabaseClient     *gorm.DB
 	RabbitmqConnection *rabbitmq.Connection
 	RabbitmqChannel    *rabbitmq.Channel
 }

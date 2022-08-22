@@ -184,13 +184,13 @@ func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *pr
 			return nil, err
 		}
 
-		blockNumer, err := decimal.NewFromString(transaction.BlockNumber)
+		blockNumber, err := decimal.NewFromString(transaction.BlockNumber)
 		if err != nil {
 			return nil, err
 		}
 
 		transactions = append(transactions, model.Transaction{
-			BlockNumber: blockNumer.IntPart(),
+			BlockNumber: blockNumber.IntPart(),
 			Hash:        transaction.Hash,
 			AddressFrom: transaction.FromAddress,
 			AddressTo:   transaction.ToAddress,

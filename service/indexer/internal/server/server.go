@@ -13,9 +13,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
-	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -59,15 +57,12 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-var _ command.Interface = &Server{}
-
 type Server struct {
 	config             *config.Config
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
 	rabbitmqQueue      rabbitmq.Queue
 	rabbitmqAssetQueue rabbitmq.Queue
-	databaseClient     *gorm.DB
 	redisClient        *redis.Client
 	datasources        []datasource.Datasource
 	datasourcesAsset   []datasource_asset.Datasource
@@ -98,12 +93,12 @@ func (s *Server) Initialize() (err error) {
 		)),
 	))
 
-	s.databaseClient, err = database.Dial(s.config.Postgres.String(), true)
+	databaseClient, err := database.Dial(s.config.Postgres.String(), true)
 	if err != nil {
 		return err
 	}
 
-	database.ReplaceGlobal(s.databaseClient)
+	database.ReplaceGlobal(databaseClient)
 
 	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
 		return err
@@ -138,7 +133,7 @@ func (s *Server) Initialize() (err error) {
 		lensDatasource,
 	}
 
-	swapWorker, err := swap.New(s.config.RPC, s.employer, s.databaseClient)
+	swapWorker, err := swap.New(s.config.RPC, s.employer)
 	if err != nil {
 		return err
 	}
@@ -153,15 +148,15 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		liquidity.New(s.databaseClient, ethereumClientMap),
+		liquidity.New(ethereumClientMap),
 		swapWorker,
-		marketplace.New(s.databaseClient, ethereumClientMap),
+		marketplace.New(ethereumClientMap),
 		poap.New(ethereumClientMap),
 		mirror.New(),
-		gitcoin.New(s.databaseClient, s.redisClient, ethereumClientMap),
-		snapshot.New(s.databaseClient, s.redisClient),
+		gitcoin.New(s.redisClient, ethereumClientMap),
+		snapshot.New(s.redisClient),
 		lens_worker.New(ethereumClientMap),
-		transaction.New(s.databaseClient, ethereumClientMap),
+		transaction.New(ethereumClientMap),
 	}
 
 	s.employer = shedlock.New(s.redisClient)
@@ -514,7 +509,7 @@ func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (er
 	}
 
 	// set db
-	if err := s.databaseClient.
+	if err := database.Global().
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).
@@ -665,7 +660,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 }
 
 func (s *Server) upsertAddress(address model.Address) {
-	if err := s.databaseClient.
+	if err := database.Global().
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
 			DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),

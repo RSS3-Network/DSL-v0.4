@@ -161,7 +161,7 @@ func (c *Client) GetToken(ctx context.Context, tokenID uint) (*model.GetTokenInf
 	tokenInfo := model.GetTokenInfo{}
 
 	// first try to get from db
-	if err := database.Client.Where(
+	if err := database.Global().Where(
 		"id = ?", tokenID,
 	).First(&tokenInfo).Error; err != nil && err != gorm.ErrRecordNotFound {
 		logrus.Error(err)
@@ -191,7 +191,7 @@ func (c *Client) GetToken(ctx context.Context, tokenID uint) (*model.GetTokenInf
 	}
 
 	// save
-	if err := database.Client.Clauses(clause.OnConflict{
+	if err := database.Global().Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&tokenInfo).Error; err != nil {
 		logrus.Error(err)
@@ -206,7 +206,7 @@ func (c *Client) GetNFTToken(ctx context.Context, tokenID uint) (*model.GetNFTTo
 	tokenInfo := model.GetNFTTokenInfo{}
 
 	// first try to get from db
-	if err := database.Client.Where(
+	if err := database.Global().Where(
 		"id = ?", tokenID,
 	).First(&tokenInfo).Error; err != nil && err != gorm.ErrRecordNotFound {
 		logrus.Error(err)
@@ -236,7 +236,7 @@ func (c *Client) GetNFTToken(ctx context.Context, tokenID uint) (*model.GetNFTTo
 	}
 
 	// save
-	if err := database.Client.Clauses(clause.OnConflict{
+	if err := database.Global().Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&tokenInfo).Error; err != nil {
 		logrus.Error(err)

@@ -10,6 +10,7 @@ import (
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/go-redis/redis/v8"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -46,7 +47,6 @@ var snapshotNetworkNumMap = map[string]string{
 }
 
 type service struct {
-	databaseClient *gorm.DB
 	redisClient    *redis.Client
 	snapshotClient *snapshot.Client
 }
@@ -201,7 +201,6 @@ func (s *service) Jobs() []worker.Job {
 		&job.SnapshotSpaceJob{
 			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_space_job",
-				DatabaseClient: s.databaseClient,
 				RedisClient:    s.redisClient,
 				SnapshotClient: s.snapshotClient,
 				Limit:          1000,
@@ -212,7 +211,6 @@ func (s *service) Jobs() []worker.Job {
 		&job.SnapshotProposalJob{
 			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_proposal_job",
-				DatabaseClient: s.databaseClient,
 				RedisClient:    s.redisClient,
 				SnapshotClient: s.snapshotClient,
 				Limit:          2000,
@@ -223,7 +221,6 @@ func (s *service) Jobs() []worker.Job {
 		&job.SnapshotVoteJob{
 			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_vote_job",
-				DatabaseClient: s.databaseClient,
 				RedisClient:    s.redisClient,
 				SnapshotClient: s.snapshotClient,
 				Limit:          10000,
@@ -237,7 +234,7 @@ func (s *service) Jobs() []worker.Job {
 func (s *service) getLatestTimestamp(message *protocol.Message) (time.Time, error) {
 	var timestamp time.Time
 
-	if err := s.databaseClient.
+	if err := database.Global().
 		Model((*model.Transaction)(nil)).
 		Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp").
 		Where(map[string]interface{}{
@@ -262,7 +259,7 @@ func (s *service) getSnapshotVotes(ctx context.Context, address string, timestam
 	defer func() { opentelemetry.Log(trace, address, snapshotVotes, err) }()
 
 	// from db
-	if err := s.databaseClient.
+	if err := database.Global().
 		Model(&governance.SnapshotVote{}).
 		Where("voter = ?", strings.ToLower(address)).
 		Where("date_created >= ?", timestamp).
@@ -283,7 +280,7 @@ func (s *service) getSnapshotProposals(ctx context.Context, proposals []string) 
 	snapshotProposalMap = make(map[string]governance.SnapshotProposal)
 
 	// from db
-	if err := s.databaseClient.
+	if err := database.Global().
 		Model(&governance.SnapshotProposal{}).
 		Where("id IN (?)", proposals).
 		Find(&snapshotProposals).Error; err != nil {
@@ -307,7 +304,7 @@ func (s *service) getSnapshotSpaces(ctx context.Context, spaces []string, networ
 	snapshotSpaceMap = make(map[string]governance.SnapshotSpace)
 
 	// from db
-	if err := s.databaseClient.
+	if err := database.Global().
 		Model(&governance.SnapshotSpace{}).
 		Where("id in (?)", spaces).
 		Where("network in (?)", networkNum).
@@ -332,7 +329,7 @@ func (s *service) getProposalsByAuthor(ctx context.Context, author string, times
 	snapshotProposalMap = make(map[string]governance.SnapshotProposal)
 
 	// from db
-	if err := s.databaseClient.
+	if err := database.Global().
 		Model(&governance.SnapshotProposal{}).
 		Where("author IN (?)", author).
 		Where("date_created >= ?", timestamp).
@@ -537,11 +534,9 @@ func (s *service) formatProposal(
 }
 
 func New(
-	databaseClient *gorm.DB,
 	redisClient *redis.Client,
 ) worker.Worker {
 	return &service{
-		databaseClient: databaseClient,
 		redisClient:    redisClient,
 		snapshotClient: snapshot.NewClient(),
 	}

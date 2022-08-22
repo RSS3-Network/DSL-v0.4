@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"gorm.io/gorm"
@@ -15,8 +16,8 @@ import (
 func (c *Client) ERC20(ctx context.Context, network string, contractAddress string) (*ERC20, error) {
 	var token model.Token
 
-	if c.databaseClient != nil {
-		err := c.databaseClient.
+	if database.Global() != nil {
+		err := database.Global().
 			Model((*model.Token)(nil)).
 			Where(map[string]interface{}{
 				"network":          network,

@@ -6,17 +6,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hasura/go-graphql-client"
+	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/snapshot"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/snapshot/graphql"
-
-	"github.com/hasura/go-graphql-client"
-	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm/clause"
-
-	"github.com/sirupsen/logrus"
 )
 
 type SnapshotSpaceJob struct {
@@ -139,7 +138,7 @@ func (job *SnapshotSpaceJob) InnerJobRun() (status PullInfoStatus, err error) {
 func (job *SnapshotSpaceJob) getSpaceTotalFromDB(ctx context.Context) (int32, error) {
 	var count int64
 
-	if err := job.DatabaseClient.
+	if err := database.Global().
 		Model(&governance.SnapshotSpace{}).
 		Select("id").
 		Count(&count).Error; err != nil {
@@ -174,7 +173,7 @@ func (job *SnapshotSpaceJob) setSpaceInDB(ctx context.Context, graphqlSpaces []g
 		spaces = append(spaces, space)
 	}
 
-	if err := job.DatabaseClient.Clauses(clause.OnConflict{
+	if err := database.Global().Clauses(clause.OnConflict{
 		DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
 		UpdateAll: true,
 	}).Create(&spaces).Error; err != nil {

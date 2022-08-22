@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/ethereum/go-ethereum/ethclient"
-	"gorm.io/gorm"
 )
 
 var (
@@ -14,13 +13,11 @@ var (
 )
 
 type Client struct {
-	databaseClient    *gorm.DB
 	ethereumClientMap map[string]*ethclient.Client
 }
 
-func New(databaseClient *gorm.DB, ethereumClientMap map[string]*ethclient.Client) *Client {
+func New(ethereumClientMap map[string]*ethclient.Client) *Client {
 	return &Client{
-		databaseClient:    databaseClient,
 		ethereumClientMap: ethereumClientMap,
 	}
 }

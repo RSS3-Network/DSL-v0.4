@@ -4,15 +4,12 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
-	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/worker/snapshot"
 	job2 "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot/job"
-	"gorm.io/gorm"
 	"testing"
 )
 
 var (
-	databaseClient *gorm.DB
 	redisClient    *redis.Client
 	snapshotClient *snapshot.Client
 )
@@ -20,7 +17,6 @@ var (
 func init() {
 	var err error
 
-	databaseClient, err = database.Dial("postgres://postgres:password@127.0.0.1:5432/pregod11", true)
 	if err != nil {
 		panic(err)
 	}
@@ -49,7 +45,6 @@ func TestSnapshotSpaceInnerJob(t *testing.T) {
 		spaceJob := job2.SnapshotSpaceJob{
 			SnapshotJobBase: job2.SnapshotJobBase{
 				Name:           "snapshot_space_job",
-				DatabaseClient: databaseClient,
 				RedisClient:    redisClient,
 				SnapshotClient: snapshotClient,
 				Limit:          100,
@@ -75,7 +70,6 @@ func TestSnapshotProposalInnerJob(t *testing.T) {
 		proposalJob := job2.SnapshotProposalJob{
 			SnapshotJobBase: job2.SnapshotJobBase{
 				Name:           "snapshot_proposal_job",
-				DatabaseClient: databaseClient,
 				RedisClient:    redisClient,
 				SnapshotClient: snapshotClient,
 				Limit:          100,
@@ -100,7 +94,6 @@ func TestSnapshotVoteInnerJob(t *testing.T) {
 		voteJob := job2.SnapshotVoteJob{
 			SnapshotJobBase: job2.SnapshotJobBase{
 				Name:           "snapshot_vote_job",
-				DatabaseClient: databaseClient,
 				RedisClient:    redisClient,
 				SnapshotClient: snapshotClient,
 				Limit:          100,
