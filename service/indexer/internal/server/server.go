@@ -13,9 +13,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
-	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -58,8 +56,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
-
-var _ command.Interface = &Server{}
 
 type Server struct {
 	config             *config.Config
@@ -159,7 +155,7 @@ func (s *Server) Initialize() (err error) {
 		mirror.New(),
 		gitcoin.New(s.redisClient, ethereumClientMap),
 		snapshot.New(s.redisClient),
-		// lens.New(ethereumClientMap),
+		lens_worker.New(ethereumClientMap),
 		transaction.New(ethereumClientMap),
 	}
 
