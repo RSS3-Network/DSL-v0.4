@@ -13,6 +13,7 @@ var allowList = map[string]string{
 
 var spamList = map[string]string{
 	"0xf79631521c474984f17d656a05e0d317d8755b20": "Layer Zero Ape",
+	"0x2953399124f0cbb46d2cbacd8a89cf0599974963": "Digi Mafia",
 }
 
 func init() {
