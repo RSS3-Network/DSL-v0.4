@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-querystring/query"
 	http_utils "github.com/naturalselectionlabs/pregod/common/utils/http"
+	"github.com/sirupsen/logrus"
 )
 
 type Client struct {
@@ -29,6 +30,8 @@ func NewClient(network string, endpoint string) (*Client, error) {
 func (c *Client) GetLogs(ctx context.Context, parameter GetLogsRequest) ([]EthereumLog, error) {
 	values, err := query.Values(parameter)
 	if err != nil {
+		logrus.Errorf("[pregod_etl client] GetLogs: query.Values error, %v", err)
+
 		return nil, err
 	}
 
@@ -41,6 +44,8 @@ func (c *Client) GetLogs(ctx context.Context, parameter GetLogsRequest) ([]Ether
 
 	request, err := http_utils.NewRequest(http.MethodGet, url.String(), nil)
 	if err != nil {
+		logrus.Errorf("[pregod_etl client] GetLogs: NewRequest error, %v", err)
+
 		return nil, err
 	}
 
@@ -48,6 +53,8 @@ func (c *Client) GetLogs(ctx context.Context, parameter GetLogsRequest) ([]Ether
 
 	err = http_utils.DoRequest(ctx, c.httpClient, request, &result)
 	if err != nil {
+		logrus.Errorf("[pregod_etl client] GetLogs: DoRequest error, %v", err)
+
 		return nil, err
 	}
 

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/big"
 	"strings"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,9 +20,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
-	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -80,7 +79,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		// 	continue
 		// }
 
-		if internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) && !allowlist.AllowList.Contains(internalTransaction.AddressFrom) {
+		if internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) {
 			continue
 		}
 
@@ -111,7 +110,7 @@ func (d *Datasource) getDefaultProfile(ctx context.Context, message *protocol.Me
 	defer func() { opentelemetry.Log(trace, message, profileID, err) }()
 
 	// rpc
-	iLensHub, err := contract.NewILensHub(lens.ContractAddress, ethereumClient)
+	iLensHub, err := contract.NewILensHub(lens.HubProxyContractAddress, ethereumClient)
 	if err != nil {
 		logrus.Errorf("[datasource_lens] NewILensHub error, %v", err)
 
@@ -138,40 +137,40 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 	internalTransactions := []model.Transaction{}
 	hash := common.HexToHash(hexutil.EncodeBig(profileID))
 
-	lop.ForEach(lens.SupportLensEvents, func(eventHash common.Hash, i int) {
-		parameter := pregod_etl.GetLogsRequest{
-			Network:     message.Network,
-			Address:     lens.ContractAddress.String(),
-			TopicSecond: hash.String(),
-			TopicFirst:  eventHash.String(),
-		}
+	var wg sync.WaitGroup
+	for eventHash, contractAddress := range lens.SupportLensEvents {
+		wg.Add(1)
+		go func(eventHash common.Hash, contractAddress common.Address) {
+			defer wg.Done()
+			parameter := pregod_etl.GetLogsRequest{
+				Address:     contractAddress.String(),
+				TopicSecond: hash.String(),
+				TopicFirst:  eventHash.String(),
+			}
 
-		result, err := d.clientMap[message.Network].GetLogs(ctx, parameter)
-		if err != nil {
-			logrus.Errorf("[datasource_lens] pregodETLClient: GetLogs error, %v", err)
-
-			return
-		}
-
-		for _, transfer := range result {
-			blockNumber := big.NewInt(0)
-
-			if _, ok := blockNumber.SetString(transfer.BlockNumber.String(), 0); !ok {
+			result, err := d.clientMap[message.Network].GetLogs(ctx, parameter)
+			if err != nil {
 				return
 			}
 
-			transaction := model.Transaction{
-				BlockNumber: blockNumber.Int64(),
-				Hash:        transfer.TransactionHash.String(),
-				Index:       int64(transfer.TransactionIndex),
-				Network:     message.Network,
-				Source:      d.Name(),
-				Transfers:   make([]model.Transfer, 0),
-			}
+			for _, transfer := range result {
+				transaction := model.Transaction{
+					BlockNumber: transfer.BlockNumber.BigInt().Int64(),
+					Hash:        transfer.TransactionHash,
+					Index:       transfer.TransactionIndex.BigInt().Int64(),
+					Network:     message.Network,
+					Source:      d.Name(),
+					Transfers:   make([]model.Transfer, 0),
+					Owner:       strings.ToLower(message.Address),
+					AddressFrom: strings.ToLower(message.Address),
+					AddressTo:   contractAddress.String(),
+				}
 
-			internalTransactions = append(internalTransactions, transaction)
-		}
-	})
+				internalTransactions = append(internalTransactions, transaction)
+			}
+		}(eventHash, contractAddress)
+	}
+	wg.Wait()
 
 	for _, transaction := range internalTransactions {
 		internalTransactionMap[transaction.Hash] = transaction

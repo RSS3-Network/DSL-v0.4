@@ -138,7 +138,7 @@ func ResolveLens(input string) (string, error) {
 		return "", fmt.Errorf("failed to connect to polygon rpc: %s", err)
 	}
 
-	lensHubContract, err := contract.NewHub(lens.ContractAddress, ethereumClient)
+	lensHubContract, err := contract.NewHub(lens.HubProxyContractAddress, ethereumClient)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to lens hub contract: %s", err)
 	}
