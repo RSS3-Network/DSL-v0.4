@@ -89,8 +89,9 @@ type Gateway struct {
 }
 
 type RPC struct {
-	General RPCNetwork     `mapstructure:"general"`
-	Alchemy AlchemyNetwork `mapstructure:"alchemy"`
+	General   RPCNetwork     `mapstructure:"general"`
+	Alchemy   AlchemyNetwork `mapstructure:"alchemy"`
+	PregodETL RPCNetwork     `mapstructure:"pregod_etl"`
 }
 
 type RPCNetwork struct {

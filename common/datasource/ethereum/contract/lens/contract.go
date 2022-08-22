@@ -1,4 +1,4 @@
-package contract
+package lens
 
 import (
 	"github.com/ethereum/go-ethereum/common"
@@ -9,10 +9,17 @@ import (
 //go:generate abigen --abi ./ILensHub.abi --pkg contract --type ILensHub --out ./iLensHub.go
 
 var (
-	ContractAddress = common.HexToAddress("0xdb46d1dc155634fbc732f92e853b10b288ad5a1d")
+	HubProxyContractAddress     = common.HexToAddress("0xdb46d1dc155634fbc732f92e853b10b288ad5a1d")
+	ProfileProxyContractAddress = common.HexToAddress("0x1eeC6ecCaA4625da3Fa6Cd6339DBcc2418710E8a")
 
 	EventHashPostCreated    = crypto.Keccak256Hash([]byte("PostCreated(uint256,uint256,string,address,bytes,address,bytes,uint256)"))
 	EventHashProfileCreated = crypto.Keccak256Hash([]byte("ProfileCreated(uint256,address,address,string,string,address,bytes,string,uint256)"))
 	EventHashCommentCreated = crypto.Keccak256Hash([]byte("CommentCreated(uint256,uint256,string,uint256,uint256,bytes,address,bytes,address,bytes,uint256)"))
 	EventHashFollow         = crypto.Keccak256Hash([]byte("FollowNFTTransferred(uint256,uint256,address,address,uint256)"))
 )
+
+var SupportLensEvents = map[common.Hash]common.Address{
+	EventHashCommentCreated: HubProxyContractAddress,
+	EventHashPostCreated:    HubProxyContractAddress,
+	EventHashProfileCreated: HubProxyContractAddress,
+}

@@ -32,11 +32,16 @@ func DoRequest(_ context.Context, client *http.Client, request *http.Request, re
 		return err
 	}
 
-	defer func() {
-		_ = httpResponse.Body.Close()
-	}()
+	reader := httpResponse.Body
 
-	if err = json.NewDecoder(httpResponse.Body).Decode(&response); err != nil {
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+
+	_ = reader.Close()
+
+	if err = json.Unmarshal(data, &response); err != nil {
 		return err
 	}
 

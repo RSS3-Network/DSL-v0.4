@@ -30,6 +30,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
@@ -42,6 +43,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
+	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
@@ -122,8 +124,18 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	lensDatasource, err := lens.New(s.config.RPC)
+	if err != nil {
+		return err
+	}
+
 	s.datasources = []datasource.Datasource{
-		alchemyDatasource, moralis.New(s.config.Moralis.Key, s.config.RPC), arweave.New(), blockscoutDatasource, zksync.New(),
+		alchemyDatasource,
+		moralis.New(s.config.Moralis.Key, s.config.RPC),
+		arweave.New(),
+		blockscoutDatasource,
+		zksync.New(),
+		lensDatasource,
 	}
 
 	swapWorker, err := swap.New(s.config.RPC, s.employer, s.databaseClient)
@@ -148,7 +160,7 @@ func (s *Server) Initialize() (err error) {
 		mirror.New(),
 		gitcoin.New(s.databaseClient, s.redisClient, ethereumClientMap),
 		snapshot.New(s.databaseClient, s.redisClient),
-		// lens.New(ethereumClientMap),
+		lens_worker.New(ethereumClientMap),
 		transaction.New(s.databaseClient, ethereumClientMap),
 	}
 

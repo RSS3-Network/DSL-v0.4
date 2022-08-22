@@ -7,6 +7,8 @@ import (
 
 var allowList = map[string]string{
 	"0xd7bc7107712e2999d3fcf55c92b465801c40974c": "POAP",
+	"0xd1feccf6881970105dfb2b654054174007f0e07e": "Lens",
+	"0x57B7bf6f792a6181Ec5aFB88cE7bcE330a9d1b67": "Lens",
 }
 
 var spamList = map[string]string{

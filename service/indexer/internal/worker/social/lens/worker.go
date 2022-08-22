@@ -15,13 +15,14 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/common/utils/logger"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens/contract"
 	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -68,7 +69,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	opt := lop.NewOption().WithConcurrency(ethereum.RPCMaxConcurrency)
 	lop.ForEach(transactions, func(transaction model.Transaction, i int) {
 		addressTo := common.HexToAddress(transaction.AddressTo)
-		if addressTo != contract.ContractAddress {
+		if addressTo != lens.HubProxyContractAddress && addressTo != lens.ProfileProxyContractAddress {
 			return
 		}
 
@@ -123,7 +124,7 @@ func (s *service) handleReceipt(ctx context.Context, transaction model.Transacti
 	// parse log
 	for _, log := range receipt.Logs {
 		switch log.Topics[0] {
-		case contract.EventHashPostCreated:
+		case lens.EventHashPostCreated:
 			transfer, err := s.handlePostCreated(ctx, transaction, *log)
 			if err != nil {
 				logger.Global().Error("[lens worker] handleReceipt: handlePostCreated error, %v", zap.Error(err))
@@ -132,7 +133,7 @@ func (s *service) handleReceipt(ctx context.Context, transaction model.Transacti
 			}
 			transfers = append(transfers, transfer)
 
-		case contract.EventHashCommentCreated:
+		case lens.EventHashCommentCreated:
 			transfer, err := s.handleCommentCreated(ctx, transaction, *log)
 			if err != nil {
 				logger.Global().Error("[lens worker] handleReceipt: handleCommentCreated error, %v", zap.Error(err))
@@ -141,7 +142,7 @@ func (s *service) handleReceipt(ctx context.Context, transaction model.Transacti
 			}
 			transfers = append(transfers, transfer)
 
-		case contract.EventHashProfileCreated:
+		case lens.EventHashProfileCreated:
 			transfer, err := s.handleProfileCreated(ctx, transaction, *log)
 			if err != nil {
 				logger.Global().Error("[lens worker] handleReceipt: handleProfileCreated error, %v", zap.Error(err))
@@ -192,7 +193,7 @@ func (s *service) handlePostCreated(ctx context.Context, transaction model.Trans
 	// get content
 	content, err := s.getContent(ctx, event.ContentURI)
 	if err != nil {
-		logrus.Errorf("[mirror_worker] Handle: getContent error, %v", err)
+		logrus.Errorf("[lens worker] Handle: getContent error, %v", err)
 		return transfer, err
 	}
 

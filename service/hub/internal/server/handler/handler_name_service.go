@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
@@ -137,7 +138,7 @@ func ResolveLens(input string) (string, error) {
 		return "", fmt.Errorf("failed to connect to polygon rpc: %s", err)
 	}
 
-	lensHubContract, err := lens.NewHub(lens.AddressHub, ethereumClient)
+	lensHubContract, err := contract.NewHub(lens.HubProxyContractAddress, ethereumClient)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to lens hub contract: %s", err)
 	}
