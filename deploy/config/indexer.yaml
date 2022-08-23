@@ -57,4 +57,4 @@ rpc:
     polygon: ''
   pregod_etl:
     polygon:
-      http:
+      http: ''
