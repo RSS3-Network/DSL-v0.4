@@ -3,6 +3,7 @@ package lens
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"math/big"
 	"net/http"
@@ -41,9 +42,16 @@ type service struct {
 }
 
 type LensContent struct {
-	Description string `json:"description"`
-	Content     string `json:"content"`
-	ExternalURL string `json:"external_url"`
+	Description string             `json:"description"`
+	Content     string             `json:"content"`
+	ExternalURL string             `json:"external_url"`
+	AppId       string             `json:"appId"`
+	Media       []LensContentMedia `json:"media"`
+}
+
+type LensContentMedia struct {
+	Item string `json:"item"`
+	Type string `json:"type"`
 }
 
 func (s *service) Name() string {
@@ -73,21 +81,18 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			return
 		}
 
-		transaction.Platform = protocol.PlatformLens
 		transaction.Owner = message.Address
 
 		transferMap := make(map[int64]model.Transfer)
-
 		for _, transfer := range transaction.Transfers {
 			transferMap[transfer.Index] = transfer
 		}
 
-		// avoid data duplication
+		// Empty transfer data to avoid data duplication
 		transaction.Transfers = make([]model.Transfer, 0)
-		if _, exists := transferMap[protocol.IndexVirtual]; exists {
-			transaction.Transfers = append(transaction.Transfers, transferMap[protocol.IndexVirtual])
-		}
+		transaction.Transfers = append(transaction.Transfers, transferMap[protocol.IndexVirtual])
 
+		// get receipt
 		internalTransfers, err := s.handleReceipt(ctx, transaction)
 		if err != nil {
 			logrus.Errorf("[crossbell worker] handleReceipt error, %v", err)
@@ -198,22 +203,34 @@ func (s *service) handlePostCreated(ctx context.Context, transaction model.Trans
 	}
 
 	lensContent := LensContent{}
-
 	if err = json.Unmarshal(content, &lensContent); err != nil {
 		logrus.Errorf("[lens worker] Handle: json unmarshal error, %v", err)
 		return transfer, err
 	}
 
-	rawMetadata, err := json.Marshal(&metadata.Post{
+	post := &metadata.Post{
 		Body: lensContent.Content,
-	})
+	}
+	for _, media := range lensContent.Media {
+		post.Media = append(post.Media, metadata.Media{
+			Address:  s.getDirectURL(ctx, media.Item),
+			MimeType: media.Type,
+		})
+	}
+
+	rawMetadata, err := json.Marshal(post)
 	if err != nil {
 		return transfer, err
 	}
 
+	transaction.Platform = lensContent.AppId
+	transfer.Platform = lensContent.AppId
 	transfer.Metadata = rawMetadata
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
-	transfer.RelatedUrls = []string{utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash)}
+	transfer.RelatedUrls = []string{
+		lensContent.ExternalURL,
+		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
+	}
 
 	return transfer, nil
 }
@@ -259,22 +276,34 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction model.Tr
 	}
 
 	lensContent := LensContent{}
-
 	if err = json.Unmarshal(content, &lensContent); err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: json unmarshal error, %v", err)
 		return transfer, err
 	}
 
-	rawMetadata, err := json.Marshal(&metadata.Post{
+	post := &metadata.Post{
 		Body: lensContent.Content,
-	})
+	}
+	for _, media := range lensContent.Media {
+		post.Media = append(post.Media, metadata.Media{
+			Address:  s.getDirectURL(ctx, media.Item),
+			MimeType: media.Type,
+		})
+	}
+
+	rawMetadata, err := json.Marshal(post)
 	if err != nil {
 		return transfer, err
 	}
 
+	transaction.Platform = lensContent.AppId
+	transfer.Platform = lensContent.AppId
 	transfer.Metadata = rawMetadata
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialComment, transfer.Type)
-	transfer.RelatedUrls = []string{utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash), lensContent.ExternalURL}
+	transfer.RelatedUrls = []string{
+		lensContent.ExternalURL,
+		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
+	}
 
 	return transfer, nil
 }
@@ -311,11 +340,12 @@ func (s *service) handleProfileCreated(ctx context.Context, transaction model.Tr
 		Network:         transaction.Network,
 		Source:          ethereum.Source,
 		SourceData:      sourceData,
+		Platform:        Name,
 	}
 
 	profile := model.Profile{
 		Address:  strings.ToLower(event.To.String()),
-		Platform: transaction.Platform,
+		Platform: Name,
 		Network:  transaction.Network,
 		Source:   transaction.Platform,
 		Type:     filter.SocialProfileCreate,
@@ -328,9 +358,13 @@ func (s *service) handleProfileCreated(ctx context.Context, transaction model.Tr
 		return transfer, err
 	}
 
+	transaction.Platform = Name
 	transfer.Metadata = rawMetadata
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfileCreate, transfer.Type)
-	transfer.RelatedUrls = []string{utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash)}
+	transfer.RelatedUrls = []string{
+		fmt.Sprintf("https://lenster.xyz/u/%v", event.Handle),
+		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
+	}
 
 	return transfer, nil
 }
