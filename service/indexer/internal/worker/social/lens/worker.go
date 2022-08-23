@@ -83,25 +83,21 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 		transaction.Owner = message.Address
 
+		transferMap := make(map[int64]model.Transfer)
+		for _, transfer := range transaction.Transfers {
+			transferMap[transfer.Index] = transfer
+		}
+
+		// Empty transfer data to avoid data duplication
+		transaction.Transfers = make([]model.Transfer, 0)
+		transaction.Transfers = append(transaction.Transfers, transferMap[protocol.IndexVirtual])
+
 		// get receipt
 		internalTransfers, err := s.handleReceipt(ctx, transaction)
 		if err != nil {
 			logrus.Errorf("[crossbell worker] handleReceipt error, %v", err)
 
 			return
-		}
-
-		transferMap := make(map[int64]model.Transfer)
-
-		for _, transfer := range internalTransfers {
-			transferMap[transfer.Index] = transfer
-		}
-
-		// avoid data duplication
-		for i, transfer := range transaction.Transfers {
-			if _, exists := transferMap[transfer.Index]; exists {
-				transaction.Transfers = append(transaction.Transfers[:i], transaction.Transfers[i+1:]...)
-			}
 		}
 
 		transaction.Transfers = append(transaction.Transfers, internalTransfers...)
