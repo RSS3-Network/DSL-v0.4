@@ -57,4 +57,4 @@ rpc:
     polygon: ''
   pregod_etl:
     polygon:
-      http: 47.90.255.21:8080
+      http:
