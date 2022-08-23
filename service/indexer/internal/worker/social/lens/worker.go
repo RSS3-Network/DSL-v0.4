@@ -82,6 +82,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		}
 
 		transaction.Owner = message.Address
+		transaction.Platform = s.Name()
 
 		transferMap := make(map[int64]model.Transfer)
 		for _, transfer := range transaction.Transfers {
@@ -93,9 +94,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		transaction.Transfers = append(transaction.Transfers, transferMap[protocol.IndexVirtual])
 
 		// get receipt
-		internalTransfers, err := s.handleReceipt(ctx, transaction)
+		internalTransfers, err := s.handleReceipt(ctx, &transaction)
 		if err != nil {
-			logrus.Errorf("[crossbell worker] handleReceipt error, %v", err)
+			logrus.Errorf("[lens worker] handleReceipt error, %v", err)
 
 			return
 		}
@@ -103,16 +104,21 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		transaction.Transfers = append(transaction.Transfers, internalTransfers...)
 
 		for _, transfer := range transaction.Transfers {
-			transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
+			if transaction.Tag == "" {
+				transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
+			}
 		}
 
 		internalTransactions = append(internalTransactions, transaction)
 	}, opt)
 
+	b, _ := json.Marshal(internalTransactions)
+	fmt.Println(string(b))
+
 	return internalTransactions, nil
 }
 
-func (s *service) handleReceipt(ctx context.Context, transaction model.Transaction) (transfers []model.Transfer, err error) {
+func (s *service) handleReceipt(ctx context.Context, transaction *model.Transaction) (transfers []model.Transfer, err error) {
 	tracer := otel.Tracer("worker_lens")
 	_, trace := tracer.Start(ctx, "worker_len:handleReceipt")
 
@@ -162,7 +168,7 @@ func (s *service) handleReceipt(ctx context.Context, transaction model.Transacti
 	return transfers, nil
 }
 
-func (s *service) handlePostCreated(ctx context.Context, transaction model.Transaction, log types.Log) (transfer model.Transfer, err error) {
+func (s *service) handlePostCreated(ctx context.Context, transaction *model.Transaction, log types.Log) (transfer model.Transfer, err error) {
 	lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
 	if err != nil {
 		logger.Global().Error("[lens worker] handleReceipt: new events error, %v", zap.Error(err))
@@ -223,7 +229,6 @@ func (s *service) handlePostCreated(ctx context.Context, transaction model.Trans
 		return transfer, err
 	}
 
-	transaction.Platform = lensContent.AppId
 	transfer.Platform = lensContent.AppId
 	transfer.Metadata = rawMetadata
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
@@ -235,7 +240,7 @@ func (s *service) handlePostCreated(ctx context.Context, transaction model.Trans
 	return transfer, nil
 }
 
-func (s *service) handleCommentCreated(ctx context.Context, transaction model.Transaction, log types.Log) (transfer model.Transfer, err error) {
+func (s *service) handleCommentCreated(ctx context.Context, transaction *model.Transaction, log types.Log) (transfer model.Transfer, err error) {
 	lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
 	if err != nil {
 		logger.Global().Error("[lens worker] handleCommentCreated: new events error, %v", zap.Error(err))
@@ -296,7 +301,6 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction model.Tr
 		return transfer, err
 	}
 
-	transaction.Platform = lensContent.AppId
 	transfer.Platform = lensContent.AppId
 	transfer.Metadata = rawMetadata
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialComment, transfer.Type)
@@ -308,7 +312,7 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction model.Tr
 	return transfer, nil
 }
 
-func (s *service) handleProfileCreated(ctx context.Context, transaction model.Transaction, log types.Log) (transfer model.Transfer, err error) {
+func (s *service) handleProfileCreated(ctx context.Context, transaction *model.Transaction, log types.Log) (transfer model.Transfer, err error) {
 	lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
 	if err != nil {
 		logger.Global().Error("[lens worker] handleProfileCreated: new events error, %v", zap.Error(err))
@@ -358,13 +362,14 @@ func (s *service) handleProfileCreated(ctx context.Context, transaction model.Tr
 		return transfer, err
 	}
 
-	transaction.Platform = Name
 	transfer.Metadata = rawMetadata
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfileCreate, transfer.Type)
 	transfer.RelatedUrls = []string{
 		fmt.Sprintf("https://lenster.xyz/u/%v", event.Handle),
 		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
 	}
+
+	transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagSocial, transaction.Tag, filter.SocialProfile, transaction.Type)
 
 	return transfer, nil
 }
