@@ -148,61 +148,17 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		logger.Global().Error("worker_token:Handle", zap.Error(err))
 	}
 
-	transactions = make([]model.Transaction, 0)
-
-	transactionMap := make(map[string]*model.Transaction)
+	// Remake transactions list
+	transactions = make([]model.Transaction, 0, len(internalTransactions))
 
 	for _, internalTransaction := range internalTransactions {
-		if internalTransaction != nil {
-			if _, exists := transactionMap[internalTransaction.Hash]; exists {
-				continue
-			} else {
-				transactionMap[internalTransaction.Hash] = internalTransaction
-			}
-
-			// Get cost transfer
-			if isMint(internalTransaction.Tag, internalTransaction.Type) {
-				var tokenCost *metadata.Token
-
-				for _, transfer := range internalTransaction.Transfers {
-					if transfer.Index == protocol.IndexVirtual {
-						if err := json.Unmarshal(transfer.Metadata, &tokenCost); err != nil {
-							logger.Global().Error("failed to unmarshal cost token metadata", zap.Error(err), zap.String("metadata", string(transfer.Metadata)))
-
-							return nil, err
-						}
-
-						break
-					}
-				}
-
-				if tokenCost != nil {
-					// Empty the transaction list and store only non-cost transfers
-					transfers := internalTransaction.Transfers
-					internalTransaction.Transfers = make([]model.Transfer, 0)
-
-					for _, transfer := range transfers {
-						if isMint(transfer.Tag, transfer.Type) {
-							var tokenNFT metadata.Token
-
-							if err := json.Unmarshal(transfer.Metadata, &tokenNFT); err != nil {
-								logger.Global().Error("failed to unmarshal nft token metadata", zap.Error(err), zap.String("metadata", string(transfer.Metadata)))
-
-								return nil, err
-							}
-
-							tokenNFT.Cost = tokenCost
-
-							if transfer.Metadata, err = json.Marshal(tokenNFT); err != nil {
-								return nil, err
-							}
-
-							internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
-						}
-					}
-				}
-			}
+		if internalTransaction == nil {
+			continue
 		}
+
+		internalTransaction.Owner = message.Address
+
+		transactions = append(transactions, *internalTransaction)
 	}
 
 	return transactions, nil
@@ -338,7 +294,7 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 		internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(transfer.Tag, internalTransaction.Tag, transfer.Type, internalTransaction.Type)
 	}
 
-	return &internalTransaction, nil
+	return s.buildCostMetadata(ctx, internalTransaction)
 }
 
 func (s *service) makeArweaveHandlerFunc(ctx context.Context, message *protocol.Message, transactions []model.Transaction) func(transaction model.Transaction, i int) (*model.Transaction, error) {
@@ -619,6 +575,56 @@ func (s *service) buildZkSyncNFTMetadata(ctx context.Context, message *protocol.
 	transfer.Metadata = metadataRaw
 
 	return &transfer, nil
+}
+
+func (s *service) buildCostMetadata(ctx context.Context, transaction model.Transaction) (*model.Transaction, error) {
+	if !isMint(transaction.Tag, transaction.Type) {
+		return &transaction, nil
+	}
+
+	var tokenCost *metadata.Token
+
+	for _, transfer := range transaction.Transfers {
+		// Unmarshal cost token metadata
+		if transfer.Index == protocol.IndexVirtual {
+			if err := json.Unmarshal(transfer.Metadata, &tokenCost); err != nil {
+				return nil, err
+			}
+
+			break
+		}
+	}
+
+	// Free mint
+	if tokenCost == nil {
+		return &transaction, nil
+	}
+
+	var err error
+
+	internalTransaction := transaction
+	internalTransaction.Transfers = make([]model.Transfer, 0)
+
+	for _, transfer := range transaction.Transfers {
+		if !isMint(transfer.Tag, transfer.Type) {
+			continue
+		}
+
+		var tokenOrigin metadata.Token
+		if err := json.Unmarshal(transfer.Metadata, &tokenOrigin); err != nil {
+			return nil, err
+		}
+
+		tokenOrigin.Cost = tokenCost
+
+		if transfer.Metadata, err = json.Marshal(tokenOrigin); err != nil {
+			return nil, err
+		}
+
+		internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+	}
+
+	return &internalTransaction, nil
 }
 
 func (s *service) buildType(transaction model.Transaction, transfer model.Transfer) (model.Transaction, model.Transfer) {
