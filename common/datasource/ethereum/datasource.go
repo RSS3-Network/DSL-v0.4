@@ -113,6 +113,10 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 			err                error
 		)
 
+		if internalTransaction == nil {
+			return nil, nil
+		}
+
 		switch internalTransaction.Type() {
 		case types.LegacyTxType:
 			transactionMessage, err = internalTransaction.AsMessage(types.NewEIP155Signer(internalTransaction.ChainId()), nil)
