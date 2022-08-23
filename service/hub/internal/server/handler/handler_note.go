@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -215,7 +216,7 @@ func (h *Handler) getTransfers(c context.Context, transactionHashes []string, re
 	}
 
 	if err := sql.
-		Where("transaction_hash IN ?", transactionHashes).
+		Where("transaction_hash IN (SELECT * FROM UNNEST(?::TEXT[]))", pq.Array(transactionHashes)).
 		Find(&transfers).Error; err != nil {
 		return nil, err
 	}
