@@ -21,7 +21,7 @@ const (
 	PullInfoStatusLatest    PullInfoStatus = 2
 )
 
-type StatusStroge struct {
+type StatusStorage struct {
 	Pos    int32          `json:"pos"`
 	Status PullInfoStatus `json:"status"`
 }
@@ -47,39 +47,39 @@ func (job *SnapshotJobBase) Check() error {
 	return nil
 }
 
-func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (statusStroge StatusStroge, err error) {
+func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (statusStroge StatusStorage, err error) {
 	tracer := otel.Tracer("snapshot_job")
 	_, trace := tracer.Start(ctx, "snapshot_job:GetLastStatusFromCache")
 
 	defer func() { opentelemetry.Log(trace, nil, statusStroge, err) }()
 
 	if job.Name == "" {
-		return StatusStroge{}, fmt.Errorf("job name is empty")
+		return StatusStorage{}, fmt.Errorf("job name is empty")
 	}
 
 	if cache.Global() == nil {
-		return StatusStroge{}, fmt.Errorf("redis worker is nil")
+		return StatusStorage{}, fmt.Errorf("redis worker is nil")
 	}
 
 	statusKey := job.Name + "_status"
-	statusStroge = StatusStroge{
+	statusStroge = StatusStorage{
 		Pos:    0,
 		Status: PullInfoStatusNotLatest,
 	}
 
 	data, err := cache.Global().Get(ctx, statusKey).Result()
 	if err != nil {
-		return StatusStroge{}, err
+		return StatusStorage{}, err
 	}
 
 	if err = json.Unmarshal([]byte(data), &statusStroge); err != nil {
-		return StatusStroge{}, fmt.Errorf("unmarshal %s from cache error:%+v", statusKey, err)
+		return StatusStorage{}, fmt.Errorf("unmarshal %s from cache error:%+v", statusKey, err)
 	}
 
 	return statusStroge, nil
 }
 
-func (job *SnapshotJobBase) SetCurrentStatus(ctx context.Context, stroge StatusStroge) error {
+func (job *SnapshotJobBase) SetCurrentStatus(ctx context.Context, stroge StatusStorage) error {
 	if job.Name == "" {
 		return fmt.Errorf("job name is empty")
 	}

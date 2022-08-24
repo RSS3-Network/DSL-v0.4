@@ -72,7 +72,7 @@ func (job *SnapshotSpaceJob) InnerJobRun() (status PullInfoStatus, err error) {
 
 	defer func() { opentelemetry.Log(trace, nil, status, err) }()
 
-	var statusStroge StatusStroge
+	var statusStroge StatusStorage
 
 	// get latest space id
 	if cache.Global() != nil {

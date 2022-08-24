@@ -73,27 +73,27 @@ func (job *SnapshotProposalJob) InnerJobRun() (status PullInfoStatus, err error)
 
 	defer func() { opentelemetry.Log(trace, nil, status, err) }()
 
-	var statusStroge StatusStroge
+	var statusStorage StatusStorage
 
 	// get latest proposal id
 	if cache.Global() != nil {
-		statusStroge, err = job.GetLastStatusFromCache(ctx)
+		statusStorage, err = job.GetLastStatusFromCache(ctx)
 		if err != nil {
 			logrus.Errorf("[snapshot proposal job] get last status, db error: %v", err)
-			statusStroge.Pos = 0
-			statusStroge.Status = PullInfoStatusNotLatest
+			statusStorage.Pos = 0
+			statusStorage.Status = PullInfoStatusNotLatest
 		}
 	}
 
 	if cache.Global() == nil || err != nil {
-		statusStroge.Pos, err = job.getProposalTotalFromDB(ctx)
+		statusStorage.Pos, err = job.getProposalTotalFromDB(ctx)
 		if err != nil {
-			return statusStroge.Status, fmt.Errorf("[snapshot proposal job] get proposal total from db, db error: %v", err)
+			return statusStorage.Status, fmt.Errorf("[snapshot proposal job] get proposal total from db, db error: %v", err)
 		}
 	}
 
 	// get proposal info from url
-	skip := statusStroge.Pos
+	skip := statusStorage.Pos
 	variable := snapshot.GetMultipleProposalsVariable{
 		First:          graphql.Int(job.Limit),
 		Skip:           graphql.Int(skip),
@@ -103,37 +103,37 @@ func (job *SnapshotProposalJob) InnerJobRun() (status PullInfoStatus, err error)
 
 	proposals, err := job.SnapshotClient.GetMultipleProposals(ctx, variable)
 	if err != nil {
-		return statusStroge.Status, fmt.Errorf("[snapshot proposal job] get multiple proposals, graphql error: %v", err)
+		return statusStorage.Status, fmt.Errorf("[snapshot proposal job] get multiple proposals, graphql error: %v", err)
 	}
 
 	if len(proposals) > 0 {
 		if err := job.setProposalsInDB(ctx, proposals); err != nil {
-			return statusStroge.Status, fmt.Errorf("[snapshot proposal job] pos[%d], set proposal in db, db error: %v", statusStroge.Pos, err)
+			return statusStorage.Status, fmt.Errorf("[snapshot proposal job] pos[%d], set proposal in db, db error: %v", statusStorage.Pos, err)
 		}
-		logrus.Infof("[snapshot proposal job] pull skip [%d]", statusStroge.Pos)
+		logrus.Infof("[snapshot proposal job] pull skip [%d]", statusStorage.Pos)
 	}
 
-	skip = statusStroge.Pos + job.Limit
+	skip = statusStorage.Pos + job.Limit
 	// nolint:gocritic // dont' want change nan things
 	if len(proposals) == 0 {
-		statusStroge.Status = PullInfoStatusLatest
+		statusStorage.Status = PullInfoStatusLatest
 	} else if len(proposals) < int(job.Limit) {
-		statusStroge.Pos = statusStroge.Pos + int32(len(proposals))
-		statusStroge.Status = PullInfoStatusLatest
+		statusStorage.Pos = statusStorage.Pos + int32(len(proposals))
+		statusStorage.Status = PullInfoStatusLatest
 	} else {
-		statusStroge.Pos = skip
-		statusStroge.Status = PullInfoStatusNotLatest
+		statusStorage.Pos = skip
+		statusStorage.Status = PullInfoStatusNotLatest
 	}
 
 	// set space status in cache and db
 	if cache.Global() != nil {
-		err = job.SetCurrentStatus(ctx, statusStroge)
+		err = job.SetCurrentStatus(ctx, statusStorage)
 		if err != nil {
-			return statusStroge.Status, fmt.Errorf("[snapshot proposal job] set current status, db error: %v", err)
+			return statusStorage.Status, fmt.Errorf("[snapshot proposal job] set current status, db error: %v", err)
 		}
 	}
 
-	return statusStroge.Status, nil
+	return statusStorage.Status, nil
 }
 
 func (job *SnapshotProposalJob) getProposalTotalFromDB(ctx context.Context) (int32, error) {

@@ -72,7 +72,7 @@ func (job *SnapshotVoteJob) InnerJobRun() (status PullInfoStatus, err error) {
 
 	defer func() { opentelemetry.Log(trace, nil, status, err) }()
 
-	var statusStroge StatusStroge
+	var statusStroge StatusStorage
 
 	// get latest vote id
 	if cache.Global() != nil {
