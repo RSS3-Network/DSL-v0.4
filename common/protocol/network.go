@@ -15,6 +15,21 @@ const (
 	NetworkCrossbell         = "crossbell"
 )
 
+var SupportNetworks = []string{
+	NetworkEthereum,
+	NetworkEthereumClassic,
+	NetworkBinanceSmartChain,
+	NetworkPolygon,
+	NetworkZkSync,
+	NetworkXDAI,
+	NetworkArweave,
+	NetworkArbitrum,
+	NetworkOptimism,
+	NetworkFantom,
+	NetworkAvalanche,
+	NetworkCrossbell,
+}
+
 func NetworkToID(networkName string) string {
 	switch networkName {
 	case NetworkEthereum:
