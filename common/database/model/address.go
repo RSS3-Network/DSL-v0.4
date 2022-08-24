@@ -13,7 +13,7 @@ const (
 
 type Address struct {
 	Address          string         `gorm:"column:address;primaryKey" json:"address"`
-	Status           bool           `gorm:"column:status" json:"status"`
+	Status           bool           `gorm:"column:status;default:true" json:"status"`
 	DoneNetworks     pq.StringArray `gorm:"column:done_networks;type:text[]" json:"done_networks"`
 	IndexingNetworks pq.StringArray `gorm:"column:indexing_networks;type:text[]" json:"indexing_networks"`
 	CreatedAt        time.Time      `gorm:"column:created_at;autoCreateTime;not null;default:now();index" json:"-"`
