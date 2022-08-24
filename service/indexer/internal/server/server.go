@@ -663,7 +663,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 
 func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 	key := fmt.Sprintf("indexer:%v:", address.Address)
-	iter := s.redisClient.Scan(ctx, 1000, key+"*", 0).Iterator()
+	iter := s.redisClient.Scan(ctx, 0, key+"*", 1000).Iterator()
 	if err := iter.Err(); err != nil {
 		logrus.Errorf("upsertAddress: redis scan error, %v", err)
 
