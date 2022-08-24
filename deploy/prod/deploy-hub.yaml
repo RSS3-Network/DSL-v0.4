@@ -4,7 +4,7 @@ metadata:
   name: pregod-1-1-hub
   namespace: pregod
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: pregod-1-1-hub
@@ -35,12 +35,14 @@ spec:
               memory: "300Mi"
               cpu: "300m"
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 45
             periodSeconds: 10
           livenessProbe:
-            tcpSocket:
+            httpGet:
+              path: /
               port: 80
-            initialDelaySeconds: 15
+            initialDelaySeconds: 45
             periodSeconds: 20
