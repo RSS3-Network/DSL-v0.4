@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lib/pq"
 	"os"
 	"os/signal"
 	"strings"
@@ -376,13 +377,13 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 						return err
 					}
 
-					if err := tx.Where("network = ? AND hash IN ?", message.Network, hashes).Delete(&model.Transaction{}).Error; err != nil {
+					if err := tx.Where("network = ? AND hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transaction{}).Error; err != nil {
 						tx.Rollback()
 
 						return err
 					}
 
-					if err := tx.Where("network = ? AND transaction_hash IN ?", message.Network, hashes).Delete(&model.Transfer{}).Error; err != nil {
+					if err := tx.Where("network = ? AND transaction_hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transfer{}).Error; err != nil {
 						tx.Rollback()
 
 						return err
