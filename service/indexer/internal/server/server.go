@@ -694,11 +694,17 @@ func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 	}
 
 	if err := database.Global().
+		Model(model.Address{}).
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
 			DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
 		}).
-		Create(&address).Error; err != nil {
+		Create(map[string]interface{}{
+			"address":           address.Address,
+			"status":            address.Status,
+			"done_networks":     address.DoneNetworks,
+			"indexing_networks": address.IndexingNetworks,
+		}).Error; err != nil {
 		loggerx.Global().Error("failed to upsert address", zap.Error(err), zap.String("address", address.Address))
 	}
 }
