@@ -35,7 +35,7 @@ type Response struct {
 	Total         int64           `json:"total,omitempty"`
 	Cursor        string          `json:"cursor,omitempty"`
 	Result        any             `json:"result,omitempty"`
-	AddressStatus []model.Address `json:"address_status,omitempty"`
+	AddressStatus []model.Address `json:"address_status"`
 	Message       string          `json:"message,omitempty"`
 }
 

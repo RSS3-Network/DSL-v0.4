@@ -38,7 +38,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	tokenClient = token.New(nil, ethereumClientMap)
+	tokenClient = token.New(ethereumClientMap)
 }
 
 func TestClient_Native(t *testing.T) {

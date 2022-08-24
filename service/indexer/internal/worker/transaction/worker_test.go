@@ -31,6 +31,8 @@ func init() {
 		panic(err)
 	}
 
+	database.ReplaceGlobal(db)
+
 	cache.Dial(config.ConfigIndexer.Redis)
 
 	ethereumClientMap, err := ethereum.New(&configx.RPC{
@@ -44,7 +46,7 @@ func init() {
 		panic(err)
 	}
 
-	tokenWorker = New(db, ethereumClientMap)
+	tokenWorker = New(ethereumClientMap)
 }
 
 func Test_service_Name(t *testing.T) {

@@ -195,7 +195,7 @@ func TestBuildTransferMetadata(t *testing.T) {
 	for internalToken, value := range tokenMap {
 		t.Log(internalToken, value)
 
-		tokenClient := token.New(nil, ethereumClientMap)
+		tokenClient := token.New(ethereumClientMap)
 		erc20, err := tokenClient.ERC20(context.Background(), protocol.NetworkEthereum, strings.ToLower(internalToken.String()))
 		if err != nil {
 			t.Fatalf("failed to get erc20 contract: %v", err)

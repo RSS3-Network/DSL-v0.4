@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -47,6 +48,7 @@ import (
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/samber/lo"
 	"github.com/scylladb/go-set/strset"
+	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -380,13 +382,13 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 						return err
 					}
 
-					if err := tx.Where("network = ? AND hash IN ?", message.Network, hashes).Delete(&model.Transaction{}).Error; err != nil {
+					if err := tx.Where("network = ? AND hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transaction{}).Error; err != nil {
 						tx.Rollback()
 
 						return err
 					}
 
-					if err := tx.Where("network = ? AND transaction_hash IN ?", message.Network, hashes).Delete(&model.Transfer{}).Error; err != nil {
+					if err := tx.Where("network = ? AND transaction_hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transfer{}).Error; err != nil {
 						tx.Rollback()
 
 						return err
@@ -433,7 +435,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		loggerx.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
 
 		// upsert address status
-		go s.upsertAddress(model.Address{
+		go s.upsertAddress(ctx, model.Address{
 			Address: message.Address,
 		})
 	}()
@@ -663,7 +665,34 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	return s.upsertTransactions(ctx, message, tx, transactions)
 }
 
-func (s *Server) upsertAddress(address model.Address) {
+func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
+	key := fmt.Sprintf("indexer:%v:", address.Address)
+	iter := cache.Global().Scan(ctx, 0, key+"*", 1000).Iterator()
+	if err := iter.Err(); err != nil {
+		logrus.Errorf("upsertAddress: redis scan error, %v", err)
+
+		return
+	}
+
+	address.DoneNetworks = append(address.DoneNetworks, protocol.SupportNetworks...)
+	for iter.Next(ctx) {
+		if s := strings.Split(iter.Val(), key); len(s) == 2 {
+			address.IndexingNetworks = append(address.IndexingNetworks, s[1])
+
+			for index := 0; index < len(address.DoneNetworks); index++ {
+				if s[1] == address.DoneNetworks[index] {
+					address.DoneNetworks = append(address.DoneNetworks[:index], address.DoneNetworks[index+1:]...)
+					index--
+					break
+				}
+			}
+		}
+	}
+
+	if len(address.IndexingNetworks) > 0 {
+		address.Status = false
+	}
+
 	if err := database.Global().
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
