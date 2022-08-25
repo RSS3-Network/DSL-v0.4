@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -69,7 +70,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 		return nil, err
 	}
 
-	profile := &model.Profile{
+	profile := &social.Profile{
 		Address: transfer.AddressFrom,
 		// TODO: use appId from CSB
 		// Platform: transfer.Platform,
@@ -90,7 +91,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
-	database.Global().Model(&model.Profile{}).Clauses(clause.OnConflict{
+	database.Global().Model(&social.Profile{}).Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(profile)
 
@@ -114,7 +115,7 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 		return nil, err
 	}
 
-	profile := &model.Profile{
+	profile := &social.Profile{
 		// TODO: use appId from CSB
 		// Platform: transfer.Platform,
 		Platform: transfer.Network,
@@ -160,7 +161,7 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	profile := &model.Profile{
+	profile := &social.Profile{
 		// TODO: use appId from CSB
 		// Platform: transfer.Platform,
 		Platform: transfer.Network,
@@ -205,7 +206,7 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	profile := &model.Profile{
+	profile := &social.Profile{
 		Address: transfer.AddressFrom,
 		// TODO: use appId from CSB
 		// Platform: transfer.Platform,

@@ -1,7 +1,6 @@
 package zksync_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
@@ -10,7 +9,7 @@ import (
 var client = zksync.New()
 
 func TestGetTokenList(t *testing.T) {
-	tokenList, err := client.GetTokenList(context.Background())
+	tokenList, err := client.GetTokenList()
 	if err != nil {
 		t.Fatal(err)
 	}

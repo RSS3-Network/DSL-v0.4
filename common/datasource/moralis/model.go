@@ -33,6 +33,38 @@ type Transaction struct {
 	BlockNumber              string `json:"block_number"`
 	BlockHash                string `json:"block_hash"`
 }
+type GetTransactionsOption struct {
+	Chain     string `url:"chain,omitempty"`
+	Address   string `url:"address,omitempty"`
+	FromDate  string `url:"from_date,omitempty"`
+	ToDate    string `url:"to_date,omitempty"`
+	FromBlock string `url:"from_block,omitempty"`
+	ToBlock   string `url:"to_block,omitempty"`
+	Cursor    string `url:"cursor,omitempty"`
+	Limit     int    `url:"limit,omitempty"`
+}
+
+type GetTokenTransfersOption struct {
+	Chain     string `url:"chain,omitempty"`
+	Address   string `url:"address,omitempty"`
+	FromDate  string `url:"from_date,omitempty"`
+	ToDate    string `url:"to_date,omitempty"`
+	FromBlock string `url:"from_block,omitempty"`
+	ToBlock   string `url:"to_block,omitempty"`
+	Cursor    string `url:"cursor,omitempty"`
+	Limit     int    `url:"limit,omitempty"`
+}
+
+type GetNFTTransfersOption struct {
+	Chain     string `url:"chain,omitempty"`
+	Address   string `url:"address,omitempty"`
+	FromDate  string `url:"from_date,omitempty"`
+	ToDate    string `url:"to_date,omitempty"`
+	FromBlock string `url:"from_block,omitempty"`
+	ToBlock   string `url:"to_block,omitempty"`
+	Cursor    string `url:"cursor,omitempty"`
+	Limit     int    `url:"limit,omitempty"`
+}
 
 type NativeBalance struct {
 	Balance string `json:"balance"`

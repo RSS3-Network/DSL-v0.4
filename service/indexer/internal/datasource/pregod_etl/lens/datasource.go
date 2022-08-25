@@ -18,7 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 	"github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/sirupsen/logrus"
@@ -94,7 +94,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 	// build transaction
 	if transactions, err = ethereum.BuildTransactions(ctx, message, transactions, ethereumClient); err != nil {
-		logger.Global().Error("failed to build transactions", zap.Error(err))
+		loggerx.Global().Error("failed to build transactions", zap.Error(err))
 
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 	var err error
 	defer func() { opentelemetry.Log(trace, profileID, internalTransactionMap, err) }()
 
-	internalTransactions := []model.Transaction{}
+	var internalTransactions []model.Transaction
 	hash := common.HexToHash(hexutil.EncodeBig(profileID))
 
 	var wg sync.WaitGroup

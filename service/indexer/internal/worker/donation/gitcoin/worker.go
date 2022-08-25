@@ -10,7 +10,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/donation"
@@ -19,7 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/gitcoin"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -41,7 +40,6 @@ var _ worker.Worker = (*service)(nil)
 type service struct {
 	ethereumClientMap      map[string]*ethclient.Client
 	tokenClient            *token.Client
-	redisClient            *redis.Client
 	gitcoinProjectCacheKey string
 }
 
@@ -59,7 +57,6 @@ func (s *service) Networks() []string {
 
 func (s *service) Initialize(ctx context.Context) error {
 	gitcoinProjectJob := &job.GitcoinProjectJob{
-		RedisClient:            s.redisClient,
 		GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
 	}
 
@@ -85,7 +82,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 		transfers, err := s.handleGitcoin(ctx, message, transaction)
 		if err != nil {
-			logger.Global().Error("failed to handle gitcoin transaction", zap.Error(err))
+			loggerx.Global().Error("failed to handle gitcoin transaction", zap.Error(err))
 
 			continue
 		}
@@ -136,7 +133,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 
 	receipt, err := ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
 	if err != nil {
-		logger.Global().Error("get transaction receipt error", zap.Error(err))
+		loggerx.Global().Error("get transaction receipt error", zap.Error(err))
 
 		return nil, err
 	}
@@ -148,14 +145,14 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 
 		gitcoinContract, err := gitcoin.NewGitcoin(log.Address, ethereumClient)
 		if err != nil {
-			logger.Global().Error("get gitcoin contract error", zap.Error(err))
+			loggerx.Global().Error("get gitcoin contract error", zap.Error(err))
 
 			continue
 		}
 
 		event, err := gitcoinContract.ParseDonationSent(*log)
 		if err != nil {
-			logger.Global().Error("parse donation sent event error", zap.Error(err))
+			loggerx.Global().Error("parse donation sent event error", zap.Error(err))
 
 			continue
 		}
@@ -174,7 +171,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 			Order("id DESC").
 			First(&project).
 			Error; err != nil {
-			logger.Global().Error("get gitcoin project error", zap.Error(err))
+			loggerx.Global().Error("get gitcoin project error", zap.Error(err))
 
 			continue
 		}
@@ -187,14 +184,14 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 		//
 		// project := &donation.GitcoinProject{}
 		// if err := json.Unmarshal([]byte(projectStr), &project); err != nil {
-		//	 logger.Global().Error("unmarshal gitcoin project error", zap.Error(err))
+		//	 loggerx.Global().Error("unmarshal gitcoin project error", zap.Error(err))
 		//
 		//	 return nil, err
 		// }
 
 		sourceData, err := json.Marshal(log)
 		if err != nil {
-			logger.Global().Error("marshal source data error", zap.Error(err))
+			loggerx.Global().Error("marshal source data error", zap.Error(err))
 
 			return nil, err
 		}
@@ -220,7 +217,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 		if strings.ToLower(event.Token.String()) == ContractAddressEthereumNative {
 			native, err := s.tokenClient.Native(ctx, transaction.Network)
 			if err != nil {
-				logger.Global().Error("get native token error", zap.Error(err))
+				loggerx.Global().Error("get native token error", zap.Error(err))
 
 				return nil, err
 			}
@@ -235,7 +232,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 		} else {
 			erc20, err := s.tokenClient.ERC20(ctx, transaction.Network, event.Token.String())
 			if err != nil {
-				logger.Global().Error("get erc20 error", zap.Error(err))
+				loggerx.Global().Error("get erc20 error", zap.Error(err))
 
 				continue
 			}
@@ -265,7 +262,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 			Token:       tokenMetadata,
 		})
 		if err != nil {
-			logger.Global().Error("marshal metadata error", zap.Error(err))
+			loggerx.Global().Error("marshal metadata error", zap.Error(err))
 
 			continue
 		}
@@ -286,15 +283,13 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 func (s *service) Jobs() []worker.Job {
 	return []worker.Job{
 		&job.GitcoinProjectJob{
-			RedisClient:            s.redisClient,
 			GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
 		},
 	}
 }
 
-func New(redisClient *redis.Client, ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
 	return &service{
-		redisClient:            redisClient,
 		gitcoinProjectCacheKey: "gitcoin_project",
 		ethereumClientMap:      ethereumClientMap,
 		tokenClient:            token.New(ethereumClientMap),

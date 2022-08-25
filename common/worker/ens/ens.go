@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/sirupsen/logrus"
 	goens "github.com/wealdtech/go-ens/v3"
@@ -26,13 +26,13 @@ type ENSProfile struct {
 	Message     string `json:"message"`
 }
 
-func (c *Client) GetProfile(address string) (*model.Profile, error) {
+func (c *Client) GetProfile(address string) (*social.Profile, error) {
 	primaryENS, err := c.GetReverseResolve(address)
 	if err != nil {
 		return nil, err
 	}
 
-	profile := &model.Profile{
+	profile := &social.Profile{
 		Address:  address,
 		Network:  protocol.NetworkEthereum,
 		Platform: "ENS",
@@ -94,7 +94,7 @@ func (c *Client) GetENSExpiry(domain string) (time.Time, error) {
 
 // GetENSTextValue reads the text record value for a given domain
 // with the list of Global Keys and Service Keys, see: https://eips.ethereum.org/EIPS/eip-634
-func (c *Client) GetENSTextValue(domain string, profile *model.Profile) error {
+func (c *Client) GetENSTextValue(domain string, profile *social.Profile) error {
 	r, err := goens.NewResolver(c.ethClient, domain)
 	if err != nil {
 		return err

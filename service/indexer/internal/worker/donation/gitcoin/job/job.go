@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/go-resty/resty/v2"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model/donation"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -18,7 +18,6 @@ import (
 var _ worker.Job = (*GitcoinProjectJob)(nil)
 
 type GitcoinProjectJob struct {
-	RedisClient            *redis.Client
 	GitcoinProjectCacheKey string
 }
 
@@ -86,7 +85,7 @@ func (job *GitcoinProjectJob) SetCache() {
 	for _, project := range projectList {
 		projectByte, _ := json.Marshal(project)
 		// set redis
-		if err := job.RedisClient.HSet(
+		if err := cache.Global().HSet(
 			context.Background(),
 			job.GitcoinProjectCacheKey,
 			project.AdminAddress,

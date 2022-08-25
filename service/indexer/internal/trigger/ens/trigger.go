@@ -3,8 +3,9 @@ package ens
 import (
 	"context"
 
+	"github.com/naturalselectionlabs/pregod/common/database/model/social"
+
 	"github.com/naturalselectionlabs/pregod/common/database"
-	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
@@ -48,7 +49,7 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message) (err e
 	}
 
 	return database.Global().
-		Model(&model.Profile{}).
+		Model(&social.Profile{}).
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).

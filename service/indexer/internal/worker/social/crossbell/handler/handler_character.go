@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -96,7 +97,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 		return nil, err
 	}
 
-	profile := &model.Profile{
+	profile := &social.Profile{
 		Address: transfer.AddressFrom,
 		// TODO: use appId from CSB
 		// Platform: transfer.Platform,
@@ -116,7 +117,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
-	database.Global().Model(&model.Profile{}).Clauses(clause.OnConflict{
+	database.Global().Model(&social.Profile{}).Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(profile)
 
@@ -140,7 +141,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 		return nil, err
 	}
 
-	profile := &model.Profile{
+	profile := &social.Profile{
 		Address: transfer.AddressFrom,
 		// TODO: use appId from CSB
 		// Platform: transfer.Platform,
@@ -186,7 +187,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 	transfer.RelatedUrls = []string{note.ContentUri}
 
 	// Self-hosted IPFS files may be out of date
-	contentData, _ := ipfs.GetFileByURL(ctx, note.ContentUri)
+	contentData, _ := ipfs.GetFileByURL(note.ContentUri)
 
 	postOriginal := CrossbellPostStruct{}
 
@@ -233,7 +234,7 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 		return nil, err
 	}
 
-	profile := &model.Profile{
+	profile := &social.Profile{
 		// TODO: use appId from CSB
 		// Platform: transfer.Platform,
 		Platform: transfer.Network,
@@ -274,7 +275,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 		return nil, err
 	}
 
-	profile := &model.Profile{
+	profile := &social.Profile{
 		// TODO: use appId from CSB
 		// Platform: transfer.Platform,
 		Platform: transfer.Network,
@@ -315,7 +316,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		return nil, err
 	}
 
-	profile := &model.Profile{
+	profile := &social.Profile{
 		Address: transfer.AddressFrom,
 		// TODO: use appId from CSB
 		// Platform: transfer.Platform,
@@ -359,7 +360,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 	}
 
 	// Self-hosted IPFS files may be out of date
-	contentData, _ := ipfs.GetFileByURL(ctx, note.ContentUri)
+	contentData, _ := ipfs.GetFileByURL(note.ContentUri)
 
 	var noteMetadata json.RawMessage
 

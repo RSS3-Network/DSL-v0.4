@@ -62,7 +62,7 @@ type GetTokenListItem struct {
 	IsNFT    bool   `json:"is_nft"`
 }
 
-func (c *Client) GetTokenList(ctx context.Context) (GetTokenList, error) {
+func (c *Client) GetTokenList() (GetTokenList, error) {
 	requestURL := &url.URL{
 		Scheme: Scheme,
 		Host:   Endpoint,

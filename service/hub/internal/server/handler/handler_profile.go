@@ -8,7 +8,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/database"
-	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
+	dbModel "github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"go.opentelemetry.io/otel"
 )

@@ -1,13 +1,22 @@
 package filter
 
 const (
-	TagTransaction = "transaction"
-	TagExchange    = "exchange"
-	TagCollectible = "collectible"
-	TagSocial      = "social"
-	TagDonation    = "donation"
-	TagGovernance  = "governance"
+	TagTransaction string = "transaction"
+	TagExchange    string = "exchange"
+	TagCollectible string = "collectible"
+	TagSocial      string = "social"
+	TagDonation    string = "donation"
+	TagGovernance  string = "governance"
 )
+
+var ValidTag = map[string]string{
+	TagTransaction: TagTransaction,
+	TagExchange:    TagExchange,
+	TagCollectible: TagCollectible,
+	TagSocial:      TagSocial,
+	TagDonation:    TagDonation,
+	TagGovernance:  TagGovernance,
+}
 
 var TagPriority = map[string]int{
 	TagTransaction: 1,

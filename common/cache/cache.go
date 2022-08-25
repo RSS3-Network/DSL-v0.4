@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"crypto/tls"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -10,7 +11,27 @@ import (
 	"github.com/vmihailenco/msgpack"
 )
 
-var redisClient *redis.Client
+var (
+	redisClient       *redis.Client
+	globalLocker      sync.RWMutex
+	globalRedisClient *redis.Client
+)
+
+func Global() *redis.Client {
+	globalLocker.RLock()
+
+	defer globalLocker.RUnlock()
+
+	return globalRedisClient
+}
+
+func ReplaceGlobal(db *redis.Client) {
+	globalLocker.Lock()
+
+	defer globalLocker.Unlock()
+
+	globalRedisClient = db
+}
 
 func Dial(config *configx.Redis) (*redis.Client, error) {
 	ctx := context.Background()

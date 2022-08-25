@@ -12,15 +12,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
+	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
@@ -64,13 +64,14 @@ type Server struct {
 	rabbitmqChannel    *rabbitmq.Channel
 	rabbitmqQueue      rabbitmq.Queue
 	rabbitmqAssetQueue rabbitmq.Queue
-	redisClient        *redis.Client
 	datasources        []datasource.Datasource
 	datasourcesAsset   []datasource_asset.Datasource
 	workers            []worker.Worker
 	triggers           []trigger.Trigger
 	employer           *shedlock.Employer
 }
+
+var _ command.Interface = &Server{}
 
 func (s *Server) Initialize() (err error) {
 	var exporter trace.SpanExporter
@@ -101,9 +102,12 @@ func (s *Server) Initialize() (err error) {
 
 	database.ReplaceGlobal(databaseClient)
 
-	if s.redisClient, err = cache.Dial(s.config.Redis); err != nil {
+	redisClient, err := cache.Dial(s.config.Redis)
+	if err != nil {
 		return err
 	}
+
+	cache.ReplaceGlobal(redisClient)
 
 	err = s.InitializeMQ()
 	if err != nil {
@@ -154,16 +158,16 @@ func (s *Server) Initialize() (err error) {
 		marketplace.New(ethereumClientMap),
 		poap.New(ethereumClientMap),
 		mirror.New(),
-		gitcoin.New(s.redisClient, ethereumClientMap),
-		snapshot.New(s.redisClient),
+		gitcoin.New(ethereumClientMap),
+		snapshot.New(),
 		lens_worker.New(ethereumClientMap),
 		transaction.New(ethereumClientMap),
 	}
 
-	s.employer = shedlock.New(s.redisClient)
+	s.employer = shedlock.New()
 
 	for _, internalWorker := range s.workers {
-		logger.Global().Info("start initializing worker", zap.String("worker", internalWorker.Name()))
+		loggerx.Global().Info("start initializing worker", zap.String("worker", internalWorker.Name()))
 
 		startTime := time.Now()
 
@@ -171,7 +175,7 @@ func (s *Server) Initialize() (err error) {
 			return err
 		}
 
-		logger.Global().Info("initialize worker completion", zap.String("worker", internalWorker.Name()), zap.Duration("duration", time.Since(startTime)))
+		loggerx.Global().Info("initialize worker completion", zap.String("worker", internalWorker.Name()), zap.Duration("duration", time.Since(startTime)))
 
 		if internalWorker.Jobs() == nil {
 			continue
@@ -260,14 +264,14 @@ func (s *Server) Run() error {
 		for delivery := range deliveryCh {
 			message := protocol.Message{}
 			if err := json.Unmarshal(delivery.Body, &message); err != nil {
-				logger.Global().Error("failed to unmarshal message", zap.Error(err))
+				loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
 
 				continue
 			}
 
 			go func() {
 				if err := s.handle(context.Background(), &message); err != nil {
-					logger.Global().Error("failed to handle message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
+					loggerx.Global().Error("failed to handle message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
 				}
 			}()
 		}
@@ -282,14 +286,14 @@ func (s *Server) Run() error {
 		for delivery := range deliveryAssetCh {
 			message := protocol.Message{}
 			if err := json.Unmarshal(delivery.Body, &message); err != nil {
-				logger.Global().Error("failed to unmarshal message", zap.Error(err))
+				loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
 
 				continue
 			}
 
 			go func() {
 				if err := s.handleAsset(context.Background(), &message); err != nil {
-					logger.Global().Error("failed to handle asset message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
+					loggerx.Global().Error("failed to handle asset message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
 				}
 			}()
 		}
@@ -333,7 +337,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	defer handlerSpan.End()
 
-	logger.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
+	loggerx.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
 	// Ignore triggers
 	if !message.IgnoreTrigger {
@@ -407,7 +411,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 				internalTransactions, err := datasource.Handle(ctx, message)
 				// Avoid blocking indexed workers
 				if err != nil {
-					logger.Global().Error("datasource handle failed", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("datasource", datasource.Name()))
+					loggerx.Global().Error("datasource handle failed", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("datasource", datasource.Name()))
 
 					continue
 				}
@@ -428,7 +432,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 			transfers += len(transaction.Transfers)
 		}
 
-		logger.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
+		loggerx.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
 
 		// upsert address status
 		go s.upsertAddress(ctx, model.Address{
@@ -446,7 +450,7 @@ func (s *Server) executeTriggers(ctx context.Context, message *protocol.Message)
 			if message.Network == network {
 				go func(internalTrigger trigger.Trigger) {
 					if err := internalTrigger.Handle(ctx, message); err != nil {
-						logger.Global().Error("failed to handle trigger", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
+						loggerx.Global().Error("failed to handle trigger", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
 					}
 				}(internalTrigger)
 
@@ -490,7 +494,7 @@ func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (er
 
 	defer handlerSpan.End()
 
-	logger.Global().Info("start indexing asset data", zap.String("address", message.Address), zap.String("network", message.Network))
+	loggerx.Global().Info("start indexing asset data", zap.String("address", message.Address), zap.String("network", message.Network))
 
 	// Get data from datasources
 	var assets []model.Asset
@@ -501,7 +505,7 @@ func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (er
 				internalAssets, err := datasource.Handle(ctx, message)
 				// Avoid blocking indexed workers
 				if err != nil {
-					logger.Global().Error("datasource handle failed", zap.Error(err))
+					loggerx.Global().Error("datasource handle failed", zap.Error(err))
 					continue
 				}
 
@@ -601,7 +605,7 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 				UpdateAll: true,
 			}).
 			Create(ts).Error; err != nil {
-			logger.Global().Error("failed to upsert transactions", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
+			loggerx.Global().Error("failed to upsert transactions", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
 
 			tx.Rollback()
 
@@ -616,7 +620,7 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 				DoUpdates: clause.AssignmentColumns([]string{"metadata"}),
 			}).
 			Create(ts).Error; err != nil {
-			logger.Global().Error("failed to upsert transfers", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
+			loggerx.Global().Error("failed to upsert transfers", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
 
 			tx.Rollback()
 
@@ -639,7 +643,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 			if network == message.Network {
 				internalTransactions, err := worker.Handle(ctx, message, transactions)
 				if err != nil {
-					logger.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
+					loggerx.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
 
 					continue
 				}
@@ -664,7 +668,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 	for _, network := range protocol.SupportNetworks {
 		key := fmt.Sprintf("indexer:%v:%v", address.Address, network)
-		n, err := s.redisClient.Exists(ctx, key).Result()
+		n, err := cache.Global().Exists(ctx, key).Result()
 		switch {
 		case err != nil:
 			return
@@ -691,7 +695,7 @@ func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 			"done_networks":     address.DoneNetworks,
 			"indexing_networks": address.IndexingNetworks,
 		}).Error; err != nil {
-		logger.Global().Error("failed to upsert address", zap.Error(err), zap.String("address", address.Address))
+		loggerx.Global().Error("failed to upsert address", zap.Error(err), zap.String("address", address.Address))
 	}
 }
 

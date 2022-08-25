@@ -6,11 +6,6 @@ import (
 	"github.com/lib/pq"
 )
 
-const (
-	AddressStatusDone    = "done"
-	AddressStatusRunning = "running"
-)
-
 type Address struct {
 	Address          string         `gorm:"column:address;primaryKey" json:"address"`
 	Status           bool           `gorm:"column:status;default:true" json:"status"`

@@ -4,13 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/robfig/cron/v3"
 )
 
 type Employer struct {
-	redisClient *redis.Client
-	crontab     *cron.Cron
+	crontab *cron.Cron
 }
 
 func (e *Employer) AddFunc(name, spec string, timeout time.Duration, cmd func()) error {
@@ -42,11 +41,11 @@ func (e *Employer) AddJob(name, spec string, timeout time.Duration, cmd cron.Job
 }
 
 func (e *Employer) DoLock(name string, timeout time.Duration) bool {
-	return e.redisClient.SetNX(context.Background(), name, 0, timeout).Val()
+	return cache.Global().SetNX(context.Background(), name, 0, timeout).Val()
 }
 
 func (e *Employer) UnLock(name string) bool {
-	if err := e.redisClient.Del(context.Background(), name).Err(); err != nil {
+	if err := cache.Global().Del(context.Background(), name).Err(); err != nil {
 		return false
 	}
 
@@ -62,12 +61,11 @@ func (e *Employer) Stop() {
 }
 
 func (e *Employer) Renewal(ctx context.Context, name string, duration time.Duration) error {
-	return e.redisClient.SetEX(ctx, name, 0, duration).Err()
+	return cache.Global().SetEX(ctx, name, 0, duration).Err()
 }
 
-func New(redisClient *redis.Client) *Employer {
+func New() *Employer {
 	return &Employer{
-		redisClient: redisClient,
-		crontab:     cron.New(),
+		crontab: cron.New(),
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"net/url"
 
 	"github.com/google/go-querystring/query"
-	http_utils "github.com/naturalselectionlabs/pregod/common/utils/http"
+	"github.com/naturalselectionlabs/pregod/common/utils/httpx"
 	"github.com/sirupsen/logrus"
 )
 
@@ -42,16 +42,16 @@ func (c *Client) GetLogs(ctx context.Context, parameter GetLogsRequest) ([]Ether
 		RawQuery: values.Encode(),
 	}
 
-	request, err := http_utils.NewRequest(http.MethodGet, url.String(), nil)
+	request, err := httpx.NewRequest(http.MethodGet, url.String(), nil)
 	if err != nil {
 		logrus.Errorf("[pregod_etl client] GetLogs: NewRequest error, %v", err)
 
 		return nil, err
 	}
 
-	result := []EthereumLog{}
+	var result []EthereumLog
 
-	err = http_utils.DoRequest(ctx, c.httpClient, request, &result)
+	err = httpx.DoRequest(ctx, c.httpClient, request, &result)
 	if err != nil {
 		logrus.Errorf("[pregod_etl client] GetLogs: DoRequest error, %v", err)
 

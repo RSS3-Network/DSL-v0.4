@@ -16,7 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/alchemy"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
@@ -66,7 +66,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 	transactionMap, err := d.getAllAssetTransferHashes(ctx, message)
 	if err != nil {
-		logger.Global().Error("failed to get all asset transfer hashes", zap.Error(err))
+		loggerx.Global().Error("failed to get all asset transfer hashes", zap.Error(err))
 
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	}
 
 	if transactions, err = ethereum.BuildTransactions(ctx, message, transactions, ethereumClient); err != nil {
-		logger.Global().Error("failed to build transactions", zap.Error(err))
+		loggerx.Global().Error("failed to build transactions", zap.Error(err))
 
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 
 				return time.Second + time.Duration(delay.Int64())*time.Millisecond
 			})); err != nil {
-			logger.Global().Error("failed to get asset transfers", zap.Error(err))
+			loggerx.Global().Error("failed to get asset transfers", zap.Error(err))
 
 			return nil, err
 		}

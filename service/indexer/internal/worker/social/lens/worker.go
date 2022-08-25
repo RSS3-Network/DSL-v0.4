@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
@@ -22,7 +23,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils"
-	"github.com/naturalselectionlabs/pregod/common/utils/logger"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	lop "github.com/samber/lo/parallel"
@@ -113,9 +114,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		internalTransactions = append(internalTransactions, transaction)
 	}, opt)
 
-	b, _ := json.Marshal(internalTransactions)
-	fmt.Println(string(b))
-
 	return internalTransactions, nil
 }
 
@@ -139,7 +137,7 @@ func (s *service) handleReceipt(ctx context.Context, transaction *model.Transact
 		case lens.EventHashPostCreated:
 			transfer, err := s.handlePostCreated(ctx, transaction, *log)
 			if err != nil {
-				logger.Global().Error("[lens worker] handleReceipt: handlePostCreated error, %v", zap.Error(err))
+				loggerx.Global().Error("[lens worker] handleReceipt: handlePostCreated error", zap.Error(err))
 
 				continue
 			}
@@ -148,7 +146,7 @@ func (s *service) handleReceipt(ctx context.Context, transaction *model.Transact
 		case lens.EventHashCommentCreated:
 			transfer, err := s.handleCommentCreated(ctx, transaction, *log)
 			if err != nil {
-				logger.Global().Error("[lens worker] handleReceipt: handleCommentCreated error, %v", zap.Error(err))
+				loggerx.Global().Error("[lens worker] handleReceipt: handleCommentCreated error", zap.Error(err))
 
 				continue
 			}
@@ -157,7 +155,7 @@ func (s *service) handleReceipt(ctx context.Context, transaction *model.Transact
 		case lens.EventHashProfileCreated:
 			transfer, err := s.handleProfileCreated(ctx, transaction, *log)
 			if err != nil {
-				logger.Global().Error("[lens worker] handleReceipt: handleProfileCreated error, %v", zap.Error(err))
+				loggerx.Global().Error("[lens worker] handleReceipt: handleProfileCreated error", zap.Error(err))
 
 				continue
 			}
@@ -172,21 +170,21 @@ func (s *service) handleReceipt(ctx context.Context, transaction *model.Transact
 func (s *service) handlePostCreated(ctx context.Context, transaction *model.Transaction, log types.Log) (transfer model.Transfer, err error) {
 	lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
 	if err != nil {
-		logger.Global().Error("[lens worker] handleReceipt: new events error, %v", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleReceipt: new events error", zap.Error(err))
 
 		return transfer, err
 	}
 
 	sourceData, err := json.Marshal(log)
 	if err != nil {
-		logger.Global().Error("marshal source data error", zap.Error(err))
+		loggerx.Global().Error("marshal source data error", zap.Error(err))
 
 		return transfer, err
 	}
 
 	event, err := lensContract.EventsFilterer.ParsePostCreated(log)
 	if err != nil {
-		logger.Global().Error("[lens worker] handleReceipt: ParsePostCreated error, %v", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleReceipt: ParsePostCreated error", zap.Error(err))
 
 		return transfer, err
 	}
@@ -203,7 +201,7 @@ func (s *service) handlePostCreated(ctx context.Context, transaction *model.Tran
 	}
 
 	// get content
-	content, err := s.getContent(ctx, event.ContentURI)
+	content, err := s.getContent(event.ContentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleReceipt: getContent error, %v", err)
 		return transfer, err
@@ -220,7 +218,7 @@ func (s *service) handlePostCreated(ctx context.Context, transaction *model.Tran
 	}
 	for _, media := range lensContent.Media {
 		post.Media = append(post.Media, metadata.Media{
-			Address:  s.getDirectURL(ctx, media.Item),
+			Address:  ipfs.GetDirectURL(media.Item),
 			MimeType: media.Type,
 		})
 	}
@@ -244,21 +242,21 @@ func (s *service) handlePostCreated(ctx context.Context, transaction *model.Tran
 func (s *service) handleCommentCreated(ctx context.Context, transaction *model.Transaction, log types.Log) (transfer model.Transfer, err error) {
 	lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
 	if err != nil {
-		logger.Global().Error("[lens worker] handleCommentCreated: new events error, %v", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleCommentCreated: new events error", zap.Error(err))
 
 		return transfer, err
 	}
 
 	sourceData, err := json.Marshal(log)
 	if err != nil {
-		logger.Global().Error("marshal source data error", zap.Error(err))
+		loggerx.Global().Error("marshal source data error", zap.Error(err))
 
 		return transfer, err
 	}
 
 	event, err := lensContract.EventsFilterer.ParseCommentCreated(log)
 	if err != nil {
-		logger.Global().Error("[lens worker] handleCommentCreated: ParsePostCreated error, %v", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleCommentCreated: ParsePostCreated error", zap.Error(err))
 
 		return transfer, err
 	}
@@ -275,7 +273,7 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction *model.T
 	}
 
 	// get content
-	content, err := s.getContent(ctx, event.ContentURI)
+	content, err := s.getContent(event.ContentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: getContent error, %v", err)
 		return transfer, err
@@ -292,7 +290,7 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction *model.T
 	}
 	for _, media := range lensContent.Media {
 		post.Media = append(post.Media, metadata.Media{
-			Address:  s.getDirectURL(ctx, media.Item),
+			Address:  ipfs.GetDirectURL(media.Item),
 			MimeType: media.Type,
 		})
 	}
@@ -316,21 +314,21 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction *model.T
 func (s *service) handleProfileCreated(ctx context.Context, transaction *model.Transaction, log types.Log) (transfer model.Transfer, err error) {
 	lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
 	if err != nil {
-		logger.Global().Error("[lens worker] handleProfileCreated: new events error, %v", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleProfileCreated: new events error", zap.Error(err))
 
 		return transfer, err
 	}
 
 	sourceData, err := json.Marshal(log)
 	if err != nil {
-		logger.Global().Error("marshal source data error", zap.Error(err))
+		loggerx.Global().Error("marshal source data error", zap.Error(err))
 
 		return transfer, err
 	}
 
 	event, err := lensContract.EventsFilterer.ParseProfileCreated(log)
 	if err != nil {
-		logger.Global().Error("[lens worker] handleProfileCreated: ParseProfileCreated error, %v", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleProfileCreated: ParseProfileCreated error", zap.Error(err))
 
 		return transfer, err
 	}
@@ -348,13 +346,13 @@ func (s *service) handleProfileCreated(ctx context.Context, transaction *model.T
 		Platform:        Name,
 	}
 
-	profile := model.Profile{
+	profile := social.Profile{
 		Address:  strings.ToLower(event.To.String()),
 		Platform: Name,
 		Network:  transaction.Network,
 		Source:   transaction.Platform,
 		Type:     filter.SocialProfileCreate,
-		URL:      ipfs.GetDirectURL(ctx, event.ImageURI),
+		URL:      ipfs.GetDirectURL(event.ImageURI),
 		Handle:   event.Handle,
 	}
 
@@ -375,16 +373,8 @@ func (s *service) handleProfileCreated(ctx context.Context, transaction *model.T
 	return transfer, nil
 }
 
-func (s *service) getDirectURL(ctx context.Context, uri string) string {
-	if s := strings.Split(uri, "/ipfs/"); len(s) == 2 {
-		uri = "https://ipfs.rss3.page/ipfs/" + s[1]
-	}
-
-	return ipfs.GetDirectURL(ctx, uri)
-}
-
-func (s *service) getContent(ctx context.Context, uri string) (json.RawMessage, error) {
-	uri = s.getDirectURL(ctx, uri)
+func (s *service) getContent(uri string) (json.RawMessage, error) {
+	uri = ipfs.GetDirectURL(uri)
 	response, err := s.httpClient.Get(uri)
 	if err != nil {
 		return nil, err
