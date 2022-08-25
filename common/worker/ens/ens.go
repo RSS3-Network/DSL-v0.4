@@ -137,6 +137,8 @@ func New(ethRPCEndpoint string) *Client {
 
 	ethClient, err := ethclient.Dial(ethRPCEndpoint)
 	if err != nil {
+		logrus.Errorf("ethclient Dial error, %v", err)
+
 		return nil
 	}
 

@@ -65,6 +65,12 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		return nil, err
 	}
 
+	if profileID.Int64() == 0 {
+		logrus.Infof("[datasource_lens] Handle getDefaultProfile is nil, address: %v", message.Address)
+
+		return nil, nil
+	}
+
 	// get transaction
 	transactionMap, err := d.getLensTransferHashes(ctx, message, profileID)
 	if err != nil {
