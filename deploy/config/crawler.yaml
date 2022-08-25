@@ -25,4 +25,4 @@ redis:
   password: ''
 
 gateway:
-  ethendpoint: "wss://eth.rss3.dev"
+  ethendpoint: ''
