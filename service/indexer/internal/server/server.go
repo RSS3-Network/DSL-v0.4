@@ -675,8 +675,8 @@ func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 		}
 	}
 
-	if len(address.IndexingNetworks) > 0 {
-		address.Status = false
+	if len(address.IndexingNetworks) == 0 {
+		address.Status = true
 	}
 
 	if err := database.Global().
