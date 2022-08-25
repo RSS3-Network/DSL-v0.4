@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
+	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
@@ -181,9 +182,16 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 	return internalTransactionMap, nil
 }
 
-func New() (datasource.Datasource, error) {
+func New(config *configx.RPC) (datasource.Datasource, error) {
 	internalDatasource := Datasource{
 		clientMap: map[string]*pregod_etl.Client{},
+	}
+
+	var err error
+
+	if internalDatasource.clientMap[protocol.NetworkPolygon], err = pregod_etl.NewClient(protocol.NetworkPolygon, config.PregodETL.Polygon.HTTP); err != nil {
+		logrus.Errorf("[datasource_lens] pregod_etl.NewClient error, %v", err)
+		return nil, err
 	}
 
 	return &internalDatasource, nil

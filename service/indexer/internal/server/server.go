@@ -125,7 +125,7 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
-	lensDatasource, err := lens.New()
+	lensDatasource, err := lens.New(s.config.RPC)
 	if err != nil {
 		return err
 	}

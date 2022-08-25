@@ -60,7 +60,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 	ethereumClient, err := ethclientx.Global(message.Network)
 	if err != nil {
-		return nil, err
+		return nil, ErrorUnsupportedNetwork
 	}
 	transactionMap, err := d.getAllAssetTransferHashes(ctx, message)
 	if err != nil {
@@ -229,6 +229,15 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 func New(config *configx.RPC) (datasource.Datasource, error) {
 	internalDatasource := Datasource{
 		rpcClientMap: map[string]*alchemy.Client{},
+	}
+
+	var err error
+
+	if internalDatasource.rpcClientMap[protocol.NetworkEthereum], err = alchemy.NewClient(protocol.NetworkEthereum, config.Alchemy.Ethereum); err != nil {
+		return nil, err
+	}
+	if internalDatasource.rpcClientMap[protocol.NetworkPolygon], err = alchemy.NewClient(protocol.NetworkPolygon, config.Alchemy.Polygon); err != nil {
+		return nil, err
 	}
 
 	return &internalDatasource, nil
