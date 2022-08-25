@@ -19,6 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -119,7 +120,7 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
-	blockscoutDatasource, err := blockscout.New(s.config.RPC)
+	blockscoutDatasource, err := blockscout.New()
 	if err != nil {
 		return err
 	}
@@ -131,21 +132,25 @@ func (s *Server) Initialize() (err error) {
 
 	s.datasources = []datasource.Datasource{
 		alchemyDatasource,
-		moralis.New(s.config.Moralis.Key, s.config.RPC),
+		moralis.New(s.config.Moralis.Key),
 		arweave.New(),
 		blockscoutDatasource,
 		zksync.New(),
 		lensDatasource,
 	}
 
-	swapWorker, err := swap.New(s.config.RPC, s.employer)
+	swapWorker, err := swap.New(s.employer)
 	if err != nil {
 		return err
 	}
 
-	ethereumClientMap, err := ethereum.New(s.config.RPC)
+	ethereumClientMap, err := ethclientx.Dial(s.config.RPC, protocol.EthclientNetworks)
 	if err != nil {
 		return err
+	}
+
+	for network, client := range ethereumClientMap {
+		ethclientx.ReplaceGlobal(network, client)
 	}
 
 	s.triggers = []trigger.Trigger{

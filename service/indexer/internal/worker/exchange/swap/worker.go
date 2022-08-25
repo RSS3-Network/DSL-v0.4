@@ -10,7 +10,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -260,31 +259,9 @@ func (s *service) Jobs() []worker.Job {
 	}
 }
 
-func New(config *configx.RPC, employer *shedlock.Employer) (worker.Worker, error) {
-	var err error
-
+func New(employer *shedlock.Employer) (worker.Worker, error) {
 	svc := service{
-		ethereumClientMap: make(map[string]*ethclient.Client),
-		employer:          employer,
+		employer: employer,
 	}
-
-	if svc.ethereumClientMap[protocol.NetworkEthereum], err = ethclient.Dial(config.General.Ethereum.HTTP); err != nil {
-		return nil, err
-	}
-
-	if svc.ethereumClientMap[protocol.NetworkPolygon], err = ethclient.Dial(config.General.Polygon.HTTP); err != nil {
-		return nil, err
-	}
-
-	if svc.ethereumClientMap[protocol.NetworkBinanceSmartChain], err = ethclient.Dial(config.General.BinanceSmartChain.HTTP); err != nil {
-		return nil, err
-	}
-
-	if svc.ethereumClientMap[protocol.NetworkXDAI], err = ethclient.Dial(config.General.XDAI.HTTP); err != nil {
-		return nil, err
-	}
-
-	svc.tokenClient = token.New(svc.ethereumClientMap)
-
 	return &svc, nil
 }

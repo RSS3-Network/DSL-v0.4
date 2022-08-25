@@ -2,7 +2,6 @@ package lens
 
 import (
 	"context"
-	"errors"
 	"math/big"
 	"strings"
 	"sync"
@@ -17,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 	"github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -33,8 +33,7 @@ const (
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
-	ethereumClientMap map[string]*ethclient.Client  // QuickNode
-	clientMap         map[string]*pregod_etl.Client // PregodETL
+	clientMap map[string]*pregod_etl.Client // PregodETL
 }
 
 func (d *Datasource) Name() string {
@@ -54,9 +53,9 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	var err error
 	defer func() { opentelemetry.Log(trace, message, len(internalTransactions), err) }()
 
-	ethereumClient, exist := d.ethereumClientMap[message.Network]
-	if !exist {
-		return nil, errors.New("unsupported network")
+	ethereumClient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
 	}
 
 	// get profileid by address
@@ -185,21 +184,10 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 
 func New(config *configx.RPC) (datasource.Datasource, error) {
 	internalDatasource := Datasource{
-		ethereumClientMap: map[string]*ethclient.Client{},
-		clientMap:         map[string]*pregod_etl.Client{},
+		clientMap: map[string]*pregod_etl.Client{},
 	}
 
 	var err error
-
-	if internalDatasource.ethereumClientMap[protocol.NetworkEthereum], err = ethclient.Dial(config.General.Ethereum.HTTP); err != nil {
-		logrus.Errorf("[datasource_lens] ethclient.Dial error, %v", err)
-		return nil, err
-	}
-
-	if internalDatasource.ethereumClientMap[protocol.NetworkPolygon], err = ethclient.Dial(config.General.Polygon.HTTP); err != nil {
-		logrus.Errorf("[datasource_lens] ethclient.Dial error, %v", err)
-		return nil, err
-	}
 
 	if internalDatasource.clientMap[protocol.NetworkPolygon], err = pregod_etl.NewClient(protocol.NetworkPolygon, config.PregodETL.Polygon.HTTP); err != nil {
 		logrus.Errorf("[datasource_lens] pregod_etl.NewClient error, %v", err)

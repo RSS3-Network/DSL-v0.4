@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -46,7 +48,7 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) (err error) {
-	if s.ethereumClient, err = ethclient.Dial(Endpoint); err != nil {
+	if s.ethereumClient, err = ethclientx.Global(s.Networks()[0]); err != nil {
 		return err
 	}
 

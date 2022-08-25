@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -87,6 +88,15 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	cache.ReplaceGlobal(redisClient)
+
+	ethereumClientMap, err := ethclientx.Dial(config.ConfigHub.RPC, []string{protocol.NetworkEthereum, protocol.NetworkPolygon})
+	if err != nil {
+		return err
+	}
+
+	for network, client := range ethereumClientMap {
+		ethclientx.ReplaceGlobal(network, client)
+	}
 
 	s.httpServer = echo.New()
 
