@@ -114,9 +114,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		internalTransactions = append(internalTransactions, transaction)
 	}, opt)
 
-	b, _ := json.Marshal(internalTransactions)
-	fmt.Println(string(b))
-
 	return internalTransactions, nil
 }
 
