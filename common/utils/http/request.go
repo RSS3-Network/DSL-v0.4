@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
 func NewRequest(method, rawURL string, body interface{}) (*http.Request, error) {
@@ -29,6 +31,7 @@ func NewRequest(method, rawURL string, body interface{}) (*http.Request, error) 
 func DoRequest(_ context.Context, client *http.Client, request *http.Request, response interface{}) error {
 	httpResponse, err := client.Do(request)
 	if err != nil {
+		logrus.Errorf("DoRequest: client.Do, request: %v,  error: %v", request.URL, err)
 		return err
 	}
 
@@ -36,12 +39,15 @@ func DoRequest(_ context.Context, client *http.Client, request *http.Request, re
 
 	data, err := io.ReadAll(reader)
 	if err != nil {
+		logrus.Errorf("DoRequest: io ReadAll error, request: %v, error: %v", request.URL, err)
+
 		return err
 	}
 
 	_ = reader.Close()
 
 	if err = json.Unmarshal(data, &response); err != nil {
+		logrus.Errorf("DoRequest: json unmarshal error, request: %v, response: %v, error: %v", request.URL, string(data), err)
 		return err
 	}
 
