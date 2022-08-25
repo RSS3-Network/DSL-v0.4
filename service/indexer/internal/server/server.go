@@ -48,7 +48,6 @@ import (
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/samber/lo"
 	"github.com/scylladb/go-set/strset"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -320,7 +319,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		}
 	}(cctx)
 
-	defer s.employer.UnLock(lockKey)
 	defer cancel()
 
 	// convert address to lowercase
@@ -422,6 +420,8 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	transactionsMap := getTransactionsMap(transactions)
 
 	defer func() {
+		s.employer.UnLock(lockKey)
+
 		transfers := 0
 
 		for _, transaction := range transactions {
@@ -662,26 +662,16 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 }
 
 func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
-	key := fmt.Sprintf("indexer:%v:", address.Address)
-	iter := s.redisClient.Scan(ctx, 0, key+"*", 1000).Iterator()
-	if err := iter.Err(); err != nil {
-		logrus.Errorf("upsertAddress: redis scan error, %v", err)
-
-		return
-	}
-
-	address.DoneNetworks = append(address.DoneNetworks, protocol.SupportNetworks...)
-	for iter.Next(ctx) {
-		if s := strings.Split(iter.Val(), key); len(s) == 2 {
-			address.IndexingNetworks = append(address.IndexingNetworks, s[1])
-
-			for index := 0; index < len(address.DoneNetworks); index++ {
-				if s[1] == address.DoneNetworks[index] {
-					address.DoneNetworks = append(address.DoneNetworks[:index], address.DoneNetworks[index+1:]...)
-					index--
-					break
-				}
-			}
+	for _, network := range protocol.SupportNetworks {
+		key := fmt.Sprintf("indexer:%v:%v", address.Address, network)
+		n, err := s.redisClient.Exists(ctx, key).Result()
+		switch {
+		case err != nil:
+			return
+		case n == 1: // exists
+			address.IndexingNetworks = append(address.IndexingNetworks, network)
+		default: // not exists (unlocked)
+			address.DoneNetworks = append(address.DoneNetworks, network)
 		}
 	}
 
