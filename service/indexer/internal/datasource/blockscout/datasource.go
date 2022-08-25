@@ -3,15 +3,13 @@ package blockscout
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
@@ -26,7 +24,6 @@ const (
 var _ datasource.Datasource = (*Datasource)(nil)
 
 type Datasource struct {
-	ethereumClientMap   map[string]*ethclient.Client
 	blockscoutClientMap map[string]*blockscout.Client
 }
 
@@ -46,9 +43,9 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 
 	defer opentelemetry.Log(trace, message, transactions, err)
 
-	ethereumClient, exist := d.ethereumClientMap[message.Network]
-	if !exist {
-		return nil, errors.New("no ethereum client for network")
+	ethereumClient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
 	}
 
 	transactionMap := make(map[string]*model.Transaction)
@@ -178,40 +175,8 @@ func (d *Datasource) handleTokenTransfers(ctx context.Context, message *protocol
 	return transfers, nil
 }
 
-func New(config *configx.RPC) (datasource.Datasource, error) {
-	ethereumClientEthereum, err := ethclient.Dial(config.General.Ethereum.HTTP)
-	if err != nil {
-		return nil, err
-	}
-
-	ethereumClientPolygon, err := ethclient.Dial(config.General.Polygon.HTTP)
-	if err != nil {
-		return nil, err
-	}
-
-	ethereumClientBinanceSmartChain, err := ethclient.Dial(config.General.BinanceSmartChain.HTTP)
-	if err != nil {
-		return nil, err
-	}
-
-	ethereumClientXDAI, err := ethclient.Dial(config.General.XDAI.HTTP)
-	if err != nil {
-		return nil, err
-	}
-
-	ethereumClientCrossbell, err := ethclient.Dial(config.General.Crossbell.HTTP)
-	if err != nil {
-		return nil, err
-	}
-
+func New() (datasource.Datasource, error) {
 	return &Datasource{
-		ethereumClientMap: map[string]*ethclient.Client{
-			protocol.NetworkEthereum:          ethereumClientEthereum,
-			protocol.NetworkPolygon:           ethereumClientPolygon,
-			protocol.NetworkBinanceSmartChain: ethereumClientBinanceSmartChain,
-			protocol.NetworkCrossbell:         ethereumClientCrossbell,
-			protocol.NetworkXDAI:              ethereumClientXDAI,
-		},
 		blockscoutClientMap: map[string]*blockscout.Client{
 			protocol.NetworkEthereum:        blockscout.New(blockscout.EndpointDefault, blockscout.NetworkEthereum),
 			protocol.NetworkEthereumClassic: blockscout.New(blockscout.EndpointDefault, blockscout.NetworkEthereumClassic),

@@ -30,6 +30,14 @@ var SupportNetworks = []string{
 	NetworkCrossbell,
 }
 
+var EthclientNetworks = []string{
+	NetworkEthereum,
+	NetworkBinanceSmartChain,
+	NetworkPolygon,
+	NetworkXDAI,
+	NetworkCrossbell,
+}
+
 func NetworkToID(networkName string) string {
 	switch networkName {
 	case NetworkEthereum:
