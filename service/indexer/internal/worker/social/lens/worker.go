@@ -203,13 +203,13 @@ func (s *service) handlePostCreated(ctx context.Context, transaction *model.Tran
 	// get content
 	content, err := s.getContent(event.ContentURI)
 	if err != nil {
-		logrus.Errorf("[lens worker] Handle: getContent error, %v", err)
+		logrus.Errorf("[lens worker] handleReceipt: getContent error, %v", err)
 		return transfer, err
 	}
 
 	lensContent := LensContent{}
 	if err = json.Unmarshal(content, &lensContent); err != nil {
-		logrus.Errorf("[lens worker] Handle: json unmarshal error, %v", err)
+		logrus.Errorf("[lens worker] handleReceipt: json unmarshal error, %v, json: %v", err, string(content))
 		return transfer, err
 	}
 
@@ -281,7 +281,7 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction *model.T
 
 	lensContent := LensContent{}
 	if err = json.Unmarshal(content, &lensContent); err != nil {
-		logrus.Errorf("[lens worker] handleCommentCreated: json unmarshal error, %v", err)
+		logrus.Errorf("[lens worker] handleCommentCreated: json unmarshal error, %v, json: %v", err, string(content))
 		return transfer, err
 	}
 

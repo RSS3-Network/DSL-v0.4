@@ -18,6 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
+	ens_common "github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens/contract"
@@ -35,6 +36,7 @@ var (
 )
 
 type service struct {
+	config          *config.Config
 	ethClient       *ethclient.Client
 	abiClient       abi.ABI
 	rabbitmqChannel *rabbitmq.Channel
@@ -54,7 +56,7 @@ func New(
 	var err error
 
 	// get ethclient
-	crawler.ethClient, err = ethclient.Dial(config.Gateway.EthEndpoint)
+	crawler.ethClient, err = ethclient.Dial(config.RPC.General.Ethereum.WebSocket)
 	if err != nil {
 		logrus.Errorf("[crawler] ens: ethclient Dial error, %v", err)
 
@@ -228,12 +230,21 @@ func (s *service) loadExistingEns() {
 				continue
 			}
 
-			address := common.BytesToAddress(ens.AddressOwner).String()
+			nsResult, err := ens_common.Resolve(s.config.RPC.General.Ethereum.WebSocket, ens.Name+".eth")
+			if err != nil {
+				logrus.Errorf("[crawler] ens: Resolve error, %v", err)
+
+				continue
+			}
+
+			if len(nsResult) == 0 {
+				continue
+			}
 
 			// get address feed
 			var count int64
 			if err := database.Global().
-				Where("owner = ?", strings.ToLower(address)).
+				Where("owner = ?", strings.ToLower(nsResult)).
 				Model(&model.Transaction{}).
 				Count(&count).Error; err == nil && count > 0 {
 				continue
@@ -241,7 +252,7 @@ func (s *service) loadExistingEns() {
 
 			// create a rabbitmq job to index the latest user data
 			go func() {
-				if err := s.createRabbitmqJob(address); err != nil {
+				if err := s.createRabbitmqJob(nsResult); err != nil {
 					logrus.Errorf("[crawler] ens: createRabbitmqJob error, %v", err)
 				}
 			}()

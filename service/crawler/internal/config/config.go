@@ -9,5 +9,5 @@ type Config struct {
 	RabbitMQ      *configx.RabbitMQ      `mapstructure:"rabbitmq"`
 	OpenTelemetry *configx.OpenTelemetry `mapstructure:"opentelemetry"`
 	Redis         *configx.Redis         `mapstructure:"redis"`
-	Gateway       *configx.Gateway       `mapstructure:"gateway"`
+	RPC           *configx.RPC           `mapstructure:"rpc"`
 }

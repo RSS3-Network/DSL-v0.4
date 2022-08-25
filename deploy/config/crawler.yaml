@@ -24,5 +24,20 @@ redis:
   db: 0
   password: ''
 
-gateway:
-  ethendpoint: "wss://eth.rss3.dev"
+rpc:
+  general:
+    ethereum:
+      http: ''
+      websocket: ''
+    polygon:
+      http: ''
+      websocket: ''
+    bsc:
+      http: ''
+      websocket: ''
+    xdai:
+      http: ''
+      websocket: ''
+    crossbell:
+      http: ''
+      websocket: ''
