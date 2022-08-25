@@ -61,7 +61,7 @@ func New(
 	var err error
 
 	// get ethclient
-	crawler.ethClient, err = ethclient.Dial(config.Gateway.EthEndpoint)
+	crawler.ethClient, err = ethclient.Dial(config.RPC.General.Ethereum.WebSocket)
 	if err != nil {
 		logrus.Errorf("[crawler] ens: ethclient Dial error, %v", err)
 
@@ -235,7 +235,7 @@ func (s *service) loadExistingEns() {
 				continue
 			}
 
-			nsResult, err := ens_common.Resolve(s.config.Gateway.EthEndpoint, ens.Name+".eth")
+			nsResult, err := ens_common.Resolve(s.config.RPC.General.Ethereum.WebSocket, ens.Name+".eth")
 			if err != nil {
 				logrus.Errorf("[crawler] ens: Resolve error, %v", err)
 
