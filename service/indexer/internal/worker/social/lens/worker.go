@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math/big"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -76,6 +77,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	defer func() { opentelemetry.Log(trace, transactions, internalTransactions, err) }()
 
+	var mu sync.Mutex
 	opt := lop.NewOption().WithConcurrency(ethereum.RPCMaxConcurrency)
 	lop.ForEach(transactions, func(transaction model.Transaction, i int) {
 		addressTo := common.HexToAddress(transaction.AddressTo)
@@ -111,7 +113,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 		}
 
+		mu.Lock()
 		internalTransactions = append(internalTransactions, transaction)
+		mu.Unlock()
 	}, opt)
 
 	return internalTransactions, nil
@@ -201,7 +205,7 @@ func (s *service) handlePostCreated(ctx context.Context, transaction *model.Tran
 	}
 
 	// get content
-	content, err := s.getContent(event.ContentURI)
+	content, err := ipfs.GetFileByURL(event.ContentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleReceipt: getContent error, %v", err)
 		return transfer, err
@@ -273,7 +277,7 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction *model.T
 	}
 
 	// get content
-	content, err := s.getContent(event.ContentURI)
+	content, err := ipfs.GetFileByURL(event.ContentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: getContent error, %v", err)
 		return transfer, err
@@ -293,6 +297,13 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction *model.T
 			Address:  ipfs.GetDirectURL(media.Item),
 			MimeType: media.Type,
 		})
+	}
+
+	// get content pointed
+	post.Target, err = s.getContenPointed(ctx, event.ProfileId, event.PubId, s.ethereumClient)
+	if err != nil {
+		logrus.Errorf("[lens worker] handleCommentCreated: getContenPointed error, %v", err)
+		return transfer, err
 	}
 
 	rawMetadata, err := json.Marshal(post)
@@ -373,23 +384,46 @@ func (s *service) handleProfileCreated(ctx context.Context, transaction *model.T
 	return transfer, nil
 }
 
-func (s *service) getContent(uri string) (json.RawMessage, error) {
-	uri = ipfs.GetDirectURL(uri)
-	response, err := s.httpClient.Get(uri)
+func (s *service) getContenPointed(ctx context.Context, profileId *big.Int, pubId *big.Int, ethereumClient *ethclient.Client) (*metadata.Post, error) {
+	// rpc
+	iLensHub, err := contract.NewILensHub(lens.HubProxyContractAddress, ethereumClient)
 	if err != nil {
+		logrus.Errorf("[lens worker] NewILensHub error, %v", err)
+
 		return nil, err
 	}
 
-	reader := response.Body
-
-	data, err := io.ReadAll(reader)
+	contentURI, err := iLensHub.GetContentURI(&bind.CallOpts{}, profileId, pubId)
 	if err != nil {
+		logrus.Errorf("[lens worker] iLensHub GetContentURI error, %v", err)
+
 		return nil, err
 	}
 
-	_ = reader.Close()
+	// get content
+	content, err := ipfs.GetFileByURL(contentURI)
+	if err != nil {
+		logrus.Errorf("[lens worker] getContenPointed: getContent error, %v", err)
+		return nil, err
+	}
 
-	return data, nil
+	lensContent := LensContent{}
+	if err = json.Unmarshal(content, &lensContent); err != nil {
+		logrus.Errorf("[lens worker] getContenPointed: json unmarshal error, %v, json: %v", err, string(content))
+		return nil, err
+	}
+
+	post := &metadata.Post{
+		Body: lensContent.Content,
+	}
+	for _, media := range lensContent.Media {
+		post.Media = append(post.Media, metadata.Media{
+			Address:  ipfs.GetDirectURL(media.Item),
+			MimeType: media.Type,
+		})
+	}
+
+	return post, nil
 }
 
 func (s *service) Jobs() []worker.Job {
