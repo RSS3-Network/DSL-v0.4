@@ -79,7 +79,6 @@ func (s *service) Initialize(ctx context.Context) error {
 
 	for _, path := range files {
 		records, err := readFile(dir + "/" + path.Name())
-
 		if err != nil {
 			return err
 		}
