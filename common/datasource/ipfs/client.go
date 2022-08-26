@@ -7,6 +7,10 @@ import (
 )
 
 func GetDirectURL(url string) string {
+	if s := strings.Split(url, "/ipfs/"); len(s) == 2 {
+		url = "https://ipfs.rss3.page/ipfs/" + s[1]
+	}
+
 	return strings.Replace(url, "ipfs://", "https://ipfs.rss3.page/ipfs/", 1)
 }
 
