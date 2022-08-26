@@ -78,19 +78,11 @@ func (s *service) Initialize(ctx context.Context) error {
 	}
 
 	for _, path := range files {
-		file, err := asseFS.Open(dir + "/" + path.Name())
+		records, err := readFile(dir + "/" + path.Name())
+
 		if err != nil {
 			return err
 		}
-
-		reader := csv.NewReader(file)
-
-		records, err := reader.ReadAll()
-		if err != nil {
-			return err
-		}
-
-		file.Close()
 
 		walletModels := make([]exchange.CexWallet, 0)
 
@@ -123,6 +115,22 @@ func (s *service) Initialize(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func readFile(path string) ([][]string, error) {
+	file, err := asseFS.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	return records, nil
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (transaction []model.Transaction, err error) {
