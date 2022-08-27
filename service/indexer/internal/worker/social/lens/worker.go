@@ -34,7 +34,8 @@ import (
 )
 
 const (
-	Name = protocol.PlatformLens
+	Name   = protocol.PlatformLens
+	Source = "Lens ETL"
 )
 
 var _ worker.Worker = (*service)(nil)
@@ -137,84 +138,79 @@ func (s *service) handleReceipt(ctx context.Context, transaction *model.Transact
 
 	// parse log
 	for _, log := range receipt.Logs {
+
+		lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
+		if err != nil {
+			loggerx.Global().Error("[lens worker] handleReceipt: new events error", zap.Error(err))
+
+			continue
+		}
+
+		sourceData, err := json.Marshal(log)
+		if err != nil {
+			loggerx.Global().Error("marshal source data error", zap.Error(err))
+
+			continue
+		}
+
+		// common attributes
+		transfer := model.Transfer{
+			TransactionHash: transaction.Hash,
+			BlockNumber:     big.NewInt(transaction.BlockNumber),
+			Index:           int64(log.Index),
+			Network:         transaction.Network,
+			SourceData:      sourceData,
+			Source:          Source,
+			Platform:        s.Name(),
+		}
+
+		var eventType string
+		var handleErr error
 		switch log.Topics[0] {
 		case lens.EventHashPostCreated:
-			transfer, err := s.handlePostCreated(ctx, transaction, *log)
-			if err != nil {
-				loggerx.Global().Error("[lens worker] handleReceipt: handlePostCreated error", zap.Error(err))
-
-				continue
-			}
-			transfers = append(transfers, transfer)
-
+			handleErr = s.handlePostCreated(ctx, *lensContract, &transfer, *log)
+			eventType = "handlePostCreated"
 		case lens.EventHashCommentCreated:
-			transfer, err := s.handleCommentCreated(ctx, transaction, *log)
-			if err != nil {
-				loggerx.Global().Error("[lens worker] handleReceipt: handleCommentCreated error", zap.Error(err))
-
-				continue
-			}
-			transfers = append(transfers, transfer)
-
+			handleErr = s.handleCommentCreated(ctx, *lensContract, &transfer, *log)
+			eventType = "handleCommentCreated"
 		case lens.EventHashProfileCreated:
-			transfer, err := s.handleProfileCreated(ctx, transaction, *log)
-			if err != nil {
-				loggerx.Global().Error("[lens worker] handleReceipt: handleProfileCreated error", zap.Error(err))
-
-				continue
-			}
-			transfers = append(transfers, transfer)
-
+			handleErr = s.handleProfileCreated(ctx, *lensContract, transaction, &transfer, *log)
+			eventType = "handleProfileCreated"
+		default:
+			continue
 		}
+		if handleErr != nil {
+			loggerx.Global().Error(fmt.Sprintf("[lens worker] handleReceipt: %s error", eventType), zap.Error(handleErr))
+			continue
+		}
+
+		transfers = append(transfers, transfer)
 	}
 
 	return transfers, nil
 }
 
-func (s *service) handlePostCreated(ctx context.Context, transaction *model.Transaction, log types.Log) (transfer model.Transfer, err error) {
-	lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
-	if err != nil {
-		loggerx.Global().Error("[lens worker] handleReceipt: new events error", zap.Error(err))
-
-		return transfer, err
-	}
-
-	sourceData, err := json.Marshal(log)
-	if err != nil {
-		loggerx.Global().Error("marshal source data error", zap.Error(err))
-
-		return transfer, err
-	}
-
+func (s *service) handlePostCreated(ctx context.Context, lensContract contract.Events, transfer *model.Transfer, log types.Log) (err error) {
 	event, err := lensContract.EventsFilterer.ParsePostCreated(log)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] handleReceipt: ParsePostCreated error", zap.Error(err))
 
-		return transfer, err
+		return err
 	}
 
-	transfer = model.Transfer{
-		TransactionHash: transaction.Hash,
-		Timestamp:       time.Unix(event.Timestamp.Int64(), 0),
-		BlockNumber:     big.NewInt(transaction.BlockNumber),
-		Index:           int64(log.Index),
-		AddressFrom:     transaction.Owner,
-		Network:         transaction.Network,
-		Source:          ethereum.Source,
-		SourceData:      sourceData,
-	}
+	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 
 	// get content
 	content, err := ipfs.GetFileByURL(event.ContentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleReceipt: getContent error, %v", err)
-		return transfer, err
+		return err
 	}
 
 	lensContent := LensContent{}
 	if err = json.Unmarshal(content, &lensContent); err != nil {
 		logrus.Errorf("[lens worker] handleReceipt: json unmarshal error, %v, json: %v", err, string(content))
-		return transfer, err
+		return err
 	}
 
 	post := &metadata.Post{
@@ -229,7 +225,7 @@ func (s *service) handlePostCreated(ctx context.Context, transaction *model.Tran
 
 	rawMetadata, err := json.Marshal(post)
 	if err != nil {
-		return transfer, err
+		return err
 	}
 
 	transfer.Platform = lensContent.AppId
@@ -240,53 +236,30 @@ func (s *service) handlePostCreated(ctx context.Context, transaction *model.Tran
 		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
 	}
 
-	return transfer, nil
+	return nil
 }
 
-func (s *service) handleCommentCreated(ctx context.Context, transaction *model.Transaction, log types.Log) (transfer model.Transfer, err error) {
-	lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
-	if err != nil {
-		loggerx.Global().Error("[lens worker] handleCommentCreated: new events error", zap.Error(err))
-
-		return transfer, err
-	}
-
-	sourceData, err := json.Marshal(log)
-	if err != nil {
-		loggerx.Global().Error("marshal source data error", zap.Error(err))
-
-		return transfer, err
-	}
-
+func (s *service) handleCommentCreated(ctx context.Context, lensContract contract.Events, transfer *model.Transfer, log types.Log) (err error) {
 	event, err := lensContract.EventsFilterer.ParseCommentCreated(log)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] handleCommentCreated: ParsePostCreated error", zap.Error(err))
 
-		return transfer, err
+		return err
 	}
 
-	transfer = model.Transfer{
-		TransactionHash: transaction.Hash,
-		Timestamp:       time.Unix(event.Timestamp.Int64(), 0),
-		BlockNumber:     big.NewInt(transaction.BlockNumber),
-		Index:           int64(log.Index),
-		AddressFrom:     transaction.Owner,
-		Network:         transaction.Network,
-		Source:          ethereum.Source,
-		SourceData:      sourceData,
-	}
+	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 
 	// get content
 	content, err := ipfs.GetFileByURL(event.ContentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: getContent error, %v", err)
-		return transfer, err
+		return err
 	}
 
 	lensContent := LensContent{}
 	if err = json.Unmarshal(content, &lensContent); err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: json unmarshal error, %v, json: %v", err, string(content))
-		return transfer, err
+		return err
 	}
 
 	post := &metadata.Post{
@@ -303,12 +276,12 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction *model.T
 	post.Target, err = s.getContenPointed(ctx, event.ProfileId, event.PubId, s.ethereumClient)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: getContenPointed error, %v", err)
-		return transfer, err
+		return err
 	}
 
 	rawMetadata, err := json.Marshal(post)
 	if err != nil {
-		return transfer, err
+		return err
 	}
 
 	transfer.Platform = lensContent.AppId
@@ -319,43 +292,20 @@ func (s *service) handleCommentCreated(ctx context.Context, transaction *model.T
 		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
 	}
 
-	return transfer, nil
+	return nil
 }
 
-func (s *service) handleProfileCreated(ctx context.Context, transaction *model.Transaction, log types.Log) (transfer model.Transfer, err error) {
-	lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
-	if err != nil {
-		loggerx.Global().Error("[lens worker] handleProfileCreated: new events error", zap.Error(err))
-
-		return transfer, err
-	}
-
-	sourceData, err := json.Marshal(log)
-	if err != nil {
-		loggerx.Global().Error("marshal source data error", zap.Error(err))
-
-		return transfer, err
-	}
-
+func (s *service) handleProfileCreated(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (err error) {
 	event, err := lensContract.EventsFilterer.ParseProfileCreated(log)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] handleProfileCreated: ParseProfileCreated error", zap.Error(err))
 
-		return transfer, err
+		return err
 	}
 
-	transfer = model.Transfer{
-		TransactionHash: transaction.Hash,
-		Timestamp:       time.Unix(event.Timestamp.Int64(), 0),
-		BlockNumber:     big.NewInt(transaction.BlockNumber),
-		Index:           int64(log.Index),
-		AddressFrom:     strings.ToLower(event.Creator.String()),
-		AddressTo:       strings.ToLower(event.To.String()),
-		Network:         transaction.Network,
-		Source:          ethereum.Source,
-		SourceData:      sourceData,
-		Platform:        Name,
-	}
+	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
+	transfer.AddressFrom = strings.ToLower(event.Creator.String())
+	transfer.AddressTo = strings.ToLower(event.To.String())
 
 	profile := social.Profile{
 		Address:  strings.ToLower(event.To.String()),
@@ -369,7 +319,7 @@ func (s *service) handleProfileCreated(ctx context.Context, transaction *model.T
 
 	rawMetadata, err := json.Marshal(&profile)
 	if err != nil {
-		return transfer, err
+		return err
 	}
 
 	transfer.Metadata = rawMetadata
@@ -381,7 +331,7 @@ func (s *service) handleProfileCreated(ctx context.Context, transaction *model.T
 
 	transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagSocial, transaction.Tag, filter.SocialProfile, transaction.Type)
 
-	return transfer, nil
+	return nil
 }
 
 func (s *service) getContenPointed(ctx context.Context, profileId *big.Int, pubId *big.Int, ethereumClient *ethclient.Client) (*metadata.Post, error) {
