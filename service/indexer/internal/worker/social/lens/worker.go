@@ -159,6 +159,7 @@ func (s *service) handleReceipt(ctx context.Context, transaction *model.Transact
 			BlockNumber:     big.NewInt(transaction.BlockNumber),
 			Index:           int64(log.Index),
 			Network:         transaction.Network,
+			AddressFrom:     transaction.Owner,
 			SourceData:      sourceData,
 			Source:          Source,
 			Platform:        s.Name(),
