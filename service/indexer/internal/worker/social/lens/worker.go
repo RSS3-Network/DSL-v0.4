@@ -12,6 +12,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -138,7 +139,6 @@ func (s *service) handleReceipt(ctx context.Context, transaction *model.Transact
 
 	// parse log
 	for _, log := range receipt.Logs {
-
 		lensContract, err := contract.NewEvents(log.Address, s.ethereumClient)
 		if err != nil {
 			loggerx.Global().Error("[lens worker] handleReceipt: new events error", zap.Error(err))
@@ -177,6 +177,9 @@ func (s *service) handleReceipt(ctx context.Context, transaction *model.Transact
 		case lens.EventHashProfileCreated:
 			handleErr = s.handleProfileCreated(ctx, *lensContract, transaction, &transfer, *log)
 			eventType = "handleProfileCreated"
+		case lens.EventHashMirrorCreated:
+			handleErr = s.handleMirrorCreated(ctx, *lensContract, &transfer, *log)
+			eventType = "handleMirrorCreated"
 		default:
 			continue
 		}
@@ -233,7 +236,7 @@ func (s *service) handlePostCreated(ctx context.Context, lensContract contract.E
 	transfer.Metadata = rawMetadata
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
 	transfer.RelatedUrls = []string{
-		lensContent.ExternalURL,
+		s.getLensRelatedURL(ctx, event.ProfileId, event.PubId),
 		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
 	}
 
@@ -274,7 +277,7 @@ func (s *service) handleCommentCreated(ctx context.Context, lensContract contrac
 	}
 
 	// get content pointed
-	post.Target, err = s.getContenPointed(ctx, event.ProfileId, event.PubId, s.ethereumClient)
+	post.Target, err = s.getContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed, s.ethereumClient)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: getContenPointed error, %v", err)
 		return err
@@ -289,7 +292,7 @@ func (s *service) handleCommentCreated(ctx context.Context, lensContract contrac
 	transfer.Metadata = rawMetadata
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialComment, transfer.Type)
 	transfer.RelatedUrls = []string{
-		lensContent.ExternalURL,
+		s.getLensRelatedURL(ctx, event.ProfileId, event.PubId),
 		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
 	}
 
@@ -335,6 +338,45 @@ func (s *service) handleProfileCreated(ctx context.Context, lensContract contrac
 	return nil
 }
 
+func (s *service) handleMirrorCreated(ctx context.Context, lensContract contract.Events, transfer *model.Transfer, log types.Log) (err error) {
+	event, err := lensContract.EventsFilterer.ParseMirrorCreated(log)
+	if err != nil {
+		loggerx.Global().Error("[lens worker] handleMirrorCreated: ParsePostCreated error", zap.Error(err))
+
+		return err
+	}
+
+	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
+
+	// get content
+	share, err := s.getContenPointed(ctx, event.ProfileId, event.PubId, s.ethereumClient)
+	if err != nil {
+		logrus.Errorf("[lens worker] handleMirrorCreated: getContenPointed error, %v", err)
+		return err
+	}
+
+	// get content pointed
+	share.Target, err = s.getContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed, s.ethereumClient)
+	if err != nil {
+		logrus.Errorf("[lens worker] handleMirrorCreated: getContenPointed error, %v", err)
+		return err
+	}
+
+	rawMetadata, err := json.Marshal(share)
+	if err != nil {
+		return err
+	}
+
+	transfer.Metadata = rawMetadata
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialShare, transfer.Type)
+	transfer.RelatedUrls = []string{
+		s.getLensRelatedURL(ctx, event.ProfileId, event.PubId),
+		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
+	}
+
+	return nil
+}
+
 func (s *service) getContenPointed(ctx context.Context, profileId *big.Int, pubId *big.Int, ethereumClient *ethclient.Client) (*metadata.Post, error) {
 	// rpc
 	iLensHub, err := contract.NewILensHub(lens.HubProxyContractAddress, ethereumClient)
@@ -375,6 +417,20 @@ func (s *service) getContenPointed(ctx context.Context, profileId *big.Int, pubI
 	}
 
 	return post, nil
+}
+
+func (s *service) getLensRelatedURL(ctx context.Context, profileId *big.Int, pubId *big.Int) string {
+	profileIdHex := []byte(hexutil.EncodeBig(profileId))
+	pubIdHex := []byte(hexutil.EncodeBig(pubId))
+
+	if len(profileIdHex) == 3 {
+		profileIdHex = append(profileIdHex[:2], 48, profileIdHex[2])
+	}
+	if len(pubIdHex) == 3 {
+		pubIdHex = append(pubIdHex[:2], 48, pubIdHex[2])
+	}
+
+	return fmt.Sprintf("https://lenster.xyz/posts/%v-%v", string(profileIdHex), string(pubIdHex))
 }
 
 func (s *service) Jobs() []worker.Job {
