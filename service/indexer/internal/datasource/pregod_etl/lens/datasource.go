@@ -156,13 +156,17 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 			}
 
 			for {
-				result, err := d.clientMap[message.Network].GetLogs(ctx, parameter)
+				result, err := d.clientMap[message.Network].GetLogs(ctx, "lens", parameter)
 				if err != nil {
 					return
 				}
 
+				if len(result.Result) == 0 {
+					return
+				}
+
 				for _, transfer := range result.Result {
-					transaction := model.Transaction{
+					internalTransactions = append(internalTransactions, model.Transaction{
 						BlockNumber: transfer.BlockNumber.BigInt().Int64(),
 						Hash:        transfer.TransactionHash,
 						Index:       transfer.TransactionIndex.BigInt().Int64(),
@@ -170,14 +174,9 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 						Source:      d.Name(),
 						Transfers:   make([]model.Transfer, 0),
 						Owner:       strings.ToLower(message.Address),
-					}
-
-					internalTransactions = append(internalTransactions, transaction)
+					})
 				}
 
-				if len(result.Cursor) == 0 {
-					return
-				}
 				parameter.Cursor = result.Cursor
 			}
 		}(eventHash, contractAddress)
