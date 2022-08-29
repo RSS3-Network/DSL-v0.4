@@ -13,6 +13,15 @@ type GetLogsRequest struct {
 	TransactionHash string `url:"transaction_hash,omitempty"`
 	BlockNumberFrom int64  `url:"block_number_from,omitempty"`
 	BlockNumberTo   int64  `url:"block_number_to,omitempty"`
+	Cursor          string `url:"cursor,omitempty"`
+	Order           string `url:"order"`
+	Limit           int    `url:"limit"`
+}
+
+type GetLogsResponse struct {
+	Cursor string        `json:"cursor,omitempty"`
+	Total  int64         `json:"total"`
+	Result []EthereumLog `json:"result"`
 }
 
 // EthereumLog is the model entity for the EthereumLog schema.
