@@ -148,29 +148,36 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 		wg.Add(1)
 		go func(eventHash common.Hash, contractAddress common.Address) {
 			defer wg.Done()
+
 			parameter := pregod_etl.GetLogsRequest{
 				Address:     contractAddress.String(),
 				TopicSecond: hash.String(),
 				TopicFirst:  eventHash.String(),
 			}
 
-			result, err := d.clientMap[message.Network].GetLogs(ctx, parameter)
-			if err != nil {
-				return
-			}
-
-			for _, transfer := range result {
-				transaction := model.Transaction{
-					BlockNumber: transfer.BlockNumber.BigInt().Int64(),
-					Hash:        transfer.TransactionHash,
-					Index:       transfer.TransactionIndex.BigInt().Int64(),
-					Network:     message.Network,
-					Source:      d.Name(),
-					Transfers:   make([]model.Transfer, 0),
-					Owner:       strings.ToLower(message.Address),
+			for {
+				result, err := d.clientMap[message.Network].GetLogs(ctx, "lens", parameter)
+				if err != nil {
+					return
 				}
 
-				internalTransactions = append(internalTransactions, transaction)
+				if len(result.Result) == 0 {
+					return
+				}
+
+				for _, transfer := range result.Result {
+					internalTransactions = append(internalTransactions, model.Transaction{
+						BlockNumber: transfer.BlockNumber.BigInt().Int64(),
+						Hash:        transfer.TransactionHash,
+						Index:       transfer.TransactionIndex.BigInt().Int64(),
+						Network:     message.Network,
+						Source:      d.Name(),
+						Transfers:   make([]model.Transfer, 0),
+						Owner:       strings.ToLower(message.Address),
+					})
+				}
+
+				parameter.Cursor = result.Cursor
 			}
 		}(eventHash, contractAddress)
 	}

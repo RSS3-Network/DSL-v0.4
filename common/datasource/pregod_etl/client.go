@@ -27,7 +27,7 @@ func NewClient(network string, endpoint string) (*Client, error) {
 	return &client, nil
 }
 
-func (c *Client) GetLogs(ctx context.Context, parameter GetLogsRequest) ([]EthereumLog, error) {
+func (c *Client) GetLogs(ctx context.Context, network string, parameter GetLogsRequest) (*GetLogsResponse, error) {
 	values, err := query.Values(parameter)
 	if err != nil {
 		logrus.Errorf("[pregod_etl client] GetLogs: query.Values error, %v", err)
@@ -38,7 +38,7 @@ func (c *Client) GetLogs(ctx context.Context, parameter GetLogsRequest) ([]Ether
 	url := &url.URL{
 		Scheme:   "http",
 		Host:     c.endpoint,
-		Path:     fmt.Sprintf("/networks/%v/logs", c.network),
+		Path:     fmt.Sprintf("/networks/%v/logs", network),
 		RawQuery: values.Encode(),
 	}
 
@@ -49,7 +49,7 @@ func (c *Client) GetLogs(ctx context.Context, parameter GetLogsRequest) ([]Ether
 		return nil, err
 	}
 
-	var result []EthereumLog
+	var result *GetLogsResponse
 
 	err = httpx.DoRequest(ctx, c.httpClient, request, &result)
 	if err != nil {
