@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 func GetDirectURL(url string) string {
@@ -15,14 +16,19 @@ func GetDirectURL(url string) string {
 }
 
 func GetFileByURL(url string) ([]byte, error) {
-	response, err := http.Get(GetDirectURL(url))
-	if err != nil {
-		return nil, err
+	var err error
+	var response *http.Response
+
+	var i int64
+	for i = 0; i < 3; i++ {
+		response, err = http.Get(GetDirectURL(url))
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Duration(i*3) * time.Second)
 	}
 
-	defer func() {
-		_ = response.Body.Close()
-	}()
+	defer response.Body.Close()
 
 	return io.ReadAll(response.Body)
 }
