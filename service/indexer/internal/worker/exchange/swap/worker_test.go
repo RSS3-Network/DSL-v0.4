@@ -39,7 +39,7 @@ func TestBuildTransferMetadata(t *testing.T) {
 				HTTP: "https://rpc.rss3.dev/networks/ethereum",
 			},
 		},
-	})
+	}, []string{protocol.NetworkCrossbell})
 	if err != nil {
 		t.Fatalf("failed to create ethereum client: %v", err)
 	}

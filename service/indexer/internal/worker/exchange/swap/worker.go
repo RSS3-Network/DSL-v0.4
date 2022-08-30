@@ -9,11 +9,11 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -30,9 +30,8 @@ import (
 var _ worker.Worker = &service{}
 
 type service struct {
-	employer          *shedlock.Employer
-	tokenClient       *token.Client
-	ethereumClientMap map[string]*ethclient.Client
+	employer    *shedlock.Employer
+	tokenClient *token.Client
 }
 
 func (s *service) Name() string {
@@ -127,8 +126,8 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 
 	defer opentelemetry.Log(trace, transaction, internalTransfers, err)
 
-	ethereumClient, exist := s.ethereumClientMap[message.Network]
-	if !exist {
+	ethereumClient, err := ethclientx.Global(message.Network)
+	if err != nil {
 		return nil, errors.New("not supported network")
 	}
 
