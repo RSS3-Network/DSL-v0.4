@@ -16,10 +16,12 @@ var (
 	EventHashProfileCreated = crypto.Keccak256Hash([]byte("ProfileCreated(uint256,address,address,string,string,address,bytes,string,uint256)"))
 	EventHashCommentCreated = crypto.Keccak256Hash([]byte("CommentCreated(uint256,uint256,string,uint256,uint256,bytes,address,bytes,address,bytes,uint256)"))
 	EventHashFollow         = crypto.Keccak256Hash([]byte("FollowNFTTransferred(uint256,uint256,address,address,uint256)"))
+	EventHashMirrorCreated  = crypto.Keccak256Hash([]byte("MirrorCreated(uint256,uint256,uint256,uint256,bytes,address,bytes,uint256)"))
 )
 
 var SupportLensEvents = map[common.Hash]common.Address{
 	EventHashCommentCreated: HubProxyContractAddress,
 	EventHashPostCreated:    HubProxyContractAddress,
 	EventHashProfileCreated: HubProxyContractAddress,
+	EventHashMirrorCreated:  HubProxyContractAddress,
 }
