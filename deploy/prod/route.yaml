@@ -74,9 +74,9 @@ metadata:
 spec:
   # https://github.com/traefik/traefik/issues/4549#issuecomment-474700751
   rateLimit:
-    period: 1m
-    average: 300
-    burst: 300
+    period: 1s
+    average: 2
+    burst: 10
     sourceCriterion:
       ipStrategy:
         depth: 2
