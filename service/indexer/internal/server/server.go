@@ -25,7 +25,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
@@ -114,10 +113,10 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
-	alchemyDatasource, err := alchemy.New(s.config.RPC)
-	if err != nil {
-		return err
-	}
+	// alchemyDatasource, err := alchemy.New(s.config.RPC)
+	// if err != nil {
+	// 	return err
+	// }
 
 	blockscoutDatasource, err := blockscout.New(s.config.RPC)
 	if err != nil {
@@ -130,7 +129,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.datasources = []datasource.Datasource{
-		alchemyDatasource,
+		// alchemyDatasource,
 		moralis.New(s.config.Moralis.Key, s.config.RPC),
 		arweave.New(),
 		blockscoutDatasource,
