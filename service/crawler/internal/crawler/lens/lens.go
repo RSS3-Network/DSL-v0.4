@@ -3,6 +3,7 @@ package lens
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -14,8 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/golangci/golangci-lint/pkg/config"
 	"github.com/naturalselectionlabs/pregod/common/cache"
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -26,7 +27,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/worker/lens_comm"
+	lens_comm "github.com/naturalselectionlabs/pregod/common/worker/lens"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
@@ -51,11 +53,38 @@ type service struct {
 }
 
 func New(config *config.Config) crawler.Crawler {
+	var err error
 
+	crawler := &service{config: config}
+
+	// get ethclient
+	if crawler.ethClient, err = ethclient.Dial(config.RPC.General.Polygon.WebSocket); err != nil {
+		logrus.Error("[lens] ethclient.Dial error, ", err)
+		return nil
+	}
+
+	if crawler.etlClient, err = pregod_etl.NewClient(protocol.NetworkPolygon, config.RPC.PregodETL.Polygon.HTTP); err != nil {
+		logrus.Error("[lens] pregod_etl.NewClient error, ", err)
+		return nil
+	}
+
+	ethereumClientMap, err := ethereum.New(config.RPC)
+	if err != nil {
+		logrus.Error("[lens] ethereum.New error, ", err)
+		return nil
+	}
+
+	crawler.commWorkerClient = lens_comm.New(ethereumClientMap)
+
+	return crawler
+}
+
+func (s *service) Name() string {
+	return protocol.PlatformLens
 }
 
 func (s *service) Run() error {
-	var ctx = context.Background()
+	ctx := context.Background()
 	var wg sync.WaitGroup
 	for eventHash, contractAddress := range lens.SupportLensEvents {
 		wg.Add(1)
@@ -99,49 +128,52 @@ func (s *service) Run() error {
 		}(eventHash, contractAddress)
 	}
 	wg.Wait()
+	return nil
 }
 
 func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contractAddress common.Address) ([]*model.Transaction, error) {
 	tracer := otel.Tracer("lens")
 	_, trace := tracer.Start(ctx, "len:GetLensLogs")
-	var internalTransactions = []*model.Transaction{}
+	internalTransactions := []*model.Transaction{}
 	var err error
 	defer func() { opentelemetry.Log(trace, nil, internalTransactions, err) }()
 
 	parameter := pregod_etl.GetLogsRequest{
 		Address:    contractAddress.String(),
 		TopicFirst: eventHash.String(),
+		Limit:      100,
 	}
 
 	cacheKey := fmt.Sprintf(lensLogsCacheKey, eventHash.String())
 	cacheInfo, _ := cache.Global().Get(ctx, cacheKey).Result()
 	if cacheList := strings.Split(cacheInfo, ":"); len(cacheList) == 2 {
-		parameter.BlockNumberFrom, _ = strconv.ParseInt(cacheList[1], 10, 64)
-		parameter.Cursor = cacheList[2]
+		parameter.BlockNumberFrom, _ = strconv.ParseInt(cacheList[0], 10, 64)
+		parameter.Cursor = cacheList[1]
 	}
 
 	// get logs from pregod_etl
 	result, err := s.etlClient.GetLogs(ctx, "lens", parameter)
 	if err != nil {
-		loggerx.Global().Error("[lens] GetLensLogs: etlClient GetLogs error", zap.Error(err))
+		logrus.Error("[lens] GetLensLogs: etlClient GetLogs error, ", err)
 
 		return nil, err
 	}
+
 	if len(result.Result) == 0 {
 		return nil, nil
 	}
 
 	for _, transfer := range result.Result {
 		// get profile by profileId
-		profileId, err := hexutil.DecodeBig(transfer.TopicSecond)
+		profileId, err := hexutil.DecodeBig(hexutil.Encode(common.TrimLeftZeroes(common.FromHex(transfer.TopicSecond))))
 		if err != nil {
-			loggerx.Global().Error("[lens] GetLensLogs: hexutil.Decode error", zap.Error(err))
+			logrus.Error("[lens] GetLensLogs: hexutil.Decode error, ", err)
 
 			continue
 		}
-		profile, err := s.GetProfileById(ctx, profileId)
+		profile, err := s.getLensOwnerAddressById(ctx, profileId)
 		if err != nil {
-			loggerx.Global().Error("[lens] GetLensLogs: GetProfileById error", zap.Error(err))
+			logrus.Errorf("[lens] GetLensLogs: getLensAddressById error, %v, profileId: %v", err, profileId)
 
 			continue
 		}
@@ -154,7 +186,7 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 			Source:      protocol.SourcePregodETL,
 			Platform:    protocol.PlatformLens,
 			Transfers:   make([]model.Transfer, 0),
-			Owner:       strings.ToLower(profile.FollowNFT.String()),
+			Owner:       strings.ToLower(profile.String()),
 		}
 
 		internalTransactions = append(internalTransactions, transaction)
@@ -167,35 +199,35 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 	return internalTransactions, nil
 }
 
-func (s *service) getProfileById(ctx context.Context, profileId *big.Int) (contract.DataTypesProfileStruct, error) {
+func (s *service) getLensOwnerAddressById(ctx context.Context, profileId *big.Int) (common.Address, error) {
 	tracer := otel.Tracer("len")
-	_, trace := tracer.Start(ctx, "len:GetProfileById")
-	var profile contract.DataTypesProfileStruct
+	_, trace := tracer.Start(ctx, "len:getLensAddressById")
+	var owner common.Address
 	var err error
-	defer func() { opentelemetry.Log(trace, profileId, profile, err) }()
+	defer func() { opentelemetry.Log(trace, profileId, owner, err) }()
 
 	// rpc
-	iLensHub, err := contract.NewILensHub(lens.HubProxyContractAddress, s.ethClient)
+	lensHub, err := contract.NewHub(lens.HubProxyContractAddress, s.ethClient)
 	if err != nil {
-		loggerx.Global().Error("[len] NewILensHub error", zap.Error(err))
+		logrus.Error("[len] NewILensHub error, ", err)
 
-		return profile, err
+		return owner, err
 	}
 
-	profile, err = iLensHub.GetProfile(&bind.CallOpts{}, profileId)
+	owner, err = lensHub.OwnerOf(&bind.CallOpts{}, profileId)
 	if err != nil {
-		loggerx.Global().Error("[len] iLensHub DefaultProfile error", zap.Error(err))
+		logrus.Error("[len] iLensHub GetFollowNFT error, ", err)
 
-		return profile, err
+		return owner, err
 	}
 
-	return profile, nil
+	return owner, nil
 }
 
 func (s *service) getInternalTransaction(ctx context.Context, transactions []*model.Transaction) []model.Transaction {
 	var mu sync.Mutex
 	internalTransactions := []model.Transaction{}
-	opt := lop.NewOption().WithConcurrency(ethereum.RPCMaxConcurrency)
+	opt := lop.NewOption().WithConcurrency(20)
 	lop.ForEach(transactions, func(transaction *model.Transaction, i int) {
 		addressTo := common.HexToAddress(transaction.AddressTo)
 		if addressTo != lens.HubProxyContractAddress && addressTo != lens.ProfileProxyContractAddress {
@@ -212,7 +244,7 @@ func (s *service) getInternalTransaction(ctx context.Context, transactions []*mo
 		transaction.Transfers = append(transaction.Transfers, transferMap[protocol.IndexVirtual])
 
 		// get receipt
-		internalTransfers, err := s.commWorkerClient.HandleReceipt(ctx, &transaction)
+		internalTransfers, err := s.commWorkerClient.HandleReceipt(ctx, transaction)
 		if err != nil {
 			logrus.Errorf("[lens worker] handleReceipt error, %v", err)
 
@@ -281,7 +313,7 @@ func (s *service) upsertTransactions(ctx context.Context, transactions []model.T
 	}
 
 	for _, ts := range lo.Chunk(updatedTransactions, dbChunkSize) {
-		if err := c.databaseClient.
+		if err := database.Global().
 			Clauses(clause.OnConflict{
 				UpdateAll: true,
 			}).
@@ -293,7 +325,7 @@ func (s *service) upsertTransactions(ctx context.Context, transactions []model.T
 	}
 
 	for _, ts := range lo.Chunk(transfers, dbChunkSize) {
-		if err := c.databaseClient.
+		if err := database.Global().
 			Clauses(clause.OnConflict{
 				UpdateAll: true,
 				DoUpdates: clause.AssignmentColumns([]string{"metadata"}),
@@ -304,4 +336,6 @@ func (s *service) upsertTransactions(ctx context.Context, transactions []model.T
 			return err
 		}
 	}
+
+	return nil
 }
