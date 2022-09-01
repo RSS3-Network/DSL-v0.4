@@ -1,4 +1,4 @@
-package lens_comm
+package lens
 
 import (
 	"context"
@@ -73,14 +73,14 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 	for _, log := range receipt.Logs {
 		lensContract, err := contract.NewEvents(log.Address, c.ethereumClient)
 		if err != nil {
-			loggerx.Global().Error("[lens worker] handleReceipt: new events error", zap.Error(err))
+			logrus.Errorf("[lens worker] handleReceipt: new events error, %v", err)
 
 			continue
 		}
 
 		sourceData, err := json.Marshal(log)
 		if err != nil {
-			loggerx.Global().Error("marshal source data error", zap.Error(err))
+			logrus.Errorf("[lens worker] marshal source data error, %v", err)
 
 			continue
 		}
@@ -116,7 +116,7 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			continue
 		}
 		if handleErr != nil {
-			loggerx.Global().Error(fmt.Sprintf("[lens worker] handleReceipt: %s error", eventType), zap.Error(handleErr))
+			logrus.Errorf("[lens worker] handleReceipt: %s error, %v", eventType, err)
 			continue
 		}
 
@@ -137,7 +137,8 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 
 	// get content
-	content, err := ipfs.GetFileByURL(event.ContentURI)
+	ipfsClient := ipfs.New()
+	content, err := ipfsClient.GetFileByURL(event.ContentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleReceipt: getContent error, %v", err)
 		return err
@@ -186,7 +187,8 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 
 	// get content
-	content, err := ipfs.GetFileByURL(event.ContentURI)
+	ipfsClient := ipfs.New()
+	content, err := ipfsClient.GetFileByURL(event.ContentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: getContent error, %v", err)
 		return err
@@ -245,7 +247,7 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 
 	profile := social.Profile{
 		Address:  strings.ToLower(event.To.String()),
-		Platform: Name,
+		Platform: protocol.PlatformLens,
 		Network:  transaction.Network,
 		Source:   transaction.Platform,
 		Type:     filter.SocialProfileCreate,
@@ -326,7 +328,8 @@ func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId
 	}
 
 	// get content
-	content, err := ipfs.GetFileByURL(contentURI)
+	ipfsClient := ipfs.New()
+	content, err := ipfsClient.GetFileByURL(contentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] getContenPointed: getContent error, %v", err)
 		return nil, err
