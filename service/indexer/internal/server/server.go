@@ -325,6 +325,24 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	defer cancel()
 
+	var transactions []model.Transaction
+	defer func() {
+		s.employer.UnLock(lockKey)
+
+		transfers := 0
+
+		for _, transaction := range transactions {
+			transfers += len(transaction.Transfers)
+		}
+
+		loggerx.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
+
+		// upsert address status
+		go s.upsertAddress(ctx, model.Address{
+			Address: message.Address,
+		})
+	}()
+
 	// convert address to lowercase
 	message.Address = strings.ToLower(message.Address)
 	tracer := otel.Tracer("indexer")
@@ -353,9 +371,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	// Open a database transaction
 	tx := database.Global().WithContext(ctx).Begin()
-
-	// Get data from datasources
-	var transactions []model.Transaction
 
 	for _, datasource := range s.datasources {
 		for _, network := range datasource.Networks() {
@@ -422,23 +437,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	}
 
 	transactionsMap := getTransactionsMap(transactions)
-
-	defer func() {
-		s.employer.UnLock(lockKey)
-
-		transfers := 0
-
-		for _, transaction := range transactions {
-			transfers += len(transaction.Transfers)
-		}
-
-		loggerx.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
-
-		// upsert address status
-		go s.upsertAddress(ctx, model.Address{
-			Address: message.Address,
-		})
-	}()
 
 	return s.handleWorkers(ctx, message, tx, transactions, transactionsMap)
 }
