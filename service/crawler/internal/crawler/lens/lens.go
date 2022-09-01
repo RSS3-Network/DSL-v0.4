@@ -3,7 +3,6 @@ package lens
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
