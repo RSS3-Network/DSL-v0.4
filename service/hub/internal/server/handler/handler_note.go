@@ -101,7 +101,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		transactionHashes = append(transactionHashes, transactionHash.Hash)
 	}
 
-	transfers, err := h.getTransfers(ctx, transactionHashes, request.Type)
+	transfers, err := h.getTransfers(ctx, transactionHashes)
 	if err != nil {
 		return InternalError(c)
 	}
@@ -201,7 +201,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 }
 
 // getTransfers get transfer data from database
-func (h *Handler) getTransfers(c context.Context, transactionHashes []string, requestType []string) ([]dbModel.Transfer, error) {
+func (h *Handler) getTransfers(c context.Context, transactionHashes []string) ([]dbModel.Transfer, error) {
 	tracer := otel.Tracer("getTransfers")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
@@ -210,10 +210,6 @@ func (h *Handler) getTransfers(c context.Context, transactionHashes []string, re
 	transfers := make([]dbModel.Transfer, 0)
 
 	sql := database.Global().Model(&dbModel.Transfer{})
-
-	if len(requestType) > 0 {
-		sql = sql.Where("\"type\" IN ? ", requestType)
-	}
 
 	if err := sql.
 		Where("transaction_hash IN (SELECT * FROM UNNEST(?::TEXT[]))", pq.Array(transactionHashes)).
@@ -403,7 +399,7 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 		transactionHashes = append(transactionHashes, transactionHash.Hash)
 	}
 
-	transfers, err := h.getTransfers(ctx, transactionHashes, request.Type)
+	transfers, err := h.getTransfers(ctx, transactionHashes)
 	if err != nil {
 		return nil, 0, err
 	}
