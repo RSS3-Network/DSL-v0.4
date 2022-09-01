@@ -12,7 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -94,7 +93,7 @@ func (s *service) Run() error {
 				// get lens logs
 				transactions, err := s.getLensLogs(ctx, eventHash, contractAddress)
 				if err != nil {
-					loggerx.Global().Error("[lens] Run: GetLensLogs error", zap.Error(err))
+					logrus.Error("[lens] Run: GetLensLogs error, ", err)
 
 					return
 				}
@@ -110,7 +109,7 @@ func (s *service) Run() error {
 					Network: protocol.NetworkPolygon,
 				}
 				if transactions, err = ethereum.BuildTransactions(ctx, message, transactions, s.ethClient); err != nil {
-					loggerx.Global().Error("failed to build transactions", zap.Error(err))
+					logrus.Error("failed to build transactions, ", err)
 
 					return
 				}
@@ -141,6 +140,7 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 		Address:    contractAddress.String(),
 		TopicFirst: eventHash.String(),
 		Limit:      100,
+		Order:      "asc",
 	}
 
 	cacheKey := fmt.Sprintf(lensLogsCacheKey, eventHash.String())
@@ -158,18 +158,9 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 		return nil, err
 	}
 
-	if len(result.Result) == 0 {
-		return nil, nil
-	}
-
 	for _, transfer := range result.Result {
 		// get profile by profileId
-		profileId, err := hexutil.DecodeBig(hexutil.Encode(common.TrimLeftZeroes(common.FromHex(transfer.TopicSecond))))
-		if err != nil {
-			logrus.Error("[lens] GetLensLogs: hexutil.Decode error, ", err)
-
-			continue
-		}
+		profileId := big.NewInt(0).SetBytes(common.FromHex(transfer.TopicSecond))
 		profile, err := s.getLensOwnerAddressById(ctx, profileId)
 		if err != nil {
 			logrus.Errorf("[lens] GetLensLogs: getLensAddressById error, %v, profileId: %v", err, profileId)

@@ -42,6 +42,7 @@ func (c *Client) GetLogs(ctx context.Context, network string, parameter GetLogsR
 		RawQuery: values.Encode(),
 	}
 
+	logrus.Info("[pregod_etl client] GetLogs, request = ", url.String())
 	request, err := httpx.NewRequest(http.MethodGet, url.String(), nil)
 	if err != nil {
 		logrus.Errorf("[pregod_etl client] GetLogs: NewRequest error, %v", err)
