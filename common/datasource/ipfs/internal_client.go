@@ -12,7 +12,8 @@ type InternalClient struct {
 
 func New() *InternalClient {
 	return &InternalClient{
-		internalIPFS: "http://ipfs-cluster.pregod:8080/ipfs/",
+		// internalIPFS: "http://ipfs-cluster.pregod:8080/ipfs/",
+		internalIPFS: "https://ipfs.rss3.page/ipfs/",
 	}
 }
 
