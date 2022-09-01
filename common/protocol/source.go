@@ -1,5 +1,6 @@
 package protocol
 
 const (
-	SourceOrigin = "origin"
+	SourceOrigin    = "origin"
+	SourcePregodETL = "pregod_etl"
 )

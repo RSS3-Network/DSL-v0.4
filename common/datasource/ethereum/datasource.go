@@ -343,7 +343,7 @@ func handleLog(ctx context.Context, message *protocol.Message, transaction *mode
 
 	address := strings.ToLower(message.Address)
 
-	if !(transfer.AddressTo == address || transfer.AddressFrom == address) {
+	if len(address) > 0 && transfer.AddressTo != address && transfer.AddressFrom != address {
 		return nil, ErrorUnrelatedEvent
 	}
 
