@@ -3,7 +3,6 @@ package lens
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -141,18 +140,18 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 	// get content
 	content, err := ipfs.GetFileByURL(event.ContentURI)
 	if err != nil {
-		logrus.Errorf("[lens worker] handleReceipt: getContent error, %v", err)
+		logrus.Errorf("[lens worker] handleReceipt: getContent error, %v, ipfs: %v", err, event.ContentURI)
 		return err
 	}
 
 	lensContent := LensContent{}
 	if err = json.Unmarshal(content, &lensContent); err != nil {
-		logrus.Errorf("[lens worker] handleReceipt: json unmarshal error, %v, json: %v", err, string(content))
+		logrus.Errorf("[lens worker] handleReceipt: json unmarshal error, %v, json: %v, ipfs: %v", err, string(content), event.ContentURI)
 		return err
 	}
 
 	if len(lensContent.Content) == 0 {
-		return errors.New("content is nil")
+		return fmt.Errorf("content is nil, ipfs:%v", event.ContentURI)
 	}
 
 	post := &metadata.Post{
@@ -194,18 +193,18 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 	// get content
 	content, err := ipfs.GetFileByURL(event.ContentURI)
 	if err != nil {
-		logrus.Errorf("[lens worker] handleCommentCreated: getContent error, %v", err)
+		logrus.Errorf("[lens worker] handleCommentCreated: getContent error, %v, ipfs: %v", err, event.ContentURI)
 		return err
 	}
 
 	lensContent := LensContent{}
 	if err = json.Unmarshal(content, &lensContent); err != nil {
-		logrus.Errorf("[lens worker] handleCommentCreated: json unmarshal error, %v, json: %v", err, string(content))
+		logrus.Errorf("[lens worker] handleCommentCreated: json unmarshal error, %v, json: %v, ipfs: %v", err, string(content), event.ContentURI)
 		return err
 	}
 
 	if len(lensContent.Content) == 0 {
-		return errors.New("content is nil")
+		return fmt.Errorf("content is nil, ipfs: %v", event.ContentURI)
 	}
 
 	post := &metadata.Post{
@@ -338,18 +337,18 @@ func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId
 	// get content
 	content, err := ipfs.GetFileByURL(contentURI)
 	if err != nil {
-		logrus.Errorf("[lens worker] getContenPointed: getContent error, %v", err)
+		logrus.Errorf("[lens worker] getContenPointed: getContent error, %v, ipfs: %v", err, contentURI)
 		return nil, err
 	}
 
 	lensContent := LensContent{}
 	if err = json.Unmarshal(content, &lensContent); err != nil {
-		logrus.Errorf("[lens worker] getContenPointed: json unmarshal error, %v, json: %v", err, string(content))
+		logrus.Errorf("[lens worker] getContenPointed: json unmarshal error, %v, json: %v, ipfs: %v", err, string(content), contentURI)
 		return nil, err
 	}
 
 	if len(lensContent.Content) == 0 {
-		return nil, errors.New("content is nil")
+		return nil, fmt.Errorf("content is nil, ipfs: %v", contentURI)
 	}
 
 	post := &metadata.Post{
