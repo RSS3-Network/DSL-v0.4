@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type InternalClient struct {
@@ -14,8 +16,7 @@ type InternalClient struct {
 
 func New() *InternalClient {
 	return &InternalClient{
-		internalIPFS: "http://ipfs-cluster.pregod:8080/ipfs/",
-		// internalIPFS: "https://ipfs.rss3.page/ipfs/",
+		internalIPFS: "https://ipfs.rss3.page/ipfs/",
 	}
 }
 
@@ -30,7 +31,7 @@ func (c *InternalClient) GetDirectURL(url string) string {
 func (c *InternalClient) GetFileByURL(url string) ([]byte, error) {
 	var body []byte
 	var err error
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*800))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*10))
 	defer cancel()
 
 	go func(ctx context.Context) {
@@ -51,6 +52,7 @@ func (c *InternalClient) GetFileByURL(url string) ([]byte, error) {
 	case <-ctx.Done():
 		return body, err
 	case <-time.After(time.Duration(time.Second * 10)):
+		logrus.Errorf("[ipfs] GetFileByURL timeout, url = %v", c.GetDirectURL(url))
 		return nil, IPFSTimeoutError
 	}
 }
