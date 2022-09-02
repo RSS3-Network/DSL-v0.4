@@ -58,25 +58,3 @@ func InitializeMQ() (err error) {
 
 	return nil
 }
-
-func IndexHandler() {
-	deliveryCh, err := RabbitmqChannel.Consume(RabbitmqQueue.Name, "", true, false, false, false, nil)
-	if err != nil {
-		return
-	}
-
-	for delivery := range deliveryCh {
-		message := protocol.Message{}
-		if err := json.Unmarshal(delivery.Body, &message); err != nil {
-			loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
-
-			continue
-		}
-
-		go func() {
-			if err := s.handle(context.Background(), &message); err != nil {
-				loggerx.Global().Error("failed to handle message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
-			}
-		}()
-	}
-}
