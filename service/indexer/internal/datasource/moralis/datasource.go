@@ -16,7 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -28,7 +28,7 @@ const (
 	MaxPage = 5
 )
 
-var _ datasource.Datasource = &Datasource{}
+var _ internalModel.Datasource = &Datasource{}
 
 type Datasource struct {
 	moralisClient  *moralis.Client
@@ -316,7 +316,7 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 	return transfers, nil
 }
 
-func New(moralisKey string, config *configx.RPC) datasource.Datasource {
+func New(moralisKey string, config *configx.RPC) internalModel.Datasource {
 	moralisClient := moralis.NewClient(moralisKey)
 
 	ethereumClient, err := ethclient.Dial(config.General.BinanceSmartChain.HTTP)

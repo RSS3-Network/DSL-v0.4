@@ -25,14 +25,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/mq"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger/ens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -45,105 +40,48 @@ import (
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
-	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/samber/lo"
 	"github.com/scylladb/go-set/strset"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 type Server struct {
-	config             *config.Config
-	rabbitmqConnection *rabbitmq.Connection
-	rabbitmqChannel    *rabbitmq.Channel
-	rabbitmqQueue      rabbitmq.Queue
-	rabbitmqAssetQueue rabbitmq.Queue
-	datasources        []datasource.Datasource
-	datasourcesAsset   []datasource_asset.Datasource
-	workers            []worker.Worker
-	triggers           []trigger.Trigger
-	employer           *shedlock.Employer
+	datasources      []datasource.Datasource
+	datasourcesAsset []datasource_asset.Datasource
+	workers          []worker.Worker
+	triggers         []trigger.Trigger
+	employer         *shedlock.Employer
 }
 
 var _ command.Interface = &Server{}
 
 func (s *Server) Initialize() (err error) {
-	var exporter trace.SpanExporter
-
-	if s.config.OpenTelemetry == nil {
-		if exporter, err = opentelemetry.DialWithPath(opentelemetry.DefaultPath); err != nil {
-			return err
-		}
-	} else if s.config.OpenTelemetry.Enabled {
-		if exporter, err = opentelemetry.DialWithURL(s.config.OpenTelemetry.String()); err != nil {
-			return err
-		}
+	if err := database.Dial(config.ConfigIndexer.Postgres.String(), true); err != nil {
+		return err
 	}
 
-	otel.SetTracerProvider(trace.NewTracerProvider(
-		trace.WithBatcher(exporter),
-		trace.WithResource(resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("pregod-1-1-indexer"),
-			semconv.ServiceVersionKey.String(protocol.Version),
-		)),
-	))
+	if err := cache.Dial(config.ConfigIndexer.Redis); err != nil {
+		return err
+	}
 
-	databaseClient, err := database.Dial(s.config.Postgres.String(), true)
+	if err := mq.InitializeMQ(); err != nil {
+		return err
+	}
+
+	if err := datasource.Initialize(); err != nil {
+		return err
+	}
+
+	swapWorker, err := swap.New(config.ConfigIndexer.RPC, s.employer)
 	if err != nil {
 		return err
 	}
 
-	database.ReplaceGlobal(databaseClient)
-
-	redisClient, err := cache.Dial(s.config.Redis)
-	if err != nil {
-		return err
-	}
-
-	cache.ReplaceGlobal(redisClient)
-
-	err = s.InitializeMQ()
-	if err != nil {
-		return err
-	}
-
-	alchemyDatasource, err := alchemy.New(s.config.RPC)
-	if err != nil {
-		return err
-	}
-
-	blockscoutDatasource, err := blockscout.New(s.config.RPC)
-	if err != nil {
-		return err
-	}
-
-	lensDatasource, err := lens.New(s.config.RPC)
-	if err != nil {
-		return err
-	}
-
-	s.datasources = []datasource.Datasource{
-		alchemyDatasource,
-		moralis.New(s.config.Moralis.Key, s.config.RPC),
-		arweave.New(),
-		blockscoutDatasource,
-		zksync.New(),
-		lensDatasource,
-	}
-
-	swapWorker, err := swap.New(s.config.RPC, s.employer)
-	if err != nil {
-		return err
-	}
-
-	ethereumClientMap, err := ethereum.New(s.config.RPC)
+	ethereumClientMap, err := ethereum.New(config.ConfigIndexer.RPC)
 	if err != nil {
 		return err
 	}
@@ -189,58 +127,13 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	// asset
-	alchemyAssetDatasource, err := alchemy_asset.New(s.config.RPC, ethereumClientMap)
+	alchemyAssetDatasource, err := alchemy_asset.New(config.ConfigIndexer.RPC, ethereumClientMap)
 	if err != nil {
 		return err
 	}
 
 	s.datasourcesAsset = []datasource_asset.Datasource{
 		alchemyAssetDatasource,
-	}
-
-	return nil
-}
-
-func (s *Server) InitializeMQ() (err error) {
-	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
-	if err != nil {
-		return err
-	}
-
-	s.rabbitmqChannel, err = s.rabbitmqConnection.Channel()
-	if err != nil {
-		return err
-	}
-
-	if err := s.rabbitmqChannel.ExchangeDeclare(
-		protocol.ExchangeJob, "direct", true, false, false, false, nil,
-	); err != nil {
-		return err
-	}
-
-	if s.rabbitmqQueue, err = s.rabbitmqChannel.QueueDeclare(
-		protocol.IndexerWorkQueue, false, false, false, false, nil,
-	); err != nil {
-		return err
-	}
-
-	if err := s.rabbitmqChannel.QueueBind(
-		s.rabbitmqQueue.Name, protocol.IndexerWorkRoutingKey, protocol.ExchangeJob, false, nil,
-	); err != nil {
-		return err
-	}
-
-	// asset mq
-	if s.rabbitmqAssetQueue, err = s.rabbitmqChannel.QueueDeclare(
-		protocol.IndexerAssetQueue, false, false, false, false, nil,
-	); err != nil {
-		return err
-	}
-
-	if err := s.rabbitmqChannel.QueueBind(
-		s.rabbitmqAssetQueue.Name, protocol.IndexerAssetRoutingKey, protocol.ExchangeJob, false, nil,
-	); err != nil {
-		return err
 	}
 
 	return nil

@@ -14,7 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/arweave"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/arweave/graphql"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"go.opentelemetry.io/otel"
 )
 
@@ -22,7 +22,7 @@ const (
 	Source = "arweave"
 )
 
-var _ datasource.Datasource = &Datasource{}
+var _ internalModel.Datasource = &Datasource{}
 
 type Datasource struct {
 	arweaveClient *arweave.Client
@@ -127,7 +127,7 @@ func (d *Datasource) buildGetTransactionsVariable(ctx context.Context, address s
 	}
 }
 
-func New() datasource.Datasource {
+func New() internalModel.Datasource {
 	return &Datasource{
 		arweaveClient: arweave.NewClient(),
 	}

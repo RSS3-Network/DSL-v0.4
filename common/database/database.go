@@ -37,9 +37,8 @@ var tables = []any{
 }
 
 var (
-	client               *gorm.DB
-	globalLocker         sync.RWMutex
-	globalDatabaseClient *gorm.DB
+	client       *gorm.DB
+	globalLocker sync.RWMutex
 )
 
 func Global() *gorm.DB {
@@ -47,7 +46,7 @@ func Global() *gorm.DB {
 
 	defer globalLocker.RUnlock()
 
-	return globalDatabaseClient
+	return client
 }
 
 func ReplaceGlobal(db *gorm.DB) {
@@ -55,10 +54,10 @@ func ReplaceGlobal(db *gorm.DB) {
 
 	defer globalLocker.Unlock()
 
-	globalDatabaseClient = db
+	client = db
 }
 
-func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {
+func Dial(dsn string, autoMigrate bool) error {
 	var err error
 	client, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.New(
@@ -71,7 +70,7 @@ func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {
 		),
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if autoMigrate {
@@ -80,5 +79,5 @@ func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {
 		}
 	}
 
-	return client, nil
+	return nil
 }

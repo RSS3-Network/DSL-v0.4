@@ -33,7 +33,7 @@ func ReplaceGlobal(db *redis.Client) {
 	globalRedisClient = db
 }
 
-func Dial(config *configx.Redis) (*redis.Client, error) {
+func Dial(config *configx.Redis) error {
 	ctx := context.Background()
 	var tlsConfig *tls.Config
 	if config.TLSEnabled {
@@ -51,10 +51,10 @@ func Dial(config *configx.Redis) (*redis.Client, error) {
 	})
 
 	if _, err := redisClient.Ping(ctx).Result(); err != nil {
-		return nil, err
+		return err
 	}
 
-	return redisClient, nil
+	return nil
 }
 
 // return exists, error

@@ -15,7 +15,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"go.opentelemetry.io/otel"
 )
 
@@ -23,7 +23,7 @@ const (
 	Source = "blockscout"
 )
 
-var _ datasource.Datasource = (*Datasource)(nil)
+var _ internalModel.Datasource = (*Datasource)(nil)
 
 type Datasource struct {
 	ethereumClientMap   map[string]*ethclient.Client
@@ -178,7 +178,7 @@ func (d *Datasource) handleTokenTransfers(ctx context.Context, message *protocol
 	return transfers, nil
 }
 
-func New(config *configx.RPC) (datasource.Datasource, error) {
+func New(config *configx.RPC) (internalModel.Datasource, error) {
 	ethereumClientEthereum, err := ethclient.Dial(config.General.Ethereum.HTTP)
 	if err != nil {
 		return nil, err

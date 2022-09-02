@@ -19,7 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -33,7 +33,7 @@ var (
 	ErrorFailedToParseBlockNumber = errors.New("failed to parse block number")
 )
 
-var _ datasource.Datasource = &Datasource{}
+var _ internalModel.Datasource = &Datasource{}
 
 type Datasource struct {
 	ethereumClientMap map[string]*ethclient.Client // QuickNode
@@ -228,7 +228,7 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 	return internalTransactions, nil
 }
 
-func New(config *configx.RPC) (datasource.Datasource, error) {
+func New(config *configx.RPC) (internalModel.Datasource, error) {
 	internalDatasource := Datasource{
 		ethereumClientMap: map[string]*ethclient.Client{},
 		rpcClientMap:      map[string]*alchemy.Client{},

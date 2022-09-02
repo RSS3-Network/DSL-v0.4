@@ -20,7 +20,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -30,7 +30,7 @@ const (
 	Source = "pregod_etl"
 )
 
-var _ datasource.Datasource = &Datasource{}
+var _ internalModel.Datasource = &Datasource{}
 
 type Datasource struct {
 	ethereumClientMap map[string]*ethclient.Client  // QuickNode
@@ -190,7 +190,7 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 	return internalTransactionMap, nil
 }
 
-func New(config *configx.RPC) (datasource.Datasource, error) {
+func New(config *configx.RPC) (internalModel.Datasource, error) {
 	internalDatasource := Datasource{
 		ethereumClientMap: map[string]*ethclient.Client{},
 		clientMap:         map[string]*pregod_etl.Client{},

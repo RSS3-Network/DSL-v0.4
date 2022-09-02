@@ -13,11 +13,11 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"go.opentelemetry.io/otel"
 )
 
-var _ datasource.Datasource = (*Datasource)(nil)
+var _ internalModel.Datasource = (*Datasource)(nil)
 
 const (
 	Source = "zksync"
@@ -142,7 +142,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	return transactions, nil
 }
 
-func New() datasource.Datasource {
+func New() internalModel.Datasource {
 	return &Datasource{
 		zksyncClient: zksync.New(),
 	}

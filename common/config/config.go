@@ -92,6 +92,7 @@ type RPC struct {
 	General   RPCNetwork     `mapstructure:"general"`
 	Alchemy   AlchemyNetwork `mapstructure:"alchemy"`
 	PregodETL RPCNetwork     `mapstructure:"pregod_etl"`
+	IPFS      string         `mapstructure:"ipfs"`
 }
 
 type RPCNetwork struct {
