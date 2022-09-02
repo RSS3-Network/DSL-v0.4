@@ -19,6 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -108,6 +109,8 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	cache.ReplaceGlobal(redisClient)
+
+	ipfs.New(s.config.RPC.IPFS.IO)
 
 	err = s.InitializeMQ()
 	if err != nil {

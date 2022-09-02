@@ -9,6 +9,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
@@ -70,6 +71,8 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	cache.ReplaceGlobal(redisClient)
+
+	ipfs.New(s.config.RPC.IPFS.Internal)
 
 	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
 	if err != nil {
