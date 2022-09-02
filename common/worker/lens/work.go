@@ -3,6 +3,7 @@ package lens
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -151,6 +152,10 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 		return err
 	}
 
+	if len(lensContent.Content) == 0 {
+		return errors.New("content is nil")
+	}
+
 	post := &metadata.Post{
 		Body: lensContent.Content,
 	}
@@ -199,6 +204,10 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 	if err = json.Unmarshal(content, &lensContent); err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: json unmarshal error, %v, json: %v", err, string(content))
 		return err
+	}
+
+	if len(lensContent.Content) == 0 {
+		return errors.New("content is nil")
 	}
 
 	post := &metadata.Post{
@@ -340,6 +349,10 @@ func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId
 	if err = json.Unmarshal(content, &lensContent); err != nil {
 		logrus.Errorf("[lens worker] getContenPointed: json unmarshal error, %v, json: %v", err, string(content))
 		return nil, err
+	}
+
+	if len(lensContent.Content) == 0 {
+		return nil, errors.New("content is nil")
 	}
 
 	post := &metadata.Post{
