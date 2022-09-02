@@ -66,7 +66,7 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 	if err != nil {
 		logrus.Errorf("[lens worker] ethereumClient TransactionReceipt error, %v", err)
 
-		return
+		return nil, err
 	}
 
 	// parse log
@@ -116,7 +116,8 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			continue
 		}
 		if handleErr != nil {
-			logrus.Errorf("[lens worker] handleReceipt: %s error, %v", eventType, err)
+			logrus.Errorf("[lens worker] handleReceipt: %s error, %v", eventType, handleErr)
+
 			continue
 		}
 
