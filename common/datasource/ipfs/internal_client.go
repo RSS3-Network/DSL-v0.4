@@ -31,7 +31,7 @@ func (c *InternalClient) GetDirectURL(url string) string {
 func (c *InternalClient) GetFileByURL(url string) ([]byte, error) {
 	var body []byte
 	var err error
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*10))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*20))
 	defer cancel()
 
 	go func(ctx context.Context) {
@@ -51,7 +51,7 @@ func (c *InternalClient) GetFileByURL(url string) ([]byte, error) {
 	select {
 	case <-ctx.Done():
 		return body, err
-	case <-time.After(time.Duration(time.Second * 10)):
+	case <-time.After(time.Duration(time.Second * 20)):
 		logrus.Errorf("[ipfs] GetFileByURL timeout, url = %v", c.GetDirectURL(url))
 		return nil, IPFSTimeoutError
 	}
