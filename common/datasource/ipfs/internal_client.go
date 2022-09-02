@@ -1,9 +1,11 @@
 package ipfs
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type InternalClient struct {
@@ -12,8 +14,8 @@ type InternalClient struct {
 
 func New() *InternalClient {
 	return &InternalClient{
-		// internalIPFS: "http://ipfs-cluster.pregod:8080/ipfs/",
-		internalIPFS: "https://ipfs.rss3.page/ipfs/",
+		internalIPFS: "http://ipfs-cluster.pregod:8080/ipfs/",
+		// internalIPFS: "https://ipfs.rss3.page/ipfs/",
 	}
 }
 
@@ -26,14 +28,29 @@ func (c *InternalClient) GetDirectURL(url string) string {
 }
 
 func (c *InternalClient) GetFileByURL(url string) ([]byte, error) {
-	response, err := http.Get(GetDirectURL(url))
-	if err != nil {
-		return nil, err
+	var body []byte
+	var err error
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Millisecond*800))
+	defer cancel()
+
+	go func(ctx context.Context) {
+		response, e := http.Get(c.GetDirectURL(url))
+		if e != nil {
+			err = e
+			return
+		}
+
+		defer func() {
+			_ = response.Body.Close()
+		}()
+
+		body, err = io.ReadAll(response.Body)
+	}(ctx)
+
+	select {
+	case <-ctx.Done():
+		return body, err
+	case <-time.After(time.Duration(time.Second * 10)):
+		return nil, IPFSTimeoutError
 	}
-
-	defer func() {
-		_ = response.Body.Close()
-	}()
-
-	return io.ReadAll(response.Body)
 }
