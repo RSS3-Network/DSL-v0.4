@@ -183,6 +183,10 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 	}
 
 	// set cache
+	if len(result.Result) == 0 {
+		return internalTransactions, nil
+	}
+
 	cacheInfo = fmt.Sprintf("%v:%v", result.Result[len(result.Result)-1].BlockNumber, result.Cursor)
 	cache.Global().Set(ctx, cacheKey, cacheInfo, 7*24*time.Hour)
 
