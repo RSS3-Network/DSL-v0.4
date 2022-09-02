@@ -37,7 +37,7 @@ func TestPostCreated(t *testing.T) {
 		},
 	}
 
-	data, err := worker.Handle(context.Background(), message, transactions)
+	data, err := internalModel.Handle(context.Background(), message, transactions)
 	out, _ := json.Marshal(data)
 	fmt.Println(string(out))
 	fmt.Println(err)

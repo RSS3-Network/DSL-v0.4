@@ -19,10 +19,11 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/shedlock"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
@@ -30,16 +31,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/mq"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger/ens"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/marketplace"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
-	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/samber/lo"
 	"github.com/scylladb/go-set/strset"
 	"go.opentelemetry.io/otel"
@@ -49,13 +41,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type Server struct {
-	datasources      []datasource.Datasource
-	datasourcesAsset []datasource_asset.Datasource
-	workers          []worker.Worker
-	triggers         []trigger.Trigger
-	employer         *shedlock.Employer
-}
+type Server struct{}
 
 var _ command.Interface = &Server{}
 
@@ -68,7 +54,9 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
-	if err := mq.InitializeMQ(); err != nil {
+	ipfs.New(config.ConfigIndexer.RPC.IPFS.IO)
+
+	if err := mq.Initialize(); err != nil {
 		return err
 	}
 
@@ -90,41 +78,41 @@ func (s *Server) Initialize() (err error) {
 		ens.New(),
 	}
 
-	s.workers = []worker.Worker{
-		liquidity.New(ethereumClientMap),
-		swapWorker,
-		marketplace.New(ethereumClientMap),
-		poap.New(ethereumClientMap),
-		mirror.New(),
-		gitcoin.New(ethereumClientMap),
-		snapshot.New(),
-		lens_worker.New(ethereumClientMap),
-		transaction.New(ethereumClientMap),
-	}
+	// s.workers = []internalModel.Worker{
+	// 	liquidity.New(ethereumClientMap),
+	// 	swapWorker,
+	// 	marketplace.New(ethereumClientMap),
+	// 	poap.New(ethereumClientMap),
+	// 	mirror.New(),
+	// 	gitcoin.New(ethereumClientMap),
+	// 	snapshot.New(),
+	// 	lens_worker.New(ethereumClientMap),
+	// 	transaction.New(ethereumClientMap),
+	// }
 
-	s.employer = shedlock.New()
+	shedlock.New()
 
-	for _, internalWorker := range s.workers {
-		loggerx.Global().Info("start initializing worker", zap.String("worker", internalWorker.Name()))
+	// for _, internalWorker := range s.workers {
+	// 	loggerx.Global().Info("start initializing worker", zap.String("worker", internalWorker.Name()))
 
-		startTime := time.Now()
+	// 	startTime := time.Now()
 
-		if err := internalWorker.Initialize(context.Background()); err != nil {
-			return err
-		}
+	// 	if err := internalWorker.Initialize(context.Background()); err != nil {
+	// 		return err
+	// 	}
 
-		loggerx.Global().Info("initialize worker completion", zap.String("worker", internalWorker.Name()), zap.Duration("duration", time.Since(startTime)))
+	// 	loggerx.Global().Info("initialize worker completion", zap.String("worker", internalWorker.Name()), zap.Duration("duration", time.Since(startTime)))
 
-		if internalWorker.Jobs() == nil {
-			continue
-		}
+	// 	if internalWorker.Jobs() == nil {
+	// 		continue
+	// 	}
 
-		for _, job := range internalWorker.Jobs() {
-			if err := s.employer.AddJob(job.Name(), job.Spec(), job.Timeout(), worker.NewCronJob(s.employer, job)); err != nil {
-				return err
-			}
-		}
-	}
+	// 	for _, job := range internalWorker.Jobs() {
+	// 		if err := s.employer.AddJob(job.Name(), job.Spec(), job.Timeout(), worker.NewCronJob(s.employer, job)); err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
 
 	// asset
 	alchemyAssetDatasource, err := alchemy_asset.New(config.ConfigIndexer.RPC, ethereumClientMap)
@@ -417,110 +405,6 @@ func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (er
 	return nil
 }
 
-func getTransactionsMap(transactions []model.Transaction) map[string]model.Transaction {
-	transactionsMap := make(map[string]model.Transaction)
-
-	for _, t := range transactions {
-		transactionsMap[t.Hash] = t
-	}
-
-	return transactionsMap
-}
-
-func transactionsMap2Array(transactionsMap map[string]model.Transaction) []model.Transaction {
-	transactions := make([]model.Transaction, 0)
-
-	for _, t := range transactionsMap {
-		transactions = append(transactions, t)
-	}
-
-	return transactions
-}
-
-func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Message, tx *gorm.DB, transactions []model.Transaction) (err error) {
-	tracer := otel.Tracer("indexer")
-	_, span := tracer.Start(ctx, "indexer:upsertTransactions")
-
-	defer opentelemetry.Log(span, len(transactions), nil, err)
-
-	dbChunkSize := 800
-
-	var (
-		transfers           []model.Transfer
-		updatedTransactions []model.Transaction
-	)
-
-	for _, transaction := range transactions {
-		addresses := strset.New(transaction.AddressFrom, transaction.AddressTo)
-
-		// Ignore empty transactions
-		internalTransfers := make([]model.Transfer, 0)
-
-		for _, transfer := range transaction.Transfers {
-			if bytes.Equal(transfer.Metadata, metadata.Default) {
-				continue
-			}
-
-			internalTransfers = append(internalTransfers, transfer)
-		}
-
-		if len(internalTransfers) == 0 {
-			continue
-		}
-
-		// Handle all transfers
-		for _, transfer := range transaction.Transfers {
-			// Ignore empty transfer
-			if bytes.Equal(transfer.Metadata, metadata.Default) {
-				continue
-			}
-
-			transfers = append(transfers, transfer)
-
-			if transfer.AddressFrom != "" && transfer.AddressFrom != ethereum.AddressGenesis.String() {
-				addresses.Add(transfer.AddressFrom)
-			}
-
-			if transfer.AddressTo != "" && transfer.AddressTo != ethereum.AddressGenesis.String() {
-				addresses.Add(transfer.AddressTo)
-			}
-		}
-
-		transaction.Addresses = addresses.List()
-		updatedTransactions = append(updatedTransactions, transaction)
-	}
-
-	for _, ts := range lo.Chunk(updatedTransactions, dbChunkSize) {
-		if err = tx.
-			Clauses(clause.OnConflict{
-				UpdateAll: true,
-			}).
-			Create(ts).Error; err != nil {
-			loggerx.Global().Error("failed to upsert transactions", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
-
-			tx.Rollback()
-
-			return err
-		}
-	}
-
-	for _, ts := range lo.Chunk(transfers, dbChunkSize) {
-		if err = tx.
-			Clauses(clause.OnConflict{
-				UpdateAll: true,
-				DoUpdates: clause.AssignmentColumns([]string{"metadata"}),
-			}).
-			Create(ts).Error; err != nil {
-			loggerx.Global().Error("failed to upsert transfers", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
-
-			tx.Rollback()
-
-			return err
-		}
-	}
-
-	return tx.Commit().Error
-}
 
 func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, tx *gorm.DB, transactions []model.Transaction, transactionsMap map[string]model.Transaction) (err error) {
 	tracer := otel.Tracer("indexer")
@@ -554,40 +438,6 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	}
 
 	return s.upsertTransactions(ctx, message, tx, transactions)
-}
-
-func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
-	for _, network := range protocol.SupportNetworks {
-		key := fmt.Sprintf("indexer:%v:%v", address.Address, network)
-		n, err := cache.Global().Exists(ctx, key).Result()
-		switch {
-		case err != nil:
-			return
-		case n == 1: // exists
-			address.IndexingNetworks = append(address.IndexingNetworks, network)
-		default: // not exists (unlocked)
-			address.DoneNetworks = append(address.DoneNetworks, network)
-		}
-	}
-
-	if len(address.IndexingNetworks) == 0 {
-		address.Status = true
-	}
-
-	if err := database.Global().
-		Model(model.Address{}).
-		Clauses(clause.OnConflict{
-			UpdateAll: true,
-			DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
-		}).
-		Create(map[string]interface{}{
-			"address":           address.Address,
-			"status":            address.Status,
-			"done_networks":     address.DoneNetworks,
-			"indexing_networks": address.IndexingNetworks,
-		}).Error; err != nil {
-		loggerx.Global().Error("failed to upsert address", zap.Error(err), zap.String("address", address.Address))
-	}
 }
 
 func New(config *config.Config) *Server {

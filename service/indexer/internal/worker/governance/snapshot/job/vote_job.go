@@ -35,7 +35,7 @@ func (job *SnapshotVoteJob) Timeout() time.Duration {
 	return 10 * time.Minute
 }
 
-func (job *SnapshotVoteJob) Run(renewal worker.RenewalFunc) error {
+func (job *SnapshotVoteJob) Run(renewal internalModel.RenewalFunc) error {
 	// nolint:ineffassign // just an initialization
 	sleepTime := time.Second
 

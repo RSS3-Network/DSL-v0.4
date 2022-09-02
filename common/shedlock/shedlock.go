@@ -2,6 +2,7 @@ package shedlock
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -10,6 +11,19 @@ import (
 
 type Employer struct {
 	crontab *cron.Cron
+}
+
+var (
+	employer     *Employer
+	globalLocker sync.RWMutex
+)
+
+func Global() *Employer {
+	globalLocker.RLock()
+
+	defer globalLocker.RUnlock()
+
+	return employer
 }
 
 func (e *Employer) AddFunc(name, spec string, timeout time.Duration, cmd func()) error {
@@ -64,8 +78,8 @@ func (e *Employer) Renewal(ctx context.Context, name string, duration time.Durat
 	return cache.Global().SetEX(ctx, name, 0, duration).Err()
 }
 
-func New() *Employer {
-	return &Employer{
+func New() {
+	employer = &Employer{
 		crontab: cron.New(),
 	}
 }

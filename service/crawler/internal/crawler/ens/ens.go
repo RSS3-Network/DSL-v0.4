@@ -17,7 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
+	"github.com/naturalselectionlabs/pregod/common/shedlock"
 	ens_common "github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"

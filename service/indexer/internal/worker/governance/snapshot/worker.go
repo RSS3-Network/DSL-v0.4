@@ -17,7 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/snapshot"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot/job"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
@@ -194,8 +194,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	return currTransactions, nil
 }
 
-func (s *service) Jobs() []worker.Job {
-	return []worker.Job{
+func (s *service) Jobs() []internalModel.Job {
+	return []internalModel.Job{
 		&job.SnapshotSpaceJob{
 			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_space_job",
@@ -528,7 +528,7 @@ func (s *service) formatProposal(
 	}, nil
 }
 
-func New() worker.Worker {
+func New() internalModel.Worker {
 	return &service{
 		snapshotClient: snapshot.NewClient(),
 	}

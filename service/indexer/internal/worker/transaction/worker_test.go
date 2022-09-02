@@ -8,46 +8,15 @@ import (
 	"time"
 
 	"github.com/alecthomas/repr"
-	"github.com/naturalselectionlabs/pregod/common/cache"
-	configx "github.com/naturalselectionlabs/pregod/common/config"
-	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"github.com/stretchr/testify/assert"
 )
 
-var tokenWorker worker.Worker
-
-func init() {
-	config.Initialize()
-
-	db, err := database.Dial(config.ConfigIndexer.Postgres.String(), true)
-	if err != nil {
-		panic(err)
-	}
-
-	database.ReplaceGlobal(db)
-
-	cache.Dial(config.ConfigIndexer.Redis)
-
-	ethereumClientMap, err := ethereum.New(&configx.RPC{
-		General: configx.RPCNetwork{
-			Ethereum: &configx.RPCEndpoint{
-				HTTP: "https://rpc.rss3.dev/networks/ethereum",
-			},
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	tokenWorker = New(ethereumClientMap)
-}
+var tokenWorker internalModel.Worker
 
 func Test_service_Name(t *testing.T) {
 	tests := []struct {

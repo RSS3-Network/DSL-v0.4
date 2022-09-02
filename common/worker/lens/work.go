@@ -3,6 +3,7 @@ package lens
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -19,7 +20,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ipfs"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils"
@@ -138,8 +139,7 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 
 	// get content
-	ipfsClient := ipfs.New()
-	content, err := ipfsClient.GetFileByURL(event.ContentURI)
+	content, err := ipfs.GetFileByURL(event.ContentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleReceipt: getContent error, %v", err)
 		return err
@@ -149,6 +149,10 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 	if err = json.Unmarshal(content, &lensContent); err != nil {
 		logrus.Errorf("[lens worker] handleReceipt: json unmarshal error, %v, json: %v", err, string(content))
 		return err
+	}
+
+	if len(lensContent.Content) == 0 {
+		return errors.New("content is nil")
 	}
 
 	post := &metadata.Post{
@@ -188,8 +192,7 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 
 	// get content
-	ipfsClient := ipfs.New()
-	content, err := ipfsClient.GetFileByURL(event.ContentURI)
+	content, err := ipfs.GetFileByURL(event.ContentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: getContent error, %v", err)
 		return err
@@ -199,6 +202,10 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 	if err = json.Unmarshal(content, &lensContent); err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: json unmarshal error, %v, json: %v", err, string(content))
 		return err
+	}
+
+	if len(lensContent.Content) == 0 {
+		return errors.New("content is nil")
 	}
 
 	post := &metadata.Post{
@@ -329,8 +336,7 @@ func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId
 	}
 
 	// get content
-	ipfsClient := ipfs.New()
-	content, err := ipfsClient.GetFileByURL(contentURI)
+	content, err := ipfs.GetFileByURL(contentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] getContenPointed: getContent error, %v", err)
 		return nil, err
@@ -340,6 +346,10 @@ func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId
 	if err = json.Unmarshal(content, &lensContent); err != nil {
 		logrus.Errorf("[lens worker] getContenPointed: json unmarshal error, %v, json: %v", err, string(content))
 		return nil, err
+	}
+
+	if len(lensContent.Content) == 0 {
+		return nil, errors.New("content is nil")
 	}
 
 	post := &metadata.Post{

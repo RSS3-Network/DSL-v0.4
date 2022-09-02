@@ -17,7 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
@@ -25,7 +25,7 @@ import (
 
 const Name = "liquidity"
 
-var _ worker.Worker = (*internal)(nil)
+var _ internalModel.Worker = (*internal)(nil)
 
 type internal struct {
 	tokenClient       *token.Client
@@ -165,11 +165,11 @@ func (i *internal) buildLiquidityMetadata(ctx context.Context, router Router, ac
 	return json.Marshal(&liquidityMetadata)
 }
 
-func (i *internal) Jobs() []worker.Job {
+func (i *internal) Jobs() []internalModel.Job {
 	return nil
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(ethereumClientMap map[string]*ethclient.Client) internalModel.Worker {
 	return &internal{
 		tokenClient:       token.New(ethereumClientMap),
 		ethereumClientMap: ethereumClientMap,

@@ -4,14 +4,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 )
 
 const (
 	Name = "example"
 )
 
-var _ worker.Job = (*example)(nil)
+var _ internalModel.Job = (*example)(nil)
 
 type example struct{}
 
@@ -27,7 +27,7 @@ func (e *example) Timeout() time.Duration {
 	return time.Minute
 }
 
-func (e *example) Run(renewal worker.RenewalFunc) error {
+func (e *example) Run(renewal internalModel.RenewalFunc) error {
 	for {
 		time.Sleep(time.Second)
 

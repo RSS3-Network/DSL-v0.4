@@ -14,7 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/snapshot"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/snapshot/graphql"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm/clause"
@@ -36,7 +36,7 @@ func (job *SnapshotProposalJob) Timeout() time.Duration {
 	return time.Minute * 2
 }
 
-func (job *SnapshotProposalJob) Run(renewal worker.RenewalFunc) error {
+func (job *SnapshotProposalJob) Run(renewal internalModel.RenewalFunc) error {
 	// nolint:ineffassign // just an initialization
 	sleepTime := time.Second
 

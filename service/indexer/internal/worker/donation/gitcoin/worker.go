@@ -21,6 +21,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/token"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin/job"
 	"github.com/shopspring/decimal"
@@ -35,7 +36,7 @@ const (
 	ContractAddressEthereumNative = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
 )
 
-var _ worker.Worker = (*service)(nil)
+var _ internalModel.Worker = (*service)(nil)
 
 type service struct {
 	ethereumClientMap      map[string]*ethclient.Client
@@ -280,15 +281,15 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 	return transfers, nil
 }
 
-func (s *service) Jobs() []worker.Job {
-	return []worker.Job{
+func (s *service) Jobs() []internalModel.Job {
+	return []internalModel.Job{
 		&job.GitcoinProjectJob{
 			GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
 		},
 	}
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(ethereumClientMap map[string]*ethclient.Client) internalModel.Worker {
 	return &service{
 		gitcoinProjectCacheKey: "gitcoin_project",
 		ethereumClientMap:      ethereumClientMap,

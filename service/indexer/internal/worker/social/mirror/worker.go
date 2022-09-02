@@ -15,7 +15,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	arweave2 "github.com/naturalselectionlabs/pregod/common/worker/arweave"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/arweave/graphql"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 )
@@ -24,7 +24,7 @@ const (
 	Name = protocol.PlatformMirror
 )
 
-var _ worker.Worker = &service{}
+var _ internalModel.Worker = &service{}
 
 type service struct {
 	arweaveClient *arweave2.Client
@@ -156,7 +156,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	return internalTransactions, nil
 }
 
-func (s *service) Jobs() []worker.Job {
+func (s *service) Jobs() []internalModel.Job {
 	return nil
 }
 
@@ -176,7 +176,7 @@ func (s *service) getContent(ctx context.Context, transactionHash string) (json.
 	return data, nil
 }
 
-func New() worker.Worker {
+func New() internalModel.Worker {
 	return &service{
 		arweaveClient: arweave2.NewClient(),
 	}

@@ -88,11 +88,16 @@ type Gateway struct {
 	EthEndpoint string `mapstructure:"ethendpoint"`
 }
 
+type IPFS struct {
+	IO       string `mapstructure:"io"`
+	Internal string `mapstructure:"internal"`
+}
+
 type RPC struct {
 	General   RPCNetwork     `mapstructure:"general"`
 	Alchemy   AlchemyNetwork `mapstructure:"alchemy"`
 	PregodETL RPCNetwork     `mapstructure:"pregod_etl"`
-	IPFS      string         `mapstructure:"ipfs"`
+	IPFS      IPFS           `mapstructure:"ipfs"`
 }
 
 type RPCNetwork struct {

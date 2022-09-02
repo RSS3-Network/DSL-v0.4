@@ -18,7 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/token"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -29,7 +29,7 @@ const (
 
 var ContractAddress = common.HexToAddress("0x22C1f6050E56d2876009903609a2cC3fEf83B415")
 
-var _ worker.Worker = (*service)(nil)
+var _ internalModel.Worker = (*service)(nil)
 
 type service struct {
 	tokenClient *token.Client
@@ -162,11 +162,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	return internalTransfers, nil
 }
 
-func (s *service) Jobs() []worker.Job {
+func (s *service) Jobs() []internalModel.Job {
 	return nil
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(ethereumClientMap map[string]*ethclient.Client) internalModel.Worker {
 	return &service{
 		tokenClient: token.New(ethereumClientMap),
 	}

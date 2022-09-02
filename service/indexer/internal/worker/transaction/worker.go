@@ -24,14 +24,14 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ipfs"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internal_interface"
 	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
@@ -44,7 +44,7 @@ const (
 	Name = "transaction"
 )
 
-var _ worker.Worker = (*service)(nil)
+var _ internal_interface.Worker = (*service)(nil)
 
 //go:embed asset/*
 var asseFS embed.FS
@@ -669,7 +669,7 @@ func (s *service) buildType(transaction model.Transaction, transfer model.Transf
 	return transaction, transfer
 }
 
-func (s *service) Jobs() []worker.Job {
+func (s *service) Jobs() []internal_interface.Job {
 	return nil
 }
 
@@ -732,7 +732,7 @@ func isMint(actionTag, actionType string) bool {
 	return (actionTag == filter.TagTransaction && actionType == filter.TransactionMint) || (actionTag == filter.TagCollectible && actionType == filter.CollectibleMint)
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(ethereumClientMap map[string]*ethclient.Client) internal_interface.Worker {
 	return &service{
 		zksyncClient:      zksync.New(),
 		tokenClient:       token.New(ethereumClientMap),

@@ -7,13 +7,13 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
 	exchange2 "github.com/naturalselectionlabs/pregod/common/worker/exchange"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm/clause"
 )
 
-var _ worker.Job = (*Job)(nil)
+var _ internalModel.Job = (*Job)(nil)
 
 type Job struct{}
 
@@ -29,7 +29,7 @@ func (j *Job) Timeout() time.Duration {
 	return time.Minute * 5
 }
 
-func (j *Job) Run(renewal worker.RenewalFunc) error {
+func (j *Job) Run(renewal internalModel.RenewalFunc) error {
 	poolClient := exchange2.NewClient()
 	lop.ForEach(exchange2.SwapProviders, func(provider exchange2.SwapProvider, k int) {
 		lop.ForEach(provider.SwapPools, func(pool exchange2.SwapPool, i int) {

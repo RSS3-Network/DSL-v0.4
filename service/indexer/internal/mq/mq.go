@@ -14,7 +14,7 @@ var (
 	RabbitmqAssetQueue rabbitmq.Queue
 )
 
-func InitializeMQ() (err error) {
+func Initialize() (err error) {
 	RabbitmqConnection, err = rabbitmq.Dial(config.ConfigIndexer.RabbitMQ.String())
 	if err != nil {
 		return err

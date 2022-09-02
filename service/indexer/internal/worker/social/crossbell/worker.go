@@ -14,7 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/handler"
 	lop "github.com/samber/lo/parallel"
@@ -28,7 +28,7 @@ const (
 	Endpoint = "https://rpc.crossbell.io"
 )
 
-var _ worker.Worker = (*service)(nil)
+var _ internalModel.Worker = (*service)(nil)
 
 type service struct {
 	ethereumClient *ethclient.Client
@@ -174,10 +174,10 @@ func (s *service) handleReceipt(ctx context.Context, message *protocol.Message, 
 	return internalTransfers, nil
 }
 
-func (s *service) Jobs() []worker.Job {
+func (s *service) Jobs() []internalModel.Job {
 	return nil
 }
 
-func New() worker.Worker {
+func New() internalModel.Worker {
 	return &service{}
 }

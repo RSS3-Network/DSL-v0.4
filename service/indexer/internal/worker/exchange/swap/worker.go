@@ -19,19 +19,17 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/internal/token"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
-var _ worker.Worker = &service{}
+var _ internalModel.Worker = &service{}
 
 type service struct {
-	employer          *shedlock.Employer
 	tokenClient       *token.Client
 	ethereumClientMap map[string]*ethclient.Client
 }
@@ -254,18 +252,17 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 	return nil, nil
 }
 
-func (s *service) Jobs() []worker.Job {
-	return []worker.Job{
+func (s *service) Jobs() []internalModel.Job {
+	return []internalModel.Job{
 		&Job{},
 	}
 }
 
-func New(config *configx.RPC, employer *shedlock.Employer) (worker.Worker, error) {
+func New(config *configx.RPC) (internalModel.Worker, error) {
 	var err error
 
 	svc := service{
 		ethereumClientMap: make(map[string]*ethclient.Client),
-		employer:          employer,
 	}
 
 	if svc.ethereumClientMap[protocol.NetworkEthereum], err = ethclient.Dial(config.General.Ethereum.HTTP); err != nil {

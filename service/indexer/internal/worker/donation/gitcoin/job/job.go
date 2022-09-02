@@ -10,12 +10,12 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model/donation"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm/clause"
 )
 
-var _ worker.Job = (*GitcoinProjectJob)(nil)
+var _ internalModel.Job = (*GitcoinProjectJob)(nil)
 
 type GitcoinProjectJob struct {
 	GitcoinProjectCacheKey string
@@ -33,7 +33,7 @@ func (job *GitcoinProjectJob) Timeout() time.Duration {
 	return time.Minute * 5
 }
 
-func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
+func (job *GitcoinProjectJob) Run(renewal internalModel.RenewalFunc) error {
 	logrus.Info("[gitcoin job] run")
 
 	// query latest gitcoin project id

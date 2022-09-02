@@ -19,13 +19,13 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/token"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
-var _ worker.Worker = (*internal)(nil)
+var _ internalModel.Worker = (*internal)(nil)
 
 const (
 	SourceName = "marketplace"
@@ -430,11 +430,11 @@ func (i *internal) buildToken(ctx context.Context, message *protocol.Message, ad
 	return &costToken, nil
 }
 
-func (i *internal) Jobs() []worker.Job {
+func (i *internal) Jobs() []internalModel.Job {
 	return nil
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(ethereumClientMap map[string]*ethclient.Client) internalModel.Worker {
 	return &internal{
 		tokenClient:       token.New(ethereumClientMap),
 		ethereumClientMap: ethereumClientMap,

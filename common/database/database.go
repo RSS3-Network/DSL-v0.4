@@ -75,7 +75,7 @@ func Dial(dsn string, autoMigrate bool) error {
 
 	if autoMigrate {
 		if err := client.AutoMigrate(tables...); err != nil {
-			return nil, err
+			return  err
 		}
 	}
 

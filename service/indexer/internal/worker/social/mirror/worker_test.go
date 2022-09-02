@@ -2,8 +2,9 @@ package mirror_test
 
 import (
 	"context"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"testing"
+
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
@@ -21,7 +22,7 @@ func TestName(t *testing.T) {
 	}
 
 	worker := mirror.New()
-	transactions, err = worker.Handle(context.Background(), &protocol.Message{}, transactions)
+	transactions, err = internalModel.Handle(context.Background(), &protocol.Message{}, transactions)
 
 	for _, transaction := range transactions {
 		for _, transfer := range transaction.Transfers {

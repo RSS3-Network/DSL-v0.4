@@ -13,13 +13,13 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	lens_comm "github.com/naturalselectionlabs/pregod/common/worker/lens"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/internalModel"
 	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 )
 
-var _ worker.Worker = (*service)(nil)
+var _ internalModel.Worker = (*service)(nil)
 
 type service struct {
 	commWorkerClient *lens_comm.Client
@@ -89,11 +89,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	return internalTransactions, nil
 }
 
-func (s *service) Jobs() []worker.Job {
-	return []worker.Job{}
+func (s *service) Jobs() []internalModel.Job {
+	return []internalModel.Job{}
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(ethereumClientMap map[string]*ethclient.Client) internalModel.Worker {
 	return &service{
 		commWorkerClient: lens_comm.New(ethereumClientMap),
 	}
