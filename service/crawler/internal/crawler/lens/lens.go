@@ -221,7 +221,7 @@ func (s *service) getLensOwnerAddressById(ctx context.Context, profileId *big.In
 func (s *service) getInternalTransaction(ctx context.Context, transactions []*model.Transaction) []model.Transaction {
 	var mu sync.Mutex
 	internalTransactions := []model.Transaction{}
-	opt := lop.NewOption().WithConcurrency(20)
+	opt := lop.NewOption().WithConcurrency(10)
 	lop.ForEach(transactions, func(transaction *model.Transaction, i int) {
 		addressTo := common.HexToAddress(transaction.AddressTo)
 		if addressTo != lens.HubProxyContractAddress && addressTo != lens.ProfileProxyContractAddress {

@@ -150,10 +150,6 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 		return err
 	}
 
-	if len(lensContent.Content) == 0 {
-		return fmt.Errorf("content is nil, ipfs:%v", event.ContentURI)
-	}
-
 	post := &metadata.Post{
 		Body: lensContent.Content,
 	}
@@ -162,6 +158,10 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 			Address:  ipfs.GetDirectURL(media.Item),
 			MimeType: media.Type,
 		})
+	}
+
+	if len(post.Body) == 0 && len(post.Media) == 0 {
+		return fmt.Errorf("content is nil, ipfs:%v", event.ContentURI)
 	}
 
 	rawMetadata, err := json.Marshal(post)
@@ -203,10 +203,6 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 		return err
 	}
 
-	if len(lensContent.Content) == 0 {
-		return fmt.Errorf("content is nil, ipfs: %v", event.ContentURI)
-	}
-
 	post := &metadata.Post{
 		Body: lensContent.Content,
 	}
@@ -215,6 +211,10 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 			Address:  ipfs.GetDirectURL(media.Item),
 			MimeType: media.Type,
 		})
+	}
+
+	if len(post.Body) == 0 && len(post.Media) == 0 {
+		return fmt.Errorf("content is nil, ipfs:%v", event.ContentURI)
 	}
 
 	// get content pointed
@@ -347,10 +347,6 @@ func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId
 		return nil, err
 	}
 
-	if len(lensContent.Content) == 0 {
-		return nil, fmt.Errorf("content is nil, ipfs: %v", contentURI)
-	}
-
 	post := &metadata.Post{
 		Body: lensContent.Content,
 	}
@@ -359,6 +355,10 @@ func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId
 			Address:  ipfs.GetDirectURL(media.Item),
 			MimeType: media.Type,
 		})
+	}
+
+	if len(post.Body) == 0 && len(post.Media) == 0 {
+		return nil, fmt.Errorf("content is nil, ipfs:%v", contentURI)
 	}
 
 	return post, nil
