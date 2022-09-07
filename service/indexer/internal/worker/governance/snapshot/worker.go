@@ -42,7 +42,7 @@ var snapshotNetworkNumMap = map[string]string{
 	protocol.NetworkArbitrum:          "42161",
 	protocol.NetworkOptimism:          "10",
 	protocol.NetworkFantom:            "250",
-	protocol.NetworkAvalanche:         "43113",
+	protocol.NetworkAvalanche:         "43114",
 }
 
 type service struct {
