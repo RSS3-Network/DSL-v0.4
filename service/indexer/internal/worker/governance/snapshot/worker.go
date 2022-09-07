@@ -209,7 +209,7 @@ func (s *service) Jobs() []worker.Job {
 			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_proposal_job",
 				SnapshotClient: s.snapshotClient,
-				Limit:          2000,
+				Limit:          1000,
 				HighUpdateTime: time.Second,
 				LowUpdateTime:  time.Minute * 5,
 			},
