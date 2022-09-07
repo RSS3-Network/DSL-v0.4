@@ -63,10 +63,6 @@ func (c *Client) ERC20(ctx context.Context, network string, contractAddress stri
 		return nil, err
 	}
 
-	if result.Symbol, err = erc20Contract.Symbol(&bind.CallOpts{}); err != nil {
-		return nil, err
-	}
-
 	if result.Decimals, err = erc20Contract.Decimals(&bind.CallOpts{}); err != nil {
 		return nil, err
 	}
