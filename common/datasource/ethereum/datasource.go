@@ -21,6 +21,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
+	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
@@ -47,29 +48,38 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 
 	defer opentelemetry.Log(span, message, transactions, err)
 
-	blocks, err := lop.MapWithError(transactions, makeBlockHandlerFunc(ctx, message, ethereumClient), lop.NewOption().WithConcurrency(MaxConcurrency))
-	if err != nil {
-		loggerx.Global().Error("failed to handle blocks", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
+	chunkSize := 5 * MaxConcurrency
+	tempTransactions := make([]*model.Transaction, 0)
 
-		return nil, err
-	}
+	for _, ts := range lo.Chunk(transactions, chunkSize) {
 
-	blockMap := make(map[int64]*types.Block)
-	for _, block := range blocks {
-		blockMap[block.Number().Int64()] = block
-	}
+		blocks, err := lop.MapWithError(ts, makeBlockHandlerFunc(ctx, message, ethereumClient), lop.NewOption().WithConcurrency(MaxConcurrency))
+		if err != nil {
+			loggerx.Global().Error("failed to handle blocks", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
 
-	// Error topic/field count mismatch
-	transactions, err = lop.MapWithError(transactions, makeTransactionHandlerFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
-	if err != nil {
-		loggerx.Global().Error("failed to handle transactions", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
+			return nil, err
+		}
 
-		return nil, err
+		blockMap := make(map[int64]*types.Block)
+		for _, block := range blocks {
+			blockMap[block.Number().Int64()] = block
+		}
+
+		// Error topic/field count mismatch
+		ts, err = lop.MapWithError(ts, makeTransactionHandlerFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
+		if err != nil {
+			loggerx.Global().Error("failed to handle transactions", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
+
+			return nil, err
+		}
+
+		tempTransactions = append(tempTransactions, ts...)
+
 	}
 
 	internalTransactions := make([]*model.Transaction, 0)
 
-	for _, transaction := range transactions {
+	for _, transaction := range tempTransactions {
 		if transaction != nil {
 			internalTransactions = append(internalTransactions, transaction)
 		}
