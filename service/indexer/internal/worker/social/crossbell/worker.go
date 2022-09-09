@@ -103,6 +103,13 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 		transaction.Transfers = append(transaction.Transfers, internalTransfers...)
 
+		for _, transfer := range internalTransfers {
+			transaction.Platform = transfer.Platform
+
+			// Use first transfer as the main transfer
+			continue
+		}
+
 		for _, transfer := range transaction.Transfers {
 			transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
 		}
@@ -157,6 +164,7 @@ func (s *service) handleReceipt(ctx context.Context, message *protocol.Message, 
 					zap.String("worker", s.Name()),
 					zap.String("network", message.Network),
 					zap.String("address", message.Address),
+					zap.String("transaction_hash", transaction.Hash),
 				)
 			}
 

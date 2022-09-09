@@ -43,6 +43,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
@@ -163,6 +164,7 @@ func (s *Server) Initialize() (err error) {
 		mirror.New(),
 		gitcoin.New(ethereumClientMap),
 		snapshot.New(),
+		crossbell.New(),
 		lens_worker.New(ethereumClientMap),
 		transaction.New(ethereumClientMap),
 	}

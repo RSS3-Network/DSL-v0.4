@@ -39,6 +39,9 @@ func (c *characterHandler) Handle(ctx context.Context, transaction model.Transac
 		return nil, err
 	}
 
+	// Default platform
+	transfer.Platform = strings.ToLower(protocol.PlatformCrossbell)
+
 	switch log.Topics[0] {
 	case contract.EventHashCharacterCreated, contract.EventHashProfileCreated:
 		// Broken change
@@ -91,16 +94,13 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 		return nil, err
 	}
 
-	// Self-hosted IPFS files may be out of date
 	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.CharacterId)
 	if err != nil {
 		return nil, err
 	}
 
 	profile := &social.Profile{
-		Address: transfer.AddressFrom,
-		// TODO: use appId from CSB
-		// Platform: transfer.Platform,
+		Address:  transfer.AddressFrom,
 		Platform: transfer.Network,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
@@ -142,9 +142,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 	}
 
 	profile := &social.Profile{
-		Address: transfer.AddressFrom,
-		// TODO: use appId from CSB
-		// Platform: transfer.Platform,
+		Address:  transfer.AddressFrom,
 		Platform: transfer.Network,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
@@ -186,8 +184,10 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 
 	transfer.RelatedUrls = []string{note.ContentUri}
 
-	// Self-hosted IPFS files may be out of date
-	contentData, _ := ipfs.GetFileByURL(note.ContentUri)
+	contentData, err := ipfs.GetFileByURL(note.ContentUri)
+	if err != nil {
+		return nil, err
+	}
 
 	postOriginal := CrossbellPostStruct{}
 
@@ -197,7 +197,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 
 	post := &metadata.Post{
 		TypeOnPlatform: []string{contract.EventNamePostNote},
-		Title:          postOriginal.Content,
+		Title:          postOriginal.Title,
 		Body:           postOriginal.Content,
 	}
 
@@ -206,6 +206,10 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 			Address:  attachment.Address,
 			MimeType: attachment.MimeType,
 		})
+	}
+
+	if len(postOriginal.Sources) != 0 {
+		transfer.Platform = postOriginal.Sources[0]
 	}
 
 	if transfer.Metadata, err = json.Marshal(post); err != nil {
@@ -235,8 +239,6 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 	}
 
 	profile := &social.Profile{
-		// TODO: use appId from CSB
-		// Platform: transfer.Platform,
 		Platform: transfer.Network,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
@@ -276,11 +278,11 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 	}
 
 	profile := &social.Profile{
-		// TODO: use appId from CSB
-		// Platform: transfer.Platform,
+		Address:  strings.ToLower(event.Account.String()),
 		Platform: transfer.Network,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
+		Type:     filter.SocialProfileUpdate,
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
@@ -317,9 +319,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 	}
 
 	profile := &social.Profile{
-		Address: transfer.AddressFrom,
-		// TODO: use appId from CSB
-		// Platform: transfer.Platform,
+		Address:  transfer.AddressFrom,
 		Platform: transfer.Network,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
@@ -359,8 +359,20 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		return nil, err
 	}
 
-	// Self-hosted IPFS files may be out of date
-	contentData, _ := ipfs.GetFileByURL(note.ContentUri)
+	contentData, err := ipfs.GetFileByURL(note.ContentUri)
+	if err != nil {
+		return nil, err
+	}
+
+	postOriginal := CrossbellPostStruct{}
+
+	if err := json.Unmarshal(contentData, &postOriginal); err != nil {
+		return nil, err
+	}
+
+	if len(postOriginal.Sources) != 0 {
+		transfer.Platform = postOriginal.Sources[0]
+	}
 
 	var noteMetadata json.RawMessage
 
@@ -392,7 +404,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		return nil, err
 	}
 
-	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialRevise, transfer.Type)
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
 	return &transfer, nil
