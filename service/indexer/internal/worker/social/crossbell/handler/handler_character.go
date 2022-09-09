@@ -19,7 +19,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/character"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/periphery"
-	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm/clause"
 )
@@ -355,22 +354,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		return nil, err
 	}
 
-	// Query whether this note existed before this block
-	note, err := c.characterContract.GetNote(&bind.CallOpts{
-		// While it is possible for post and revise events to be in the same block, it is almost impossible for this to happen in a normal usage scenario
-		BlockNumber: decimal.NewFromInt(transaction.BlockNumber).Sub(decimal.NewFromInt(1)).BigInt(),
-	}, event.CharacterId, event.NoteId)
-	if err != nil {
-		return nil, err
-	}
-
-	transferType := filter.SocialRevise
-
-	if note.ContentUri == "" {
-		transferType = filter.SocialRevise
-	}
-
-	note, err = c.characterContract.GetNote(&bind.CallOpts{}, event.CharacterId, event.NoteId)
+	note, err := c.characterContract.GetNote(&bind.CallOpts{}, event.CharacterId, event.NoteId)
 	if err != nil {
 		return nil, err
 	}
@@ -378,6 +362,16 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 	contentData, err := ipfs.GetFileByURL(note.ContentUri)
 	if err != nil {
 		return nil, err
+	}
+
+	postOriginal := CrossbellPostStruct{}
+
+	if err := json.Unmarshal(contentData, &postOriginal); err != nil {
+		return nil, err
+	}
+
+	if len(postOriginal.Sources) != 0 {
+		transfer.Platform = postOriginal.Sources[0]
 	}
 
 	var noteMetadata json.RawMessage
@@ -410,7 +404,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		return nil, err
 	}
 
-	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, transferType, transfer.Type)
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialRevise, transfer.Type)
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
 	return &transfer, nil
