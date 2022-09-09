@@ -47,6 +47,9 @@ type CrossbellPostStruct struct {
 		MimeType    string `json:"mime_type"`
 		SizeInBytes int    `json:"size_in_bytes"`
 	} `json:"attachments"`
+	DatePublished string   `json:"date_published"`
+	Title         string   `json:"title"`
+	Sources       []string `json:"sources"`
 }
 
 func (h *handler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
