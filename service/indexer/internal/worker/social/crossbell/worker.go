@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	Name     = "crossbell"
+	Name     = "Crossbell"
 	Endpoint = "https://rpc.crossbell.io"
 )
 
