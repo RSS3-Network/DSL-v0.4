@@ -8,6 +8,7 @@ import (
 
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
@@ -15,15 +16,15 @@ func TestPostCreated(t *testing.T) {
 	ethereumClientMap, err := ethclientx.Dial(&configx.RPC{
 		General: configx.RPCNetwork{
 			Polygon: &configx.RPCEndpoint{
-				HTTP: "https://nameless-morning-darkness.matic.quiknode.pro/2445c335d3e0eda62b65287408fd88a24f39970c",
+				HTTP: "",
 			},
 		},
-	})
+	}, []string{"polygon"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	worker := New(ethereumClientMap)
+	worker := New(ethereumClientMap[protocol.NetworkPolygon])
 	message := &protocol.Message{
 		Address: "0xd1feccf6881970105dfb2b654054174007f0e07e",
 	}
