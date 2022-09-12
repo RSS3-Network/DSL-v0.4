@@ -93,8 +93,8 @@ func (s *service) Jobs() []worker.Job {
 	return []worker.Job{}
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New(ethereumClient *ethclient.Client) worker.Worker {
 	return &service{
-		commWorkerClient: lens_comm.New(ethereumClientMap),
+		commWorkerClient: lens_comm.New(ethereumClient),
 	}
 }

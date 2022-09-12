@@ -2,12 +2,12 @@ package token_test
 
 import (
 	"context"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"log"
 	"math/big"
 	"testing"
 
 	configx "github.com/naturalselectionlabs/pregod/common/config"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 )
@@ -15,7 +15,7 @@ import (
 var tokenClient *token.Client
 
 func init() {
-	ethereumClientMap, err := ethereum.New(&configx.RPC{
+	ethereumClientMap, err := ethclientx.Dial(&configx.RPC{
 		General: configx.RPCNetwork{
 			Ethereum: &configx.RPCEndpoint{
 				HTTP: "https://rpc.rss3.dev/networks/ethereum",
@@ -33,7 +33,7 @@ func init() {
 				HTTP: "https://rpc.rss3.dev/networks/crossbell",
 			},
 		},
-	})
+	}, protocol.EthclientNetworks)
 	if err != nil {
 		log.Fatal(err)
 	}

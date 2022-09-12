@@ -3,6 +3,7 @@ package transaction
 import (
 	"context"
 	"encoding/json"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"reflect"
 	"testing"
 	"time"
@@ -13,7 +14,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
@@ -35,7 +35,7 @@ func init() {
 
 	cache.Dial(config.ConfigIndexer.Redis)
 
-	ethereumClientMap, err := ethereum.New(&configx.RPC{
+	ethereumClientMap, err := ethclientx.Dial(&configx.RPC{
 		General: configx.RPCNetwork{
 			Ethereum: &configx.RPCEndpoint{
 				HTTP: "https://rpc.rss3.dev/networks/ethereum",

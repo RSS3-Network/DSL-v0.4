@@ -3,6 +3,7 @@ package swap_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"math/big"
 	"strings"
 	"testing"
@@ -11,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/zerox"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -33,13 +33,13 @@ var (
 )
 
 func TestBuildTransferMetadata(t *testing.T) {
-	ethereumClientMap, err := ethereum.New(&configx.RPC{
+	ethereumClientMap, err := ethclientx.Dial(&configx.RPC{
 		General: configx.RPCNetwork{
 			Ethereum: &configx.RPCEndpoint{
 				HTTP: "https://rpc.rss3.dev/networks/ethereum",
 			},
 		},
-	})
+	}, []string{protocol.NetworkEthereum})
 	if err != nil {
 		t.Fatalf("failed to create ethereum client: %v", err)
 	}

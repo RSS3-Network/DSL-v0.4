@@ -48,9 +48,9 @@ type LensContentMedia struct {
 	Type string `json:"type"`
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) *Client {
+func New(client *ethclient.Client) *Client {
 	return &Client{
-		ethereumClient: ethereumClientMap[protocol.NetworkPolygon],
+		ethereumClient: client,
 		httpClient:     http.DefaultClient,
 	}
 }

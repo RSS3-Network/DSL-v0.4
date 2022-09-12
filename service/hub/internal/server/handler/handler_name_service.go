@@ -8,12 +8,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
-
-	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"go.opentelemetry.io/otel"
@@ -82,7 +82,7 @@ func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 
 func ResolveCrossbell(input string) (string, error) {
 	var result string
-	ethereumClient, err := ethclient.Dial(config.ConfigHub.RPC.General.Crossbell.HTTP)
+	ethereumClient, err := ethclientx.Global(protocol.NetworkCrossbell)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to crossbell rpc: %s", err)
 	}
@@ -133,9 +133,9 @@ func ResolveENS(address string) (string, error) {
 
 func ResolveLens(input string) (string, error) {
 	var result string
-	ethereumClient, err := ethclient.Dial(config.ConfigHub.RPC.General.Polygon.HTTP)
+	ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to polygon rpc: %s", err)
+		return "", err
 	}
 
 	lensHubContract, err := contract.NewHub(lens.HubProxyContractAddress, ethereumClient)

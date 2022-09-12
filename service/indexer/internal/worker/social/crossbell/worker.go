@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -46,7 +48,7 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) (err error) {
-	if s.ethereumClient, err = ethclient.Dial(Endpoint); err != nil {
+	if s.ethereumClient, err = ethclientx.Global(protocol.NetworkCrossbell); err != nil {
 		return err
 	}
 
