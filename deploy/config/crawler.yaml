@@ -41,3 +41,9 @@ rpc:
     crossbell:
       http: ''
       websocket: ''
+  pregod_etl:
+    polygon:
+      http: ''
+  ipfs:
+    io: ''
+    internal: ''

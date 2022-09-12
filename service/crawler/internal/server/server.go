@@ -9,12 +9,14 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/lens"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -70,6 +72,8 @@ func (s *Server) Initialize() (err error) {
 
 	cache.ReplaceGlobal(redisClient)
 
+	ipfs.New(s.config.RPC.IPFS.Internal)
+
 	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
 	if err != nil {
 		return err
@@ -102,6 +106,7 @@ func (s *Server) Initialize() (err error) {
 
 	s.crawlers = []crawler.Crawler{
 		ens.New(s.rabbitmqChannel, s.employer, s.config),
+		lens.New(s.config),
 	}
 
 	return nil

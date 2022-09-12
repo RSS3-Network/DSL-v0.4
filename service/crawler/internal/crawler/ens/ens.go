@@ -51,6 +51,7 @@ func New(
 	crawler := &service{
 		rabbitmqChannel: rabbitmqChannel,
 		employer:        employer,
+		config:          config,
 	}
 
 	var err error

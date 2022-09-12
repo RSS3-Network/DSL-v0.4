@@ -20,6 +20,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -43,6 +44,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
@@ -110,6 +112,8 @@ func (s *Server) Initialize() (err error) {
 
 	cache.ReplaceGlobal(redisClient)
 
+	ipfs.New(s.config.RPC.IPFS.IO)
+
 	err = s.InitializeMQ()
 	if err != nil {
 		return err
@@ -165,7 +169,8 @@ func (s *Server) Initialize() (err error) {
 		mirror.New(),
 		gitcoin.New(ethereumClientMap),
 		snapshot.New(),
-		lens_worker.New(ethereumClientMap),
+		crossbell.New(),
+		lens_worker.New(ethereumClientMap[protocol.NetworkPolygon]),
 		transaction.New(ethereumClientMap),
 	}
 
@@ -330,6 +335,24 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	defer cancel()
 
+	var transactions []model.Transaction
+	defer func() {
+		s.employer.UnLock(lockKey)
+
+		transfers := 0
+
+		for _, transaction := range transactions {
+			transfers += len(transaction.Transfers)
+		}
+
+		loggerx.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
+
+		// upsert address status
+		go s.upsertAddress(ctx, model.Address{
+			Address: message.Address,
+		})
+	}()
+
 	// convert address to lowercase
 	message.Address = strings.ToLower(message.Address)
 	tracer := otel.Tracer("indexer")
@@ -358,9 +381,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	// Open a database transaction
 	tx := database.Global().WithContext(ctx).Begin()
-
-	// Get data from datasources
-	var transactions []model.Transaction
 
 	for _, datasource := range s.datasources {
 		for _, network := range datasource.Networks() {
@@ -427,23 +447,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	}
 
 	transactionsMap := getTransactionsMap(transactions)
-
-	defer func() {
-		s.employer.UnLock(lockKey)
-
-		transfers := 0
-
-		for _, transaction := range transactions {
-			transfers += len(transaction.Transfers)
-		}
-
-		loggerx.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
-
-		// upsert address status
-		go s.upsertAddress(ctx, model.Address{
-			Address: message.Address,
-		})
-	}()
 
 	return s.handleWorkers(ctx, message, tx, transactions, transactionsMap)
 }
