@@ -56,12 +56,6 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) error {
-	gitcoinProjectJob := &job.GitcoinProjectJob{
-		GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
-	}
-
-	gitcoinProjectJob.SetCache()
-
 	return nil
 }
 
