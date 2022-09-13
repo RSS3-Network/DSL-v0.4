@@ -1,6 +1,7 @@
 package job
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -45,7 +46,7 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 		return err
 	}
 
-	for i := 1; i <= 500; i++ {
+	for i := 1; i <= 50; i++ {
 		// request api
 		newProject, err := job.requestGitcoinGrantApi(latestProject.ID + 1)
 		if err != nil || newProject == nil || newProject.ID == 0 {
@@ -65,6 +66,8 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 		}
 
 		latestProject.ID += 1
+
+		time.Sleep(time.Second)
 	}
 
 	return nil
@@ -81,6 +84,11 @@ func (job *GitcoinProjectJob) requestGitcoinGrantApi(id int) (*donation.GitcoinP
 	)
 
 	resp, err := client.R().SetResult(&response).Get(url)
+
+	// log
+	out, _ := json.Marshal(response)
+	logrus.Info("[gitcoin job] requestGitcoinGrantApi url: %v, response: %v", url, string(out))
+
 	if err != nil {
 		return nil, err
 	}
