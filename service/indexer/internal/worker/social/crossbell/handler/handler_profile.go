@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -71,13 +72,13 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	}
 
 	profile := &social.Profile{
-		Address: transfer.AddressFrom,
-		// TODO: use appId from CSB
-		// Platform: transfer.Platform,
-		Platform: transfer.Network,
-		Network:  transfer.Network,
-		Source:   transfer.Network,
-		Type:     filter.SocialProfileCreate,
+		Address:   transfer.AddressFrom,
+		Platform:  transfer.Network,
+		Network:   transfer.Network,
+		Source:    transfer.Network,
+		Type:      filter.SocialProfileCreate,
+		Handle:    event.Handle,
+		CreatedAt: time.Unix(event.Timestamp.Int64(), 0),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
@@ -116,8 +117,6 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 	}
 
 	profile := &social.Profile{
-		// TODO: use appId from CSB
-		// Platform: transfer.Platform,
 		Platform: transfer.Network,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
@@ -162,8 +161,6 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 	}
 
 	profile := &social.Profile{
-		// TODO: use appId from CSB
-		// Platform: transfer.Platform,
 		Platform: transfer.Network,
 		Network:  transfer.Network,
 		Source:   transfer.Network,

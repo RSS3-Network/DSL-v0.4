@@ -128,7 +128,6 @@ func BuildProfileMetadata(profileMetadata []byte, profile *social.Profile) error
 	}
 
 	profile.Name = tempStructure.Name
-	profile.Handle = tempStructure.Name
 	profile.Bio = tempStructure.Bio
 
 	if len(tempStructure.Avatars) > 0 {
