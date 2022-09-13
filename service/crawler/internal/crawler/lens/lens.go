@@ -104,6 +104,12 @@ func (s *service) Run() error {
 					continue
 				}
 
+				// deduplicate data
+				transactions, err = s.deduplicateTransactions(ctx, transactions)
+				if err != nil || len(transactions) == 0 {
+					continue
+				}
+
 				// build transaction
 				message := &protocol.Message{
 					Network: protocol.NetworkPolygon,
@@ -111,7 +117,7 @@ func (s *service) Run() error {
 				if transactions, err = ethereum.BuildTransactions(ctx, message, transactions, s.ethClient); err != nil {
 					logrus.Error("failed to build transactions, ", err)
 
-					return
+					continue
 				}
 
 				// lens worker
@@ -120,7 +126,7 @@ func (s *service) Run() error {
 				// insert db
 				err = s.upsertTransactions(ctx, internalTransactions)
 				if err != nil {
-					return
+					continue
 				}
 			}
 		}(eventHash, contractAddress)
@@ -332,4 +338,35 @@ func (s *service) upsertTransactions(ctx context.Context, transactions []model.T
 	}
 
 	return nil
+}
+
+func (s *service) deduplicateTransactions(ctx context.Context, transactions []*model.Transaction) ([]*model.Transaction, error) {
+	hashList := []string{}
+	for _, transaction := range transactions {
+		hashList = append(hashList, transaction.Hash)
+	}
+
+	data := []*model.Transaction{}
+	if err := database.Global().
+		Model(&model.Transaction{}).
+		Where("hash in (?)", hashList).
+		Find(&data).Error; err != nil {
+		logrus.Error("[lens] deduplicateTransactions: find transactions error, ", err)
+
+		return transactions, err
+	}
+
+	dbMap := make(map[string]bool)
+	for _, t := range data {
+		dbMap[t.Hash] = true
+	}
+
+	for i := 0; i < len(transactions); i++ {
+		if dbMap[transactions[i].Hash] {
+			transactions = append(transactions[:i], transactions[i+1:]...)
+			i--
+		}
+	}
+
+	return transactions, nil
 }
