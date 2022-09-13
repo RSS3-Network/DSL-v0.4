@@ -47,8 +47,11 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 	}
 
 	for i := 1; i <= 50; i++ {
+		time.Sleep(time.Second)
+		latestProject.ID += 1
+
 		// request api
-		newProject, err := job.requestGitcoinGrantApi(latestProject.ID + 1)
+		newProject, err := job.requestGitcoinGrantApi(latestProject.ID)
 		if err != nil || newProject == nil || newProject.ID == 0 {
 			continue
 		}
@@ -64,10 +67,6 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 			Create(newProject).Error; err != nil {
 			continue
 		}
-
-		latestProject.ID += 1
-
-		time.Sleep(time.Second)
 	}
 
 	return nil
