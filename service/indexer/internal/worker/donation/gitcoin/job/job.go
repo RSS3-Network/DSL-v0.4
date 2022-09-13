@@ -86,7 +86,7 @@ func (job *GitcoinProjectJob) requestGitcoinGrantApi(id int) (*donation.GitcoinP
 
 	// log
 	out, _ := json.Marshal(response)
-	logrus.Info("[gitcoin job] requestGitcoinGrantApi url: %v, response: %v", url, string(out))
+	logrus.Infof("[gitcoin job] requestGitcoinGrantApi url: %v, response: %v", url, string(out))
 
 	if err != nil {
 		return nil, err
