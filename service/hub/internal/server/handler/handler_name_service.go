@@ -15,7 +15,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
-	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"go.opentelemetry.io/otel"
 )
 
@@ -123,7 +122,7 @@ func ResolveCrossbell(input string) (string, error) {
 }
 
 func ResolveENS(address string) (string, error) {
-	result, err := ens.Resolve(config.ConfigHub.RPC.General.Ethereum.HTTP, address)
+	result, err := ens.Resolve(address)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve ENS for: %s", address)
 	}

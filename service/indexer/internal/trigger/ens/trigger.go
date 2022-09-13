@@ -9,7 +9,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -59,6 +58,6 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message) (err e
 
 func New() trigger.Trigger {
 	return &internal{
-		ensClient: ens.New(config.ConfigIndexer.RPC.General.Ethereum.HTTP),
+		ensClient: ens.New(),
 	}
 }
