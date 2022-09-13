@@ -8,13 +8,17 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
-	"github.com/naturalselectionlabs/pregod/common/protocol"
+	lenscontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid"
+	spaceidcontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid/contracts"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
+	goens "github.com/wealdtech/go-ens/v3"
 	"go.opentelemetry.io/otel"
 )
 
@@ -22,6 +26,7 @@ type NameServiceResult struct {
 	ENS       string `json:"ens"`
 	Crossbell string `json:"crossbell"`
 	Lens      string `json:"lens"`
+	SpaceID   string `json:"spaceid"`
 	Address   string `json:"address"`
 }
 
@@ -53,6 +58,8 @@ func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 	result := NameServiceResult{}
 	var address string
 
+	request.Address = strings.ToLower(request.Address)
+
 	switch splits[len(splits)-1] {
 	case "eth":
 		// error here means the address doesn't have a primary ENS, and can be ignored
@@ -64,6 +71,9 @@ func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 	case "lens":
 		address, _ = ResolveLens(request.Address)
 		result.Lens = request.Address
+	case "bnb":
+		address, _ = ResolveSpaceID(request.Address)
+		result.SpaceID = request.Address
 	default:
 		if ValidateEthereumAddress(request.Address) {
 			address = request.Address
@@ -81,14 +91,14 @@ func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 
 func ResolveCrossbell(input string) (string, error) {
 	var result string
-	ethereumClient, err := ethclientx.Global(protocol.NetworkCrossbell)
+	ethereumClient, err := ethclient.Dial(config.ConfigHub.RPC.General.Crossbell.HTTP)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to crossbell rpc: %s", err)
 	}
 
 	characterContract, err := crossbell.NewCharacter(crossbell.AddressCharacter, ethereumClient)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to crossbell character contract: %s", err)
+		return "", fmt.Errorf("failed to connect to crossbell character contracts: %s", err)
 	}
 
 	if strings.HasSuffix(input, ".csb") {
@@ -132,14 +142,14 @@ func ResolveENS(address string) (string, error) {
 
 func ResolveLens(input string) (string, error) {
 	var result string
-	ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)
+	ethereumClient, err := ethclient.Dial(config.ConfigHub.RPC.General.Polygon.HTTP)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to connect to polygon rpc: %s", err)
 	}
 
-	lensHubContract, err := contract.NewHub(lens.HubProxyContractAddress, ethereumClient)
+	lensHubContract, err := lenscontract.NewHub(lens.HubProxyContractAddress, ethereumClient)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to lens hub contract: %s", err)
+		return "", fmt.Errorf("failed to connect to lens hub contracts: %s", err)
 	}
 
 	if strings.HasSuffix(input, ".lens") {
@@ -166,6 +176,66 @@ func ResolveLens(input string) (string, error) {
 	return strings.ToLower(result), nil
 }
 
+func ResolveSpaceID(input string) (string, error) {
+	var result string
+	ethereumClient, err := ethclient.Dial(config.ConfigHub.RPC.General.BinanceSmartChain.HTTP)
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to polygon rpc: %s", err)
+	}
+
+	spaceidContract, err := spaceidcontract.NewSpaceid(spaceid.AddressSpaceID, ethereumClient)
+	if err != nil {
+		return "", fmt.Errorf("failed to new a space id contract: %w", err)
+	}
+
+	if strings.HasSuffix(input, ".bnb") {
+		namehash, _ := goens.NameHash(input)
+
+		resolver, err := spaceidContract.Resolver(&bind.CallOpts{}, namehash)
+		if err != nil {
+			return "", fmt.Errorf("failed to get space id resolver: %w", err)
+		}
+
+		if resolver == ethereum.AddressGenesis {
+			return "", fmt.Errorf("the space id does not have a resolver: %s", input)
+		}
+
+		spaceidResolver, err := spaceidcontract.NewResolver(resolver, ethereumClient)
+		if err != nil {
+			return "", fmt.Errorf("failed to new to space id resolver contract: %w", err)
+		}
+
+		profileID, err := spaceidResolver.Addr(&bind.CallOpts{}, namehash)
+		if err != nil {
+			return "", fmt.Errorf("failed to get Space ID by handle: %s", err)
+		}
+
+		result = profileID.String()
+	} else {
+		namehash, _ := goens.NameHash(fmt.Sprintf("%s.addr.reverse", strings.TrimPrefix(input, "0x")))
+
+		resolver, err := spaceidContract.Resolver(&bind.CallOpts{}, namehash)
+		if err != nil {
+			return "", fmt.Errorf("failed to get space id resolver: %w", err)
+		}
+
+		if resolver == ethereum.AddressGenesis {
+			return "", fmt.Errorf("the space id does not have a resolver: %s", input)
+		}
+
+		spaceidResolver, err := spaceidcontract.NewResolver(resolver, ethereumClient)
+		if err != nil {
+			return "", fmt.Errorf("failed to new to space id resolver contract: %w", err)
+		}
+
+		if result, err = spaceidResolver.Name(&bind.CallOpts{}, namehash); err != nil {
+			return "", fmt.Errorf("failed to get space id handle by address: %w", err)
+		}
+	}
+
+	return strings.ToLower(result), nil
+}
+
 func ResolveAll(result *NameServiceResult) {
 	if result.ENS == "" {
 		result.ENS, _ = ResolveENS(result.Address)
@@ -177,6 +247,10 @@ func ResolveAll(result *NameServiceResult) {
 
 	if result.Lens == "" {
 		result.Lens, _ = ResolveLens(result.Address)
+	}
+
+	if result.SpaceID == "" {
+		result.SpaceID, _ = ResolveSpaceID(result.Address)
 	}
 }
 
