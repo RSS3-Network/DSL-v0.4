@@ -42,7 +42,7 @@ var snapshotNetworkNumMap = map[string]string{
 	protocol.NetworkArbitrum:          "42161",
 	protocol.NetworkOptimism:          "10",
 	protocol.NetworkFantom:            "250",
-	protocol.NetworkAvalanche:         "43113",
+	protocol.NetworkAvalanche:         "43114",
 }
 
 type service struct {
@@ -117,11 +117,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	}
 
 	if len(votes) == 0 && len(proposalsByAuthorMap) == 0 {
-		return transactions, nil
+		return nil, nil
 	}
 
 	if isVoteError && isProposalsByAuthorError {
-		return transactions, errors.New("failed to get snapshot votes and proposals by author")
+		return nil, errors.New("failed to get snapshot votes and proposals by author")
 	}
 
 	proposalIDSet := mapset.NewSet()
@@ -139,14 +139,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		spaceIDSet.Add(proposal.SpaceID)
 	}
 
-	for _, proposalNode := range proposalIDSet.ToSlice() {
-		proposal, ok := proposalNode.(string)
-		if !ok {
-			logrus.Warnf("[snapshot worker] failed to convert proposal node to snapshot proposal:%v", proposalNode)
-		}
-		proposalIDs = append(proposalIDs, proposal)
-	}
-
 	for _, spaceNode := range spaceIDSet.ToSlice() {
 		space, ok := spaceNode.(string)
 		if !ok {
@@ -155,39 +147,59 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		spaceIDs = append(spaceIDs, space)
 	}
 
+	spaceMap, err := s.getSnapshotSpaces(ctx, spaceIDs, snapshotNetworkNum)
+	if err != nil {
+		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot spaces: %w", err)
+	}
+
+	if len(spaceMap) == 0 {
+		return nil, nil
+	}
+
+	for _, proposalNode := range proposalIDSet.ToSlice() {
+		proposal, ok := proposalNode.(string)
+		if !ok {
+			logrus.Warnf("[snapshot worker] failed to convert proposal node to snapshot proposal:%v", proposalNode)
+		}
+		proposalIDs = append(proposalIDs, proposal)
+	}
+
 	proposalMap, err := s.getSnapshotProposals(ctx, proposalIDs)
 	if err != nil {
 		return nil, fmt.Errorf("[snapshot worker] failed to get snapshot proposals: %w", err)
 	}
 
-	spaceMap, err := s.getSnapshotSpaces(ctx, spaceIDs, snapshotNetworkNum)
-	if err != nil {
-		return transactions, fmt.Errorf("[snapshot worker] failed to get snapshot spaces: %w", err)
-	}
-
 	if !isVoteError {
 		for _, vote := range votes {
-			newTransaction, err := s.getVote(vote, proposalMap, spaceMap, message)
-			if err != nil {
-				logrus.Errorf("failed to format vote: %s", err)
-				continue
-			}
-			if newTransaction != nil {
-				currTransactions = append(currTransactions, *newTransaction)
+			space, ok1 := spaceMap[vote.SpaceID]
+			proposal, ok2 := proposalMap[vote.ProposalID]
+			if ok1 && ok2 {
+				newTransaction, err := s.getVote(vote, proposal, space, message)
+				if err != nil {
+					logrus.Errorf("failed to format vote: %s", err)
+					continue
+				}
+				if newTransaction != nil {
+					currTransactions = append(currTransactions, *newTransaction)
+				}
 			}
 		}
 	}
 
 	if !isProposalsByAuthorError {
 		for _, proposal := range proposalsByAuthorMap {
-			newTransaction, err := s.getProposal(proposal, spaceMap, message)
-			if err != nil {
-				logrus.Errorf("failed to format proposal: %s", err)
-				continue
+			space, ok := spaceMap[proposal.SpaceID]
+			if ok {
+				newTransaction, err := s.getProposal(proposal, space, message)
+				if err != nil {
+					logrus.Errorf("failed to format proposal: %s", err)
+					continue
+				}
+				if newTransaction != nil {
+					currTransactions = append(currTransactions, *newTransaction)
+				}
 			}
-			if newTransaction != nil {
-				currTransactions = append(currTransactions, *newTransaction)
-			}
+
 		}
 	}
 
@@ -209,7 +221,7 @@ func (s *service) Jobs() []worker.Job {
 			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_proposal_job",
 				SnapshotClient: s.snapshotClient,
-				Limit:          2000,
+				Limit:          1000,
 				HighUpdateTime: time.Second,
 				LowUpdateTime:  time.Minute * 5,
 			},
@@ -341,24 +353,10 @@ func (s *service) getProposalsByAuthor(ctx context.Context, author string, times
 
 func (s *service) getVote(
 	vote governance.SnapshotVote,
-	proposalMap map[string]governance.SnapshotProposal,
-	spaceMap map[string]governance.SnapshotSpace,
+	proposal governance.SnapshotProposal,
+	space governance.SnapshotSpace,
 	message *protocol.Message,
 ) (*model.Transaction, error) {
-	proposal, ok := proposalMap[vote.ProposalID]
-	if !ok {
-		zap.L().Warn("proposal not found", zap.String("proposal_id", vote.ProposalID), zap.String("network", message.Network))
-
-		return nil, nil
-	}
-
-	space, ok := spaceMap[vote.SpaceID]
-	if !ok {
-		zap.L().Warn("space not found", zap.String("space_id", vote.SpaceID), zap.String("network", message.Network))
-
-		return nil, nil
-	}
-
 	formattedProposal, err := s.formatProposal(&proposal, &space)
 	if err != nil {
 		zap.L().Warn("failed to format proposal", zap.String("proposal_id", vote.ProposalID), zap.String("network", message.Network))
@@ -429,15 +427,9 @@ func (s *service) getVote(
 
 func (s *service) getProposal(
 	proposal governance.SnapshotProposal,
-	spaceMap map[string]governance.SnapshotSpace,
+	space governance.SnapshotSpace,
 	message *protocol.Message,
 ) (*model.Transaction, error) {
-	space, ok := spaceMap[proposal.SpaceID]
-	if !ok {
-		logrus.Warnf("[snapshot worker] failed to get space:%v, network:%v", proposal.SpaceID, message.Network)
-		return nil, nil
-	}
-
 	formattedProposal, err := s.formatProposal(&proposal, &space)
 	if err != nil {
 		logrus.Warnf("[snapshot worker] failed to format proposal:%v", proposal.ID)

@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/sirupsen/logrus"
 	goens "github.com/wealdtech/go-ens/v3"
@@ -132,10 +133,10 @@ func getTextRecordKeyList() []string {
 	return []string{"email", "url", "avatar", "description", "notice", "keywords", "com.discord", "com.github", "com.reddit", "com.twitter", "org.telegram", "eth.ens.delegate"}
 }
 
-func New(ethRPCEndpoint string) *Client {
+func New() *Client {
 	var ethClient *ethclient.Client
 
-	ethClient, err := ethclient.Dial(ethRPCEndpoint)
+	ethClient, err := ethclientx.Global(protocol.NetworkEthereum)
 	if err != nil {
 		logrus.Errorf("ethclient Dial error, %v", err)
 
@@ -148,8 +149,8 @@ func New(ethRPCEndpoint string) *Client {
 	}
 }
 
-func Resolve(ethRPCEndpoint string, input string) (string, error) {
-	client := New(ethRPCEndpoint)
+func Resolve(input string) (string, error) {
+	client := New()
 
 	var result string
 	var err error

@@ -66,13 +66,7 @@ func New(config *config.Config) crawler.Crawler {
 		return nil
 	}
 
-	ethereumClientMap, err := ethereum.New(config.RPC)
-	if err != nil {
-		logrus.Error("[lens] ethereum.New error, ", err)
-		return nil
-	}
-
-	crawler.commWorkerClient = lens_comm.New(ethereumClientMap)
+	crawler.commWorkerClient = lens_comm.New(crawler.ethClient)
 
 	return crawler
 }

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -43,6 +45,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
@@ -122,7 +125,7 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
-	blockscoutDatasource, err := blockscout.New(s.config.RPC)
+	blockscoutDatasource, err := blockscout.New()
 	if err != nil {
 		return err
 	}
@@ -134,21 +137,25 @@ func (s *Server) Initialize() (err error) {
 
 	s.datasources = []datasource.Datasource{
 		alchemyDatasource,
-		moralis.New(s.config.Moralis.Key, s.config.RPC),
+		moralis.New(s.config.Moralis.Key),
 		arweave.New(),
 		blockscoutDatasource,
 		zksync.New(),
 		lensDatasource,
 	}
 
-	swapWorker, err := swap.New(s.config.RPC, s.employer)
+	swapWorker, err := swap.New(s.employer)
 	if err != nil {
 		return err
 	}
 
-	ethereumClientMap, err := ethereum.New(s.config.RPC)
+	ethereumClientMap, err := ethclientx.Dial(s.config.RPC, protocol.EthclientNetworks)
 	if err != nil {
 		return err
+	}
+
+	for network, client := range ethereumClientMap {
+		ethclientx.ReplaceGlobal(network, client)
 	}
 
 	s.triggers = []trigger.Trigger{
@@ -163,7 +170,8 @@ func (s *Server) Initialize() (err error) {
 		mirror.New(),
 		gitcoin.New(ethereumClientMap),
 		snapshot.New(),
-		lens_worker.New(ethereumClientMap),
+		crossbell.New(),
+		lens_worker.New(ethereumClientMap[protocol.NetworkPolygon]),
 		transaction.New(ethereumClientMap),
 	}
 
@@ -375,69 +383,77 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	// Open a database transaction
 	tx := database.Global().WithContext(ctx).Begin()
 
-	for _, datasource := range s.datasources {
-		for _, network := range datasource.Networks() {
-			if network == message.Network {
-				// Get the time of the latest data for this address and network
-				var result struct {
-					Timestamp   time.Time `gorm:"column:timestamp"`
-					BlockNumber int64     `gorm:"column:block_number"`
-				}
+	// Delete data from this address and reindex it
+	if message.Reindex {
+		var hashes []string
 
-				// Delete data from this address and reindex it
-				if message.Reindex {
-					var hashes []string
+		// TODO Use the owner to replace hashes field
+		// Get all hashes of this address on this network
+		if err := tx.
+			Model((*model.Transaction)(nil)).
+			Where("network = ? AND owner = ?", message.Network, message.Address).
+			Pluck("hash", &hashes).
+			Error; err != nil {
+			return err
+		}
 
-					// TODO Use the owner to replace hashes field
-					// Get all hashes of this address on this network
-					if err := tx.
-						Model((*model.Transaction)(nil)).
-						Where("network = ? AND owner = ?", message.Network, message.Address).
-						Pluck("hash", &hashes).
-						Error; err != nil {
-						return err
-					}
+		if err := tx.Where("network = ? AND hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transaction{}).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
 
-					if err := tx.Where("network = ? AND hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transaction{}).Error; err != nil {
-						tx.Rollback()
-
-						return err
-					}
-
-					if err := tx.Where("network = ? AND transaction_hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transfer{}).Error; err != nil {
-						tx.Rollback()
-
-						return err
-					}
-				}
-
-				if err := tx.
-					Model((*model.Transaction)(nil)).
-					Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
-					Where("owner = ?", message.Address).
-					Where("network = ?", message.Network).
-					Order("timestamp DESC").
-					Limit(1).
-					First(&result).
-					Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-					continue
-				}
-
-				message.Timestamp = result.Timestamp
-				message.BlockNumber = result.BlockNumber
-
-				internalTransactions, err := datasource.Handle(ctx, message)
-				// Avoid blocking indexed workers
-				if err != nil {
-					loggerx.Global().Error("datasource handle failed", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("datasource", datasource.Name()))
-
-					continue
-				}
-
-				transactions = append(transactions, internalTransactions...)
-			}
+		if err := tx.Where("network = ? AND transaction_hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transfer{}).Error; err != nil {
+			tx.Rollback()
+			return err
 		}
 	}
+
+	// Get the time of the latest data for this address and network
+	var result struct {
+		Timestamp   time.Time `gorm:"column:timestamp"`
+		BlockNumber int64     `gorm:"column:block_number"`
+	}
+
+	if err := tx.
+		Model((*model.Transaction)(nil)).
+		Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
+		Where("owner = ?", message.Address).
+		Where("network = ?", message.Network).
+		Order("timestamp DESC").
+		Limit(1).
+		First(&result).
+		Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
+	message.Timestamp = result.Timestamp
+	message.BlockNumber = result.BlockNumber
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	for _, ds := range s.datasources {
+		wg.Add(1)
+		go func(message *protocol.Message, datasource datasource.Datasource) {
+			defer wg.Done()
+			for _, network := range datasource.Networks() {
+				if network == message.Network {
+					internalTransactions, err := datasource.Handle(ctx, message)
+					// Avoid blocking indexed workers
+					if err != nil {
+						loggerx.Global().Error("datasource handle failed", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("datasource", datasource.Name()))
+
+						continue
+					}
+					mu.Lock()
+					transactions = append(transactions, internalTransactions...)
+					mu.Unlock()
+				}
+			}
+		}(message, ds)
+
+	}
+	wg.Wait()
 
 	transactionsMap := getTransactionsMap(transactions)
 

@@ -8,7 +8,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
-	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 )
 
@@ -80,7 +79,7 @@ func TranslateAddress(address string) (string, error) {
 
 	switch splits[len(splits)-1] {
 	case "eth":
-		nsResult, err := ens.Resolve(config.ConfigHub.RPC.General.Ethereum.HTTP, address)
+		nsResult, err := ens.Resolve(address)
 		if err != nil {
 			return "", fmt.Errorf("failed to resolve ENS address %s: %s", address, err)
 		}

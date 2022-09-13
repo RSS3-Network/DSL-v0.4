@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -24,7 +26,7 @@ import (
 )
 
 const (
-	Name     = "crossbell"
+	Name     = "Crossbell"
 	Endpoint = "https://rpc.crossbell.io"
 )
 
@@ -46,7 +48,7 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) (err error) {
-	if s.ethereumClient, err = ethclient.Dial(Endpoint); err != nil {
+	if s.ethereumClient, err = ethclientx.Global(protocol.NetworkCrossbell); err != nil {
 		return err
 	}
 
@@ -103,6 +105,13 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 		transaction.Transfers = append(transaction.Transfers, internalTransfers...)
 
+		for _, transfer := range internalTransfers {
+			transaction.Platform = transfer.Platform
+
+			// Use first transfer as the main transfer
+			continue
+		}
+
 		for _, transfer := range transaction.Transfers {
 			transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
 		}
@@ -157,6 +166,7 @@ func (s *service) handleReceipt(ctx context.Context, message *protocol.Message, 
 					zap.String("worker", s.Name()),
 					zap.String("network", message.Network),
 					zap.String("address", message.Address),
+					zap.String("transaction_hash", transaction.Hash),
 				)
 			}
 

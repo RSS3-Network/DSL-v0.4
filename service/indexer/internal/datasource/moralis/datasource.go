@@ -7,18 +7,16 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
-	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/moralis"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/shopspring/decimal"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 )
 
@@ -31,8 +29,7 @@ const (
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
-	moralisClient  *moralis.Client
-	ethereumClient *ethclient.Client
+	moralisClient *moralis.Client
 }
 
 func (d *Datasource) Name() string {
@@ -130,7 +127,12 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 		internalTransactions = append(internalTransactions, transaction)
 	}
 
-	internalTransactions, err = ethereum.BuildTransactions(ctx, message, internalTransactions, d.ethereumClient)
+	ethereumClient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	internalTransactions, err = ethereum.BuildTransactions(ctx, message, internalTransactions, ethereumClient)
 	if err != nil {
 		return nil, err
 	}
@@ -316,16 +318,10 @@ func (d *Datasource) handleEthereumNFTTransfers(ctx context.Context, message *pr
 	return transfers, nil
 }
 
-func New(moralisKey string, config *configx.RPC) datasource.Datasource {
+func New(moralisKey string) datasource.Datasource {
 	moralisClient := moralis.NewClient(moralisKey)
 
-	ethereumClient, err := ethclient.Dial(config.General.BinanceSmartChain.HTTP)
-	if err != nil {
-		logrus.Errorf("[datasource] ethereum worker error: %v", err)
-	}
-
 	return &Datasource{
-		moralisClient:  moralisClient,
-		ethereumClient: ethereumClient,
+		moralisClient: moralisClient,
 	}
 }

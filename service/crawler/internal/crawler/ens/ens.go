@@ -231,7 +231,7 @@ func (s *service) loadExistingEns() {
 				continue
 			}
 
-			nsResult, err := ens_common.Resolve(s.config.RPC.General.Ethereum.WebSocket, ens.Name+".eth")
+			nsResult, err := ens_common.Resolve(ens.Name + ".eth")
 			if err != nil {
 				logrus.Errorf("[crawler] ens: Resolve error, %v", err)
 
