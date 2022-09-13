@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -53,6 +54,8 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 		if err != nil || newProject == nil || newProject.ID == 0 {
 			continue
 		}
+
+		newProject.AdminAddress = strings.ToLower(newProject.AdminAddress)
 
 		// set db
 		if err := database.Global().
