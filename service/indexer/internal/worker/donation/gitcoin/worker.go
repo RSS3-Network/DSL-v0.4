@@ -176,19 +176,6 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 			continue
 		}
 
-		// TODO Always return nil in non-production environments, need to refactor code involving redis
-		// projectStr, err := s.redisClient.HGet(ctx, s.gitcoinProjectCacheKey, transfer.AddressTo).Result()
-		// if err != nil || len(projectStr) == 0 {
-		// 	 return transfer, err
-		// }
-		//
-		// project := &donation.GitcoinProject{}
-		// if err := json.Unmarshal([]byte(projectStr), &project); err != nil {
-		//	 loggerx.Global().Error("unmarshal gitcoin project error", zap.Error(err))
-		//
-		//	 return nil, err
-		// }
-
 		sourceData, err := json.Marshal(log)
 		if err != nil {
 			loggerx.Global().Error("marshal source data error", zap.Error(err))
