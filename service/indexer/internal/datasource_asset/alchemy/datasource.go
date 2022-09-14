@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/ethclient"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -16,7 +15,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
@@ -36,7 +34,6 @@ var _ datasource_asset.Datasource = &Datasource{}
 
 type Datasource struct {
 	rpcClientMap map[string]*alchemy.Client // Alchemy
-	tokenClient  *token.Client
 }
 
 func (d *Datasource) Name() string {
@@ -144,10 +141,9 @@ func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) (as
 	return assets, err
 }
 
-func New(config *configx.RPC, ethereumClientMap map[string]*ethclient.Client) (datasource_asset.Datasource, error) {
+func New(config *configx.RPC) (datasource_asset.Datasource, error) {
 	internalDatasource := Datasource{
 		rpcClientMap: map[string]*alchemy.Client{},
-		tokenClient:  token.New(ethereumClientMap),
 	}
 
 	var err error

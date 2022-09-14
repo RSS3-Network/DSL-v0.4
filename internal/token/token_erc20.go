@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"gorm.io/gorm"
 )
 
@@ -45,12 +46,12 @@ func (c *Client) ERC20(ctx context.Context, network string, contractAddress stri
 		ContractAddress: contractAddress,
 	}
 
-	ethereumClient, exists := c.ethereumClientMap[network]
-	if !exists {
-		return nil, ErrorNetworkNotSupported
+	ethclient, err := ethclientx.Global(network)
+	if err != nil {
+		return nil, err
 	}
 
-	erc20Contract, err := erc20.NewERC20(common.HexToAddress(result.ContractAddress), ethereumClient)
+	erc20Contract, err := erc20.NewERC20(common.HexToAddress(result.ContractAddress), ethclient)
 	if err != nil {
 		return nil, err
 	}

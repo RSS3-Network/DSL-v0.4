@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -166,8 +165,6 @@ func (s *service) Jobs() []worker.Job {
 	return nil
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
-	return &service{
-		tokenClient: token.New(ethereumClientMap),
-	}
+func New() worker.Worker {
+	return &service{}
 }

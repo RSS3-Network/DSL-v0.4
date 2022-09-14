@@ -9,12 +9,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -32,8 +32,7 @@ const (
 )
 
 type internal struct {
-	ethereumClientMap map[string]*ethclient.Client
-	tokenClient       *token.Client
+	tokenClient *token.Client
 }
 
 func (i *internal) Name() string {
@@ -89,12 +88,11 @@ func (i *internal) handleOpenSea(ctx context.Context, message *protocol.Message,
 
 	defer opentelemetry.Log(span, transaction, nil, nil)
 
-	ethereumClient, ok := i.ethereumClientMap[transaction.Network]
-	if !ok {
-		return nil, errors.New("not support network")
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
 	}
-
-	receipt, err := ethereumClient.TransactionReceipt(context.Background(), common.HexToHash(transaction.Hash))
+	receipt, err := ethclient.TransactionReceipt(context.Background(), common.HexToHash(transaction.Hash))
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +100,7 @@ func (i *internal) handleOpenSea(ctx context.Context, message *protocol.Message,
 	internalTransaction := transaction
 	internalTransaction.Transfers = make([]model.Transfer, 0)
 
-	seaportContract, err := opensea.NewSeaport(common.HexToAddress(transaction.AddressTo), ethereumClient)
+	seaportContract, err := opensea.NewSeaport(common.HexToAddress(transaction.AddressTo), ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -200,12 +198,12 @@ func (i *internal) handleLooksRare(ctx context.Context, message *protocol.Messag
 
 	defer opentelemetry.Log(span, transaction, nil, nil)
 
-	ethereumClient, ok := i.ethereumClientMap[transaction.Network]
-	if !ok {
-		return nil, errors.New("not support network")
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
 	}
 
-	receipt, err := ethereumClient.TransactionReceipt(context.Background(), common.HexToHash(transaction.Hash))
+	receipt, err := ethclient.TransactionReceipt(context.Background(), common.HexToHash(transaction.Hash))
 	if err != nil {
 		return nil, err
 	}
@@ -213,7 +211,7 @@ func (i *internal) handleLooksRare(ctx context.Context, message *protocol.Messag
 	internalTransaction := transaction
 	internalTransaction.Transfers = make([]model.Transfer, 0)
 
-	exchangeContract, err := looksrare.NewExchange(common.HexToAddress(transaction.AddressTo), ethereumClient)
+	exchangeContract, err := looksrare.NewExchange(common.HexToAddress(transaction.AddressTo), ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -434,9 +432,6 @@ func (i *internal) Jobs() []worker.Job {
 	return nil
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
-	return &internal{
-		tokenClient:       token.New(ethereumClientMap),
-		ethereumClientMap: ethereumClientMap,
-	}
+func New() worker.Worker {
+	return &internal{}
 }

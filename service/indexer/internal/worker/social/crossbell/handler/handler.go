@@ -101,9 +101,7 @@ func New(ethereumClient *ethclient.Client) (Interface, error) {
 		return nil, err
 	}
 
-	tokenClient := token.New(map[string]*ethclient.Client{
-		protocol.NetworkCrossbell: ethereumClient,
-	})
+	tokenClient := token.New()
 
 	return &handler{
 		characterHandler: &characterHandler{

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
@@ -17,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/gitcoin"
 	mrc202 "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/mrc20"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -40,7 +40,7 @@ var (
 	ErrorInvalidTransactionVRSValues = errors.New("invalid transaction v, r, s values")
 )
 
-func BuildTransactions(ctx context.Context, message *protocol.Message, transactions []*model.Transaction, ethereumClient *ethclient.Client) ([]*model.Transaction, error) {
+func BuildTransactions(ctx context.Context, message *protocol.Message, transactions []*model.Transaction) ([]*model.Transaction, error) {
 	tracer := otel.Tracer("ethereum")
 	ctx, span := tracer.Start(ctx, "ethereum:BuildTransactions")
 
@@ -53,7 +53,7 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 
 	for _, ts := range lo.Chunk(transactions, chunkSize) {
 
-		blocks, err := lop.MapWithError(ts, makeBlockHandlerFunc(ctx, message, ethereumClient), lop.NewOption().WithConcurrency(MaxConcurrency))
+		blocks, err := lop.MapWithError(ts, makeBlockHandlerFunc(ctx, message), lop.NewOption().WithConcurrency(MaxConcurrency))
 		if err != nil {
 			loggerx.Global().Error("failed to handle blocks", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
 
@@ -66,7 +66,7 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 		}
 
 		// Error topic/field count mismatch
-		ts, err = lop.MapWithError(ts, makeTransactionHandlerFunc(ctx, message, ethereumClient, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
+		ts, err = lop.MapWithError(ts, makeTransactionHandlerFunc(ctx, message, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
 		if err != nil {
 			loggerx.Global().Error("failed to handle transactions", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
 
@@ -88,9 +88,14 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 	return internalTransactions, nil
 }
 
-func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message, ethereumClient *ethclient.Client) func(transaction *model.Transaction, i int) (*types.Block, error) {
+func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message) func(transaction *model.Transaction, i int) (*types.Block, error) {
 	return func(transaction *model.Transaction, i int) (*types.Block, error) {
-		block, err := ethereumClient.BlockByNumber(ctx, big.NewInt(transaction.BlockNumber))
+		ethclient, err := ethclientx.Global(message.Network)
+		if err != nil {
+			return nil, err
+		}
+
+		block, err := ethclient.BlockByNumber(ctx, big.NewInt(transaction.BlockNumber))
 		if err != nil {
 			zap.L().Error("failed to get block", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.Int64("block_number", transaction.BlockNumber))
 
@@ -101,7 +106,7 @@ func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message, ethere
 	}
 }
 
-func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, ethereumClient *ethclient.Client, blockMap map[int64]*types.Block) func(transaction *model.Transaction, i int) (*model.Transaction, error) {
+func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, blockMap map[int64]*types.Block) func(transaction *model.Transaction, i int) (*model.Transaction, error) {
 	return func(transaction *model.Transaction, i int) (*model.Transaction, error) {
 		block := blockMap[transaction.BlockNumber]
 
@@ -163,7 +168,12 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 
 		transaction.AddressTo = strings.ToLower(addressTo)
 
-		receipt, err := ethereumClient.TransactionReceipt(ctx, internalTransaction.Hash())
+		ethclient, err := ethclientx.Global(message.Network)
+		if err != nil {
+			return nil, err
+		}
+
+		receipt, err := ethclient.TransactionReceipt(ctx, internalTransaction.Hash())
 		if err != nil {
 			loggerx.Global().Error("failed to get transaction receipt", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
 

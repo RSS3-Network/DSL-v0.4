@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/sirupsen/logrus"
 )
@@ -22,12 +23,12 @@ func (c *Client) ERC721(ctx context.Context, network, contractAddress string, to
 		return c.ERC721Ens(ctx, contractAddress, tokenID)
 	}
 
-	ethereumClient, exists := c.ethereumClientMap[network]
-	if !exists {
-		return nil, ErrorNetworkNotSupported
+	ethclient, err := ethclientx.Global(network)
+	if err != nil {
+		return nil, err
 	}
 
-	erc721Contract, err := erc721.NewERC721(common.HexToAddress(contractAddress), ethereumClient)
+	erc721Contract, err := erc721.NewERC721(common.HexToAddress(contractAddress), ethclient)
 	if err != nil {
 		return nil, err
 	}

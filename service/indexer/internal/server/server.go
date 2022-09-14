@@ -163,16 +163,16 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
-		liquidity.New(ethereumClientMap),
+		liquidity.New(),
 		swapWorker,
-		marketplace.New(ethereumClientMap),
-		poap.New(ethereumClientMap),
+		marketplace.New(),
+		poap.New(),
 		mirror.New(),
-		gitcoin.New(ethereumClientMap),
+		gitcoin.New(),
 		snapshot.New(),
 		crossbell.New(),
-		lens_worker.New(ethereumClientMap[protocol.NetworkPolygon]),
-		transaction.New(ethereumClientMap),
+		lens_worker.New(),
+		transaction.New(),
 	}
 
 	s.employer = shedlock.New()
@@ -200,7 +200,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	// asset
-	alchemyAssetDatasource, err := alchemy_asset.New(s.config.RPC, ethereumClientMap)
+	alchemyAssetDatasource, err := alchemy_asset.New(s.config.RPC)
 	if err != nil {
 		return err
 	}

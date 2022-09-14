@@ -66,7 +66,7 @@ func New(config *config.Config) crawler.Crawler {
 		return nil
 	}
 
-	crawler.commWorkerClient = lens_comm.New(crawler.ethClient)
+	crawler.commWorkerClient = lens_comm.New()
 
 	return crawler
 }
@@ -108,7 +108,7 @@ func (s *service) Run() error {
 				message := &protocol.Message{
 					Network: protocol.NetworkPolygon,
 				}
-				if transactions, err = ethereum.BuildTransactions(ctx, message, transactions, s.ethClient); err != nil {
+				if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
 					logrus.Error("failed to build transactions, ", err)
 
 					continue

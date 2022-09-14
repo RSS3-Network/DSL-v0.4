@@ -13,12 +13,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -31,8 +31,7 @@ import (
 )
 
 type Client struct {
-	ethereumClient *ethclient.Client
-	httpClient     *http.Client
+	httpClient *http.Client
 }
 
 type LensContent struct {
@@ -48,10 +47,9 @@ type LensContentMedia struct {
 	Type string `json:"type"`
 }
 
-func New(client *ethclient.Client) *Client {
+func New() *Client {
 	return &Client{
-		ethereumClient: client,
-		httpClient:     http.DefaultClient,
+		httpClient: http.DefaultClient,
 	}
 }
 
@@ -62,7 +60,12 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 	defer func() { opentelemetry.Log(trace, transaction, transfers, err) }()
 
 	// rpc
-	receipt, err := c.ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
+	ethclient, err := ethclientx.Global(protocol.NetworkPolygon)
+	if err != nil {
+		return nil, err
+	}
+
+	receipt, err := ethclient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
 	if err != nil {
 		logrus.Errorf("[lens worker] ethereumClient TransactionReceipt error, %v", err)
 
@@ -71,7 +74,7 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 
 	// parse log
 	for _, log := range receipt.Logs {
-		lensContract, err := contract.NewEvents(log.Address, c.ethereumClient)
+		lensContract, err := contract.NewEvents(log.Address, ethclient)
 		if err != nil {
 			logrus.Errorf("[lens worker] handleReceipt: new events error, %v", err)
 
@@ -218,7 +221,8 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 	}
 
 	// get content pointed
-	post.Target, err = c.GetContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed, c.ethereumClient)
+
+	post.Target, err = c.GetContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: getContenPointed error, %v", err)
 		return err
@@ -290,14 +294,14 @@ func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.
 	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 
 	// get content
-	share, err := c.GetContenPointed(ctx, event.ProfileId, event.PubId, c.ethereumClient)
+	share, err := c.GetContenPointed(ctx, event.ProfileId, event.PubId)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleMirrorCreated: getContenPointed error, %v", err)
 		return err
 	}
 
 	// get content pointed
-	share.Target, err = c.GetContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed, c.ethereumClient)
+	share.Target, err = c.GetContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleMirrorCreated: getContenPointed error, %v", err)
 		return err
@@ -318,9 +322,13 @@ func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.
 	return nil
 }
 
-func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId *big.Int, ethereumClient *ethclient.Client) (*metadata.Post, error) {
+func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId *big.Int) (*metadata.Post, error) {
 	// rpc
-	iLensHub, err := contract.NewILensHub(lens.HubProxyContractAddress, ethereumClient)
+	ethclient, err := ethclientx.Global(protocol.NetworkPolygon)
+	if err != nil {
+		return nil, err
+	}
+	iLensHub, err := contract.NewILensHub(lens.HubProxyContractAddress, ethclient)
 	if err != nil {
 		logrus.Errorf("[lens worker] NewILensHub error, %v", err)
 

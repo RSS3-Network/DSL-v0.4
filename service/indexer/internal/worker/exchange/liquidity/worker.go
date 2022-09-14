@@ -3,17 +3,16 @@ package liquidity
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/aave"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
@@ -28,8 +27,7 @@ const Name = "liquidity"
 var _ worker.Worker = (*internal)(nil)
 
 type internal struct {
-	tokenClient       *token.Client
-	ethereumClientMap map[string]*ethclient.Client
+	tokenClient *token.Client
 }
 
 func (i *internal) Name() string {
@@ -50,9 +48,9 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	internalTransactions := make([]model.Transaction, 0)
 
 	for _, transaction := range transactions {
-		ethereumClient, exists := i.ethereumClientMap[message.Network]
-		if !exists {
-			return nil, errors.New("network not supported")
+		ethclient, err := ethclientx.Global(message.Network)
+		if err != nil {
+			return nil, err
 		}
 
 		router, exists := routerMap[strings.ToLower(transaction.AddressTo)]
@@ -64,7 +62,7 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 		internalTransaction.Transfers = make([]model.Transfer, 0)
 		internalTransaction.Platform = router.Name
 
-		receipt, err := ethereumClient.TransactionReceipt(context.Background(), common.HexToHash(transaction.Hash))
+		receipt, err := ethclient.TransactionReceipt(context.Background(), common.HexToHash(transaction.Hash))
 		if err != nil {
 			return nil, err
 		}
@@ -169,9 +167,8 @@ func (i *internal) Jobs() []worker.Job {
 	return nil
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New() worker.Worker {
 	return &internal{
-		tokenClient:       token.New(ethereumClientMap),
-		ethereumClientMap: ethereumClientMap,
+		tokenClient: token.New(),
 	}
 }

@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -50,9 +49,8 @@ var _ worker.Worker = (*service)(nil)
 var asseFS embed.FS
 
 type service struct {
-	zksyncClient      *zksync.Client
-	ethereumClientMap map[string]*ethclient.Client
-	tokenClient       *token.Client
+	zksyncClient *zksync.Client
+	tokenClient  *token.Client
 }
 
 func (s *service) Name() string {
@@ -732,10 +730,9 @@ func isMint(actionTag, actionType string) bool {
 	return (actionTag == filter.TagTransaction && actionType == filter.TransactionMint) || (actionTag == filter.TagCollectible && actionType == filter.CollectibleMint)
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New() worker.Worker {
 	return &service{
-		zksyncClient:      zksync.New(),
-		tokenClient:       token.New(ethereumClientMap),
-		ethereumClientMap: ethereumClientMap,
+		zksyncClient: zksync.New(),
+		tokenClient:  token.New(),
 	}
 }

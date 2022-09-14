@@ -3,10 +3,11 @@ package swap_test
 import (
 	"context"
 	"encoding/json"
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"math/big"
 	"strings"
 	"testing"
+
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -195,7 +196,7 @@ func TestBuildTransferMetadata(t *testing.T) {
 	for internalToken, value := range tokenMap {
 		t.Log(internalToken, value)
 
-		tokenClient := token.New(ethereumClientMap)
+		tokenClient := token.New()
 		erc20, err := tokenClient.ERC20(context.Background(), protocol.NetworkEthereum, strings.ToLower(internalToken.String()))
 		if err != nil {
 			t.Fatalf("failed to get erc20 contract: %v", err)

@@ -2,8 +2,6 @@ package token
 
 import (
 	"errors"
-
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 var (
@@ -12,12 +10,8 @@ var (
 	ErrorInvalidMetadataFormat = errors.New("invalid metadata format")
 )
 
-type Client struct {
-	ethereumClientMap map[string]*ethclient.Client
-}
+type Client struct{}
 
-func New(ethereumClientMap map[string]*ethclient.Client) *Client {
-	return &Client{
-		ethereumClientMap: ethereumClientMap,
-	}
+func New() *Client {
+	return &Client{}
 }
