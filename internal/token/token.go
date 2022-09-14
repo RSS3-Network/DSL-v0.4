@@ -104,6 +104,15 @@ type MetadataTrait struct {
 	Order       string   `json:"order"`
 }
 
+type DomainsMetadata struct {
+	Name            string              `json:"name"`
+	Description     string              `json:"description"`
+	Attributes      []MetadataAttribute `json:"attributes"`
+	URL             string              `json:"url"`
+	BackgroundImage string              `json:"background_image"`
+	Image           string              `json:"image"`
+}
+
 func (c *Client) NFT(ctx context.Context, network, contractAddress string, tokenID *big.Int) (*NFT, error) {
 	erc721, err := c.ERC721(ctx, network, contractAddress, tokenID)
 	if err == nil {
@@ -111,7 +120,6 @@ func (c *Client) NFT(ctx context.Context, network, contractAddress string, token
 	}
 
 	erc1155, err := c.ERC1155(ctx, network, contractAddress, tokenID)
-
 	if err == nil {
 		return c.erc1155ToNFT(erc1155, tokenID)
 	}
