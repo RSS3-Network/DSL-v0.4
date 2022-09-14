@@ -46,7 +46,7 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 		return err
 	}
 
-	for i := 1; i <= 50; i++ {
+	for i := 1; i <= 100; i++ {
 		time.Sleep(time.Second)
 		latestProject.ID += 1
 

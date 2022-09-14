@@ -7,7 +7,7 @@ type GitcoinProject struct {
 	Slug            string `gorm:"column:slug" json:"slug"`
 	Description     string `gorm:"column:description" json:"description"`
 	ReferUrl        string `gorm:"column:reference_url" json:"reference_url"`
-	Logo            string `gorm:"column:logo" json:"logo"`
+	Logo            string `gorm:"column:logo" json:"logo_url"`
 	AdminAddress    string `gorm:"column:admin_address" json:"admin_address"`
 	TokenAddress    string `gorm:"column:token_address" json:"token_address"`
 	TokenSymbol     string `gorm:"column:token_symbol" json:"token_symbol"`
