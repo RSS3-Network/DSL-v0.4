@@ -32,7 +32,7 @@ type NameServiceResult struct {
 
 func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 	go h.apiReport(GetNS, c.Get("API-KEY"))
-	tracer := otel.Tracer("GetENSResolve")
+	tracer := otel.Tracer("GetNameResolveFunc")
 	_, httpSnap := tracer.Start(c.Request().Context(), "http")
 
 	defer httpSnap.End()
@@ -86,6 +86,16 @@ func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 	} else {
 		return AddressIsInvalid(c)
 	}
+	return c.JSON(http.StatusOK, result)
+}
+
+// LensResolveFunc temporary function to resolve Lens for Pinata
+func (h *Handler) LensResolveFunc(c echo.Context) error {
+	result, err := ResolveLens(c.Param("address"))
+	if err != nil {
+		return err
+	}
+
 	return c.JSON(http.StatusOK, result)
 }
 
