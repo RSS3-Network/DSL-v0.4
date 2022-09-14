@@ -10,13 +10,19 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 )
 
 func (i *internal) handleUniswapV2Mint(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := uniswap.NewPoolV2(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := uniswap.NewPoolV2(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +61,12 @@ func (i *internal) handleUniswapV2Mint(ctx context.Context, message *protocol.Me
 }
 
 func (i *internal) handleUniswapV2Burn(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := uniswap.NewPoolV2(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := uniswap.NewPoolV2(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +105,12 @@ func (i *internal) handleUniswapV2Burn(ctx context.Context, message *protocol.Me
 }
 
 func (i *internal) handleUniswapV3Mint(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := uniswap.NewPoolV3(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := uniswap.NewPoolV3(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +149,12 @@ func (i *internal) handleUniswapV3Mint(ctx context.Context, message *protocol.Me
 }
 
 func (i *internal) handleUniswapV3Burn(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := uniswap.NewPoolV3(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := uniswap.NewPoolV3(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +193,12 @@ func (i *internal) handleUniswapV3Burn(ctx context.Context, message *protocol.Me
 }
 
 func (i *internal) handleUniswapV3Collect(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := uniswap.NewPoolV3(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := uniswap.NewPoolV3(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}

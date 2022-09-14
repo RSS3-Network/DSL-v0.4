@@ -14,7 +14,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/alchemy"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -58,10 +57,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	var err error
 	defer func() { opentelemetry.Log(trace, message, len(transactions), err) }()
 
-	ethereumClient, err := ethclientx.Global(message.Network)
-	if err != nil {
-		return nil, ErrorUnsupportedNetwork
-	}
 	transactionMap, err := d.getAllAssetTransferHashes(ctx, message)
 	if err != nil {
 		loggerx.Global().Error("failed to get all asset transfer hashes", zap.Error(err))
@@ -84,7 +79,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		transactions = append(transactions, &internalTransaction)
 	}
 
-	if transactions, err = ethereum.BuildTransactions(ctx, message, transactions, ethereumClient); err != nil {
+	if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
 		loggerx.Global().Error("failed to build transactions", zap.Error(err))
 
 		return nil, err

@@ -9,7 +9,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
@@ -42,11 +41,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	_, trace := tracer.Start(ctx, "datasource_blockscout:Handle")
 
 	defer opentelemetry.Log(trace, message, transactions, err)
-
-	ethereumClient, err := ethclientx.Global(message.Network)
-	if err != nil {
-		return nil, err
-	}
 
 	transactionMap := make(map[string]*model.Transaction)
 
@@ -85,7 +79,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		unindexedTransactions = append(unindexedTransactions, transaction)
 	}
 
-	indexedTransactions, err := ethereum.BuildTransactions(ctx, message, unindexedTransactions, ethereumClient)
+	indexedTransactions, err := ethereum.BuildTransactions(ctx, message, unindexedTransactions)
 	if err != nil {
 		return nil, err
 	}

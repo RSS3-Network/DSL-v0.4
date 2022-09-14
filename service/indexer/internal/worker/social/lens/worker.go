@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
@@ -93,8 +92,8 @@ func (s *service) Jobs() []worker.Job {
 	return []worker.Job{}
 }
 
-func New(ethereumClient *ethclient.Client) worker.Worker {
+func New() worker.Worker {
 	return &service{
-		commWorkerClient: lens_comm.New(ethereumClient),
+		commWorkerClient: lens_comm.New(),
 	}
 }

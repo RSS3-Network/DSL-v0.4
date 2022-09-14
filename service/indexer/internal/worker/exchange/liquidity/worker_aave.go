@@ -9,13 +9,19 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/aave"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 )
 
 func (i *internal) handleAAVEV2Deposit(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := aave.NewPoolV2(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := aave.NewPoolV2(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +59,12 @@ func (i *internal) handleAAVEV2Deposit(ctx context.Context, message *protocol.Me
 }
 
 func (i *internal) handleAAVEV2Borrow(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := aave.NewPoolV2(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := aave.NewPoolV2(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +102,12 @@ func (i *internal) handleAAVEV2Borrow(ctx context.Context, message *protocol.Mes
 }
 
 func (i *internal) handleAAVEV2Repay(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := aave.NewPoolV2(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := aave.NewPoolV2(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +145,12 @@ func (i *internal) handleAAVEV2Repay(ctx context.Context, message *protocol.Mess
 }
 
 func (i *internal) handleAAVEV2Withdraw(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := aave.NewPoolV2(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := aave.NewPoolV2(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +188,12 @@ func (i *internal) handleAAVEV2Withdraw(ctx context.Context, message *protocol.M
 }
 
 func (i *internal) handleAAVEV3Supply(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := aave.NewPoolV3(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := aave.NewPoolV3(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +231,12 @@ func (i *internal) handleAAVEV3Supply(ctx context.Context, message *protocol.Mes
 }
 
 func (i *internal) handleAAVEV3Borrow(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := aave.NewPoolV3(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := aave.NewPoolV3(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +274,12 @@ func (i *internal) handleAAVEV3Borrow(ctx context.Context, message *protocol.Mes
 }
 
 func (i *internal) handleAAVEV3Repay(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := aave.NewPoolV3(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := aave.NewPoolV3(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +317,12 @@ func (i *internal) handleAAVEV3Repay(ctx context.Context, message *protocol.Mess
 }
 
 func (i *internal) handleAAVEV3Withdraw(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
-	poolContract, err := aave.NewPoolV3(log.Address, i.ethereumClientMap[message.Network])
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	poolContract, err := aave.NewPoolV3(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}

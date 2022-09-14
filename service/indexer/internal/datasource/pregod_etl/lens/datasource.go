@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/ethclient"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -53,13 +52,8 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	var err error
 	defer func() { opentelemetry.Log(trace, message, len(internalTransactions), err) }()
 
-	ethereumClient, err := ethclientx.Global(message.Network)
-	if err != nil {
-		return nil, err
-	}
-
 	// get profileid by address
-	profileID, err := d.getDefaultProfile(ctx, message, ethereumClient)
+	profileID, err := d.getDefaultProfile(ctx, message)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +86,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	}
 
 	// build transaction
-	if transactions, err = ethereum.BuildTransactions(ctx, message, transactions, ethereumClient); err != nil {
+	if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
 		loggerx.Global().Error("failed to build transactions", zap.Error(err))
 
 		return nil, err
@@ -107,15 +101,20 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	return internalTransactions, nil
 }
 
-func (d *Datasource) getDefaultProfile(ctx context.Context, message *protocol.Message, ethereumClient *ethclient.Client) (*big.Int, error) {
+func (d *Datasource) getDefaultProfile(ctx context.Context, message *protocol.Message) (*big.Int, error) {
 	tracer := otel.Tracer("datasource_lens")
 	_, trace := tracer.Start(ctx, "datasource_lens:getDefaultProfile")
 	var profileID *big.Int
 	var err error
 	defer func() { opentelemetry.Log(trace, message, profileID, err) }()
 
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
 	// rpc
-	iLensHub, err := contract.NewILensHub(lens.HubProxyContractAddress, ethereumClient)
+	iLensHub, err := contract.NewILensHub(lens.HubProxyContractAddress, ethclient)
 	if err != nil {
 		logrus.Errorf("[datasource_lens] NewILensHub error, %v", err)
 

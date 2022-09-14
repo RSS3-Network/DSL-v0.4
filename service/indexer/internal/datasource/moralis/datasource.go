@@ -11,7 +11,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/moralis"
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
@@ -127,12 +126,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 		internalTransactions = append(internalTransactions, transaction)
 	}
 
-	ethereumClient, err := ethclientx.Global(message.Network)
-	if err != nil {
-		return nil, err
-	}
-
-	internalTransactions, err = ethereum.BuildTransactions(ctx, message, internalTransactions, ethereumClient)
+	internalTransactions, err = ethereum.BuildTransactions(ctx, message, internalTransactions)
 	if err != nil {
 		return nil, err
 	}

@@ -8,16 +8,17 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
 func (c *Client) ERC1155(context context.Context, network, contractAddress string, tokenID *big.Int) (*ERC1155, error) {
-	ethereumClient, exists := c.ethereumClientMap[network]
-	if !exists {
-		return nil, ErrorNetworkNotSupported
+	ethclient, err := ethclientx.Global(network)
+	if err != nil {
+		return nil, err
 	}
 
-	erc1155Contract, err := erc1155.NewERC1155(common.HexToAddress(contractAddress), ethereumClient)
+	erc1155Contract, err := erc1155.NewERC1155(common.HexToAddress(contractAddress), ethclient)
 	if err != nil {
 		return nil, err
 	}

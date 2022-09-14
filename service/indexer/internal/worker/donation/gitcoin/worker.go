@@ -3,19 +3,18 @@ package gitcoin
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"math/big"
 	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/donation"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/gitcoin"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -38,7 +37,6 @@ const (
 var _ worker.Worker = (*service)(nil)
 
 type service struct {
-	ethereumClientMap      map[string]*ethclient.Client
 	tokenClient            *token.Client
 	gitcoinProjectCacheKey string
 }
@@ -120,12 +118,12 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 	defer opentelemetry.Log(span, transaction, transfers, err)
 
 	// Unsupported network
-	ethereumClient, exists := s.ethereumClientMap[transaction.Network]
-	if !exists {
-		return nil, errors.New("unsupported network")
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
 	}
 
-	receipt, err := ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
+	receipt, err := ethclient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
 	if err != nil {
 		loggerx.Global().Error("get transaction receipt error", zap.Error(err))
 
@@ -137,7 +135,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 			continue
 		}
 
-		gitcoinContract, err := gitcoin.NewGitcoin(log.Address, ethereumClient)
+		gitcoinContract, err := gitcoin.NewGitcoin(log.Address, ethclient)
 		if err != nil {
 			loggerx.Global().Error("get gitcoin contract error", zap.Error(err))
 
@@ -269,10 +267,9 @@ func (s *service) Jobs() []worker.Job {
 	}
 }
 
-func New(ethereumClientMap map[string]*ethclient.Client) worker.Worker {
+func New() worker.Worker {
 	return &service{
 		gitcoinProjectCacheKey: "gitcoin_project",
-		ethereumClientMap:      ethereumClientMap,
-		tokenClient:            token.New(ethereumClientMap),
+		tokenClient:            token.New(),
 	}
 }
