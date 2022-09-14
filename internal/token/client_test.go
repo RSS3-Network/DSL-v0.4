@@ -2,10 +2,11 @@ package token_test
 
 import (
 	"context"
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"log"
 	"math/big"
 	"testing"
+
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -60,7 +61,7 @@ func TestClient_ERC20(t *testing.T) {
 }
 
 func TestClient_ERC721(t *testing.T) {
-	erc712, err := tokenClient.ERC721(context.Background(), protocol.NetworkEthereum, "0xacbe98efe2d4d103e221e04c76d7c55db15c8e89", big.NewInt(1))
+	erc712, err := tokenClient.ERC721(context.Background(), protocol.NetworkEthereum, "0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85", big.NewInt(1))
 	if err != nil {
 		t.Fatal(err)
 	}
