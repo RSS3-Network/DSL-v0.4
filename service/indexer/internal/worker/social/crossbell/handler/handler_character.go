@@ -370,37 +370,24 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		return nil, err
 	}
 
+	post := &metadata.Post{
+		TypeOnPlatform: []string{contract.EventNamePostNote},
+		Title:          postOriginal.Title,
+		Body:           postOriginal.Content,
+	}
+
+	for _, attachment := range postOriginal.Attachments {
+		post.Media = append(post.Media, metadata.Media{
+			Address:  attachment.Address,
+			MimeType: attachment.MimeType,
+		})
+	}
+
 	if len(postOriginal.Sources) != 0 {
 		transfer.Platform = postOriginal.Sources[0]
 	}
 
-	var noteMetadata json.RawMessage
-
-	if err := json.Unmarshal(contentData, &noteMetadata); err != nil {
-		return nil, err
-	}
-
-	uri, err := c.peripheryContract.GetLinkingAnyUri(&bind.CallOpts{}, note.LinkKey)
-	if err != nil {
-		return nil, err
-	}
-
-	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
-		Event: contract.EventNameSetNoteUri,
-		Note: &metadata.CrossbellNote{
-			ID:           event.NoteId,
-			LinkItemType: note.LinkItemType,
-			LinkKey:      note.LinkKey,
-			Link:         uri,
-			ContentURI:   note.ContentUri,
-			LinkModule:   note.LinkModule,
-			MintModule:   note.MintModule,
-			MintNFT:      note.MintNFT,
-			Deleted:      note.Deleted,
-			Locked:       note.Locked,
-			Metadata:     noteMetadata,
-		},
-	}); err != nil {
+	if transfer.Metadata, err = json.Marshal(post); err != nil {
 		return nil, err
 	}
 
