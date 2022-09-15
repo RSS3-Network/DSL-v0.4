@@ -117,7 +117,10 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
-	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, nil); err != nil {
+		return nil, err
+	}
 
 	database.Global().Model(&social.Profile{}).Clauses(clause.OnConflict{
 		UpdateAll: true,
@@ -160,7 +163,10 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
-	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, nil); err != nil {
+		return nil, err
+	}
 
 	return &transfer, nil
 }
@@ -210,14 +216,17 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 		})
 	}
 
-	transfer.Platform = buildPlatform(postOriginal.Sources)
+	transfer.Platform = c.buildPlatform(postOriginal.Sources)
 
 	if transfer.Metadata, err = json.Marshal(post); err != nil {
 		return nil, err
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
-	transfer.RelatedUrls = buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId)
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
+		return nil, err
+	}
 
 	return &transfer, nil
 }
@@ -294,6 +303,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 	if err != nil {
 		return nil, err
 	}
+
 	profile.Address = strings.ToLower(characterOwner.String())
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialUnfollow, transfer.Type)
@@ -336,7 +346,10 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
-	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, nil); err != nil {
+		return nil, err
+	}
 
 	return &transfer, nil
 }
@@ -384,19 +397,22 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		})
 	}
 
-	transfer.Platform = buildPlatform(postOriginal.Sources)
+	transfer.Platform = c.buildPlatform(postOriginal.Sources)
 
 	if transfer.Metadata, err = json.Marshal(post); err != nil {
 		return nil, err
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialRevise, transfer.Type)
-	transfer.RelatedUrls = buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId)
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
+		return nil, err
+	}
 
 	return &transfer, nil
 }
 
-func buildPlatform(sources []string) string {
+func (c *characterHandler) buildPlatform(sources []string) string {
 	if len(sources) == 0 {
 		return "crossbell"
 	}
@@ -404,11 +420,15 @@ func buildPlatform(sources []string) string {
 	return strings.Trim(sources[0], `\"`)
 }
 
-func buildRelatedUrls(relatedUrls []string, platform string, characterID, noteID *big.Int) []string {
-	switch platform {
-	case "xlog", "crossbell.io", "crosssync":
-		return append(relatedUrls, fmt.Sprintf("https://crossbell.io/notes/%d-%d", characterID, noteID))
-	default:
-		return relatedUrls
+func (c *characterHandler) buildRelatedUrls(relatedUrls []string, platform string, characterID, noteID *big.Int) ([]string, error) {
+	if noteID == nil {
+		handle, err := c.characterContract.GetHandle(&bind.CallOpts{}, characterID)
+		if err != nil {
+			return nil, err
+		}
+
+		return append(relatedUrls, fmt.Sprintf("https://crossbell.io/@%s", handle)), nil
 	}
+
+	return append(relatedUrls, fmt.Sprintf("https://crossbell.io/notes/%d-%d", characterID, noteID)), nil
 }
