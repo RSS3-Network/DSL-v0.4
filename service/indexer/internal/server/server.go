@@ -99,7 +99,7 @@ func (s *Server) Initialize() (err error) {
 		)),
 	))
 
-	databaseClient, err := database.Dial(s.config.Postgres.String(), true)
+	databaseClient, err := database.Dial(s.config.Postgres.String(), false)
 	if err != nil {
 		return err
 	}

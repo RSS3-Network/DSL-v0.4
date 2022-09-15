@@ -45,7 +45,7 @@ func Initialize() {
 	}
 
 	var err error
-	ConfigHub.DatabaseClient, err = database.Dial(ConfigHub.Postgres.String(), true)
+	ConfigHub.DatabaseClient, err = database.Dial(ConfigHub.Postgres.String(), false)
 	if err != nil {
 		panic(err)
 	}
