@@ -12,4 +12,5 @@ type Message struct {
 	Reindex       bool      `json:"reindex"`
 	IgnoreNote    bool      `json:"ignore_note"`
 	IgnoreTrigger bool      `json:"ignore_trigger"`
+	Retry         int       `json:"retry"`
 }
