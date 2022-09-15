@@ -36,6 +36,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
+	rabbitmqx "github.com/naturalselectionlabs/pregod/service/indexer/internal/rabbitmq"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger/ens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -49,7 +50,6 @@ import (
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
-	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/samber/lo"
 	"github.com/scylladb/go-set/strset"
 	"go.opentelemetry.io/otel"
@@ -63,16 +63,12 @@ import (
 )
 
 type Server struct {
-	config             *config.Config
-	rabbitmqConnection *rabbitmq.Connection
-	rabbitmqChannel    *rabbitmq.Channel
-	rabbitmqQueue      rabbitmq.Queue
-	rabbitmqAssetQueue rabbitmq.Queue
-	datasources        []datasource.Datasource
-	datasourcesAsset   []datasource_asset.Datasource
-	workers            []worker.Worker
-	triggers           []trigger.Trigger
-	employer           *shedlock.Employer
+	config           *config.Config
+	datasources      []datasource.Datasource
+	datasourcesAsset []datasource_asset.Datasource
+	workers          []worker.Worker
+	triggers         []trigger.Trigger
+	employer         *shedlock.Employer
 }
 
 var _ command.Interface = &Server{}
@@ -115,7 +111,7 @@ func (s *Server) Initialize() (err error) {
 
 	ipfs.New(s.config.RPC.IPFS.IO)
 
-	err = s.InitializeMQ()
+	err = rabbitmqx.InitializeMQ(s.config.RabbitMQ)
 	if err != nil {
 		return err
 	}
@@ -212,51 +208,6 @@ func (s *Server) Initialize() (err error) {
 	return nil
 }
 
-func (s *Server) InitializeMQ() (err error) {
-	s.rabbitmqConnection, err = rabbitmq.Dial(s.config.RabbitMQ.String())
-	if err != nil {
-		return err
-	}
-
-	s.rabbitmqChannel, err = s.rabbitmqConnection.Channel()
-	if err != nil {
-		return err
-	}
-
-	if err := s.rabbitmqChannel.ExchangeDeclare(
-		protocol.ExchangeJob, "direct", true, false, false, false, nil,
-	); err != nil {
-		return err
-	}
-
-	if s.rabbitmqQueue, err = s.rabbitmqChannel.QueueDeclare(
-		protocol.IndexerWorkQueue, false, false, false, false, nil,
-	); err != nil {
-		return err
-	}
-
-	if err := s.rabbitmqChannel.QueueBind(
-		s.rabbitmqQueue.Name, protocol.IndexerWorkRoutingKey, protocol.ExchangeJob, false, nil,
-	); err != nil {
-		return err
-	}
-
-	// asset mq
-	if s.rabbitmqAssetQueue, err = s.rabbitmqChannel.QueueDeclare(
-		protocol.IndexerAssetQueue, false, false, false, false, nil,
-	); err != nil {
-		return err
-	}
-
-	if err := s.rabbitmqChannel.QueueBind(
-		s.rabbitmqAssetQueue.Name, protocol.IndexerAssetRoutingKey, protocol.ExchangeJob, false, nil,
-	); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (s *Server) Run() error {
 	if err := s.Initialize(); err != nil {
 		return err
@@ -267,7 +218,7 @@ func (s *Server) Run() error {
 	defer s.employer.Stop()
 
 	go func() {
-		deliveryCh, err := s.rabbitmqChannel.Consume(s.rabbitmqQueue.Name, "", true, false, false, false, nil)
+		deliveryCh, err := rabbitmqx.GetRabbitmqChannel().Consume(rabbitmqx.GetRabbitmqQueue().Name, "", true, false, false, false, nil)
 		if err != nil {
 			return
 		}
@@ -289,7 +240,7 @@ func (s *Server) Run() error {
 	}()
 
 	go func() {
-		deliveryAssetCh, err := s.rabbitmqChannel.Consume(s.rabbitmqAssetQueue.Name, "", true, false, false, false, nil)
+		deliveryAssetCh, err := rabbitmqx.GetRabbitmqChannel().Consume(rabbitmqx.GetRabbitmqAssetQueue().Name, "", true, false, false, false, nil)
 		if err != nil {
 			return
 		}
