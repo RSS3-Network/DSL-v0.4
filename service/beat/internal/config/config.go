@@ -45,7 +45,7 @@ func Initialize() {
 	}
 
 	var err error
-	ConfigBeat.DatabaseClient, err = database.Dial(ConfigBeat.Postgres.String(), true)
+	ConfigBeat.DatabaseClient, err = database.Dial(ConfigBeat.Postgres.String(), false)
 	if err != nil {
 		panic(err)
 	}
