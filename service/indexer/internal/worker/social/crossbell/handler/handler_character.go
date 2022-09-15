@@ -3,6 +3,8 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -208,15 +210,14 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 		})
 	}
 
-	if len(postOriginal.Sources) != 0 {
-		transfer.Platform = postOriginal.Sources[0]
-	}
+	transfer.Platform = buildPlatform(postOriginal.Sources)
 
 	if transfer.Metadata, err = json.Marshal(post); err != nil {
 		return nil, err
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
+	transfer.RelatedUrls = buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId)
 
 	return &transfer, nil
 }
@@ -383,16 +384,31 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		})
 	}
 
-	if len(postOriginal.Sources) != 0 {
-		transfer.Platform = postOriginal.Sources[0]
-	}
+	transfer.Platform = buildPlatform(postOriginal.Sources)
 
 	if transfer.Metadata, err = json.Marshal(post); err != nil {
 		return nil, err
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialRevise, transfer.Type)
-	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
+	transfer.RelatedUrls = buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId)
 
 	return &transfer, nil
+}
+
+func buildPlatform(sources []string) string {
+	if len(sources) == 0 {
+		return "crossbell"
+	}
+
+	return strings.Trim(sources[0], `\"`)
+}
+
+func buildRelatedUrls(relatedUrls []string, platform string, characterID, noteID *big.Int) []string {
+	switch platform {
+	case "xlog", "crossbell.io", "crosssync":
+		return append(relatedUrls, fmt.Sprintf("https://crossbell.io/notes/%d-%d", characterID, noteID))
+	default:
+		return relatedUrls
+	}
 }
