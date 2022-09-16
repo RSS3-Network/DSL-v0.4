@@ -1,7 +1,6 @@
 package lens
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -12,29 +11,23 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 	"github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	lens_comm "github.com/naturalselectionlabs/pregod/common/worker/lens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
-	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
-	"github.com/scylladb/go-set/strset"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
-	"gorm.io/gorm/clause"
 )
 
 var (
@@ -45,7 +38,6 @@ var (
 
 type service struct {
 	config           *config.Config
-	ethClient        *ethclient.Client
 	etlClient        *pregod_etl.Client
 	commWorkerClient *lens_comm.Client
 }
@@ -54,12 +46,6 @@ func New(config *config.Config) crawler.Crawler {
 	var err error
 
 	crawler := &service{config: config}
-
-	// get ethclient
-	if crawler.ethClient, err = ethclient.Dial(config.RPC.General.Polygon.WebSocket); err != nil {
-		logrus.Error("[lens] ethclient.Dial error, ", err)
-		return nil
-	}
 
 	if crawler.etlClient, err = pregod_etl.NewClient(protocol.NetworkPolygon, config.RPC.PregodETL.Polygon.HTTP); err != nil {
 		logrus.Error("[lens] pregod_etl.NewClient error, ", err)
@@ -99,7 +85,7 @@ func (s *service) Run() error {
 				}
 
 				// deduplicate data
-				transactions, err = s.deduplicateTransactions(ctx, transactions)
+				transactions, err = database.DeduplicateTransactions(ctx, transactions)
 				if err != nil || len(transactions) == 0 {
 					continue
 				}
@@ -118,7 +104,7 @@ func (s *service) Run() error {
 				internalTransactions := s.getInternalTransaction(ctx, transactions)
 
 				// insert db
-				err = s.upsertTransactions(ctx, internalTransactions)
+				err = database.UpsertTransactions(ctx, internalTransactions)
 				if err != nil {
 					continue
 				}
@@ -201,7 +187,12 @@ func (s *service) getLensOwnerAddressById(ctx context.Context, profileId *big.In
 	defer func() { opentelemetry.Log(trace, profileId, owner, err) }()
 
 	// rpc
-	lensHub, err := contract.NewHub(lens.HubProxyContractAddress, s.ethClient)
+	ethclient, err := ethclientx.Global(protocol.NetworkPolygon)
+	if err != nil {
+		return owner, err
+	}
+
+	lensHub, err := contract.NewHub(lens.HubProxyContractAddress, ethclient)
 	if err != nil {
 		logrus.Error("[len] NewILensHub error, ", err)
 
@@ -218,9 +209,9 @@ func (s *service) getLensOwnerAddressById(ctx context.Context, profileId *big.In
 	return owner, nil
 }
 
-func (s *service) getInternalTransaction(ctx context.Context, transactions []*model.Transaction) []model.Transaction {
+func (s *service) getInternalTransaction(ctx context.Context, transactions []*model.Transaction) []*model.Transaction {
 	var mu sync.Mutex
-	internalTransactions := []model.Transaction{}
+	internalTransactions := []*model.Transaction{}
 	opt := lop.NewOption().WithConcurrency(10)
 	lop.ForEach(transactions, func(transaction *model.Transaction, i int) {
 		addressTo := common.HexToAddress(transaction.AddressTo)
@@ -254,113 +245,9 @@ func (s *service) getInternalTransaction(ctx context.Context, transactions []*mo
 		}
 
 		mu.Lock()
-		internalTransactions = append(internalTransactions, *transaction)
+		internalTransactions = append(internalTransactions, transaction)
 		mu.Unlock()
 	}, opt)
 
 	return internalTransactions
-}
-
-func (s *service) upsertTransactions(ctx context.Context, transactions []model.Transaction) error {
-	dbChunkSize := 800
-	transfers := []model.Transfer{}
-	updatedTransactions := []model.Transaction{}
-
-	for _, transaction := range transactions {
-		addresses := strset.New(transaction.AddressFrom, transaction.AddressTo)
-
-		// Ignore empty transactions
-		internalTransfers := make([]model.Transfer, 0)
-
-		for _, transfer := range transaction.Transfers {
-			if bytes.Equal(transfer.Metadata, metadata.Default) {
-				continue
-			}
-
-			internalTransfers = append(internalTransfers, transfer)
-		}
-
-		if len(internalTransfers) == 0 {
-			continue
-		}
-
-		// Handle all transfers
-		for _, transfer := range transaction.Transfers {
-			// Ignore empty transfer
-			if bytes.Equal(transfer.Metadata, metadata.Default) {
-				continue
-			}
-
-			transfers = append(transfers, transfer)
-
-			if transfer.AddressFrom != "" && transfer.AddressFrom != ethereum.AddressGenesis.String() {
-				addresses.Add(transfer.AddressFrom)
-			}
-
-			if transfer.AddressTo != "" && transfer.AddressTo != ethereum.AddressGenesis.String() {
-				addresses.Add(transfer.AddressTo)
-			}
-		}
-
-		transaction.Addresses = addresses.List()
-		updatedTransactions = append(updatedTransactions, transaction)
-	}
-
-	for _, ts := range lo.Chunk(updatedTransactions, dbChunkSize) {
-		if err := database.Global().
-			Clauses(clause.OnConflict{
-				UpdateAll: true,
-			}).
-			Create(ts).Error; err != nil {
-			loggerx.Global().Error("failed to upsert transactions", zap.Error(err))
-
-			return err
-		}
-	}
-
-	for _, ts := range lo.Chunk(transfers, dbChunkSize) {
-		if err := database.Global().
-			Clauses(clause.OnConflict{
-				UpdateAll: true,
-				DoUpdates: clause.AssignmentColumns([]string{"metadata"}),
-			}).
-			Create(ts).Error; err != nil {
-			loggerx.Global().Error("failed to upsert transfers", zap.Error(err))
-
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (s *service) deduplicateTransactions(ctx context.Context, transactions []*model.Transaction) ([]*model.Transaction, error) {
-	hashList := []string{}
-	for _, transaction := range transactions {
-		hashList = append(hashList, transaction.Hash)
-	}
-
-	data := []*model.Transaction{}
-	if err := database.Global().
-		Model(&model.Transaction{}).
-		Where("hash in (?)", hashList).
-		Find(&data).Error; err != nil {
-		logrus.Error("[lens] deduplicateTransactions: find transactions error, ", err)
-
-		return transactions, err
-	}
-
-	dbMap := make(map[string]bool)
-	for _, t := range data {
-		dbMap[t.Hash] = true
-	}
-
-	for i := 0; i < len(transactions); i++ {
-		if dbMap[transactions[i].Hash] {
-			transactions = append(transactions[:i], transactions[i+1:]...)
-			i--
-		}
-	}
-
-	return transactions, nil
 }
