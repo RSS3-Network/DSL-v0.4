@@ -2,11 +2,10 @@ package pregod_etl
 
 import (
 	"context"
-	"net/http"
 	"net/url"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/google/go-querystring/query"
-	"github.com/naturalselectionlabs/pregod/common/utils/httpx"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,21 +25,15 @@ func (c *Client) GetArweaveTransactions(ctx context.Context, parameter GetArweav
 	}
 
 	logrus.Info("[pregod_etl client] GetArweaveTransactions, request = ", url.String())
-	request, err := httpx.NewRequest(http.MethodGet, url.String(), nil)
-	if err != nil {
-		logrus.Errorf("[pregod_etl client] GetArweaveTransactions: NewRequest error, %v", err)
 
+	client := resty.New()
+	result := GetArweaveTransactionsResponse{}
+
+	_, err = client.R().SetResult(&result).Get(url.String())
+	if err != nil {
+		logrus.Errorf("[token] EnsToNFT url: %v, err: %v", url, err)
 		return nil, err
 	}
 
-	var result *GetArweaveTransactionsResponse
-
-	err = httpx.DoRequest(ctx, c.httpClient, request, &result)
-	if err != nil {
-		logrus.Errorf("[pregod_etl client] GetArweaveTransactions: DoRequest error, %v", err)
-
-		return nil, err
-	}
-
-	return result, nil
+	return &result, nil
 }
