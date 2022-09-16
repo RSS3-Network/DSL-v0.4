@@ -116,11 +116,13 @@ func (s *service) getMirrorTransactions(ctx context.Context) ([]*model.Transacti
 			Body:  data.Content.Body,
 		})
 		if err != nil {
+			logrus.Errorf("[mirror] getMirrorTransactions: json unmarshal error, %v", err)
 			continue
 		}
 
 		source, err := json.Marshal(&transaction)
 		if err != nil {
+			logrus.Errorf("[mirror] getMirrorTransactions: json unmarshal error, %v", err)
 			continue
 		}
 
