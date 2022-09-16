@@ -20,6 +20,7 @@ type Party struct {
 	ExpiredTime   *big.Int         `json:"expired_time,omitempty"`
 	Deciders      []common.Address `json:"deciders,omitempty"`
 	PartyStatus   uint8            `json:"party_status,omitempty"`
+	Action        string           `json:"action"`
 }
 
 type PartyContribute struct {

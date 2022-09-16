@@ -178,6 +178,7 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 				TokenId:       event.TokenId,
 				MarketWrapper: party.AddressMapToMarket[event.MarketWrapper.String()],
 				AuctionId:     event.AuctionId,
+				Action:        filter.PartyBidStart,
 			})
 			if err != nil {
 				return nil, err
@@ -255,6 +256,7 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 				MarketWrapper: party.AddressMapToMarket["opensea"],
 				MaxPrice:      event.MaxPrice,
 				ExpiredTime:   event.SecondsToTimeout,
+				Action:        filter.PartyBidStart,
 			})
 			if err != nil {
 				return nil, err
@@ -332,6 +334,7 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 				MaxPrice:      event.MaxPrice,
 				ExpiredTime:   event.SecondsToTimeout,
 				Deciders:      event.Deciders,
+				Action:        filter.PartyBidStart,
 			})
 			if err != nil {
 				return nil, err
@@ -412,6 +415,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 	partyInfo.MarketWrapper = party.AddressMapToMarket[market.String()]
+	partyInfo.PartyType = filter.PartyBid
 
 	for _, log := range receipt.Logs {
 		switch log.Topics[0] {
@@ -420,6 +424,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
+			partyInfo.Action = filter.PartyBidContribute
 			partyMetadata, err := json.Marshal(metadata.PartyContribute{
 				PartyInfo:                       partyInfo,
 				Contributor:                     event.Contributor.String(),
@@ -454,6 +459,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
+			partyInfo.Action = filter.PartyBidBid
 			partyMetadata, err := json.Marshal(metadata.PartyBid{
 				PartyInfo: partyInfo,
 				BidAmount: event.Amount,
@@ -485,6 +491,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
+			partyInfo.Action = filter.PartyBidFinalize
 			partyMetadata, err := json.Marshal(metadata.PartyFinalize{
 				PartyInfo:        partyInfo,
 				Result:           event.Result,
@@ -519,7 +526,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-
+			partyInfo.Action = filter.PartyBidClaim
 			partyMetadata, err := json.Marshal(metadata.PartyClaim{
 				PartyInfo:          partyInfo,
 				TotalContributed:   event.TotalContributed,
@@ -589,7 +596,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 	partyInfo := metadata.Party{}
 
 	partyInfo.PartyAddress = common.HexToAddress(transaction.AddressTo)
-
+	partyInfo.PartyType = filter.PartyBuy
 	if partyInfo.Symbol, err = partybuyContract.Symbol(&bind.CallOpts{}); err != nil {
 		return nil, err
 	}
@@ -611,6 +618,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
+			partyInfo.Action = filter.PartyBidContribute
 			partyMetadata, err := json.Marshal(metadata.PartyContribute{
 				PartyInfo:                       partyInfo,
 				Contributor:                     event.Contributor.String(),
@@ -645,6 +653,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
+			partyInfo.Action = filter.PartyBidBuy
 			partyMetadata, err := json.Marshal(metadata.PartyBuy{
 				PartyInfo:        partyInfo,
 				TriggeredBy:      event.TriggeredBy,
@@ -680,6 +689,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
+			partyInfo.Action = filter.PartyBidExpire
 			partyMetadata, err := json.Marshal(metadata.PartyExpire{
 				PartyInfo:   partyInfo,
 				TriggeredBy: event.TriggeredBy,
@@ -711,7 +721,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-
+			partyInfo.Action = filter.PartyBidClaim
 			partyMetadata, err := json.Marshal(metadata.PartyClaim{
 				PartyInfo:          partyInfo,
 				TotalContributed:   event.TotalContributed,
@@ -794,7 +804,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 		return nil, err
 	}
 	partyInfo.MarketWrapper = party.AddressMapToMarket["opensea"]
-
+	partyInfo.PartyType = filter.PartyCollection
 	for _, log := range receipt.Logs {
 		switch log.Topics[0] {
 		case party.EventHashContributed:
@@ -802,6 +812,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
+			partyInfo.Action = filter.PartyBidContribute
 			partyMetadata, err := json.Marshal(metadata.PartyContribute{
 				PartyInfo:                       partyInfo,
 				Contributor:                     event.Contributor.String(),
@@ -836,6 +847,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
+			partyInfo.Action = filter.PartyBidBuy
 			partyMetadata, err := json.Marshal(metadata.PartyBuy{
 				PartyInfo:        partyInfo,
 				TokenId:          event.TokenId,
@@ -872,6 +884,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
+			partyInfo.Action = filter.PartyBidExpire
 			partyMetadata, err := json.Marshal(metadata.PartyExpire{
 				PartyInfo:   partyInfo,
 				TriggeredBy: event.TriggeredBy,
@@ -903,7 +916,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
-
+			partyInfo.Action = filter.PartyBidClaim
 			partyMetadata, err := json.Marshal(metadata.PartyClaim{
 				PartyInfo:          partyInfo,
 				TotalContributed:   event.TotalContributed,

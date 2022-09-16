@@ -24,7 +24,7 @@ var (
 	EventHashPcBought  = common.BytesToHash(crypto.Keccak256([]byte("Bought(uint256,address,address,uint256,uint256,uint256)")))
 	EventHashPcExpired = common.BytesToHash(crypto.Keccak256([]byte("Expired(address)")))
 
-	AddressPartyBidDeployed        = common.HexToAddress("0x744c2BE04d079eDdb21c1a9BB13bB5259A368614")
+	AddressPartyBidDeployed        = common.HexToAddress("0x0accf637e4F05eeA8B1D215C8C9e9E576dC63D33")
 	AddressPartyBuyDeployed        = common.HexToAddress("0x10Fb0f8860c11cCcdf85f2f56e3B8e1DdEb2BA3F")
 	AddressCollectionPartyDeployed = common.HexToAddress("0xd084d7849d4EBE564A2a41e085b2a74f6DDe5300")
 	AddressPartyBid                = common.HexToAddress("0x744c2BE04d079eDdb21c1a9BB13bB5259A368614")
