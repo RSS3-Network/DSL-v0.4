@@ -106,6 +106,7 @@ type RPCNetwork struct {
 	BinanceSmartChain *RPCEndpoint `mapstructure:"bsc"`
 	XDAI              *RPCEndpoint `mapstructure:"xdai"`
 	Crossbell         *RPCEndpoint `mapstructure:"crossbell"`
+	Kurora            *RPCEndpoint `mapstructure:"kurora"`
 }
 
 type RPCEndpoint struct {
