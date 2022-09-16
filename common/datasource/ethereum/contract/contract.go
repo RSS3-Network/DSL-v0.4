@@ -6,6 +6,8 @@ package contract
 //go:generate abigen --abi ./erc20/weth/weth.abi --pkg weth --type WETH --out ./erc20/weth/weth.go
 // https://eips.ethereum.org/EIPS/eip-721
 //go:generate abigen --abi ./erc721/erc721.abi --pkg erc721 --type ERC721 --out ./erc721/erc721.go
+// https://etherscan.io/token/0xabefbc9fd2f806065b4f3c237d4b59d9a97bcac7
+//go:generate abigen --abi ./erc721/zora/zora.abi --pkg zora --type Zora --out ./erc721/zora/zora.go
 // https://eips.ethereum.org/EIPS/eip-1155
 //go:generate abigen --abi ./erc1155/erc1155.abi --pkg erc1155 --type ERC1155 --out ./erc1155/erc1155.go
 // https://polygonscan.com/address/0x0000000000000000000000000000000000001010
