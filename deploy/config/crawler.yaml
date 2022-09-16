@@ -44,6 +44,8 @@ rpc:
   pregod_etl:
     polygon:
       http: ''
+    kurora:
+      http: ''
   ipfs:
     io: ''
     internal: ''
