@@ -24,7 +24,7 @@ func (c *Client) ERC721(ctx context.Context, network, contractAddress string, to
 		return c.ERC721Ens(ctx, contractAddress, tokenID)
 	}
 
-	if network == protocol.NetworkEthereum && strings.ToLower(contractAddress) == strings.ToLower(zora.Address.String()) {
+	if network == protocol.NetworkEthereum && strings.EqualFold(contractAddress, zora.Address.String()) {
 		return c.ERC721Zora(ctx, network, tokenID)
 	}
 
