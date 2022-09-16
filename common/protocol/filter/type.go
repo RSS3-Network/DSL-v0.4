@@ -28,6 +28,20 @@ const (
 	CollectibleBurn     string = "burn"
 	CollectiblePoap     string = "poap"
 
+	// party types
+	PartyBid        string = "bid"
+	PartyBuy        string = "buy"
+	PartyCollection string = "collection"
+
+	// partybid types
+	PartyBidStart      string = "start"
+	PartyBidContribute string = "contribute"
+	PartyBidBid        string = "bid"
+	PartyBidBuy        string = "buy"
+	PartyBidFinalize   string = "finalize"
+	PartyBidClaim      string = "claim"
+	PartyBidExpire     string = "expire"
+
 	// social types
 	SocialPost     string = "post"
 	SocialRevise   string = "revise"
