@@ -25,7 +25,7 @@ import (
 var (
 	_ crawler.Crawler = (*service)(nil)
 
-	mirrorCacheKey = "crawler:mirror:%v" // mirror -> height:cursor
+	mirrorCacheKey = "crawler:mirror" // mirror -> height:cursor
 	MirrorAddress  = "Ky1c1Kkt-jZ9sY1hvLF5nCf6WWdBhIU5Un_BMYh-t3c"
 )
 
@@ -53,14 +53,12 @@ func (s *service) Run() error {
 	ctx := context.Background()
 
 	for {
-		time.Sleep(10 * time.Second)
-
 		// get mirror transactions
 		transactions, err := s.getMirrorTransactions(ctx)
 		if err != nil {
 			logrus.Error("[mirror] Run: getMirrorTransactions error, ", err)
 
-			return err
+			continue
 		}
 
 		if len(transactions) == 0 {
