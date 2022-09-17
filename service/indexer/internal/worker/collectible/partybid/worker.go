@@ -23,7 +23,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -34,7 +36,9 @@ const (
 	SourceName = "partybid"
 )
 
-type internal struct{}
+type internal struct {
+	tokenClient *token.Client
+}
 
 func (i *internal) Name() string {
 	return SourceName
@@ -169,12 +173,12 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 			}
 
 			partyMetadata, err := json.Marshal(metadata.Party{
-				PartyAddress:  event.PartyBidProxy,
+				PartyAddress:  strings.ToLower(event.PartyBidProxy.String()),
 				Name:          event.Name,
 				Symbol:        event.Symbol,
 				PartyType:     filter.PartyBid,
-				Creator:       event.Creator,
-				NftContract:   event.NftContract,
+				Creator:       strings.ToLower(event.Creator.String()),
+				NftContract:   strings.ToLower(event.NftContract.String()),
 				TokenId:       event.TokenId,
 				MarketWrapper: party.AddressMapToMarket[event.MarketWrapper.String()],
 				AuctionId:     event.AuctionId,
@@ -199,7 +203,7 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyBid, event.Creator.String()), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
+					append([]string{}, party.BuildPartyURL(filter.PartyBid, strings.ToLower(event.PartyBidProxy.String())), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
 				),
 			})
 		}
@@ -246,12 +250,12 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 			}
 
 			partyMetadata, err := json.Marshal(metadata.Party{
-				PartyAddress:  event.PartyProxy,
+				PartyAddress:  strings.ToLower(event.PartyProxy.String()),
 				Name:          event.Name,
 				Symbol:        event.Symbol,
 				PartyType:     filter.PartyBuy,
-				Creator:       event.Creator,
-				NftContract:   event.NftContract,
+				Creator:       strings.ToLower(event.Creator.String()),
+				NftContract:   strings.ToLower(event.NftContract.String()),
 				TokenId:       event.TokenId,
 				MarketWrapper: party.AddressMapToMarket["opensea"],
 				MaxPrice:      event.MaxPrice,
@@ -277,7 +281,7 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyBuy, event.Creator.String()), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
+					append([]string{}, party.BuildPartyURL(filter.PartyBuy, strings.ToLower(event.PartyProxy.String())), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
 				),
 			})
 		}
@@ -324,12 +328,12 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 			}
 
 			partyMetadata, err := json.Marshal(metadata.Party{
-				PartyAddress:  event.PartyProxy,
+				PartyAddress:  strings.ToLower(event.PartyProxy.String()),
 				Name:          event.Name,
 				Symbol:        event.Symbol,
 				PartyType:     filter.PartyCollection,
-				Creator:       event.Creator,
-				NftContract:   event.NftContract,
+				Creator:       strings.ToLower(event.Creator.String()),
+				NftContract:   strings.ToLower(event.NftContract.String()),
 				MarketWrapper: party.AddressMapToMarket["opensea"],
 				MaxPrice:      event.MaxPrice,
 				ExpiredTime:   event.SecondsToTimeout,
@@ -355,7 +359,7 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyCollection, event.Creator.String()), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
+					append([]string{}, party.BuildPartyURL(filter.PartyCollection, strings.ToLower(event.PartyProxy.String())), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
 				),
 			})
 		}
@@ -396,7 +400,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 
 	partyInfo := metadata.Party{}
 
-	partyInfo.PartyAddress = common.HexToAddress(transaction.AddressTo)
+	partyInfo.PartyAddress = transaction.AddressTo
 
 	if partyInfo.Symbol, err = partybidContract.Symbol(&bind.CallOpts{}); err != nil {
 		return nil, err
@@ -404,9 +408,11 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 	if partyInfo.Name, err = partybidContract.Name(&bind.CallOpts{}); err != nil {
 		return nil, err
 	}
-	if partyInfo.NftContract, err = partybidContract.NftContract(&bind.CallOpts{}); err != nil {
+	nftContract, err := partybidContract.NftContract(&bind.CallOpts{})
+	if err != nil {
 		return nil, err
 	}
+	partyInfo.NftContract = strings.ToLower(nftContract.String())
 	if partyInfo.PartyStatus, err = partybidContract.PartyStatus(&bind.CallOpts{}); err != nil {
 		return nil, err
 	}
@@ -417,6 +423,11 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 	partyInfo.MarketWrapper = party.AddressMapToMarket[market.String()]
 	partyInfo.PartyType = filter.PartyBid
 
+	native, err := i.tokenClient.Native(ctx, message.Network)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, log := range receipt.Logs {
 		switch log.Topics[0] {
 		case party.EventHashContributed:
@@ -424,13 +435,13 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-			partyInfo.Action = filter.PartyBidContribute
 			partyMetadata, err := json.Marshal(metadata.PartyContribute{
+				Action:                          filter.PartyBidContribute,
 				PartyInfo:                       partyInfo,
-				Contributor:                     event.Contributor.String(),
-				Amount:                          event.Amount,
-				PreviousTotalContributedToParty: event.PreviousTotalContributedToParty,
-				TotalFromContributor:            event.TotalFromContributor,
+				Contributor:                     strings.ToLower(event.Contributor.String()),
+				Amount:                          decimal.NewFromBigInt(event.Amount, 0).Shift(-int32(native.Decimals)),
+				PreviousTotalContributedToParty: decimal.NewFromBigInt(event.PreviousTotalContributedToParty, 0).Shift(-int32(native.Decimals)),
+				TotalFromContributor:            decimal.NewFromBigInt(event.TotalFromContributor, 0).Shift(-int32(native.Decimals)),
 			})
 			if err != nil {
 				return nil, err
@@ -459,10 +470,10 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-			partyInfo.Action = filter.PartyBidBid
 			partyMetadata, err := json.Marshal(metadata.PartyBid{
+				Action:    filter.PartyBidBid,
 				PartyInfo: partyInfo,
-				BidAmount: event.Amount,
+				BidAmount: decimal.NewFromBigInt(event.Amount, 0).Shift(-int32(native.Decimals)),
 			})
 			if err != nil {
 				return nil, err
@@ -491,13 +502,13 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-			partyInfo.Action = filter.PartyBidFinalize
 			partyMetadata, err := json.Marshal(metadata.PartyFinalize{
+				Action:           filter.PartyBidFinalize,
 				PartyInfo:        partyInfo,
 				Result:           event.Result,
-				TotalSpent:       event.TotalSpent,
-				Fee:              event.Fee,
-				TotalContributed: event.TotalContributed,
+				TotalSpent:       decimal.NewFromBigInt(event.TotalSpent, 0).Shift(-int32(native.Decimals)),
+				Fee:              decimal.NewFromBigInt(event.Fee, 0).Shift(-int32(native.Decimals)),
+				TotalContributed: decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
 			})
 			if err != nil {
 				return nil, err
@@ -526,12 +537,13 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-			partyInfo.Action = filter.PartyBidClaim
 			partyMetadata, err := json.Marshal(metadata.PartyClaim{
+				Action:             filter.PartyBidClaim,
 				PartyInfo:          partyInfo,
-				TotalContributed:   event.TotalContributed,
-				ExcessContribution: event.ExcessContribution,
-				TokenAmount:        event.TokenAmount,
+				Contributor:        strings.ToLower(event.Contributor.String()),
+				TotalContributed:   decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
+				ExcessContribution: decimal.NewFromBigInt(event.ExcessContribution, 0).Shift(-int32(native.Decimals)),
+				TokenAmount:        decimal.NewFromBigInt(event.TokenAmount, 0).Shift(-int32(native.Decimals)),
 			})
 			if err != nil {
 				return nil, err
@@ -595,7 +607,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 
 	partyInfo := metadata.Party{}
 
-	partyInfo.PartyAddress = common.HexToAddress(transaction.AddressTo)
+	partyInfo.PartyAddress = strings.ToLower(transaction.AddressTo)
 	partyInfo.PartyType = filter.PartyBuy
 	if partyInfo.Symbol, err = partybuyContract.Symbol(&bind.CallOpts{}); err != nil {
 		return nil, err
@@ -603,13 +615,20 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 	if partyInfo.Name, err = partybuyContract.Name(&bind.CallOpts{}); err != nil {
 		return nil, err
 	}
-	if partyInfo.NftContract, err = partybuyContract.NftContract(&bind.CallOpts{}); err != nil {
+	nftContract, err := partybuyContract.NftContract(&bind.CallOpts{})
+	if err != nil {
 		return nil, err
 	}
+	partyInfo.NftContract = strings.ToLower(nftContract.String())
 	if partyInfo.PartyStatus, err = partybuyContract.PartyStatus(&bind.CallOpts{}); err != nil {
 		return nil, err
 	}
 	partyInfo.MarketWrapper = party.AddressMapToMarket["opensea"]
+
+	native, err := i.tokenClient.Native(ctx, message.Network)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, log := range receipt.Logs {
 		switch log.Topics[0] {
@@ -620,11 +639,12 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			}
 			partyInfo.Action = filter.PartyBidContribute
 			partyMetadata, err := json.Marshal(metadata.PartyContribute{
+				Action:                          filter.PartyBidContribute,
 				PartyInfo:                       partyInfo,
-				Contributor:                     event.Contributor.String(),
-				Amount:                          event.Amount,
-				PreviousTotalContributedToParty: event.PreviousTotalContributedToParty,
-				TotalFromContributor:            event.TotalFromContributor,
+				Contributor:                     strings.ToLower(event.Contributor.String()),
+				Amount:                          decimal.NewFromBigInt(event.Amount, 0).Shift(-int32(native.Decimals)),
+				PreviousTotalContributedToParty: decimal.NewFromBigInt(event.PreviousTotalContributedToParty, 0).Shift(-int32(native.Decimals)),
+				TotalFromContributor:            decimal.NewFromBigInt(event.TotalFromContributor, 0).Shift(-int32(native.Decimals)),
 			})
 			if err != nil {
 				return nil, err
@@ -653,14 +673,14 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-			partyInfo.Action = filter.PartyBidBuy
 			partyMetadata, err := json.Marshal(metadata.PartyBuy{
+				Action:           filter.PartyBidBuy,
 				PartyInfo:        partyInfo,
-				TriggeredBy:      event.TriggeredBy,
-				TargetAddress:    event.TargetAddress,
-				EthSpent:         event.EthSpent,
-				EthFeePaid:       event.EthFeePaid,
-				TotalContributed: event.TotalContributed,
+				TriggeredBy:      strings.ToLower(event.TriggeredBy.String()),
+				TargetAddress:    strings.ToLower(event.TargetAddress.String()),
+				EthSpent:         decimal.NewFromBigInt(event.EthSpent, 0).Shift(-int32(native.Decimals)),
+				EthFeePaid:       decimal.NewFromBigInt(event.EthFeePaid, 0).Shift(-int32(native.Decimals)),
+				TotalContributed: decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
 			})
 			if err != nil {
 				return nil, err
@@ -689,10 +709,10 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-			partyInfo.Action = filter.PartyBidExpire
 			partyMetadata, err := json.Marshal(metadata.PartyExpire{
+				Action:      filter.PartyBidExpire,
 				PartyInfo:   partyInfo,
-				TriggeredBy: event.TriggeredBy,
+				TriggeredBy: strings.ToLower(event.TriggeredBy.String()),
 			})
 			if err != nil {
 				return nil, err
@@ -721,12 +741,12 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-			partyInfo.Action = filter.PartyBidClaim
 			partyMetadata, err := json.Marshal(metadata.PartyClaim{
+				Action:             filter.PartyBidClaim,
 				PartyInfo:          partyInfo,
-				TotalContributed:   event.TotalContributed,
-				ExcessContribution: event.ExcessContribution,
-				TokenAmount:        event.TokenAmount,
+				TotalContributed:   decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
+				ExcessContribution: decimal.NewFromBigInt(event.ExcessContribution, 0).Shift(-int32(native.Decimals)),
+				TokenAmount:        decimal.NewFromBigInt(event.TokenAmount, 0).Shift(-int32(native.Decimals)),
 			})
 			if err != nil {
 				return nil, err
@@ -789,7 +809,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 
 	partyInfo := metadata.Party{}
 
-	partyInfo.PartyAddress = common.HexToAddress(transaction.AddressTo)
+	partyInfo.PartyAddress = transaction.AddressTo
 
 	if partyInfo.Symbol, err = partycoContract.Symbol(&bind.CallOpts{}); err != nil {
 		return nil, err
@@ -797,14 +817,23 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 	if partyInfo.Name, err = partycoContract.Name(&bind.CallOpts{}); err != nil {
 		return nil, err
 	}
-	if partyInfo.NftContract, err = partycoContract.NftContract(&bind.CallOpts{}); err != nil {
+	nftContract, err := partycoContract.NftContract(&bind.CallOpts{})
+	if err != nil {
 		return nil, err
 	}
+	partyInfo.NftContract = strings.ToLower(nftContract.String())
+
 	if partyInfo.PartyStatus, err = partycoContract.PartyStatus(&bind.CallOpts{}); err != nil {
 		return nil, err
 	}
 	partyInfo.MarketWrapper = party.AddressMapToMarket["opensea"]
 	partyInfo.PartyType = filter.PartyCollection
+
+	native, err := i.tokenClient.Native(ctx, message.Network)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, log := range receipt.Logs {
 		switch log.Topics[0] {
 		case party.EventHashContributed:
@@ -812,13 +841,13 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
-			partyInfo.Action = filter.PartyBidContribute
 			partyMetadata, err := json.Marshal(metadata.PartyContribute{
+				Action:                          filter.PartyBidContribute,
 				PartyInfo:                       partyInfo,
-				Contributor:                     event.Contributor.String(),
-				Amount:                          event.Amount,
-				PreviousTotalContributedToParty: event.PreviousTotalContributedToParty,
-				TotalFromContributor:            event.TotalFromContributor,
+				Contributor:                     strings.ToLower(event.Contributor.String()),
+				Amount:                          decimal.NewFromBigInt(event.Amount, 0).Shift(-int32(native.Decimals)),
+				PreviousTotalContributedToParty: decimal.NewFromBigInt(event.PreviousTotalContributedToParty, 0).Shift(-int32(native.Decimals)),
+				TotalFromContributor:            decimal.NewFromBigInt(event.TotalFromContributor, 0).Shift(-int32(native.Decimals)),
 			})
 			if err != nil {
 				return nil, err
@@ -847,15 +876,15 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
-			partyInfo.Action = filter.PartyBidBuy
 			partyMetadata, err := json.Marshal(metadata.PartyBuy{
+				Action:           filter.PartyBidBuy,
 				PartyInfo:        partyInfo,
 				TokenId:          event.TokenId,
-				TriggeredBy:      event.TriggeredBy,
-				TargetAddress:    event.TargetAddress,
-				EthSpent:         event.EthSpent,
-				EthFeePaid:       event.EthFeePaid,
-				TotalContributed: event.TotalContributed,
+				TriggeredBy:      strings.ToLower(event.TriggeredBy.String()),
+				TargetAddress:    strings.ToLower(event.TargetAddress.String()),
+				EthSpent:         decimal.NewFromBigInt(event.EthSpent, 0).Shift(-int32(native.Decimals)),
+				EthFeePaid:       decimal.NewFromBigInt(event.EthFeePaid, 0).Shift(-int32(native.Decimals)),
+				TotalContributed: decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
 			})
 			if err != nil {
 				return nil, err
@@ -884,10 +913,10 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
-			partyInfo.Action = filter.PartyBidExpire
 			partyMetadata, err := json.Marshal(metadata.PartyExpire{
+				Action:      filter.PartyBidExpire,
 				PartyInfo:   partyInfo,
-				TriggeredBy: event.TriggeredBy,
+				TriggeredBy: strings.ToLower(event.TriggeredBy.String()),
 			})
 			if err != nil {
 				return nil, err
@@ -916,12 +945,13 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
-			partyInfo.Action = filter.PartyBidClaim
 			partyMetadata, err := json.Marshal(metadata.PartyClaim{
+				Action:             filter.PartyBidClaim,
 				PartyInfo:          partyInfo,
-				TotalContributed:   event.TotalContributed,
-				ExcessContribution: event.ExcessContribution,
-				TokenAmount:        event.TokenAmount,
+				Contributor:        strings.ToLower(event.Contributor.String()),
+				TotalContributed:   decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
+				ExcessContribution: decimal.NewFromBigInt(event.ExcessContribution, 0).Shift(-int32(native.Decimals)),
+				TokenAmount:        decimal.NewFromBigInt(event.TokenAmount, 0).Shift(-int32(native.Decimals)),
 			})
 			if err != nil {
 				return nil, err
