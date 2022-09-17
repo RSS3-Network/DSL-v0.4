@@ -36,7 +36,7 @@ type StructsAddressAndAmount struct {
 
 // CollectionPartyFactoryMetaData contains all meta data concerning the CollectionPartyFactory contract.
 var CollectionPartyFactoryMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_partyDAOMultisig\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_tokenVaultFactory\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_weth\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_allowList\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"partyProxy\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"creator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"nftContract\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"maxPrice\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"secondsToTimeout\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address[]\",\"name\":\"deciders\",\"type\":\"address[]\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"splitRecipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"splitBasisPoints\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"gatedToken\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"gatedTokenAmount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"symbol\",\"type\":\"string\"}],\"name\":\"CollectionPartyDeployed\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"deployedAt\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"logic\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"partyDAOMultisig\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_nftContract\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_maxPrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_secondsToTimeout\",\"type\":\"uint256\"},{\"internalType\":\"address[]\",\"name\":\"_deciders\",\"type\":\"address[]\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"internalType\":\"structStructs.AddressAndAmount\",\"name\":\"_split\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"internalType\":\"structStructs.AddressAndAmount\",\"name\":\"_tokenGate\",\"type\":\"tuple\"},{\"internalType\":\"string\",\"name\":\"_name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_symbol\",\"type\":\"string\"}],\"name\":\"startParty\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"partyProxy\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"tokenVaultFactory\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"weth\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_partyDAOMultisig\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_tokenVaultFactory\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_weth\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_allowList\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"partyProxy\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"creator\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"nftContract\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"maxPrice\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"secondsToTimeout\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address[]\",\"name\":\"deciders\",\"type\":\"address[]\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"splitRecipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"splitBasisPoints\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"gatedToken\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"gatedTokenAmount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"symbol\",\"type\":\"string\"}],\"name\":\"CollectionPartyDeployed\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"deployedAt\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"logic\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"partyDAOMultisig\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_nftContract\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_maxPrice\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_secondsToTimeout\",\"type\":\"uint256\"},{\"internalType\":\"address[]\",\"name\":\"_deciders\",\"type\":\"address[]\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"internalType\":\"structStructs.AddressAndAmount\",\"name\":\"_split\",\"type\":\"tuple\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"internalType\":\"structStructs.AddressAndAmount\",\"name\":\"_tokenGate\",\"type\":\"tuple\"},{\"internalType\":\"string\",\"name\":\"_name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_symbol\",\"type\":\"string\"}],\"name\":\"startParty\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"partyProxy\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"tokenVaultFactory\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"weth\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // CollectionPartyFactoryABI is the input ABI used to generate the binding from.
@@ -447,10 +447,23 @@ type CollectionPartyFactoryCollectionPartyDeployed struct {
 
 // FilterCollectionPartyDeployed is a free log retrieval operation binding the contract event 0xd3e9bcbc4c2d9dbcd75b567511ec7f1fd89a91f05e37ae87fa8f2b9f88e4b6d2.
 //
-// Solidity: event CollectionPartyDeployed(address partyProxy, address creator, address nftContract, uint256 maxPrice, uint256 secondsToTimeout, address[] deciders, address splitRecipient, uint256 splitBasisPoints, address gatedToken, uint256 gatedTokenAmount, string name, string symbol)
-func (_CollectionPartyFactory *CollectionPartyFactoryFilterer) FilterCollectionPartyDeployed(opts *bind.FilterOpts) (*CollectionPartyFactoryCollectionPartyDeployedIterator, error) {
+// Solidity: event CollectionPartyDeployed(address indexed partyProxy, address indexed creator, address indexed nftContract, uint256 maxPrice, uint256 secondsToTimeout, address[] deciders, address splitRecipient, uint256 splitBasisPoints, address gatedToken, uint256 gatedTokenAmount, string name, string symbol)
+func (_CollectionPartyFactory *CollectionPartyFactoryFilterer) FilterCollectionPartyDeployed(opts *bind.FilterOpts, partyProxy []common.Address, creator []common.Address, nftContract []common.Address) (*CollectionPartyFactoryCollectionPartyDeployedIterator, error) {
 
-	logs, sub, err := _CollectionPartyFactory.contract.FilterLogs(opts, "CollectionPartyDeployed")
+	var partyProxyRule []interface{}
+	for _, partyProxyItem := range partyProxy {
+		partyProxyRule = append(partyProxyRule, partyProxyItem)
+	}
+	var creatorRule []interface{}
+	for _, creatorItem := range creator {
+		creatorRule = append(creatorRule, creatorItem)
+	}
+	var nftContractRule []interface{}
+	for _, nftContractItem := range nftContract {
+		nftContractRule = append(nftContractRule, nftContractItem)
+	}
+
+	logs, sub, err := _CollectionPartyFactory.contract.FilterLogs(opts, "CollectionPartyDeployed", partyProxyRule, creatorRule, nftContractRule)
 	if err != nil {
 		return nil, err
 	}
@@ -459,10 +472,23 @@ func (_CollectionPartyFactory *CollectionPartyFactoryFilterer) FilterCollectionP
 
 // WatchCollectionPartyDeployed is a free log subscription operation binding the contract event 0xd3e9bcbc4c2d9dbcd75b567511ec7f1fd89a91f05e37ae87fa8f2b9f88e4b6d2.
 //
-// Solidity: event CollectionPartyDeployed(address partyProxy, address creator, address nftContract, uint256 maxPrice, uint256 secondsToTimeout, address[] deciders, address splitRecipient, uint256 splitBasisPoints, address gatedToken, uint256 gatedTokenAmount, string name, string symbol)
-func (_CollectionPartyFactory *CollectionPartyFactoryFilterer) WatchCollectionPartyDeployed(opts *bind.WatchOpts, sink chan<- *CollectionPartyFactoryCollectionPartyDeployed) (event.Subscription, error) {
+// Solidity: event CollectionPartyDeployed(address indexed partyProxy, address indexed creator, address indexed nftContract, uint256 maxPrice, uint256 secondsToTimeout, address[] deciders, address splitRecipient, uint256 splitBasisPoints, address gatedToken, uint256 gatedTokenAmount, string name, string symbol)
+func (_CollectionPartyFactory *CollectionPartyFactoryFilterer) WatchCollectionPartyDeployed(opts *bind.WatchOpts, sink chan<- *CollectionPartyFactoryCollectionPartyDeployed, partyProxy []common.Address, creator []common.Address, nftContract []common.Address) (event.Subscription, error) {
 
-	logs, sub, err := _CollectionPartyFactory.contract.WatchLogs(opts, "CollectionPartyDeployed")
+	var partyProxyRule []interface{}
+	for _, partyProxyItem := range partyProxy {
+		partyProxyRule = append(partyProxyRule, partyProxyItem)
+	}
+	var creatorRule []interface{}
+	for _, creatorItem := range creator {
+		creatorRule = append(creatorRule, creatorItem)
+	}
+	var nftContractRule []interface{}
+	for _, nftContractItem := range nftContract {
+		nftContractRule = append(nftContractRule, nftContractItem)
+	}
+
+	logs, sub, err := _CollectionPartyFactory.contract.WatchLogs(opts, "CollectionPartyDeployed", partyProxyRule, creatorRule, nftContractRule)
 	if err != nil {
 		return nil, err
 	}
@@ -496,7 +522,7 @@ func (_CollectionPartyFactory *CollectionPartyFactoryFilterer) WatchCollectionPa
 
 // ParseCollectionPartyDeployed is a log parse operation binding the contract event 0xd3e9bcbc4c2d9dbcd75b567511ec7f1fd89a91f05e37ae87fa8f2b9f88e4b6d2.
 //
-// Solidity: event CollectionPartyDeployed(address partyProxy, address creator, address nftContract, uint256 maxPrice, uint256 secondsToTimeout, address[] deciders, address splitRecipient, uint256 splitBasisPoints, address gatedToken, uint256 gatedTokenAmount, string name, string symbol)
+// Solidity: event CollectionPartyDeployed(address indexed partyProxy, address indexed creator, address indexed nftContract, uint256 maxPrice, uint256 secondsToTimeout, address[] deciders, address splitRecipient, uint256 splitBasisPoints, address gatedToken, uint256 gatedTokenAmount, string name, string symbol)
 func (_CollectionPartyFactory *CollectionPartyFactoryFilterer) ParseCollectionPartyDeployed(log types.Log) (*CollectionPartyFactoryCollectionPartyDeployed, error) {
 	event := new(CollectionPartyFactoryCollectionPartyDeployed)
 	if err := _CollectionPartyFactory.contract.UnpackLog(event, "CollectionPartyDeployed", log); err != nil {

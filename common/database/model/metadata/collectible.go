@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/shopspring/decimal"
@@ -17,8 +18,7 @@ type Party struct {
 	TokenId       *big.Int         `json:"nft_token_id,omitempty"`
 	MarketWrapper string           `json:"market_wrapper"`
 	AuctionId     *big.Int         `json:"auction_id,omitempty"`
-	MaxPrice      *big.Int         `json:"max_price,omitempty"`
-	ExpiredTime   *big.Int         `json:"expired_time,omitempty"`
+	ExpiredTime   *time.Time       `json:"expired_date,omitempty"`
 	Deciders      []common.Address `json:"deciders,omitempty"`
 	PartyStatus   uint8            `json:"party_status,omitempty"`
 	Action        string           `json:"action,omitempty"`

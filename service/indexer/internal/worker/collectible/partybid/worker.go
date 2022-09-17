@@ -6,6 +6,7 @@ import (
 	"errors"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -248,7 +249,7 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 			if err != nil {
 				return nil, err
 			}
-
+			expiredTime := internalTransaction.Timestamp.Add(time.Second * time.Duration(int(event.SecondsToTimeout.Int64())))
 			partyMetadata, err := json.Marshal(metadata.Party{
 				PartyAddress:  strings.ToLower(event.PartyProxy.String()),
 				Name:          event.Name,
@@ -258,8 +259,7 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 				NftContract:   strings.ToLower(event.NftContract.String()),
 				TokenId:       event.TokenId,
 				MarketWrapper: party.AddressMapToMarket["opensea"],
-				MaxPrice:      event.MaxPrice,
-				ExpiredTime:   event.SecondsToTimeout,
+				ExpiredTime:   &expiredTime,
 				Action:        filter.PartyBidStart,
 			})
 			if err != nil {
@@ -326,7 +326,7 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 			if err != nil {
 				return nil, err
 			}
-
+			expiredTime := internalTransaction.Timestamp.Add(time.Second * time.Duration(int(event.SecondsToTimeout.Int64())))
 			partyMetadata, err := json.Marshal(metadata.Party{
 				PartyAddress:  strings.ToLower(event.PartyProxy.String()),
 				Name:          event.Name,
@@ -335,8 +335,7 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 				Creator:       strings.ToLower(event.Creator.String()),
 				NftContract:   strings.ToLower(event.NftContract.String()),
 				MarketWrapper: party.AddressMapToMarket["opensea"],
-				MaxPrice:      event.MaxPrice,
-				ExpiredTime:   event.SecondsToTimeout,
+				ExpiredTime:   &expiredTime,
 				Deciders:      event.Deciders,
 				Action:        filter.PartyBidStart,
 			})
@@ -744,6 +743,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			partyMetadata, err := json.Marshal(metadata.PartyClaim{
 				Action:             filter.PartyBidClaim,
 				PartyInfo:          partyInfo,
+				Contributor:        strings.ToLower(event.Contributor.String()),
 				TotalContributed:   decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
 				ExcessContribution: decimal.NewFromBigInt(event.ExcessContribution, 0).Shift(-int32(native.Decimals)),
 				TokenAmount:        decimal.NewFromBigInt(event.TokenAmount, 0).Shift(-int32(native.Decimals)),
