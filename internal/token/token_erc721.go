@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721/zora"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/sirupsen/logrus"
@@ -24,6 +25,10 @@ var ENSContractAddress = strings.ToLower("0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147
 func (c *Client) ERC721(ctx context.Context, network, contractAddress string, tokenID *big.Int) (*ERC721, error) {
 	if network == protocol.NetworkEthereum && strings.ToLower(contractAddress) == ENSContractAddress {
 		return c.ERC721Ens(ctx, contractAddress, tokenID)
+	}
+
+	if network == protocol.NetworkEthereum && strings.EqualFold(contractAddress, zora.Address.String()) {
+		return c.ERC721Zora(ctx, network, tokenID)
 	}
 
 	ethclient, err := ethclientx.Global(network)
@@ -118,6 +123,48 @@ func (c *Client) ERC721Ens(ctx context.Context, contractAddress string, tokenID 
 	}
 
 	return &erc721, nil
+}
+
+func (c *Client) ERC721Zora(ctx context.Context, network string, tokenID *big.Int) (*ERC721, error) {
+	ethereumClient, err := ethclientx.Global(network)
+	if err != nil {
+		return nil, err
+	}
+
+	zoraContract, err := zora.NewZora(zora.Address, ethereumClient)
+	if err != nil {
+		return nil, err
+	}
+
+	result := ERC721{
+		ContractAddress: strings.ToLower(zora.Address.String()),
+		ID:              tokenID,
+	}
+
+	if result.Name, err = zoraContract.Name(&bind.CallOpts{}); err != nil {
+		return nil, err
+	}
+
+	if result.Symbol, err = zoraContract.Symbol(&bind.CallOpts{}); err != nil {
+		return nil, err
+	}
+
+	if result.URI, err = zoraContract.TokenMetadataURI(&bind.CallOpts{}, tokenID); err != nil {
+		return nil, err
+	}
+
+	result.Metadata, err = c.Metadata(result.URI)
+	if err != nil {
+		return nil, err
+	}
+
+	var metadata Metadata
+
+	if err := json.Unmarshal(result.Metadata, &metadata); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
 }
 
 func (c *Client) erc721ToNFT(erc721 *ERC721, tokenID *big.Int) (*NFT, error) {
