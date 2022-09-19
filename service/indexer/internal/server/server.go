@@ -38,6 +38,7 @@ import (
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
 	rabbitmqx "github.com/naturalselectionlabs/pregod/service/indexer/internal/rabbitmq"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger/ens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/marketplace"
@@ -156,6 +157,7 @@ func (s *Server) Initialize() (err error) {
 
 	s.triggers = []trigger.Trigger{
 		ens.New(),
+		eip1577.New(s.employer),
 	}
 
 	s.workers = []worker.Worker{
