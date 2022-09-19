@@ -2,11 +2,14 @@ package token
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"math/big"
 	"strings"
+	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-resty/resty/v2"
@@ -70,12 +73,25 @@ func (c *Client) ERC721(ctx context.Context, network, contractAddress string, to
 }
 
 func (c *Client) ERC721Ens(ctx context.Context, contractAddress string, tokenID *big.Int) (*ERC721, error) {
-	url := fmt.Sprintf("https://metadata.ens.domains/mainnet/%v/%v", ENSContractAddress, tokenID)
-	client := resty.New()
 	response := DomainsMetadata{}
+	url := fmt.Sprintf("https://metadata.ens.domains/mainnet/%v/%v", ENSContractAddress, tokenID)
 
-	_, err := client.R().SetResult(&response).Get(url)
-	if err != nil {
+	if err := retry.Do(func() error {
+		client := resty.New()
+
+		_, err := client.R().SetResult(&response).Get(url)
+
+		return err
+	},
+		retry.Attempts(60*2), // ~ 2 minutes
+		retry.DelayType(func(_ uint, _ error, _ *retry.Config) time.Duration {
+			delay, err := rand.Int(rand.Reader, big.NewInt(250))
+			if err != nil {
+				delay = big.NewInt(0)
+			}
+
+			return time.Second + time.Duration(delay.Int64())*time.Millisecond
+		})); err != nil {
 		logrus.Errorf("[token] EnsToNFT url: %v, err: %v", url, err)
 		return nil, err
 	}

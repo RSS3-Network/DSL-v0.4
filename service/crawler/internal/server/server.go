@@ -18,6 +18,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/lens"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/mirror"
+
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -117,6 +119,7 @@ func (s *Server) Initialize() (err error) {
 	s.crawlers = []crawler.Crawler{
 		ens.New(s.rabbitmqChannel, s.employer, s.config),
 		lens.New(s.config),
+		mirror.New(s.config),
 	}
 
 	return nil

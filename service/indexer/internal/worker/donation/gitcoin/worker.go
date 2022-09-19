@@ -66,7 +66,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
-		if transaction.AddressTo != ContractAddressPolygon && transaction.AddressTo != ContractAddressEth {
+		if (message.Network == protocol.NetworkPolygon && transaction.AddressTo != ContractAddressPolygon) ||
+			(message.Network == protocol.NetworkEthereum && transaction.AddressTo != ContractAddressEth) {
 			internalTransactionMap[transaction.Hash] = transaction
 
 			continue

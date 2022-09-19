@@ -3,6 +3,8 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -115,7 +117,10 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
-	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, nil); err != nil {
+		return nil, err
+	}
 
 	database.Global().Model(&social.Profile{}).Clauses(clause.OnConflict{
 		UpdateAll: true,
@@ -158,7 +163,10 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
-	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, nil); err != nil {
+		return nil, err
+	}
 
 	return &transfer, nil
 }
@@ -208,15 +216,17 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 		})
 	}
 
-	if len(postOriginal.Sources) != 0 {
-		transfer.Platform = postOriginal.Sources[0]
-	}
+	transfer.Platform = c.buildPlatform(postOriginal.Sources)
 
 	if transfer.Metadata, err = json.Marshal(post); err != nil {
 		return nil, err
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
+		return nil, err
+	}
 
 	return &transfer, nil
 }
@@ -293,6 +303,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 	if err != nil {
 		return nil, err
 	}
+
 	profile.Address = strings.ToLower(characterOwner.String())
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialUnfollow, transfer.Type)
@@ -335,7 +346,10 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
-	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, nil); err != nil {
+		return nil, err
+	}
 
 	return &transfer, nil
 }
@@ -370,42 +384,51 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		return nil, err
 	}
 
-	if len(postOriginal.Sources) != 0 {
-		transfer.Platform = postOriginal.Sources[0]
+	post := &metadata.Post{
+		TypeOnPlatform: []string{contract.EventNamePostNote},
+		Title:          postOriginal.Title,
+		Body:           postOriginal.Content,
 	}
 
-	var noteMetadata json.RawMessage
-
-	if err := json.Unmarshal(contentData, &noteMetadata); err != nil {
-		return nil, err
+	for _, attachment := range postOriginal.Attachments {
+		post.Media = append(post.Media, metadata.Media{
+			Address:  attachment.Address,
+			MimeType: attachment.MimeType,
+		})
 	}
 
-	uri, err := c.peripheryContract.GetLinkingAnyUri(&bind.CallOpts{}, note.LinkKey)
-	if err != nil {
-		return nil, err
-	}
+	transfer.Platform = c.buildPlatform(postOriginal.Sources)
 
-	if transfer.Metadata, err = json.Marshal(&metadata.Crossbell{
-		Event: contract.EventNameSetNoteUri,
-		Note: &metadata.CrossbellNote{
-			ID:           event.NoteId,
-			LinkItemType: note.LinkItemType,
-			LinkKey:      note.LinkKey,
-			Link:         uri,
-			ContentURI:   note.ContentUri,
-			LinkModule:   note.LinkModule,
-			MintModule:   note.MintModule,
-			MintNFT:      note.MintNFT,
-			Deleted:      note.Deleted,
-			Locked:       note.Locked,
-			Metadata:     noteMetadata,
-		},
-	}); err != nil {
+	if transfer.Metadata, err = json.Marshal(post); err != nil {
 		return nil, err
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialRevise, transfer.Type)
-	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
+		return nil, err
+	}
 
 	return &transfer, nil
+}
+
+func (c *characterHandler) buildPlatform(sources []string) string {
+	if len(sources) == 0 {
+		return "crossbell"
+	}
+
+	return strings.Trim(sources[0], `\"`)
+}
+
+func (c *characterHandler) buildRelatedUrls(relatedUrls []string, platform string, characterID, noteID *big.Int) ([]string, error) {
+	if noteID == nil {
+		handle, err := c.characterContract.GetHandle(&bind.CallOpts{}, characterID)
+		if err != nil {
+			return nil, err
+		}
+
+		return append(relatedUrls, fmt.Sprintf("https://crossbell.io/@%s", handle)), nil
+	}
+
+	return append(relatedUrls, fmt.Sprintf("https://crossbell.io/notes/%d-%d", characterID, noteID)), nil
 }
