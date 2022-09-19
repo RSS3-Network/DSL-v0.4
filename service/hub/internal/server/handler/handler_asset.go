@@ -39,6 +39,7 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 		request.Limit = DefaultLimit
 	}
 
+	request.Address = strings.ToLower(request.Address)
 	assetList, total, err := h.getAssets(ctx, request)
 	if err != nil {
 		return InternalError(c)
