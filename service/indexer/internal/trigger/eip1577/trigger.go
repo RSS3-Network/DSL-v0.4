@@ -34,8 +34,13 @@ import (
 )
 
 const (
+	Source = "IPFS"
+
 	ProtocolIPNS = "ipns"
 	ProtocolIPFS = "ipfs"
+
+	PlatformEIP1577 = "EIP1577"
+	PlatformPlanet  = "Planet"
 )
 
 var (
@@ -228,7 +233,7 @@ func (i *internal) buildTransactions(ctx context.Context, message *protocol.Mess
 			return nil, ErrorUnknownFeedType
 		}
 
-		transaction, err := i.buildTransaction(ctx, message, item.Title, item.Content, item.Link, *item.PublishedParsed)
+		transaction, err := i.buildTransaction(ctx, message, PlatformEIP1577, item.Title, item.Content, item.Link, *item.PublishedParsed)
 		if err != nil {
 			return nil, err
 		}
@@ -249,7 +254,7 @@ func (i *internal) buildTransactionsByPlanet(ctx context.Context, message *proto
 	transactions := make([]model.Transaction, 0, len(planet.Articles))
 
 	for _, article := range planet.Articles {
-		transaction, err := i.buildTransaction(ctx, message, article.Title, article.Content, article.Link, time.UnixMilli(int64(article.Created*1000)+time.Date(2001, 0, 0, 0, 0, 0, 0, time.UTC).UnixMilli()))
+		transaction, err := i.buildTransaction(ctx, message, PlatformPlanet, article.Title, article.Content, article.Link, time.UnixMilli(int64(article.Created*1000)+time.Date(2001, 0, 0, 0, 0, 0, 0, time.UTC).UnixMilli()))
 		if err != nil {
 			return nil, err
 		}
@@ -260,7 +265,7 @@ func (i *internal) buildTransactionsByPlanet(ctx context.Context, message *proto
 	return transactions, nil
 }
 
-func (i *internal) buildTransaction(ctx context.Context, message *protocol.Message, title, content, url string, createdAt time.Time) (*model.Transaction, error) {
+func (i *internal) buildTransaction(ctx context.Context, message *protocol.Message, platform, title, content, url string, createdAt time.Time) (*model.Transaction, error) {
 	success := true
 
 	metadataRaw, err := json.Marshal(metadata.Post{
@@ -283,8 +288,8 @@ func (i *internal) buildTransaction(ctx context.Context, message *protocol.Messa
 		Owner:       message.Address,
 		AddressFrom: message.Address,
 		Network:     protocol.NetworkEIP1577,
-		Platform:    protocol.NetworkEIP1577,
-		Source:      "IPFS",
+		Platform:    platform,
+		Source:      Source,
 		Tag:         filter.TagSocial,
 		Type:        filter.SocialPost,
 		Success:     &success,
@@ -298,8 +303,8 @@ func (i *internal) buildTransaction(ctx context.Context, message *protocol.Messa
 				AddressFrom:     message.Address,
 				Metadata:        metadataRaw,
 				Network:         protocol.NetworkEIP1577,
-				Platform:        protocol.NetworkEIP1577,
-				Source:          "IPFS",
+				Platform:        platform,
+				Source:          Source,
 				RelatedUrls: []string{
 					url,
 				},
