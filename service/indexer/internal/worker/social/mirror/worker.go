@@ -83,7 +83,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			if len(mirrorMetadata.OriginalContentDigest) == 0 {
-				continue
+				mirrorMetadata.OriginalContentDigest = mirrorMetadata.ContentDigest
 			}
 
 			// Get the article text content
