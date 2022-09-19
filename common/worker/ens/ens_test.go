@@ -53,7 +53,7 @@ var expiry = time.Unix(1956691715, 0)
 
 func init() {
 	loadConfig()
-	client = ens.New(ConfigHub.RPC.General.Ethereum.HTTP)
+	client = ens.New()
 }
 func TestGetProfile(t *testing.T) {
 	result, err := client.GetProfile(address)
