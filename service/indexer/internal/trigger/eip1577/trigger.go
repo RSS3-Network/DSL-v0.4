@@ -50,7 +50,8 @@ var (
 var _ trigger.Trigger = (*internal)(nil)
 
 type internal struct {
-	employer *shedlock.Employer
+	employer     *shedlock.Employer
+	ipfsEndpoint string
 }
 
 func (i *internal) Name() string {
@@ -139,7 +140,7 @@ func (i *internal) fetchContentURI(ctx context.Context, contentURI string) (*she
 		return nil, ErrorUnsupportedProtocol
 	}
 
-	ipfsShell := shell.NewShell("localhost:5981")
+	ipfsShell := shell.NewShell(i.ipfsEndpoint)
 
 	if contentProtocol == ProtocolIPNS {
 		if contentHash, err = ipfsShell.Resolve(contentHash); err != nil {
@@ -405,8 +406,9 @@ func (i *internal) resolveContentHash(ctx context.Context, network, name string)
 	return contentHash, nil
 }
 
-func New(employer *shedlock.Employer) trigger.Trigger {
+func New(employer *shedlock.Employer, ipfsEndpoint string) trigger.Trigger {
 	return &internal{
-		employer: employer,
+		employer:     employer,
+		ipfsEndpoint: ipfsEndpoint,
 	}
 }

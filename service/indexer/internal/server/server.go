@@ -157,7 +157,7 @@ func (s *Server) Initialize() (err error) {
 
 	s.triggers = []trigger.Trigger{
 		ens.New(),
-		eip1577.New(s.employer),
+		eip1577.New(s.employer, s.config.RPC.IPFS.API),
 	}
 
 	s.workers = []worker.Worker{

@@ -91,6 +91,7 @@ type Gateway struct {
 type IPFS struct {
 	IO       string `mapstructure:"io"`
 	Internal string `mapstructure:"internal"`
+	API      string `mapstructure:"api"`
 }
 
 type RPC struct {
