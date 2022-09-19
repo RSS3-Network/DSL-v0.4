@@ -67,6 +67,12 @@ func (s *service) Run() error {
 			continue
 		}
 
+		// deduplicate data
+		transactions, err = database.DeduplicateTransactions(ctx, transactions)
+		if err != nil || len(transactions) == 0 {
+			continue
+		}
+
 		// insert db
 		err = database.UpsertTransactions(ctx, transactions)
 		if err != nil {
@@ -147,14 +153,14 @@ func (s *service) getMirrorTransactions(ctx context.Context) ([]*model.Transacti
 			Platform:    protocol.PlatformMirror,
 			Network:     protocol.NetworkArweave,
 			Source:      protocol.SourcePregodETL,
-			Timestamp:   time.Unix(data.Content.Timestamp, 0),
+			Timestamp:   time.Unix(data.Content.Timestamp.BigInt().Int64(), 0),
 			Tag:         filter.TagSocial,
 			Type:        filter.SocialPost,
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{
 					TransactionHash: transaction.ID,
-					Timestamp:       time.Unix(data.Content.Timestamp, 0),
+					Timestamp:       time.Unix(data.Content.Timestamp.BigInt().Int64(), 0),
 					Index:           protocol.IndexVirtual,
 					AddressFrom:     address,
 					AddressTo:       strings.ToLower(MirrorAddress),

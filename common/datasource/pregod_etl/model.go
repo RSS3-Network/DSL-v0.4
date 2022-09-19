@@ -105,26 +105,26 @@ type tagMarshal struct {
 
 type ArweaveData struct {
 	Wnft struct {
-		Fee              int    `json:"fee"`
-		Name             string `json:"name"`
-		Nonce            int    `json:"nonce"`
-		Owner            string `json:"owner"`
-		Price            int    `json:"price"`
-		Supply           int    `json:"supply"`
-		Symbol           string `json:"symbol"`
-		ChainId          int    `json:"chainId"`
-		ImageURI         string `json:"imageURI"`
-		Renderer         string `json:"renderer"`
-		Description      string `json:"description"`
-		MediaAssetId     int    `json:"mediaAssetId"`
-		ProxyAddress     string `json:"proxyAddress"`
-		FundingRecipient string `json:"fundingRecipient"`
+		Fee              decimal.Decimal `json:"fee"`
+		Name             string          `json:"name"`
+		Nonce            decimal.Decimal `json:"nonce"`
+		Owner            string          `json:"owner"`
+		Price            decimal.Decimal `json:"price"`
+		Supply           decimal.Decimal `json:"supply"`
+		Symbol           string          `json:"symbol"`
+		ChainId          decimal.Decimal `json:"chainId"`
+		ImageURI         string          `json:"imageURI"`
+		Renderer         string          `json:"renderer"`
+		Description      string          `json:"description"`
+		MediaAssetId     decimal.Decimal `json:"mediaAssetId"`
+		ProxyAddress     string          `json:"proxyAddress"`
+		FundingRecipient string          `json:"fundingRecipient"`
 	} `json:"wnft"`
 	Digest  string `json:"digest"`
 	Content struct {
-		Body      string `json:"body"`
-		Title     string `json:"title"`
-		Timestamp int64  `json:"timestamp"`
+		Body      string          `json:"body"`
+		Title     string          `json:"title"`
+		Timestamp decimal.Decimal `json:"timestamp"`
 	} `json:"content"`
 	Version    string `json:"version"`
 	Authorship struct {
