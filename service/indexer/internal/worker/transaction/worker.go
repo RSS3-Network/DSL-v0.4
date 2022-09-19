@@ -484,6 +484,10 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenMetadata.Value = &tokenValue
 			tokenMetadata.ValueDisplay = &tokenValueDisplay
 
+			if nft.Symbol == "ENS" {
+				transfer.Platform = protocol.PlatformEns
+			}
+
 			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 
 			transfer.RelatedUrls = ethereum.BuildURL(transfer.RelatedUrls, ethereum.BuildTokenURL(message.Network, *address, id.String())...)
