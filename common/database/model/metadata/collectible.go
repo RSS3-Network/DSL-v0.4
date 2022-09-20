@@ -9,18 +9,18 @@ import (
 )
 
 type Party struct {
-	PartyAddress  string           `json:"party_address"`
-	Name          string           `json:"party_name"`
+	PartyAddress  string           `json:"address"`
+	Name          string           `json:"name"`
 	Symbol        string           `json:"symbol"`
-	PartyType     string           `json:"party_type"`
+	PartyType     string           `json:"type"`
 	Creator       string           `json:"creator,omitempty"`
-	NftContract   string           `json:"nft_contract_address,omitempty"`
-	TokenId       string           `json:"nft_token_id,omitempty"`
-	MarketWrapper string           `json:"market_wrapper"`
+	NftContract   string           `json:"contract_address,omitempty"`
+	TokenId       string           `json:"token_id,omitempty"`
+	MarketWrapper string           `json:"marketplace"`
 	AuctionId     string           `json:"auction_id,omitempty"`
 	ExpiredTime   *time.Time       `json:"expired_date,omitempty"`
 	Deciders      []common.Address `json:"deciders,omitempty"`
-	PartyStatus   uint8            `json:"party_status,omitempty"`
+	PartyStatus   uint8            `json:"status,omitempty"`
 	Action        string           `json:"action,omitempty"`
 }
 
