@@ -179,6 +179,10 @@ func (s *service) getMirrorTransactions(ctx context.Context) ([]*model.Transacti
 		internalTransactions = append(internalTransactions, internalTransaction)
 	}
 
+	if len(result.Result) == 0 {
+		return nil, nil
+	}
+
 	// set cache
 	cacheInfo = fmt.Sprintf("%v:%v", result.Result[len(result.Result)-1].Height, result.Cursor)
 	cache.Global().Set(ctx, mirrorCacheKey, cacheInfo, 7*24*time.Hour)
