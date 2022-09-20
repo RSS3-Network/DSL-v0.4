@@ -19,6 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin/job"
@@ -66,14 +67,22 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
-		if (message.Network == protocol.NetworkPolygon && transaction.AddressTo != ContractAddressPolygon) ||
-			(message.Network == protocol.NetworkEthereum && transaction.AddressTo != ContractAddressEth) {
+		var transfers = []model.Transfer{}
+		var err error
+
+		switch {
+		case message.Network == protocol.NetworkEthereum && transaction.AddressTo == ContractAddressEth:
+			transfers, err = s.handleGitcoinEthereum(ctx, message, transaction)
+		case message.Network == protocol.NetworkPolygon && transaction.AddressTo == ContractAddressPolygon:
+			transfers, err = s.handleGitcoinEthereum(ctx, message, transaction)
+		case message.Network == protocol.NetworkZkSync:
+			transfers, err = s.handlerGitcoinZkSync(ctx, message, transaction)
+		default:
 			internalTransactionMap[transaction.Hash] = transaction
 
 			continue
 		}
 
-		transfers, err := s.handleGitcoin(ctx, message, transaction)
 		if err != nil {
 			loggerx.Global().Error("failed to handle gitcoin transaction", zap.Error(err))
 
@@ -112,7 +121,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	return internalTransactions, nil
 }
 
-func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, transaction model.Transaction) (transfers []model.Transfer, err error) {
+func (s *service) handleGitcoinEthereum(ctx context.Context, message *protocol.Message, transaction model.Transaction) (transfers []model.Transfer, err error) {
 	tracer := otel.Tracer("worker_gitcoin")
 	_, span := tracer.Start(ctx, "worker_gitcoin:handleGitcoin")
 
@@ -192,38 +201,21 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 
 		transfer.RelatedUrls = append(transfer.RelatedUrls, "https://gitcoin.co/grants"+strconv.Itoa(project.ID)+"/"+project.Slug)
 
-		var tokenMetadata metadata.Token
+		var tokenMetadata *metadata.Token
 
 		if strings.ToLower(event.Token.String()) == ContractAddressEthereumNative {
-			native, err := s.tokenClient.Native(ctx, transaction.Network)
+			tokenMetadata, err = s.tokenClient.NatvieToMetadata(ctx, transaction.Network)
 			if err != nil {
 				loggerx.Global().Error("get native token error", zap.Error(err))
 
-				return nil, err
-			}
-
-			tokenMetadata = metadata.Token{
-				Name:     native.Name,
-				Symbol:   native.Symbol,
-				Decimals: native.Decimals,
-				Standard: protocol.TokenStandardNative,
-				Image:    native.Logo,
+				continue
 			}
 		} else {
-			erc20, err := s.tokenClient.ERC20(ctx, transaction.Network, event.Token.String())
+			tokenMetadata, err = s.tokenClient.ERC20ToMetadata(ctx, transaction.Network, event.Token.String())
 			if err != nil {
 				loggerx.Global().Error("get erc20 error", zap.Error(err))
 
 				continue
-			}
-
-			tokenMetadata = metadata.Token{
-				Name:            erc20.Name,
-				Symbol:          erc20.Symbol,
-				Decimals:        erc20.Decimals,
-				Standard:        protocol.TokenStandardERC20,
-				ContractAddress: erc20.ContractAddress,
-				Image:           erc20.Logo,
 			}
 		}
 
@@ -239,7 +231,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 			Description: project.Description,
 			Logo:        project.Logo,
 			Platform:    protocol.PlatformGitcoin,
-			Token:       tokenMetadata,
+			Token:       *tokenMetadata,
 		})
 		if err != nil {
 			loggerx.Global().Error("marshal metadata error", zap.Error(err))
@@ -260,6 +252,67 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 	return transfers, nil
 }
 
+func (s *service) handlerGitcoinZkSync(ctx context.Context, message *protocol.Message, transaction model.Transaction) (transfers []model.Transfer, err error) {
+	for _, transfer := range transaction.Transfers {
+		if transfer.AddressTo == "" ||
+			transfer.AddressTo == "0x0" ||
+			transfer.AddressTo == "0x0000000000000000000000000000000000000000" {
+			continue
+		}
+
+		var data zksync.GetTransactionData
+
+		if err := json.Unmarshal(transfer.SourceData, &data); err != nil {
+			return nil, err
+		}
+
+		var project donation.GitcoinProject
+
+		if err := database.Global().
+			Model((*donation.GitcoinProject)(nil)).
+			Where(map[string]any{
+				"admin_address": strings.ToLower(transfer.AddressTo),
+			}).
+			Order("id DESC").
+			First(&project).
+			Error; err != nil {
+			loggerx.Global().Error("get gitcoin project error", zap.Error(err))
+
+			continue
+		}
+
+		transfer.RelatedUrls = append(transfer.RelatedUrls, "https://gitcoin.co/grants"+strconv.Itoa(project.ID)+"/"+project.Slug)
+
+		var tokenMetadata *metadata.Token
+		
+
+
+		transfer.Platform = Name
+		transfer.Metadata = metadata
+		transfer.Tag = filter.UpdateTag(filter.TagDonation, transfer.Tag)
+
+		if transfer.Tag == filter.TagDonation {
+			transfer.Type = filter.DonationDonate
+		}
+
+		// Copy the transaction to map
+		value, exist := internalTransactionMap[transaction.Hash]
+		if !exist {
+			value = transaction
+
+			// Ignore transfers data that will not be updated
+			value.Transfers = make([]model.Transfer, 0)
+		}
+
+		value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
+		value.Transfers = append(value.Transfers, transfer)
+
+		internalTransactionMap[transaction.Hash] = value
+
+		// transaction tag
+		transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
+	}
+}
 func (s *service) Jobs() []worker.Job {
 	return []worker.Job{
 		&job.GitcoinProjectJob{

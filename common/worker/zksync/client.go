@@ -11,7 +11,12 @@ import (
 	"github.com/google/go-querystring/query"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -244,6 +249,56 @@ func (c *Client) GetNFTToken(ctx context.Context, tokenID uint) (*model.GetNFTTo
 	}
 
 	return &tokenInfo, response, nil
+}
+
+func (c *Client) BuildZkSyncTokenMetadata(ctx context.Context, message *protocol.Message, transfer model.Transfer, tokenInfo *model.GetTokenInfo, value string) (metadata.Token, error) {
+	tracer := otel.Tracer("worker_token")
+	_, snap := tracer.Start(ctx, "worker_token:buildEthereumTokenMetadata")
+
+	defer snap.End()
+
+	var tokenMetadata metadata.Token
+
+	if tokenInfo.Address == ethereum.AddressGenesis.String() {
+		nativeToken, err := s.tokenClient.Native(ctx, message.Network)
+		if err != nil {
+			return tokenMetadata, err
+		}
+
+		tokenMetadata = metadata.Token{
+			Name:     nativeToken.Name,
+			Symbol:   nativeToken.Symbol,
+			Decimals: nativeToken.Decimals,
+			Image:    nativeToken.Logo,
+			Standard: protocol.TokenStandardNative,
+		}
+	} else {
+		erc20Token, err := s.tokenClient.ERC20(ctx, message.Network, tokenInfo.Address)
+		if err != nil {
+			return tokenMetadata, err
+		}
+
+		tokenMetadata = metadata.Token{
+			Name:            erc20Token.Name,
+			Symbol:          erc20Token.Symbol,
+			Decimals:        erc20Token.Decimals,
+			Image:           erc20Token.Logo,
+			ContractAddress: erc20Token.ContractAddress,
+			Standard:        protocol.TokenStandardERC20,
+		}
+	}
+
+	tokenValue, err := decimal.NewFromString(value)
+	if err != nil {
+		return tokenMetadata, err
+	}
+
+	tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
+
+	tokenMetadata.Value = &tokenValue
+	tokenMetadata.ValueDisplay = &tokenValueDisplay
+
+	return tokenMetadata, nil
 }
 
 func New() *Client {
