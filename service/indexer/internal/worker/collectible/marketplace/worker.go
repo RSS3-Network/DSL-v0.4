@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
@@ -160,13 +161,23 @@ func (i *internal) handleOpenSea(ctx context.Context, message *protocol.Message,
 					return nil, err
 				}
 
+				var transferLogIndex int64
+				for _, logForIndex := range receipt.Logs {
+					if logForIndex.Topics[0] == erc721.EventHashTransfer &&
+						strings.EqualFold(common.HexToAddress(logForIndex.Topics[1].Hex()).String(), event.Offerer.String()) &&
+						strings.EqualFold(common.HexToAddress(logForIndex.Topics[2].Hex()).String(), event.Recipient.String()) &&
+						strings.EqualFold(logForIndex.Topics[3].Big().String(), nft.ID.String()) {
+						transferLogIndex = int64(logForIndex.Index)
+					}
+				}
+
 				internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
 					TransactionHash: internalTransaction.Hash,
 					Timestamp:       internalTransaction.Timestamp,
 					BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 					Tag:             filter.TagCollectible,
 					Type:            filter.CollectibleTrade,
-					Index:           int64(log.Index),
+					Index:           transferLogIndex,
 					AddressFrom:     strings.ToLower(event.Offerer.String()),
 					AddressTo:       strings.ToLower(event.Recipient.String()),
 					Metadata:        tokenMetadata,
