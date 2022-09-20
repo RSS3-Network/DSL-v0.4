@@ -109,11 +109,6 @@ func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *pro
 		alchemy.CategoryExternal, alchemy.CategoryERC20, alchemy.CategoryERC721, alchemy.CategoryERC1155,
 	}
 
-	// Alchemy doesn't support querying Polygon's internal transactions
-	if message.Network == protocol.NetworkEthereum {
-		category = append(category, alchemy.CategoryInternal)
-	}
-
 	parameter := alchemy.GetAssetTransfersParameter{
 		FromAddress: strings.ToLower(message.Address),
 		MaxCount:    hexutil.EncodeBig(big.NewInt(alchemy.MaxCount)),

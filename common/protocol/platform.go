@@ -11,6 +11,7 @@ const (
 	// collectible
 	PlatformPOAP     = "POAP"
 	PlatformGalaxy   = "Galaxy"
+	PlatformEns    = "ENS Registrar"
 	PlatformPartyBid = "PartyBid"
 
 	// donation
