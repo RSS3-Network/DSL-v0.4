@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	utils "github.com/naturalselectionlabs/pregod/common/utils/interface"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -185,7 +189,8 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, message protocol.Me
 	defer rabbitmqSnap.End()
 
 	networks := []string{
-		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
+		protocol.NetworkEthereum,
+		protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
 	}
 
@@ -203,5 +208,29 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, message protocol.Me
 		}); err != nil {
 			return
 		}
+	}
+}
+
+func (h *Handler) initializeIndexerStatus(ctx context.Context, address string) {
+	status := model.Address{
+		Address:          address,
+		IndexingNetworks: protocol.SupportNetworks,
+		Status:           false,
+	}
+
+	if err := database.Global().
+		Model(model.Address{}).
+		Clauses(clause.OnConflict{
+			UpdateAll: true,
+			DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
+		}).
+		Create(map[string]interface{}{
+			"address":           status.Address,
+			"status":            status.Status,
+			"done_networks":     status.DoneNetworks,
+			"indexing_networks": status.IndexingNetworks,
+		}).Error; err != nil {
+		loggerx.Global().Error("failed to upsert address", zap.Error(err), zap.String("address", address))
+		return
 	}
 }
