@@ -18,7 +18,7 @@ func (c *Client) GetArweaveTransactions(ctx context.Context, parameter GetArweav
 	}
 
 	url := &url.URL{
-		Scheme:   "https",
+		Scheme:   "http",
 		Host:     c.endpoint,
 		Path:     "/networks/arweave/transactions",
 		RawQuery: values.Encode(),
