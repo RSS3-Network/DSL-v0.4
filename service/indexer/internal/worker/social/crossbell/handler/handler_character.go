@@ -414,7 +414,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 
 func (c *characterHandler) buildPlatform(sources []string) string {
 	if len(sources) == 0 {
-		return "crossbell"
+		return protocol.PlatformCrossbell
 	}
 
 	return strings.Trim(sources[0], `\"`)
