@@ -15,9 +15,9 @@ type Party struct {
 	PartyType     string           `json:"party_type"`
 	Creator       string           `json:"creator,omitempty"`
 	NftContract   string           `json:"nft_contract_address,omitempty"`
-	TokenId       *big.Int         `json:"nft_token_id,omitempty"`
+	TokenId       string           `json:"nft_token_id,omitempty"`
 	MarketWrapper string           `json:"market_wrapper"`
-	AuctionId     *big.Int         `json:"auction_id,omitempty"`
+	AuctionId     string           `json:"auction_id,omitempty"`
 	ExpiredTime   *time.Time       `json:"expired_date,omitempty"`
 	Deciders      []common.Address `json:"deciders,omitempty"`
 	PartyStatus   uint8            `json:"party_status,omitempty"`

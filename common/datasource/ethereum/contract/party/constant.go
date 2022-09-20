@@ -38,6 +38,4 @@ var (
 		"0xe761685c3E5Af758fc905CfdaC8Ca9f767CF84D7": "koans",
 		"opensea": "opensea",
 	}
-
-	PlatformPartyBid = "PartyBid"
 )

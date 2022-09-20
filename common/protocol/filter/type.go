@@ -22,18 +22,18 @@ const (
 	ExchangeLiquidityWithdraw string = "withdraw"
 
 	// NFT types
-	CollectibleTransfer string = "transfer"
-	CollectibleTrade    string = "trade"
-	CollectibleMint     string = "mint"
-	CollectibleBurn     string = "burn"
-	CollectiblePoap     string = "poap"
+	CollectibleTransfer     string = "transfer"
+	CollectibleTrade        string = "trade"
+	CollectibleMint         string = "mint"
+	CollectibleBurn         string = "burn"
+	CollectiblePoap         string = "poap"
+	CollectibleCrowdFunding string = "crowdfunding"
 
-	// party types
 	PartyBid        string = "bid"
 	PartyBuy        string = "buy"
 	PartyCollection string = "collection"
 
-	// partybid types
+	// sub-types for CollectibleCrowdFunding
 	PartyBidStart      string = "start"
 	PartyBidContribute string = "contribute"
 	PartyBidBid        string = "bid"

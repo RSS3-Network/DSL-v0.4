@@ -27,6 +27,7 @@ var platformList = map[string][]string{
 	filter.TagCollectible: {
 		protocol.PlatformPOAP,
 		protocol.PlatformGalaxy,
+		protocol.PlatformPartyBid,
 	},
 	filter.TagDonation: {
 		protocol.PlatformGitcoin,

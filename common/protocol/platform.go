@@ -9,8 +9,9 @@ const (
 	PlatformCrossbell = "Crossbell"
 
 	// collectible
-	PlatformPOAP   = "POAP"
-	PlatformGalaxy = "Galaxy"
+	PlatformPOAP     = "POAP"
+	PlatformGalaxy   = "Galaxy"
+	PlatformPartyBid = "PartyBid"
 
 	// donation
 	PlatformGitcoin = "Gitcoin"

@@ -180,9 +180,9 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 				PartyType:     filter.PartyBid,
 				Creator:       strings.ToLower(event.Creator.String()),
 				NftContract:   strings.ToLower(event.NftContract.String()),
-				TokenId:       event.TokenId,
+				TokenId:       event.TokenId.String(),
 				MarketWrapper: party.AddressMapToMarket[event.MarketWrapper.String()],
-				AuctionId:     event.AuctionId,
+				AuctionId:     event.AuctionId.String(),
 				Action:        filter.PartyBidStart,
 			})
 			if err != nil {
@@ -194,13 +194,13 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(event.Creator.String()),
 				AddressTo:       strings.ToLower(party.AddressPartyBidDeployed.String()),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -211,11 +211,11 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 	}
 
 	if len(internalTransaction.Transfers) == 0 {
-		return nil, errors.New("not found nft trade")
+		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
-	internalTransaction.Platform = party.PlatformPartyBid
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFunding, internalTransaction.Type)
+	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
 }
@@ -257,7 +257,7 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 				PartyType:     filter.PartyBuy,
 				Creator:       strings.ToLower(event.Creator.String()),
 				NftContract:   strings.ToLower(event.NftContract.String()),
-				TokenId:       event.TokenId,
+				TokenId:       event.TokenId.String(),
 				MarketWrapper: party.AddressMapToMarket["opensea"],
 				ExpiredTime:   &expiredTime,
 				Action:        filter.PartyBidStart,
@@ -271,13 +271,13 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(event.Creator.String()),
 				AddressTo:       strings.ToLower(party.AddressPartyBuyDeployed.String()),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -288,11 +288,11 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 	}
 
 	if len(internalTransaction.Transfers) == 0 {
-		return nil, errors.New("not found nft trade")
+		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
-	internalTransaction.Platform = party.PlatformPartyBid
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFunding, internalTransaction.Type)
+	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
 }
@@ -348,13 +348,13 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(event.Creator.String()),
 				AddressTo:       strings.ToLower(party.AddressCollectionPartyDeployed.String()),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -365,11 +365,11 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 	}
 
 	if len(internalTransaction.Transfers) == 0 {
-		return nil, errors.New("not found nft trade")
+		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
-	internalTransaction.Platform = party.PlatformPartyBid
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFunding, internalTransaction.Type)
+	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
 }
@@ -451,13 +451,13 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(event.Contributor.String()),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -483,13 +483,13 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -518,13 +518,13 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -553,13 +553,13 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -572,11 +572,11 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 	}
 
 	if len(internalTransaction.Transfers) == 0 {
-		return nil, errors.New("not found nft trade")
+		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
-	internalTransaction.Platform = party.PlatformPartyBid
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFunding, internalTransaction.Type)
+	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
 }
@@ -654,13 +654,13 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(event.Contributor.String()),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -690,13 +690,13 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -722,13 +722,13 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -757,13 +757,13 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -775,11 +775,11 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 		}
 	}
 	if len(internalTransaction.Transfers) == 0 {
-		return nil, errors.New("not found nft trade")
+		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
-	internalTransaction.Platform = party.PlatformPartyBid
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFunding, internalTransaction.Type)
+	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
 }
@@ -858,13 +858,13 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(event.Contributor.String()),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -895,13 +895,13 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -927,13 +927,13 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -962,13 +962,13 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleTrade,
+				Type:            filter.CollectibleCrowdFunding,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
 				Metadata:        partyMetadata,
 				Network:         internalTransaction.Network,
-				Platform:        party.PlatformPartyBid,
+				Platform:        protocol.PlatformPartyBid,
 				Source:          ethereum.Source,
 				RelatedUrls: party.BuildURL(
 					[]string{},
@@ -980,11 +980,11 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 		}
 	}
 	if len(internalTransaction.Transfers) == 0 {
-		return nil, errors.New("not found nft trade")
+		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
-	internalTransaction.Platform = party.PlatformPartyBid
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFunding, internalTransaction.Type)
+	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
 }
