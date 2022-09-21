@@ -366,12 +366,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 
 			transfer = *internalTransfer
 		} else {
-			erc20Token, _, err := s.zksyncClient.GetToken(ctx, uint(data.Transaction.Operation.Token))
-			if err != nil {
-				return nil, err
-			}
-
-			internalTransfer, err := s.buildZkSyncTokenMetadata(ctx, message, transfer, erc20Token, data.Transaction.Operation.Amount)
+			internalTransfer, err := s.buildZkSyncTokenMetadata(ctx, message, transfer, tokenInfo, data.Transaction.Operation.Amount)
 			if err != nil {
 				return nil, err
 			}
@@ -392,38 +387,25 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 
 	defer snap.End()
 
-	var tokenMetadata metadata.Token
+	var tokenMetadata *metadata.Token
+	var err error
 
 	if address == nil {
 		// Native
-		native, err := s.tokenClient.Native(ctx, message.Network)
+		tokenMetadata, err = s.tokenClient.NatvieToMetadata(ctx, message.Network)
 		if err != nil {
 			return &transfer, nil
 		}
 
-		tokenMetadata.Name = native.Name
-		tokenMetadata.Symbol = native.Symbol
-		tokenMetadata.Decimals = native.Decimals
-		tokenMetadata.Standard = protocol.TokenStandardNative
-		tokenMetadata.Image = native.Logo
-
 		tokenValue := decimal.NewFromBigInt(value, 0)
 		tokenMetadata.Value = &tokenValue
-		tokenValueDisplay := tokenValue.Shift(-int32(native.Decimals))
+		tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
 		tokenMetadata.ValueDisplay = &tokenValueDisplay
 
 		transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 	} else {
-		erc20Token, err := s.tokenClient.ERC20(ctx, message.Network, *address)
-		if err == nil && erc20Token.Symbol != "" {
-			// Common ERC-20
-			tokenMetadata.Name = erc20Token.Name
-			tokenMetadata.Symbol = erc20Token.Symbol
-			tokenMetadata.Image = erc20Token.Logo
-			tokenMetadata.Decimals = erc20Token.Decimals
-			tokenMetadata.Standard = protocol.TokenStandardERC20
-			tokenMetadata.ContractAddress = erc20Token.ContractAddress
-
+		tokenMetadata, err = s.tokenClient.ERC20ToMetadata(ctx, message.Network, *address)
+		if err == nil && tokenMetadata.Symbol != "" {
 			if value == nil {
 				value = big.NewInt(0)
 			}
@@ -431,7 +413,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenValue := decimal.NewFromBigInt(value, 0)
 			tokenMetadata.Value = &tokenValue
 
-			tokenValueDisplay := tokenValue.Shift(-int32(erc20Token.Decimals))
+			tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
 			tokenMetadata.ValueDisplay = &tokenValueDisplay
 
 			transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
@@ -512,31 +494,16 @@ func (s *service) buildZkSyncTokenMetadata(ctx context.Context, message *protoco
 
 	defer snap.End()
 
-	var tokenMetadata metadata.Token
+	var tokenMetadata *metadata.Token
+	var err error
 
 	if tokenInfo.Address == ethereum.AddressGenesis.String() {
-		nativeToken, err := s.tokenClient.Native(ctx, message.Network)
-		if err != nil {
-			return nil, err
-		}
-
-		tokenMetadata.Name = nativeToken.Name
-		tokenMetadata.Symbol = nativeToken.Symbol
-		tokenMetadata.Decimals = nativeToken.Decimals
-		tokenMetadata.Image = nativeToken.Logo
-		tokenMetadata.Standard = protocol.TokenStandardNative
+		tokenMetadata, err = s.tokenClient.NatvieToMetadata(ctx, message.Network)
 	} else {
-		erc20Token, err := s.tokenClient.ERC20(ctx, message.Network, tokenInfo.Address)
-		if err != nil {
-			return nil, err
-		}
-
-		tokenMetadata.Name = erc20Token.Name
-		tokenMetadata.Symbol = erc20Token.Symbol
-		tokenMetadata.Decimals = erc20Token.Decimals
-		tokenMetadata.Image = erc20Token.Logo
-		tokenMetadata.ContractAddress = erc20Token.ContractAddress
-		tokenMetadata.Standard = protocol.TokenStandardERC20
+		tokenMetadata, err = s.tokenClient.ERC20ToMetadata(ctx, message.Network, tokenInfo.Address)
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	tokenValue, err := decimal.NewFromString(value)

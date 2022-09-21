@@ -38,8 +38,8 @@ const (
 var _ worker.Worker = (*service)(nil)
 
 type service struct {
-	tokenClient            *token.Client
-	gitcoinProjectCacheKey string
+	tokenClient  *token.Client
+	zksyncClient *zksync.Client
 }
 
 func (s *service) Name() string {
@@ -67,7 +67,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
-		var transfers = []model.Transfer{}
+		transfers := []model.Transfer{}
 		var err error
 
 		switch {
@@ -182,7 +182,7 @@ func (s *service) handleGitcoinEthereum(ctx context.Context, message *protocol.M
 		if err != nil {
 			loggerx.Global().Error("marshal source data error", zap.Error(err))
 
-			return nil, err
+			continue
 		}
 
 		transfer := model.Transfer{
@@ -205,23 +205,15 @@ func (s *service) handleGitcoinEthereum(ctx context.Context, message *protocol.M
 
 		if strings.ToLower(event.Token.String()) == ContractAddressEthereumNative {
 			tokenMetadata, err = s.tokenClient.NatvieToMetadata(ctx, transaction.Network)
-			if err != nil {
-				loggerx.Global().Error("get native token error", zap.Error(err))
-
-				continue
-			}
 		} else {
 			tokenMetadata, err = s.tokenClient.ERC20ToMetadata(ctx, transaction.Network, event.Token.String())
-			if err != nil {
-				loggerx.Global().Error("get erc20 error", zap.Error(err))
-
-				continue
-			}
+		}
+		if err != nil {
+			loggerx.Global().Error("get token error", zap.Error(err))
 		}
 
 		tokenValue := decimal.NewFromBigInt(event.Amount, 0)
 		tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
-
 		tokenMetadata.Value = &tokenValue
 		tokenMetadata.ValueDisplay = &tokenValueDisplay
 
@@ -263,9 +255,10 @@ func (s *service) handlerGitcoinZkSync(ctx context.Context, message *protocol.Me
 		var data zksync.GetTransactionData
 
 		if err := json.Unmarshal(transfer.SourceData, &data); err != nil {
-			return nil, err
+			continue
 		}
 
+		// gitcoin grant info
 		var project donation.GitcoinProject
 
 		if err := database.Global().
@@ -283,47 +276,75 @@ func (s *service) handlerGitcoinZkSync(ctx context.Context, message *protocol.Me
 
 		transfer.RelatedUrls = append(transfer.RelatedUrls, "https://gitcoin.co/grants"+strconv.Itoa(project.ID)+"/"+project.Slug)
 
+		// token matedata
+		tokenInfo, _, err := s.zksyncClient.GetToken(ctx, uint(data.Transaction.Operation.Token))
+		if err != nil {
+			loggerx.Global().Error("handlerGitcoinZkSync: failed to get token", zap.Error(err), zap.String("token_id", strconv.Itoa(int(data.Transaction.Operation.Token))))
+
+			continue
+		}
+
 		var tokenMetadata *metadata.Token
-		
 
+		if tokenInfo.Address == ethereum.AddressGenesis.String() {
+			tokenMetadata, err = s.tokenClient.NatvieToMetadata(ctx, message.Network)
+		} else {
+			tokenMetadata, err = s.tokenClient.ERC20ToMetadata(ctx, message.Network, tokenInfo.Address)
+		}
+		if err != nil {
+			loggerx.Global().Error("get token error", zap.Error(err))
 
-		transfer.Platform = Name
-		transfer.Metadata = metadata
-		transfer.Tag = filter.UpdateTag(filter.TagDonation, transfer.Tag)
+			continue
+		}
+
+		tokenValue, err := decimal.NewFromString(data.Transaction.Operation.Amount)
+		if err != nil {
+			loggerx.Global().Error("decimal NewFromString error", zap.Error(err))
+
+			continue
+		}
+
+		tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
+		tokenMetadata.Value = &tokenValue
+		tokenMetadata.ValueDisplay = &tokenValueDisplay
+
+		// metadata
+		metadataRaw, err := json.Marshal(&metadata.Donation{
+			ID:          project.ID,
+			Title:       project.Title,
+			Description: project.Description,
+			Logo:        project.Logo,
+			Platform:    protocol.PlatformGitcoin,
+			Token:       *tokenMetadata,
+		})
+		if err != nil {
+			loggerx.Global().Error("marshal metadata error", zap.Error(err))
+
+			continue
+		}
+
+		transfer.Metadata = metadataRaw
+		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagDonation, transfer.Tag, filter.DonationDonate, transfer.Type)
 
 		if transfer.Tag == filter.TagDonation {
-			transfer.Type = filter.DonationDonate
+			transfer.Platform = Name
 		}
 
-		// Copy the transaction to map
-		value, exist := internalTransactionMap[transaction.Hash]
-		if !exist {
-			value = transaction
-
-			// Ignore transfers data that will not be updated
-			value.Transfers = make([]model.Transfer, 0)
-		}
-
-		value.Tag = filter.UpdateTag(transfer.Tag, value.Tag)
-		value.Transfers = append(value.Transfers, transfer)
-
-		internalTransactionMap[transaction.Hash] = value
-
-		// transaction tag
-		transaction.Tag = filter.UpdateTag(transfer.Tag, transaction.Tag)
+		transfers = append(transfers, transfer)
 	}
+
+	return transfers, nil
 }
+
 func (s *service) Jobs() []worker.Job {
 	return []worker.Job{
-		&job.GitcoinProjectJob{
-			GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
-		},
+		&job.GitcoinProjectJob{},
 	}
 }
 
 func New() worker.Worker {
 	return &service{
-		gitcoinProjectCacheKey: "gitcoin_project",
-		tokenClient:            token.New(),
+		tokenClient:  token.New(),
+		zksyncClient: zksync.New(),
 	}
 }
