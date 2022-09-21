@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/shopspring/decimal"
 )
 
 type Party struct {
@@ -25,36 +24,36 @@ type Party struct {
 }
 
 type PartyContribute struct {
-	PartyInfo                       Party           `json:"party_info"`
-	Action                          string          `json:"action"`
-	Contributor                     string          `json:"contributor"`
-	Amount                          decimal.Decimal `json:"amount"`
-	PreviousTotalContributedToParty decimal.Decimal `json:"previous_total_contributed_to_party"`
-	TotalFromContributor            decimal.Decimal `json:"total_from_contributor"`
+	PartyInfo                       Party  `json:"crowdfund_info"`
+	Action                          string `json:"action"`
+	Contributor                     string `json:"contributor"`
+	Amount                          *Token `json:"amount"`
+	PreviousTotalContributedToParty *Token `json:"previous_total_contributed"`
+	TotalFromContributor            *Token `json:"total_from_contributor"`
 }
 
 type PartyClaim struct {
-	PartyInfo          Party           `json:"party_info"`
-	Action             string          `json:"action"`
-	Contributor        string          `json:"contributor"`
-	TotalContributed   decimal.Decimal `json:"total_contributed"`
-	ExcessContribution decimal.Decimal `json:"excess_contribution"`
-	TokenAmount        decimal.Decimal `json:"fractional_token_amount"`
+	PartyInfo          Party  `json:"crowdfund_info"`
+	Action             string `json:"action"`
+	Contributor        string `json:"contributor"`
+	TotalContributed   *Token `json:"total_contributed"`
+	ExcessContribution *Token `json:"excess_contribution"`
+	TokenAmount        *Token `json:"fractional_token_amount,omitempty"`
 }
 
 type PartyFinalize struct {
-	PartyInfo        Party           `json:"party_info"`
-	Action           string          `json:"action"`
-	Result           uint8           `json:"result"`
-	TotalSpent       decimal.Decimal `json:"total_spent"`
-	Fee              decimal.Decimal `json:"fee"`
-	TotalContributed decimal.Decimal `json:"total_contributed"`
+	PartyInfo        Party  `json:"crowdfund_info"`
+	Action           string `json:"action"`
+	Result           uint8  `json:"result"`
+	TotalSpent       *Token `json:"total_spent"`
+	Fee              *Token `json:"fee"`
+	TotalContributed *Token `json:"total_contributed"`
 }
 
 type PartyBid struct {
-	PartyInfo Party           `json:"party_info"`
-	Action    string          `json:"action"`
-	BidAmount decimal.Decimal `json:"bid_amount"`
+	PartyInfo Party  `json:"crowdfund_info"`
+	Action    string `json:"action"`
+	BidAmount *Token `json:"bid_amount"`
 }
 
 type PartyExpire struct {
@@ -64,12 +63,12 @@ type PartyExpire struct {
 }
 
 type PartyBuy struct {
-	PartyInfo        Party           `json:"party_info"`
-	Action           string          `json:"action"`
-	TokenId          *big.Int        `json:"token_id,omitempty"`
-	TriggeredBy      string          `json:"trigger"`
-	TargetAddress    string          `json:"target_address"`
-	EthSpent         decimal.Decimal `json:"eth_spent"`
-	EthFeePaid       decimal.Decimal `json:"eth_fee_paid"`
-	TotalContributed decimal.Decimal `json:"total_contributed"`
+	PartyInfo        Party    `json:"party_info"`
+	Action           string   `json:"action"`
+	TokenId          *big.Int `json:"token_id,omitempty"`
+	TriggeredBy      string   `json:"trigger"`
+	TargetAddress    string   `json:"target_address"`
+	EthSpent         *Token   `json:"eth_spent"`
+	EthFeePaid       *Token   `json:"platform_fee"`
+	TotalContributed *Token   `json:"total_contributed"`
 }

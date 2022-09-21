@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/party"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/party/partybid"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/party/partybidfac"
@@ -194,7 +195,7 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(event.Creator.String()),
 				AddressTo:       strings.ToLower(party.AddressPartyBidDeployed.String()),
@@ -214,7 +215,7 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFunding, internalTransaction.Type)
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFund, internalTransaction.Type)
 	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
@@ -271,7 +272,7 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(event.Creator.String()),
 				AddressTo:       strings.ToLower(party.AddressPartyBuyDeployed.String()),
@@ -291,7 +292,7 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFunding, internalTransaction.Type)
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFund, internalTransaction.Type)
 	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
@@ -348,7 +349,7 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(event.Creator.String()),
 				AddressTo:       strings.ToLower(party.AddressCollectionPartyDeployed.String()),
@@ -368,7 +369,7 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFunding, internalTransaction.Type)
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFund, internalTransaction.Type)
 	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
@@ -423,7 +424,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 	partyInfo.PartyType = filter.PartyBid
 
 	native, err := i.tokenClient.Native(ctx, message.Network)
-	if err != nil {
+	if err != nil || native == nil {
 		return nil, err
 	}
 
@@ -438,9 +439,9 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 				Action:                          filter.PartyBidContribute,
 				PartyInfo:                       partyInfo,
 				Contributor:                     strings.ToLower(event.Contributor.String()),
-				Amount:                          decimal.NewFromBigInt(event.Amount, 0).Shift(-int32(native.Decimals)),
-				PreviousTotalContributedToParty: decimal.NewFromBigInt(event.PreviousTotalContributedToParty, 0).Shift(-int32(native.Decimals)),
-				TotalFromContributor:            decimal.NewFromBigInt(event.TotalFromContributor, 0).Shift(-int32(native.Decimals)),
+				Amount:                          parseToken(native, event.Amount),
+				PreviousTotalContributedToParty: parseToken(native, event.PreviousTotalContributedToParty),
+				TotalFromContributor:            parseToken(native, event.TotalFromContributor),
 			})
 			if err != nil {
 				return nil, err
@@ -451,7 +452,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(event.Contributor.String()),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
@@ -472,7 +473,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			partyMetadata, err := json.Marshal(metadata.PartyBid{
 				Action:    filter.PartyBidBid,
 				PartyInfo: partyInfo,
-				BidAmount: decimal.NewFromBigInt(event.Amount, 0).Shift(-int32(native.Decimals)),
+				BidAmount: parseToken(native, event.Amount),
 			})
 			if err != nil {
 				return nil, err
@@ -483,7 +484,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
@@ -505,9 +506,9 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 				Action:           filter.PartyBidFinalize,
 				PartyInfo:        partyInfo,
 				Result:           event.Result,
-				TotalSpent:       decimal.NewFromBigInt(event.TotalSpent, 0).Shift(-int32(native.Decimals)),
-				Fee:              decimal.NewFromBigInt(event.Fee, 0).Shift(-int32(native.Decimals)),
-				TotalContributed: decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
+				TotalSpent:       parseToken(native, event.TotalSpent),
+				Fee:              parseToken(native, event.Fee),
+				TotalContributed: parseToken(native, event.TotalContributed),
 			})
 			if err != nil {
 				return nil, err
@@ -518,7 +519,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
@@ -536,13 +537,30 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
+			var tokenAmount *metadata.Token
+			if event.TokenAmount == big.NewInt(0) {
+				tokenAmount = nil
+			} else {
+				for _, logx := range receipt.Logs {
+					if logx.Topics[0] == erc20.EventHashTransfer &&
+						strings.EqualFold(common.HexToAddress(logx.Topics[1].Hex()).String(), transaction.AddressTo) &&
+						strings.EqualFold(common.HexToAddress(logx.Topics[2].Hex()).String(), transaction.AddressFrom) {
+						erc20Token, err := i.tokenClient.ERC20(ctx, message.Network, logx.Address.String())
+						if err != nil || erc20Token == nil {
+							return nil, err
+						}
+						tokenAmount = buildToken(erc20Token, event.TokenAmount)
+					}
+				}
+			}
 			partyMetadata, err := json.Marshal(metadata.PartyClaim{
 				Action:             filter.PartyBidClaim,
 				PartyInfo:          partyInfo,
 				Contributor:        strings.ToLower(event.Contributor.String()),
-				TotalContributed:   decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
-				ExcessContribution: decimal.NewFromBigInt(event.ExcessContribution, 0).Shift(-int32(native.Decimals)),
-				TokenAmount:        decimal.NewFromBigInt(event.TokenAmount, 0).Shift(-int32(native.Decimals)),
+				TotalContributed:   parseToken(native, event.TotalContributed),
+				ExcessContribution: parseToken(native, event.ExcessContribution),
+				// todo other erc20 token
+				TokenAmount: tokenAmount,
 			})
 			if err != nil {
 				return nil, err
@@ -553,7 +571,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
@@ -575,7 +593,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFunding, internalTransaction.Type)
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFund, internalTransaction.Type)
 	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
@@ -636,14 +654,13 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-			partyInfo.Action = filter.PartyBidContribute
 			partyMetadata, err := json.Marshal(metadata.PartyContribute{
 				Action:                          filter.PartyBidContribute,
 				PartyInfo:                       partyInfo,
 				Contributor:                     strings.ToLower(event.Contributor.String()),
-				Amount:                          decimal.NewFromBigInt(event.Amount, 0).Shift(-int32(native.Decimals)),
-				PreviousTotalContributedToParty: decimal.NewFromBigInt(event.PreviousTotalContributedToParty, 0).Shift(-int32(native.Decimals)),
-				TotalFromContributor:            decimal.NewFromBigInt(event.TotalFromContributor, 0).Shift(-int32(native.Decimals)),
+				Amount:                          parseToken(native, event.Amount),
+				PreviousTotalContributedToParty: parseToken(native, event.PreviousTotalContributedToParty),
+				TotalFromContributor:            parseToken(native, event.TotalFromContributor),
 			})
 			if err != nil {
 				return nil, err
@@ -654,7 +671,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(event.Contributor.String()),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
@@ -677,9 +694,9 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 				PartyInfo:        partyInfo,
 				TriggeredBy:      strings.ToLower(event.TriggeredBy.String()),
 				TargetAddress:    strings.ToLower(event.TargetAddress.String()),
-				EthSpent:         decimal.NewFromBigInt(event.EthSpent, 0).Shift(-int32(native.Decimals)),
-				EthFeePaid:       decimal.NewFromBigInt(event.EthFeePaid, 0).Shift(-int32(native.Decimals)),
-				TotalContributed: decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
+				EthSpent:         parseToken(native, event.EthSpent),
+				EthFeePaid:       parseToken(native, event.EthFeePaid),
+				TotalContributed: parseToken(native, event.TotalContributed),
 			})
 			if err != nil {
 				return nil, err
@@ -690,7 +707,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
@@ -722,7 +739,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
@@ -740,13 +757,29 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
+			var tokenAmount *metadata.Token
+			if event.TokenAmount == big.NewInt(0) {
+				tokenAmount = nil
+			} else {
+				for _, logx := range receipt.Logs {
+					if logx.Topics[0] == erc20.EventHashTransfer &&
+						strings.EqualFold(common.HexToAddress(logx.Topics[1].Hex()).String(), transaction.AddressTo) &&
+						strings.EqualFold(common.HexToAddress(logx.Topics[2].Hex()).String(), transaction.AddressFrom) {
+						erc20Token, err := i.tokenClient.ERC20(ctx, message.Network, logx.Address.String())
+						if err != nil {
+							return nil, err
+						}
+						tokenAmount = buildToken(erc20Token, event.TokenAmount)
+					}
+				}
+			}
 			partyMetadata, err := json.Marshal(metadata.PartyClaim{
 				Action:             filter.PartyBidClaim,
 				PartyInfo:          partyInfo,
 				Contributor:        strings.ToLower(event.Contributor.String()),
-				TotalContributed:   decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
-				ExcessContribution: decimal.NewFromBigInt(event.ExcessContribution, 0).Shift(-int32(native.Decimals)),
-				TokenAmount:        decimal.NewFromBigInt(event.TokenAmount, 0).Shift(-int32(native.Decimals)),
+				TotalContributed:   parseToken(native, event.TotalContributed),
+				ExcessContribution: parseToken(native, event.ExcessContribution),
+				TokenAmount:        tokenAmount,
 			})
 			if err != nil {
 				return nil, err
@@ -757,7 +790,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
@@ -778,7 +811,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFunding, internalTransaction.Type)
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFund, internalTransaction.Type)
 	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
@@ -845,9 +878,9 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 				Action:                          filter.PartyBidContribute,
 				PartyInfo:                       partyInfo,
 				Contributor:                     strings.ToLower(event.Contributor.String()),
-				Amount:                          decimal.NewFromBigInt(event.Amount, 0).Shift(-int32(native.Decimals)),
-				PreviousTotalContributedToParty: decimal.NewFromBigInt(event.PreviousTotalContributedToParty, 0).Shift(-int32(native.Decimals)),
-				TotalFromContributor:            decimal.NewFromBigInt(event.TotalFromContributor, 0).Shift(-int32(native.Decimals)),
+				Amount:                          parseToken(native, event.Amount),
+				PreviousTotalContributedToParty: parseToken(native, event.PreviousTotalContributedToParty),
+				TotalFromContributor:            parseToken(native, event.TotalFromContributor),
 			})
 			if err != nil {
 				return nil, err
@@ -858,7 +891,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(event.Contributor.String()),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
@@ -882,9 +915,9 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 				TokenId:          event.TokenId,
 				TriggeredBy:      strings.ToLower(event.TriggeredBy.String()),
 				TargetAddress:    strings.ToLower(event.TargetAddress.String()),
-				EthSpent:         decimal.NewFromBigInt(event.EthSpent, 0).Shift(-int32(native.Decimals)),
-				EthFeePaid:       decimal.NewFromBigInt(event.EthFeePaid, 0).Shift(-int32(native.Decimals)),
-				TotalContributed: decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
+				EthSpent:         parseToken(native, event.EthSpent),
+				EthFeePaid:       parseToken(native, event.EthFeePaid),
+				TotalContributed: parseToken(native, event.TotalContributed),
 			})
 			if err != nil {
 				return nil, err
@@ -895,7 +928,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
@@ -927,7 +960,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
@@ -945,13 +978,29 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
+			var tokenAmount *metadata.Token
+			if event.TokenAmount == big.NewInt(0) {
+				tokenAmount = nil
+			} else {
+				for _, logx := range receipt.Logs {
+					if logx.Topics[0] == erc20.EventHashTransfer &&
+						strings.EqualFold(common.HexToAddress(logx.Topics[1].Hex()).String(), transaction.AddressTo) &&
+						strings.EqualFold(common.HexToAddress(logx.Topics[2].Hex()).String(), transaction.AddressFrom) {
+						erc20Token, err := i.tokenClient.ERC20(ctx, message.Network, logx.Address.String())
+						if err != nil {
+							return nil, err
+						}
+						tokenAmount = buildToken(erc20Token, event.TokenAmount)
+					}
+				}
+			}
 			partyMetadata, err := json.Marshal(metadata.PartyClaim{
 				Action:             filter.PartyBidClaim,
 				PartyInfo:          partyInfo,
 				Contributor:        strings.ToLower(event.Contributor.String()),
-				TotalContributed:   decimal.NewFromBigInt(event.TotalContributed, 0).Shift(-int32(native.Decimals)),
-				ExcessContribution: decimal.NewFromBigInt(event.ExcessContribution, 0).Shift(-int32(native.Decimals)),
-				TokenAmount:        decimal.NewFromBigInt(event.TokenAmount, 0).Shift(-int32(native.Decimals)),
+				TotalContributed:   parseToken(native, event.TotalContributed),
+				ExcessContribution: parseToken(native, event.ExcessContribution),
+				TokenAmount:        tokenAmount,
 			})
 			if err != nil {
 				return nil, err
@@ -962,7 +1011,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 				Timestamp:       internalTransaction.Timestamp,
 				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
 				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFunding,
+				Type:            filter.CollectibleCrowdFund,
 				Index:           int64(log.Index),
 				AddressFrom:     strings.ToLower(transaction.AddressFrom),
 				AddressTo:       strings.ToLower(transaction.AddressTo),
@@ -983,7 +1032,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFunding, internalTransaction.Type)
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFund, internalTransaction.Type)
 	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
@@ -995,4 +1044,34 @@ func (i *internal) Jobs() []worker.Job {
 
 func New() worker.Worker {
 	return &internal{}
+}
+
+func parseToken(native *token.Native, value *big.Int) *metadata.Token {
+	tokenValue := decimal.NewFromBigInt(value, 0)
+	tokenValueDisplay := tokenValue.Shift(-int32(native.Decimals))
+	return &metadata.Token{
+		Name:         native.Name,
+		Symbol:       native.Symbol,
+		Decimals:     native.Decimals,
+		Standard:     protocol.TokenStandardNative,
+		Image:        native.Logo,
+		Value:        &tokenValue,
+		ValueDisplay: &tokenValueDisplay,
+	}
+}
+
+func buildToken(erc20Token *token.ERC20, value *big.Int) *metadata.Token {
+	tokenValue := decimal.NewFromBigInt(value, 0)
+	tokenValueDisplay := tokenValue.Shift(-int32(erc20Token.Decimals))
+
+	return &metadata.Token{
+		Name:            erc20Token.Name,
+		Symbol:          erc20Token.Symbol,
+		Decimals:        erc20Token.Decimals,
+		Standard:        protocol.TokenStandardERC20,
+		ContractAddress: strings.ToLower(erc20Token.ContractAddress),
+		Image:           erc20Token.Logo,
+		Value:           &tokenValue,
+		ValueDisplay:    &tokenValueDisplay,
+	}
 }

@@ -22,12 +22,12 @@ const (
 	ExchangeLiquidityWithdraw string = "withdraw"
 
 	// NFT types
-	CollectibleTransfer     string = "transfer"
-	CollectibleTrade        string = "trade"
-	CollectibleMint         string = "mint"
-	CollectibleBurn         string = "burn"
-	CollectiblePoap         string = "poap"
-	CollectibleCrowdFunding string = "crowdfunding"
+	CollectibleTransfer  string = "transfer"
+	CollectibleTrade     string = "trade"
+	CollectibleMint      string = "mint"
+	CollectibleBurn      string = "burn"
+	CollectiblePoap      string = "poap"
+	CollectibleCrowdFund string = "crowdfund"
 
 	PartyBid        string = "bid"
 	PartyBuy        string = "buy"
@@ -68,7 +68,7 @@ const (
 var ValidTypeMap = map[string][]string{
 	TagTransaction: {TransactionTransfer, TransactionMint, TransactionBurn},
 	TagExchange:    {ExchangeWithdraw, ExchangeDeposit, ExchangeSwap, ExchangeLiquidity},
-	TagCollectible: {CollectibleTransfer, CollectibleMint, CollectibleBurn, CollectiblePoap, CollectibleCrowdFunding},
+	TagCollectible: {CollectibleTransfer, CollectibleMint, CollectibleBurn, CollectiblePoap, CollectibleCrowdFund},
 	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike},
 	TagDonation:    {DonationLaunch, DonationDonate},
 	TagGovernance:  {GovernancePropose, GovernanceVote},
