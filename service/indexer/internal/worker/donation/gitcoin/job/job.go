@@ -16,9 +16,7 @@ import (
 
 var _ worker.Job = (*GitcoinProjectJob)(nil)
 
-type GitcoinProjectJob struct {
-	GitcoinProjectCacheKey string
-}
+type GitcoinProjectJob struct{}
 
 func (job *GitcoinProjectJob) Name() string {
 	return "gitcoin_project_job"
