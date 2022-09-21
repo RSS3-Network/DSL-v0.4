@@ -18,8 +18,10 @@ var _ worker.Job = (*GitcoinProjectJob)(nil)
 
 type GitcoinProjectJob struct{}
 
+type GetcoinAllGrantJob struct{}
+
 func (job *GitcoinProjectJob) Name() string {
-	return "gitcoin_project_job"
+	return "gitcoin_relatest_project_job"
 }
 
 func (job *GitcoinProjectJob) Spec() string {
@@ -27,6 +29,18 @@ func (job *GitcoinProjectJob) Spec() string {
 }
 
 func (job *GitcoinProjectJob) Timeout() time.Duration {
+	return time.Minute * 5
+}
+
+func (job *GetcoinAllGrantJob) Name() string {
+	return "gitcoin_all_grant_job"
+}
+
+func (job *GetcoinAllGrantJob) Spec() string {
+	return "0 0 * * *"
+}
+
+func (job *GetcoinAllGrantJob) Timeout() time.Duration {
 	return time.Minute * 5
 }
 
@@ -49,7 +63,7 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 		latestProject.ID += 1
 
 		// request api
-		newProject, err := job.requestGitcoinGrantApi(latestProject.ID)
+		newProject, err := requestGitcoinGrantApi(latestProject.ID)
 		if err != nil || newProject == nil || newProject.ID == 0 {
 			continue
 		}
@@ -70,7 +84,49 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 	return nil
 }
 
-func (job *GitcoinProjectJob) requestGitcoinGrantApi(id int) (*donation.GitcoinProject, error) {
+func (job *GetcoinAllGrantJob) Run(renewal worker.RenewalFunc) error {
+	page := 0
+	for {
+		donations := []*donation.GitcoinProject{}
+
+		if err := database.Global().
+			Model(&donation.GitcoinProject{}).
+			Order("id").
+			Limit(100).
+			Offset(page * 100).
+			Find(&donations).Error; err != nil {
+			logrus.Errorf("[gitcoin job] GetcoinAllGrantJob: db error: %v", err)
+			return err
+		}
+
+		if len(donations) == 0 {
+			return nil
+		}
+
+		for _, donation := range donations {
+			// request api
+			gitcoin, err := requestGitcoinGrantApi(donation.ID)
+			if err != nil || gitcoin == nil {
+				continue
+			}
+
+			gitcoin.AdminAddress = strings.ToLower(gitcoin.AdminAddress)
+
+			// set db
+			if err := database.Global().
+				Clauses(clause.OnConflict{
+					UpdateAll: true,
+				}).
+				Create(gitcoin).Error; err != nil {
+				continue
+			}
+		}
+
+		page += 1
+	}
+}
+
+func requestGitcoinGrantApi(id int) (*donation.GitcoinProject, error) {
 	var (
 		url      = fmt.Sprintf("https://gitcoin.co/grants/v1/api/grant/%v", id)
 		client   = resty.New()

@@ -339,6 +339,7 @@ func (s *service) handlerGitcoinZkSync(ctx context.Context, message *protocol.Me
 func (s *service) Jobs() []worker.Job {
 	return []worker.Job{
 		&job.GitcoinProjectJob{},
+		&job.GetcoinAllGrantJob{},
 	}
 }
 
