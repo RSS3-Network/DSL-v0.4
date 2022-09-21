@@ -43,6 +43,7 @@ func (h *Handler) GetProfilesFunc(c echo.Context) error {
 
 	if len(profileList) == 0 || request.Refresh {
 		// refresh profile
+		h.initializeIndexerStatus(ctx, request.Address)
 		go h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, IgnoreNote: true})
 	}
 
@@ -84,7 +85,8 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 		// publish mq message
 		go func() {
 			for _, address := range request.Address {
-				go h.publishIndexerMessage(ctx, protocol.Message{Address: address, IgnoreNote: true})
+				h.initializeIndexerStatus(ctx, address)
+				h.publishIndexerMessage(ctx, protocol.Message{Address: address, IgnoreNote: true})
 				time.Sleep(500 * time.Millisecond)
 			}
 		}()

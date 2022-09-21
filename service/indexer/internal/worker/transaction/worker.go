@@ -429,16 +429,18 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 				return &transfer, nil
 			}
 
-			tokenMetadata.Name = nft.Name
-			tokenMetadata.Collection = nft.Collection
-			tokenMetadata.Symbol = nft.Symbol
-			tokenMetadata.Description = nft.Description
-			tokenMetadata.ID = nft.ID.String()
-			tokenMetadata.Image = nft.Image
-			tokenMetadata.ContractAddress = nft.ContractAddress
-			tokenMetadata.AnimationURL = nft.AnimationURL
-			tokenMetadata.ExternalLink = nft.ExternalLink
-			tokenMetadata.Standard = nft.Standard
+			tokenMetadata = &metadata.Token{
+				Name:            nft.Name,
+				Collection:      nft.Collection,
+				Symbol:          nft.Symbol,
+				Description:     nft.Description,
+				ID:              nft.ID.String(),
+				Image:           nft.Image,
+				ContractAddress: nft.ContractAddress,
+				AnimationURL:    nft.AnimationURL,
+				ExternalLink:    nft.ExternalLink,
+				Standard:        nft.Standard,
+			}
 
 			for _, attribute := range nft.Attributes {
 				tokenMetadata.Attributes = append(tokenMetadata.Attributes, metadata.TokenAttribute{

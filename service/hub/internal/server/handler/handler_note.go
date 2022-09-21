@@ -81,6 +81,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
+		h.initializeIndexerStatus(ctx, request.Address)
 		go h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
 	}
 
@@ -385,14 +386,15 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 	}
 
 	// publish mq message
-	go func() {
-		if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
+	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
+		go func() {
 			for _, address := range request.Address {
-				go h.publishIndexerMessage(ctx, protocol.Message{Address: address})
+				h.initializeIndexerStatus(ctx, address)
+				h.publishIndexerMessage(ctx, protocol.Message{Address: address})
 				time.Sleep(500 * time.Millisecond)
 			}
-		}
-	}()
+		}()
+	}
 
 	transactionHashes := make([]string, 0)
 	for _, transactionHash := range transactions {

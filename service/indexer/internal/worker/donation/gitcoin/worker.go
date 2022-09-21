@@ -67,7 +67,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
-		transfers := []model.Transfer{}
+		var transfers []model.Transfer
 		var err error
 
 		switch {
