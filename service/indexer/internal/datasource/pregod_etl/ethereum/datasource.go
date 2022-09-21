@@ -1,0 +1,163 @@
+package ethereum
+
+import (
+	"context"
+	"encoding/hex"
+	"fmt"
+	"strings"
+
+	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	eth_etl "github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
+)
+
+const (
+	Source = "ethereum-etl"
+)
+
+var _ datasource.Datasource = &Datasource{}
+
+type Datasource struct{}
+
+func (d *Datasource) Name() string {
+	return Source
+}
+
+func (d *Datasource) Networks() []string {
+	return []string{
+		protocol.NetworkEthereum,
+	}
+}
+
+func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	tracer := otel.Tracer("datasource_etl")
+	ctx, trace := tracer.Start(ctx, "datasource_etl:Handle")
+
+	transactions := make([]*model.Transaction, 0)
+	var err error
+	defer func() { opentelemetry.Log(trace, message, len(transactions), err) }()
+
+	transactionMap, err := d.getAllAssetTransferHashes(ctx, message)
+	if err != nil {
+		loggerx.Global().Error("failed to get all asset transfer hashes", zap.Error(err))
+
+		return nil, err
+	}
+
+	// Get all block and transaction data
+	for _, transaction := range transactionMap {
+		internalTransaction := transaction
+
+		if internalTransaction.BlockNumber < message.BlockNumber {
+			continue
+		}
+
+		if internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) && !allowlist.AllowList.Contains(internalTransaction.AddressFrom) {
+			continue
+		}
+
+		transactions = append(transactions, &internalTransaction)
+	}
+
+	if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
+		loggerx.Global().Error("failed to build transactions", zap.Error(err))
+
+		return nil, err
+	}
+
+	internalTransactions := make([]model.Transaction, 0)
+
+	for _, transaction := range transactions {
+		if transaction != nil {
+			internalTransactions = append(internalTransactions, *transaction)
+		}
+	}
+
+	return internalTransactions, nil
+}
+
+func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *protocol.Message) (map[string]model.Transaction, error) {
+	tracer := otel.Tracer("datasource_etl")
+	ctx, trace := tracer.Start(ctx, "datasource_etl:getAllAssetTransferHashes")
+	internalTransactionMap := make(map[string]model.Transaction)
+	var err error
+	defer func() { opentelemetry.Log(trace, message, internalTransactionMap, err) }()
+
+	parameter := eth_etl.GetAssetTransfersParameter{
+		FromAddress: strings.ToLower(message.Address),
+		MaxCount:    eth_etl.MaxCount,
+		FromBlock:   message.BlockNumber,
+	}
+
+	// Get the transactions sent from this address
+	internalTransactions, err := d.getAssetTransactionHashes(ctx, message, parameter)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, transaction := range internalTransactions {
+		internalTransactionMap[transaction.Hash] = transaction
+	}
+
+	return internalTransactionMap, nil
+}
+
+func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *protocol.Message, parameter eth_etl.GetAssetTransfersParameter) ([]model.Transaction, error) {
+	tracer := otel.Tracer("datasource_etl")
+	_, trace := tracer.Start(ctx, "datasource_etl:Handle")
+	internalTransactions := make([]model.Transaction, 0)
+
+	var err error
+	defer func() { opentelemetry.Log(trace, message, len(internalTransactions), err) }()
+
+	pageSize := 0
+	for {
+		var result *eth_etl.GetAssetTransfersResult
+		parameter.PageSize = pageSize
+		result, err = eth_etl.GetAssetTransfers(context.Background(), parameter)
+
+		if len(result.Transfers) == 0 {
+			break
+		}
+
+		for _, transfer := range result.Transfers {
+
+			transaction := model.Transaction{
+				BlockNumber: transfer.BlockNum,
+				Hash:        AppendHexPrefix(hex.EncodeToString(transfer.Hash)),
+				Network:     message.Network,
+				Source:      d.Name(),
+				Transfers:   make([]model.Transfer, 0),
+			}
+
+			if transfer.Category == eth_etl.CategoryExternal {
+				transaction.AddressFrom = AppendHexPrefix(hex.EncodeToString(transfer.From))
+				transaction.AddressTo = AppendHexPrefix(hex.EncodeToString(transfer.To))
+			}
+
+			internalTransactions = append(internalTransactions, transaction)
+		}
+
+		if len(result.Transfers) < eth_etl.MaxCount {
+			break
+		}
+		pageSize++
+	}
+
+	return internalTransactions, nil
+}
+
+func New() datasource.Datasource {
+	return &Datasource{}
+}
+
+func AppendHexPrefix(hexaString string) string {
+	return fmt.Sprintf("%s%s", "0x", hexaString)
+}

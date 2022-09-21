@@ -32,6 +32,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
+	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
@@ -102,6 +103,13 @@ func (s *Server) Initialize() (err error) {
 
 	database.ReplaceGlobal(databaseClient)
 
+	ethDbClient, err := database.Dial(s.config.EthereumEtl.String(), false)
+	if err != nil {
+		return err
+	}
+
+	database.ReplaceEthDb(ethDbClient)
+
 	redisClient, err := cache.Dial(s.config.Redis)
 	if err != nil {
 		return err
@@ -138,6 +146,7 @@ func (s *Server) Initialize() (err error) {
 		blockscoutDatasource,
 		zksync.New(),
 		lensDatasource,
+		eth_etl.New(),
 	}
 
 	swapWorker, err := swap.New(s.employer)
