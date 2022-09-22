@@ -39,7 +39,7 @@ func (job *GitcoinAllGrantJob) Name() string {
 }
 
 func (job *GitcoinAllGrantJob) Spec() string {
-	return "CRON_TZ=Asia/Shanghai 0 15 * * *"
+	return "CRON_TZ=Asia/Shanghai 0 16 * * *"
 }
 
 func (job *GitcoinAllGrantJob) Timeout() time.Duration {
@@ -87,6 +87,7 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 }
 
 func (job *GitcoinAllGrantJob) Run(renewal worker.RenewalFunc) error {
+	logrus.Info("[gitcoin job] GitcoinAllGrantJob run")
 	page := 0
 	for {
 		donations := []*donation.GitcoinProject{}
