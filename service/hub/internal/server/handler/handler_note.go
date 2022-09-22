@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
@@ -387,13 +386,11 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		go func() {
-			for _, address := range request.Address {
-				h.initializeIndexerStatus(ctx, address)
-				h.publishIndexerMessage(ctx, protocol.Message{Address: address})
-				time.Sleep(500 * time.Millisecond)
-			}
-		}()
+		for _, address := range request.Address {
+			h.initializeIndexerStatus(ctx, address)
+
+			go h.publishIndexerMessage(ctx, protocol.Message{Address: address})
+		}
 	}
 
 	transactionHashes := make([]string, 0)
