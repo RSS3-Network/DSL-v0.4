@@ -221,8 +221,7 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 	}
 
 	// get content pointed
-
-	post.Target, err = c.GetContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed)
+	_, post.Target, err = c.GetContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: getContenPointed error, %v", err)
 		return err
