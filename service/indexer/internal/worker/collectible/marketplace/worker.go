@@ -163,7 +163,8 @@ func (i *internal) handleOpenSea(ctx context.Context, message *protocol.Message,
 
 				var transferLogIndex int64
 				for _, logForIndex := range receipt.Logs {
-					if logForIndex.Topics[0] == erc721.EventHashTransfer &&
+					if len(logForIndex.Topics) == 4 &&
+						logForIndex.Topics[0] == erc721.EventHashTransfer &&
 						strings.EqualFold(common.HexToAddress(logForIndex.Topics[1].Hex()).String(), event.Offerer.String()) &&
 						strings.EqualFold(common.HexToAddress(logForIndex.Topics[2].Hex()).String(), event.Recipient.String()) &&
 						strings.EqualFold(logForIndex.Topics[3].Big().String(), nft.ID.String()) {
