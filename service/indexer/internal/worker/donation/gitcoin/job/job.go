@@ -39,11 +39,11 @@ func (job *GitcoinAllGrantJob) Name() string {
 }
 
 func (job *GitcoinAllGrantJob) Spec() string {
-	return "CRON_TZ=Asia/Shanghai 0 17 * * *"
+	return "CRON_TZ=Asia/Shanghai 0 1 * * *"
 }
 
 func (job *GitcoinAllGrantJob) Timeout() time.Duration {
-	return time.Hour * 5
+	return time.Minute * 5
 }
 
 func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
