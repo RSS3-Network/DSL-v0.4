@@ -18,7 +18,7 @@ var _ worker.Job = (*GitcoinProjectJob)(nil)
 
 type GitcoinProjectJob struct{}
 
-type GetcoinAllGrantJob struct{}
+type GitcoinAllGrantJob struct{}
 
 func (job *GitcoinProjectJob) Name() string {
 	return "gitcoin_relatest_project_job"
@@ -32,15 +32,15 @@ func (job *GitcoinProjectJob) Timeout() time.Duration {
 	return time.Minute * 5
 }
 
-func (job *GetcoinAllGrantJob) Name() string {
+func (job *GitcoinAllGrantJob) Name() string {
 	return "gitcoin_all_grant_job"
 }
 
-func (job *GetcoinAllGrantJob) Spec() string {
-	return "0 0 * * *"
+func (job *GitcoinAllGrantJob) Spec() string {
+	return "CRON_TZ=Asia/Shanghai 0 12 * * *"
 }
 
-func (job *GetcoinAllGrantJob) Timeout() time.Duration {
+func (job *GitcoinAllGrantJob) Timeout() time.Duration {
 	return time.Minute * 5
 }
 
@@ -84,7 +84,7 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 	return nil
 }
 
-func (job *GetcoinAllGrantJob) Run(renewal worker.RenewalFunc) error {
+func (job *GitcoinAllGrantJob) Run(renewal worker.RenewalFunc) error {
 	page := 0
 	for {
 		donations := []*donation.GitcoinProject{}
