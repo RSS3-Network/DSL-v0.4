@@ -39,11 +39,11 @@ func (job *GitcoinAllGrantJob) Name() string {
 }
 
 func (job *GitcoinAllGrantJob) Spec() string {
-	return "CRON_TZ=Asia/Shanghai 0 16 * * *"
+	return "CRON_TZ=Asia/Shanghai 0 17 * * *"
 }
 
 func (job *GitcoinAllGrantJob) Timeout() time.Duration {
-	return time.Minute * 5
+	return time.Hour * 5
 }
 
 func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
@@ -88,45 +88,37 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 
 func (job *GitcoinAllGrantJob) Run(renewal worker.RenewalFunc) error {
 	logrus.Info("[gitcoin job] GitcoinAllGrantJob run")
-	page := 0
-	for {
-		donations := []*donation.GitcoinProject{}
 
-		if err := database.Global().
-			Model(&donation.GitcoinProject{}).
-			Order("id").
-			Limit(100).
-			Offset(page * 100).
-			Find(&donations).Error; err != nil {
-			logrus.Errorf("[gitcoin job] GetcoinAllGrantJob: db error: %v", err)
-			return err
-		}
-
-		if len(donations) == 0 {
-			return nil
-		}
-
-		for _, donation := range donations {
-			// request api
-			gitcoin, err := requestGitcoinGrantApi(donation.ID)
-			if err != nil || gitcoin == nil {
-				continue
-			}
-
-			gitcoin.AdminAddress = strings.ToLower(gitcoin.AdminAddress)
-
-			// set db
-			if err := database.Global().
-				Clauses(clause.OnConflict{
-					UpdateAll: true,
-				}).
-				Create(gitcoin).Error; err != nil {
-				continue
-			}
-		}
-
-		page += 1
+	latestProject := &donation.GitcoinProject{}
+	if err := database.Global().
+		Model(&donation.GitcoinProject{}).
+		Order("id DESC").
+		First(&latestProject).Error; err != nil {
+		logrus.Errorf("[gitcoin job] get latest grant, db error: %v", err)
+		return err
 	}
+
+	for id := 0; id < latestProject.ID; id++ {
+		time.Sleep(100 * time.Millisecond)
+		// request api
+		gitcoin, err := requestGitcoinGrantApi(id)
+		if err != nil || gitcoin == nil {
+			continue
+		}
+
+		gitcoin.AdminAddress = strings.ToLower(gitcoin.AdminAddress)
+
+		// set db
+		if err := database.Global().
+			Clauses(clause.OnConflict{
+				UpdateAll: true,
+			}).
+			Create(gitcoin).Error; err != nil {
+			continue
+		}
+	}
+
+	return nil
 }
 
 func requestGitcoinGrantApi(id int) (*donation.GitcoinProject, error) {
