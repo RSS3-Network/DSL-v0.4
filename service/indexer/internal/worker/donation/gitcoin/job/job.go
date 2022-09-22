@@ -37,7 +37,7 @@ func (job *GitcoinAllGrantJob) Name() string {
 }
 
 func (job *GitcoinAllGrantJob) Spec() string {
-	return "CRON_TZ=Asia/Shanghai 0 12 * * *"
+	return "CRON_TZ=Asia/Shanghai 0 15 * * *"
 }
 
 func (job *GitcoinAllGrantJob) Timeout() time.Duration {
