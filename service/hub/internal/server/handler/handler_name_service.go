@@ -190,7 +190,7 @@ func ResolveSpaceID(input string) (string, error) {
 	var result string
 	ethereumClient, err := ethclientx.Global(protocol.NetworkBinanceSmartChain)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to polygon rpc: %s", err)
+		return "", fmt.Errorf("failed to connect to bsc rpc: %s", err)
 	}
 
 	spaceidContract, err := spaceidcontract.NewSpaceid(spaceid.AddressSpaceID, ethereumClient)
