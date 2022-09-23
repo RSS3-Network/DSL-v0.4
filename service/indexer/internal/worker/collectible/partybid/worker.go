@@ -376,7 +376,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 	partyInfo.TotalContributed = parseToken(native, total)
-	
+
 	for _, log := range receipt.Logs {
 		switch log.Topics[0] {
 		case party.EventHashContributed:
@@ -469,7 +469,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, resTx.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFund, internalTransaction.Type)
+	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFund, internalTransaction.Type)
 	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
