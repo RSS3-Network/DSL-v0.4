@@ -7,7 +7,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 )
 
@@ -69,35 +68,7 @@ func CheckAPIKey(apiKey string) error {
 
 // TranslateAddress translate handles into an address
 func TranslateAddress(address string) (string, error) {
-	result := address
+	result := handler.ReverseResolveAll(strings.ToLower(address), false)
 
-	splits := strings.Split(address, ".")
-
-	if len(splits) < 2 {
-		return strings.ToLower(result), nil
-	}
-
-	switch splits[len(splits)-1] {
-	case "eth":
-		nsResult, err := ens.Resolve(address)
-		if err != nil {
-			return "", fmt.Errorf("failed to resolve ENS address %s: %s", address, err)
-		}
-
-		result = nsResult
-	case "csb":
-		nsResult, err := handler.ResolveCrossbell(address)
-		if err != nil {
-			return "", fmt.Errorf("failed to resolve Crossbell address %s: %s", address, err)
-		}
-		result = nsResult
-	case "lens":
-		nsResult, err := handler.ResolveLens(address)
-		if err != nil {
-			return "", fmt.Errorf("failed to resolve Lens address %s: %s", address, err)
-		}
-		result = nsResult
-	}
-
-	return strings.ToLower(result), nil
+	return strings.ToLower(result.Address), nil
 }
