@@ -32,7 +32,7 @@ func GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter
 	blockNum := parameter.FromBlock
 	maxCount := parameter.MaxCount
 	pageSize := parameter.PageSize
-	err := database.EthDb().Raw("select 'external' as category, value,block_number, hash, from_address, to_address from ethereum.transactions where block_number >= ? and from_address = ? and value > 0 UNION ALL select '' as category , value,block_number,transaction_hash as hash, from_address, to_address from ethereum.token_transfers where block_number >= ? and from_address = ? and  (value > 0 or value is null) order by block_number limit ? offset ?", blockNum, fromAddress, blockNum, fromAddress, maxCount, pageSize*maxCount).
+	err := database.EthDb().Raw("select 'external' as category, value,block_number, hash, from_address, to_address from ethereum.transactions where block_number >= ? and from_address = ? UNION ALL select '' as category , value,block_number,transaction_hash as hash, from_address, to_address from ethereum.token_transfers where block_number >= ? and from_address = ? order by block_number limit ? offset ?", blockNum, fromAddress, blockNum, fromAddress, maxCount, pageSize*maxCount).
 		Scan(&result.Transfers).WithContext(ctx).Error
 	if err != nil {
 		return nil, err
