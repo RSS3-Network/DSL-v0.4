@@ -1,6 +1,7 @@
 package job
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -39,7 +40,7 @@ func (job *GitcoinAllGrantJob) Name() string {
 }
 
 func (job *GitcoinAllGrantJob) Spec() string {
-	return "CRON_TZ=Asia/Shanghai 0 1 * * *"
+	return "CRON_TZ=Asia/Shanghai 0 13 * * *"
 }
 
 func (job *GitcoinAllGrantJob) Timeout() time.Duration {
@@ -98,8 +99,19 @@ func (job *GitcoinAllGrantJob) Run(renewal worker.RenewalFunc) error {
 		return err
 	}
 
+	cctx, cancel := context.WithCancel(context.Background())
+	go func(cctx context.Context) {
+		for {
+			time.Sleep(time.Minute)
+			_ = renewal(context.Background(), 5*time.Minute)
+		}
+	}(cctx)
+
+	defer cancel()
+
 	for id := 0; id < latestProject.ID; id++ {
 		time.Sleep(100 * time.Millisecond)
+
 		// request api
 		gitcoin, err := requestGitcoinGrantApi(id)
 		if err != nil || gitcoin == nil {
