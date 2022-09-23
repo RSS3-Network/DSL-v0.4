@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -173,7 +174,6 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 			if err != nil {
 				return nil, err
 			}
-
 			partyMetadata, err := json.Marshal(metadata.Party{
 				PartyAddress:  strings.ToLower(event.PartyBidProxy.String()),
 				Name:          event.Name,
@@ -189,25 +189,7 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(event.Creator.String()),
-				AddressTo:       strings.ToLower(party.AddressPartyBidDeployed.String()),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyBid, strings.ToLower(event.PartyBidProxy.String())), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyBid)
 		}
 	}
 
@@ -243,7 +225,6 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 	if err != nil {
 		return nil, err
 	}
-
 	for _, log := range receipt.Logs {
 		if log.Topics[0] == party.EventHashPartyBuyDeployed {
 			event, err := partybuyFacContract.ParsePartyBuyDeployed(*log)
@@ -266,25 +247,7 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(event.Creator.String()),
-				AddressTo:       strings.ToLower(party.AddressPartyBuyDeployed.String()),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyBuy, strings.ToLower(event.PartyProxy.String())), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyBuy)
 		}
 	}
 
@@ -320,7 +283,6 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 	if err != nil {
 		return nil, err
 	}
-
 	for _, log := range receipt.Logs {
 		if log.Topics[0] == party.EventHashCollectionPartyDeployed {
 			event, err := partycolFacContract.ParseCollectionPartyDeployed(*log)
@@ -343,25 +305,7 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(event.Creator.String()),
-				AddressTo:       strings.ToLower(party.AddressCollectionPartyDeployed.String()),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyCollection, strings.ToLower(event.PartyProxy.String())), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyCollection)
 		}
 	}
 
@@ -420,6 +364,10 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 	if market, err = partybidContract.MarketWrapper(&bind.CallOpts{}); err != nil {
 		return nil, err
 	}
+	total, err := partybidContract.TotalContributedToParty(&bind.CallOpts{})
+	if err != nil {
+		return nil, err
+	}
 	partyInfo.MarketWrapper = party.AddressMapToMarket[market.String()]
 	partyInfo.PartyType = filter.PartyBid
 
@@ -427,7 +375,8 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 	if err != nil || native == nil {
 		return nil, err
 	}
-
+	partyInfo.TotalContributed = parseToken(native, total)
+	
 	for _, log := range receipt.Logs {
 		switch log.Topics[0] {
 		case party.EventHashContributed:
@@ -446,25 +395,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(event.Contributor.String()),
-				AddressTo:       strings.ToLower(transaction.AddressTo),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyBid, strings.ToLower(transaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyBid)
 		case party.EventHashBid:
 			event, err := partybidContract.ParseBid(*log)
 			if err != nil {
@@ -478,25 +409,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(transaction.AddressFrom),
-				AddressTo:       strings.ToLower(transaction.AddressTo),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyBid, strings.ToLower(transaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyBid)
 		case party.EventHashFinalized:
 			event, err := partybidContract.ParseFinalized(*log)
 			if err != nil {
@@ -513,25 +426,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(transaction.AddressFrom),
-				AddressTo:       strings.ToLower(transaction.AddressTo),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyBid, strings.ToLower(transaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyBid)
 		case party.EventHashClaimed:
 			event, err := partybidContract.ParseClaimed(*log)
 			if err != nil {
@@ -559,31 +454,12 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 				Contributor:        strings.ToLower(event.Contributor.String()),
 				TotalContributed:   parseToken(native, event.TotalContributed),
 				ExcessContribution: parseToken(native, event.ExcessContribution),
-				// todo other erc20 token
-				TokenAmount: tokenAmount,
+				TokenAmount:        tokenAmount,
 			})
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(transaction.AddressFrom),
-				AddressTo:       strings.ToLower(transaction.AddressTo),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyBid, strings.ToLower(transaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyBid)
 		default:
 			continue
 		}
@@ -593,7 +469,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 		return nil, errors.New("not found partybid tx")
 	}
 
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFund, internalTransaction.Type)
+	internalTransaction.Tag, resTx.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleCrowdFund, internalTransaction.Type)
 	internalTransaction.Platform = protocol.PlatformPartyBid
 
 	return &internalTransaction, nil
@@ -641,11 +517,15 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 	partyInfo.MarketWrapper = party.AddressMapToMarket["opensea"]
-
+	total, err := partybuyContract.TotalContributedToParty(&bind.CallOpts{})
+	if err != nil {
+		return nil, err
+	}
 	native, err := i.tokenClient.Native(ctx, message.Network)
 	if err != nil {
 		return nil, err
 	}
+	partyInfo.TotalContributed = parseToken(native, total)
 
 	for _, log := range receipt.Logs {
 		switch log.Topics[0] {
@@ -665,25 +545,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(event.Contributor.String()),
-				AddressTo:       strings.ToLower(transaction.AddressTo),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyBuy, strings.ToLower(transaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyBuy)
 		case party.EventHashPbBought:
 			event, err := partybuyContract.ParseBought(*log)
 			if err != nil {
@@ -701,25 +563,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(transaction.AddressFrom),
-				AddressTo:       strings.ToLower(transaction.AddressTo),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyBuy, strings.ToLower(transaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyBuy)
 		case party.EventHashPbExpired:
 			event, err := partybuyContract.ParseExpired(*log)
 			if err != nil {
@@ -733,25 +577,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(transaction.AddressFrom),
-				AddressTo:       strings.ToLower(transaction.AddressTo),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyBuy, strings.ToLower(transaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyBuy)
 		case party.EventHashClaimed:
 			event, err := partybuyContract.ParseClaimed(*log)
 			if err != nil {
@@ -784,25 +610,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(transaction.AddressFrom),
-				AddressTo:       strings.ToLower(transaction.AddressTo),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyBuy, strings.ToLower(transaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyBuy)
 		default:
 			continue
 		}
@@ -861,11 +669,15 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 	}
 	partyInfo.MarketWrapper = party.AddressMapToMarket["opensea"]
 	partyInfo.PartyType = filter.PartyCollection
-
+	total, err := partycoContract.TotalContributedToParty(&bind.CallOpts{})
+	if err != nil {
+		return nil, err
+	}
 	native, err := i.tokenClient.Native(ctx, message.Network)
 	if err != nil {
 		return nil, err
 	}
+	partyInfo.TotalContributed = parseToken(native, total)
 
 	for _, log := range receipt.Logs {
 		switch log.Topics[0] {
@@ -885,25 +697,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(event.Contributor.String()),
-				AddressTo:       strings.ToLower(transaction.AddressTo),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyCollection, strings.ToLower(transaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyCollection)
 		case party.EventHashPcBought:
 			event, err := partycoContract.ParseBought(*log)
 			if err != nil {
@@ -922,25 +716,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(transaction.AddressFrom),
-				AddressTo:       strings.ToLower(transaction.AddressTo),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyCollection, strings.ToLower(transaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyCollection)
 		case party.EventHashPcExpired:
 			event, err := partycoContract.ParseExpired(*log)
 			if err != nil {
@@ -954,25 +730,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(transaction.AddressFrom),
-				AddressTo:       strings.ToLower(transaction.AddressTo),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyCollection, strings.ToLower(transaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyCollection)
 		case party.EventHashClaimed:
 			event, err := partycoContract.ParseClaimed(*log)
 			if err != nil {
@@ -1005,25 +763,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 			if err != nil {
 				return nil, err
 			}
-
-			internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
-				TransactionHash: internalTransaction.Hash,
-				Timestamp:       internalTransaction.Timestamp,
-				BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
-				Tag:             filter.TagCollectible,
-				Type:            filter.CollectibleCrowdFund,
-				Index:           int64(log.Index),
-				AddressFrom:     strings.ToLower(transaction.AddressFrom),
-				AddressTo:       strings.ToLower(transaction.AddressTo),
-				Metadata:        partyMetadata,
-				Network:         internalTransaction.Network,
-				Platform:        protocol.PlatformPartyBid,
-				Source:          ethereum.Source,
-				RelatedUrls: party.BuildURL(
-					[]string{},
-					append([]string{}, party.BuildPartyURL(filter.PartyCollection, strings.ToLower(transaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
-				),
-			})
+			internalTransaction = buildInternalTransfer(internalTransaction, log, partyMetadata, filter.PartyCollection)
 		default:
 			continue
 		}
@@ -1074,4 +814,26 @@ func buildToken(erc20Token *token.ERC20, value *big.Int) *metadata.Token {
 		Value:           &tokenValue,
 		ValueDisplay:    &tokenValueDisplay,
 	}
+}
+
+func buildInternalTransfer(internalTransaction model.Transaction, log *types.Log, partyMetadata json.RawMessage, partyType string) model.Transaction {
+	internalTransaction.Transfers = append(internalTransaction.Transfers, model.Transfer{
+		TransactionHash: internalTransaction.Hash,
+		Timestamp:       internalTransaction.Timestamp,
+		BlockNumber:     big.NewInt(internalTransaction.BlockNumber),
+		Tag:             filter.TagCollectible,
+		Type:            filter.CollectibleCrowdFund,
+		Index:           int64(log.Index),
+		AddressFrom:     strings.ToLower(internalTransaction.AddressFrom),
+		AddressTo:       strings.ToLower(internalTransaction.AddressTo),
+		Metadata:        partyMetadata,
+		Network:         internalTransaction.Network,
+		Platform:        protocol.PlatformPartyBid,
+		Source:          ethereum.Source,
+		RelatedUrls: party.BuildURL(
+			[]string{},
+			append([]string{}, party.BuildPartyURL(partyType, strings.ToLower(internalTransaction.AddressTo)), ethereum.BuildScanURL(internalTransaction.Network, internalTransaction.Hash))...,
+		),
+	})
+	return internalTransaction
 }
