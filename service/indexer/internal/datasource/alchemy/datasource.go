@@ -2,12 +2,9 @@ package alchemy
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/json"
 	"errors"
 	"math/big"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
@@ -19,8 +16,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
-	rabbitmqx "github.com/naturalselectionlabs/pregod/service/indexer/internal/rabbitmq"
-	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -166,29 +161,34 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 		if err != nil {
 			loggerx.Global().Error("failed to get asset transfers", zap.Error(err))
 
-			// retry
-			if message.Retry < 2 {
-				go func(message *protocol.Message) {
-					delay, err := rand.Int(rand.Reader, big.NewInt(30))
-					if err != nil {
-						delay = big.NewInt(10)
-					}
+			// key := fmt.Sprintf("indexer:%v:%v", message.Address, message.Network)
+			// if n, _ := cache.Global().Exists(ctx, key).Result(); n == 1 {
+			// 	return nil, err
+			// }
 
-					time.Sleep(time.Duration(delay.Int64()) * time.Second)
-					message.Retry += 1
-					messageData, err := json.Marshal(&message)
-					if err != nil {
-						return
-					}
+			// // retry
+			// if message.Retry < 2 {
+			// 	go func(message *protocol.Message) {
+			// 		delay, err := rand.Int(rand.Reader, big.NewInt(30))
+			// 		if err != nil {
+			// 			delay = big.NewInt(10)
+			// 		}
 
-					if err := rabbitmqx.GetRabbitmqChannel().Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
-						ContentType: protocol.ContentTypeJSON,
-						Body:        messageData,
-					}); err != nil {
-						return
-					}
-				}(message)
-			}
+			// 		time.Sleep(time.Duration(delay.Int64()) * time.Second)
+			// 		message.Retry += 1
+			// 		messageData, err := json.Marshal(&message)
+			// 		if err != nil {
+			// 			return
+			// 		}
+
+			// 		if err := rabbitmqx.GetRabbitmqChannel().Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
+			// 			ContentType: protocol.ContentTypeJSON,
+			// 			Body:        messageData,
+			// 		}); err != nil {
+			// 			return
+			// 		}
+			// 	}(message)
+			// }
 
 			return nil, err
 		}

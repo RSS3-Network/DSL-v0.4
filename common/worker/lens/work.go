@@ -221,8 +221,7 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 	}
 
 	// get content pointed
-
-	post.Target, err = c.GetContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed)
+	_, post.Target, err = c.GetContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleCommentCreated: getContenPointed error, %v", err)
 		return err
@@ -294,14 +293,14 @@ func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.
 	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 
 	// get content
-	share, err := c.GetContenPointed(ctx, event.ProfileId, event.PubId)
+	content, share, err := c.GetContenPointed(ctx, event.ProfileId, event.PubId)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleMirrorCreated: getContenPointed error, %v", err)
 		return err
 	}
 
 	// get content pointed
-	share.Target, err = c.GetContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed)
+	_, share.Target, err = c.GetContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleMirrorCreated: getContenPointed error, %v", err)
 		return err
@@ -312,47 +311,49 @@ func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.
 		return err
 	}
 
+	transfer.Platform = content.AppId
 	transfer.Metadata = rawMetadata
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialShare, transfer.Type)
 	transfer.RelatedUrls = []string{
 		c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId),
 		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
+		content.ExternalURL,
 	}
 
 	return nil
 }
 
-func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId *big.Int) (*metadata.Post, error) {
+func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId *big.Int) (*LensContent, *metadata.Post, error) {
 	// rpc
 	ethclient, err := ethclientx.Global(protocol.NetworkPolygon)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	iLensHub, err := contract.NewILensHub(lens.HubProxyContractAddress, ethclient)
 	if err != nil {
 		logrus.Errorf("[lens worker] NewILensHub error, %v", err)
 
-		return nil, err
+		return nil, nil, err
 	}
 
 	contentURI, err := iLensHub.GetContentURI(&bind.CallOpts{}, profileId, pubId)
 	if err != nil {
 		logrus.Errorf("[lens worker] iLensHub GetContentURI error, %v", err)
 
-		return nil, err
+		return nil, nil, err
 	}
 
 	// get content
 	content, err := ipfs.GetFileByURL(contentURI)
 	if err != nil {
 		logrus.Errorf("[lens worker] getContenPointed: getContent error, %v, ipfs: %v", err, contentURI)
-		return nil, err
+		return nil, nil, err
 	}
 
 	lensContent := LensContent{}
 	if err = json.Unmarshal(content, &lensContent); err != nil {
 		logrus.Errorf("[lens worker] getContenPointed: json unmarshal error, %v, json: %v, ipfs: %v", err, string(content), contentURI)
-		return nil, err
+		return nil, nil, err
 	}
 
 	post := &metadata.Post{
@@ -366,10 +367,10 @@ func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId
 	}
 
 	if len(post.Body) == 0 && len(post.Media) == 0 {
-		return nil, fmt.Errorf("content is nil, ipfs:%v", contentURI)
+		return nil, nil, fmt.Errorf("content is nil, ipfs:%v", contentURI)
 	}
 
-	return post, nil
+	return &lensContent, post, nil
 }
 
 func (c *Client) GetLensRelatedURL(ctx context.Context, profileId *big.Int, pubId *big.Int) string {

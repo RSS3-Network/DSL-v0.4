@@ -74,10 +74,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	for _, transaction := range transactionMap {
 		internalTransaction := transaction
 
-		// if internalTransaction.BlockNumber < message.BlockNumber {
-		// 	continue
-		// }
-
 		if internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) {
 			continue
 		}
@@ -148,9 +144,10 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 			defer wg.Done()
 
 			parameter := pregod_etl.GetLogsRequest{
-				Address:     contractAddress.String(),
-				TopicSecond: hash.String(),
-				TopicFirst:  eventHash.String(),
+				Address:         contractAddress.String(),
+				TopicSecond:     hash.String(),
+				TopicFirst:      eventHash.String(),
+				BlockNumberFrom: message.BlockNumber,
 			}
 
 			for {
