@@ -285,10 +285,10 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		}
 	}(cctx)
 
-	defer cancel()
-
 	var transactions []model.Transaction
 	defer func() {
+		loggerx.Global().Info("completion start: " + message.Network + " " + message.Address)
+		cancel()
 		s.employer.UnLock(lockKey)
 
 		transfers := 0
