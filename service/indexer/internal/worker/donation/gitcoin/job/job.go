@@ -1,10 +1,13 @@
 package job
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
+
+	_ "time/tzdata"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -18,7 +21,7 @@ var _ worker.Job = (*GitcoinProjectJob)(nil)
 
 type GitcoinProjectJob struct{}
 
-type GetcoinAllGrantJob struct{}
+type GitcoinAllGrantJob struct{}
 
 func (job *GitcoinProjectJob) Name() string {
 	return "gitcoin_relatest_project_job"
@@ -32,15 +35,15 @@ func (job *GitcoinProjectJob) Timeout() time.Duration {
 	return time.Minute * 5
 }
 
-func (job *GetcoinAllGrantJob) Name() string {
+func (job *GitcoinAllGrantJob) Name() string {
 	return "gitcoin_all_grant_job"
 }
 
-func (job *GetcoinAllGrantJob) Spec() string {
-	return "0 0 * * *"
+func (job *GitcoinAllGrantJob) Spec() string {
+	return "CRON_TZ=Asia/Shanghai 0 13 * * *"
 }
 
-func (job *GetcoinAllGrantJob) Timeout() time.Duration {
+func (job *GitcoinAllGrantJob) Timeout() time.Duration {
 	return time.Minute * 5
 }
 
@@ -84,46 +87,50 @@ func (job *GitcoinProjectJob) Run(renewal worker.RenewalFunc) error {
 	return nil
 }
 
-func (job *GetcoinAllGrantJob) Run(renewal worker.RenewalFunc) error {
-	page := 0
-	for {
-		donations := []*donation.GitcoinProject{}
+func (job *GitcoinAllGrantJob) Run(renewal worker.RenewalFunc) error {
+	logrus.Info("[gitcoin job] GitcoinAllGrantJob run")
 
-		if err := database.Global().
-			Model(&donation.GitcoinProject{}).
-			Order("id").
-			Limit(100).
-			Offset(page * 100).
-			Find(&donations).Error; err != nil {
-			logrus.Errorf("[gitcoin job] GetcoinAllGrantJob: db error: %v", err)
-			return err
-		}
-
-		if len(donations) == 0 {
-			return nil
-		}
-
-		for _, donation := range donations {
-			// request api
-			gitcoin, err := requestGitcoinGrantApi(donation.ID)
-			if err != nil || gitcoin == nil {
-				continue
-			}
-
-			gitcoin.AdminAddress = strings.ToLower(gitcoin.AdminAddress)
-
-			// set db
-			if err := database.Global().
-				Clauses(clause.OnConflict{
-					UpdateAll: true,
-				}).
-				Create(gitcoin).Error; err != nil {
-				continue
-			}
-		}
-
-		page += 1
+	latestProject := &donation.GitcoinProject{}
+	if err := database.Global().
+		Model(&donation.GitcoinProject{}).
+		Order("id DESC").
+		First(&latestProject).Error; err != nil {
+		logrus.Errorf("[gitcoin job] get latest grant, db error: %v", err)
+		return err
 	}
+
+	cctx, cancel := context.WithCancel(context.Background())
+	go func(cctx context.Context) {
+		for {
+			time.Sleep(time.Minute)
+			_ = renewal(context.Background(), 5*time.Minute)
+		}
+	}(cctx)
+
+	defer cancel()
+
+	for id := 0; id < latestProject.ID; id++ {
+		time.Sleep(100 * time.Millisecond)
+
+		// request api
+		gitcoin, err := requestGitcoinGrantApi(id)
+		if err != nil || gitcoin == nil {
+			continue
+		}
+
+		gitcoin.AdminAddress = strings.ToLower(gitcoin.AdminAddress)
+
+		// set db
+		if err := database.Global().
+			Clauses(clause.OnConflict{
+				UpdateAll: true,
+			}).
+			Create(gitcoin).Error; err != nil {
+			continue
+		}
+	}
+
+	return nil
 }
 
 func requestGitcoinGrantApi(id int) (*donation.GitcoinProject, error) {
