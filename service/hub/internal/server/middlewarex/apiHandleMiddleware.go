@@ -14,7 +14,7 @@ func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		address := c.Param("address")
 		if address != "" {
-			if address, err := TranslateAddress(address); err != nil {
+			if address, err := ResolveAddress(address); err != nil {
 				return err
 			} else {
 				c.SetParamValues(address)
@@ -66,8 +66,8 @@ func CheckAPIKey(apiKey string) error {
 	return nil
 }
 
-// TranslateAddress translate handles into an address
-func TranslateAddress(address string) (string, error) {
+// ResolveAddress resolve handles into an address
+func ResolveAddress(address string) (string, error) {
 	result := handler.ReverseResolveAll(strings.ToLower(address), false)
 
 	return strings.ToLower(result.Address), nil
