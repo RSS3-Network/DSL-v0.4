@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
@@ -80,7 +81,6 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		h.initializeIndexerStatus(ctx, request.Address)
 		go h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
 	}
 
@@ -386,11 +386,12 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		for _, address := range request.Address {
-			h.initializeIndexerStatus(ctx, address)
-
-			go h.publishIndexerMessage(ctx, protocol.Message{Address: address})
-		}
+		go func() {
+			for _, address := range request.Address {
+				h.publishIndexerMessage(ctx, protocol.Message{Address: address})
+				time.Sleep(time.Minute)
+			}
+		}()
 	}
 
 	transactionHashes := make([]string, 0)
