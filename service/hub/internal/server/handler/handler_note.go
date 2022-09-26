@@ -79,15 +79,15 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		return InternalError(c)
 	}
 
+	// publish mq message
+	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
+		h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
+	}
+
 	if request.CountOnly {
 		return c.JSON(http.StatusOK, &Response{
 			Total: &total,
 		})
-	}
-
-	// publish mq message
-	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
 	}
 
 	var cursor string
