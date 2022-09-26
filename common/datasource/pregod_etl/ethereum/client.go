@@ -9,8 +9,6 @@ import (
 type GetAssetTransfersParameter struct {
 	FromBlock   int64  `json:"fromBlock,omitempty"`
 	FromAddress string `json:"fromAddress,omitempty"`
-	MaxCount    int    `json:"maxCount,omitempty"`
-	PageSize    int    `json:"pageSize,omitempty"`
 }
 
 type GetAssetTransfersResult struct {
@@ -30,10 +28,12 @@ func GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter
 	result := GetAssetTransfersResult{}
 	fromAddress := "\\" + parameter.FromAddress[1:]
 	blockNum := parameter.FromBlock
-	maxCount := parameter.MaxCount
-	pageSize := parameter.PageSize
-	err := database.EthDb().Raw("select 'external' as category, value,block_number, hash, from_address, to_address from ethereum.transactions where block_number >= ? and from_address = ? UNION ALL select '' as category , value,block_number,transaction_hash as hash, from_address, to_address from ethereum.token_transfers where block_number >= ? and from_address = ? order by block_number limit ? offset ?", blockNum, fromAddress, blockNum, fromAddress, maxCount, pageSize*maxCount).
-		Scan(&result.Transfers).WithContext(ctx).Error
+
+	err := database.EthDb().
+		Raw("select 'external' as category, value,block_number, hash, from_address, to_address from ethereum.transactions where block_number >= ? and from_address = ? UNION ALL select '' as category , value,block_number,transaction_hash as hash, from_address, to_address from ethereum.token_transfers where block_number >= ? and from_address = ? order by block_number", blockNum, fromAddress, blockNum, fromAddress).
+		Scan(&result.Transfers).
+		WithContext(ctx).
+		Error
 	if err != nil {
 		return nil, err
 	}

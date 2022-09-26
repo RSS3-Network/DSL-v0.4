@@ -92,7 +92,6 @@ func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *pro
 
 	parameter := eth_etl.GetAssetTransfersParameter{
 		FromAddress: strings.ToLower(message.Address),
-		MaxCount:    eth_etl.MaxCount,
 		FromBlock:   message.BlockNumber,
 	}
 
@@ -117,38 +116,25 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 	var err error
 	defer func() { opentelemetry.Log(trace, message, len(internalTransactions), err) }()
 
-	pageSize := 0
-	for {
-		var result *eth_etl.GetAssetTransfersResult
-		parameter.PageSize = pageSize
-		result, err = eth_etl.GetAssetTransfers(context.Background(), parameter)
+	var result *eth_etl.GetAssetTransfersResult
+	result, err = eth_etl.GetAssetTransfers(context.Background(), parameter)
 
-		if len(result.Transfers) == 0 {
-			break
+	for _, transfer := range result.Transfers {
+
+		transaction := model.Transaction{
+			BlockNumber: transfer.BlockNum,
+			Hash:        AppendHexPrefix(hex.EncodeToString(transfer.Hash)),
+			Network:     message.Network,
+			Source:      d.Name(),
+			Transfers:   make([]model.Transfer, 0),
 		}
 
-		for _, transfer := range result.Transfers {
-
-			transaction := model.Transaction{
-				BlockNumber: transfer.BlockNum,
-				Hash:        AppendHexPrefix(hex.EncodeToString(transfer.Hash)),
-				Network:     message.Network,
-				Source:      d.Name(),
-				Transfers:   make([]model.Transfer, 0),
-			}
-
-			if transfer.Category == eth_etl.CategoryExternal {
-				transaction.AddressFrom = AppendHexPrefix(hex.EncodeToString(transfer.From))
-				transaction.AddressTo = AppendHexPrefix(hex.EncodeToString(transfer.To))
-			}
-
-			internalTransactions = append(internalTransactions, transaction)
+		if strings.EqualFold(transfer.Category, eth_etl.CategoryExternal) {
+			transaction.AddressFrom = AppendHexPrefix(hex.EncodeToString(transfer.From))
+			transaction.AddressTo = AppendHexPrefix(hex.EncodeToString(transfer.To))
 		}
 
-		if len(result.Transfers) < eth_etl.MaxCount {
-			break
-		}
-		pageSize++
+		internalTransactions = append(internalTransactions, transaction)
 	}
 
 	return internalTransactions, nil
