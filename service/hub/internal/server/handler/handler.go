@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	utils "github.com/naturalselectionlabs/pregod/common/utils/interface"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -189,34 +189,39 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, message protocol.Me
 
 	defer rabbitmqSnap.End()
 
+	var address model.Address
+	_ = database.Global().Model(&dbModel.Address{}).
+		Where("address = ?", message.Address).
+		First(&address).Error
+	if address.Status == false || (address.Status && address.UpdatedAt.After(time.Now().Add(-2*time.Minute))) {
+		return
+	}
+
+	h.initializeIndexerStatus(ctx, message.Address)
+
 	networks := []string{
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
 	}
 
-	for _, network := range networks {
-		key := fmt.Sprintf("indexer:%v:%v", message.Address, network)
-		if n, _ := cache.Global().Exists(ctx, key).Result(); n == 1 {
-			return
-		}
-	}
+	go func() {
+		for _, network := range networks {
+			message.Network = network
 
-	for _, network := range networks {
-		message.Network = network
+			messageData, err := json.Marshal(&message)
+			if err != nil {
+				return
+			}
 
-		messageData, err := json.Marshal(&message)
-		if err != nil {
-			return
+			if err := h.RabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
+				ContentType: protocol.ContentTypeJSON,
+				Body:        messageData,
+			}); err != nil {
+				return
+			}
 		}
-
-		if err := h.RabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
-			ContentType: protocol.ContentTypeJSON,
-			Body:        messageData,
-		}); err != nil {
-			return
-		}
-	}
+	}()
 }
 
 func (h *Handler) initializeIndexerStatus(ctx context.Context, address string) {
