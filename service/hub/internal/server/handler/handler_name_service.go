@@ -26,7 +26,7 @@ import (
 )
 
 func (h *Handler) GetNameResolveFunc(c echo.Context) error {
-	go h.apiReport(GetNS, c.Get("API-KEY"))
+	go h.apiReport(GetNS, c)
 	tracer := otel.Tracer("GetNameResolveFunc")
 	_, httpSnap := tracer.Start(c.Request().Context(), "http")
 

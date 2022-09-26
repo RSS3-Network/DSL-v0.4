@@ -18,7 +18,7 @@ import (
 // - network
 // - platform
 func (h *Handler) GetProfilesFunc(c echo.Context) error {
-	go h.apiReport(GetProfiles, c.Get("API-KEY"))
+	go h.apiReport(GetProfiles, c)
 	tracer := otel.Tracer("GetProfilesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -54,7 +54,7 @@ func (h *Handler) GetProfilesFunc(c echo.Context) error {
 }
 
 func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
-	go h.apiReport(PostProfiles, c.Get("API-KEY"))
+	go h.apiReport(PostProfiles, c)
 	tracer := otel.Tracer("BatchGetProfilesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
