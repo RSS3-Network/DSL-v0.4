@@ -7,6 +7,7 @@ type Result struct {
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	Url         string    `json:"url"`
+	Platform    string    `json:"platform"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 	Feeds       []struct {

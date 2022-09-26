@@ -157,6 +157,7 @@ func (d *Datasource) buildTransactions(ctx context.Context, message *protocol.Me
 			Owner:       message.Address,
 			AddressFrom: message.Address,
 			Network:     protocol.NetworkEIP1577,
+			Platform:    result.Platform,
 			Source:      d.Name(),
 			Tag:         filter.TagSocial,
 			Type:        filter.SocialPost,
@@ -172,6 +173,7 @@ func (d *Datasource) buildTransactions(ctx context.Context, message *protocol.Me
 					AddressFrom:     message.Address,
 					Metadata:        metadataRaw,
 					Network:         protocol.NetworkEIP1577,
+					Platform:        result.Platform,
 					Source:          d.Name(),
 					SourceData:      sourceData,
 					RelatedUrls: []string{
