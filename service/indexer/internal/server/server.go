@@ -389,7 +389,15 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 			defer wg.Done()
 			for _, network := range datasource.Networks() {
 				if network == message.Network {
+					loggerx.Global().Info("start datasource", zap.String("datasource", datasource.Name()), zap.String("address", message.Address))
+					startTime := time.Now()
+
+					// handle
 					internalTransactions, err := datasource.Handle(ctx, message)
+
+					// log
+					loggerx.Global().Info("datasource completion", zap.String("datasource", datasource.Name()), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
+
 					// Avoid blocking indexed workers
 					if err != nil {
 						loggerx.Global().Error("datasource handle failed", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("datasource", datasource.Name()))
@@ -609,7 +617,15 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	for _, worker := range s.workers {
 		for _, network := range worker.Networks() {
 			if network == message.Network {
+				// log
+				loggerx.Global().Info("start worker", zap.String("worker", worker.Name()), zap.String("address", message.Address))
+				startTime := time.Now()
+
 				internalTransactions, err := worker.Handle(ctx, message, transactions)
+
+				// log
+				loggerx.Global().Info("worker completion", zap.String("worker", worker.Name()), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
+
 				if err != nil {
 					loggerx.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
 
