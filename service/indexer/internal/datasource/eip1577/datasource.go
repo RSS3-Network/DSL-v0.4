@@ -140,7 +140,6 @@ func (d *Datasource) buildTransactions(ctx context.Context, message *protocol.Me
 			Title: feed.Title,
 			Body:  feed.Summary,
 		})
-
 		if err != nil {
 			return nil, err
 		}
