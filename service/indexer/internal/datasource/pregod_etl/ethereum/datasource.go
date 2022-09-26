@@ -113,11 +113,18 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 	_, trace := tracer.Start(ctx, "datasource_etl:Handle")
 	internalTransactions := make([]model.Transaction, 0)
 
-	var err error
+	result, err := eth_etl.GetAssetTransfers(context.Background(), parameter)
 	defer func() { opentelemetry.Log(trace, message, len(internalTransactions), err) }()
 
-	var result *eth_etl.GetAssetTransfersResult
-	result, err = eth_etl.GetAssetTransfers(context.Background(), parameter)
+	if err != nil {
+		loggerx.Global().Error("failed to get ethereum data from ETL", zap.Error(err))
+
+		return nil, err
+	}
+
+	if len(result.Transfers) == 0 {
+		return internalTransactions, nil
+	}
 
 	for _, transfer := range result.Transfers {
 
