@@ -156,32 +156,23 @@ func (h *Handler) filterReport(path string, request interface{}) {
 		return
 	}
 
-	if path == PostNotes {
-		for _, address := range report["address"].([]interface{}) {
-			batchReport := map[string]interface{}{
-				"index":   EsIndex,
-				"path":    path,
-				"ts":      time.Now().Format("2006-01-02 15:04:05"),
-				"address": address,
-			}
-			output, _ := json.Marshal(batchReport)
-			fmt.Printf("[DATABEAT]%v\n", string(output))
-		}
-		delete(report, "address")
-	}
-
 	for k, v := range report {
 		if utils.IfInterfaceValueIsNil(v) {
 			delete(report, k)
 		}
 	}
 
-	report["index"] = EsIndex
-	report["path"] = path
-	report["ts"] = time.Now().Format("2006-01-02 15:04:05")
+	if path == PostNotes {
+		report["index"] = EsIndex
+		report["path"] = path
+		report["ts"] = time.Now().Format("2006-01-02 15:04:05")
+		for _, address := range report["address"].([]interface{}) {
+			report["address"] = address
 
-	output, _ := json.Marshal(report)
-	fmt.Printf("[DATABEAT]%v\n", string(output))
+			output, _ := json.Marshal(report)
+			fmt.Printf("[DATABEAT]%v\n", string(output))
+		}
+	}
 }
 
 // publishIndexerMessage create a rabbitmq job to index the latest user data
