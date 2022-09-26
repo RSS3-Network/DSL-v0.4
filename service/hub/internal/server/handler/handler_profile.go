@@ -46,9 +46,10 @@ func (h *Handler) GetProfilesFunc(c echo.Context) error {
 		h.initializeIndexerStatus(ctx, request.Address)
 		go h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, IgnoreNote: true})
 	}
+	total := int64(len(profileList))
 
 	return c.JSON(http.StatusOK, &Response{
-		Total:  int64(len(profileList)),
+		Total:  &total,
 		Result: profileList,
 	})
 }
@@ -91,9 +92,10 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 			}
 		}()
 	}
+	total := int64(len(profileList))
 
 	return c.JSON(http.StatusOK, &Response{
-		Total:  int64(len(profileList)),
+		Total:  &total,
 		Result: profileList,
 	})
 }

@@ -79,6 +79,12 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		return InternalError(c)
 	}
 
+	if request.CountOnly {
+		return c.JSON(http.StatusOK, &Response{
+			Total: &total,
+		})
+	}
+
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
 		h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
@@ -98,12 +104,6 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		return c.JSON(http.StatusOK, &Response{
 			Result:        make([]dbModel.Transaction, 0),
 			AddressStatus: addressStatus,
-		})
-	}
-
-	if request.CountOnly {
-		return c.JSON(http.StatusOK, &Response{
-			Total: total,
 		})
 	}
 
@@ -127,7 +127,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, &Response{
-		Total:         total,
+		Total:         &total,
 		Cursor:        cursor,
 		Result:        transactions,
 		AddressStatus: addressStatus,
@@ -297,7 +297,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 
 	if request.CountOnly {
 		return c.JSON(http.StatusOK, &Response{
-			Total: total,
+			Total: &total,
 		})
 	}
 
@@ -314,7 +314,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, &Response{
-		Total:         total,
+		Total:         &total,
 		Cursor:        cursor,
 		Result:        transactions,
 		AddressStatus: addressStatus,
