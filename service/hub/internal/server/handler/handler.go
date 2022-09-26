@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
@@ -132,13 +133,14 @@ func (t Transactions) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-func (h *Handler) apiReport(path string, apiKey interface{}) {
+func (h *Handler) apiReport(path string, c echo.Context) {
 	report := map[string]interface{}{
-		"index":   EsIndex,
-		"path":    path,
-		"ts":      time.Now().Format("2006-01-02 15:04:05"),
-		"count":   true,
-		"api_key": apiKey,
+		"index":       EsIndex,
+		"path":        path,
+		"ts":          time.Now().Format("2006-01-02 15:04:05"),
+		"count":       true,
+		"api_key":     c.Get("API-KEY"),
+		"remote_addr": c.RealIP(),
 	}
 
 	output, _ := json.Marshal(report)
@@ -193,7 +195,7 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, message protocol.Me
 	_ = database.Global().Model(&dbModel.Address{}).
 		Where("address = ?", message.Address).
 		First(&address).Error
-	if address.Status == false || (address.Status && address.UpdatedAt.After(time.Now().Add(-2*time.Minute))) {
+	if !address.Status || (address.Status && address.UpdatedAt.After(time.Now().Add(-2*time.Minute))) {
 		return
 	}
 

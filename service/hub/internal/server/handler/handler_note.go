@@ -18,7 +18,7 @@ import (
 // GetNotesFunc HTTP handler for action API
 // parse query parameters, query and assemble data
 func (h *Handler) GetNotesFunc(c echo.Context) error {
-	go h.apiReport(GetNotes, c.Get("API-KEY"))
+	go h.apiReport(GetNotes, c)
 	tracer := otel.Tracer("GetNotesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -222,7 +222,7 @@ func (h *Handler) getTransfers(c context.Context, transactionHashes []string) ([
 
 // BatchGetNotesFunc query multiple addresses and filters
 func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
-	go h.apiReport(PostNotes, c.Get("API-KEY"))
+	go h.apiReport(PostNotes, c)
 	tracer := otel.Tracer("BatchGetNotesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "BatchGetNotesFunc:http")
 
