@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -12,6 +11,12 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"go.opentelemetry.io/otel"
 )
+
+var ProfilePlatformList = []string{
+	protocol.PlatformEns,
+	protocol.PlatformLens,
+	protocol.PlatformCrossbell,
+}
 
 // GetProfilesFunc supported filter:
 // - address
@@ -39,12 +44,6 @@ func (h *Handler) GetProfilesFunc(c echo.Context) error {
 	profileList, err := h.getProfiles(ctx, request)
 	if err != nil {
 		return InternalError(c)
-	}
-
-	if len(profileList) == 0 || request.Refresh {
-		// refresh profile
-		h.initializeIndexerStatus(ctx, request.Address)
-		go h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, IgnoreNote: true})
 	}
 
 	return c.JSON(http.StatusOK, &Response{
@@ -81,25 +80,17 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 		return InternalError(c)
 	}
 
-	if len(profileList) == 0 || request.Refresh {
-		// publish mq message
-		go func() {
-			for _, address := range request.Address {
-				h.initializeIndexerStatus(ctx, address)
-				h.publishIndexerMessage(ctx, protocol.Message{Address: address, IgnoreNote: true})
-				time.Sleep(500 * time.Millisecond)
-			}
-		}()
-	}
-
 	return c.JSON(http.StatusOK, &Response{
 		Total:  int64(len(profileList)),
 		Result: profileList,
 	})
 }
 
-// getProfiles get profile data from database
 func (h *Handler) getProfiles(c context.Context, request GetRequest) ([]dbModel.Profile, error) {
+	
+} 
+// getProfiles get profile data from database
+func (h *Handler) getProfilesDatabase(c context.Context, request GetRequest) ([]dbModel.Profile, error) {
 	tracer := otel.Tracer("getProfiles")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
@@ -135,7 +126,7 @@ func (h *Handler) getProfiles(c context.Context, request GetRequest) ([]dbModel.
 }
 
 // batchGetProfiles get profile data from database
-func (h *Handler) batchGetProfiles(c context.Context, request BatchGetProfilesRequest) ([]dbModel.Profile, error) {
+func (h *Handler) batchGetProfilesDatabase(c context.Context, request BatchGetProfilesRequest) ([]dbModel.Profile, error) {
 	tracer := otel.Tracer("batchGetProfiles")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
