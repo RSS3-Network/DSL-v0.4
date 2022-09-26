@@ -195,7 +195,7 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, message protocol.Me
 	_ = database.Global().Model(&dbModel.Address{}).
 		Where("address = ?", message.Address).
 		First(&address).Error
-	if !address.Status || (address.Status && address.UpdatedAt.After(time.Now().Add(-2*time.Minute))) {
+	if (address.Address != "" && !address.Status) || (address.Status && address.UpdatedAt.After(time.Now().Add(-2*time.Minute))) {
 		return
 	}
 

@@ -81,12 +81,23 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		go h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
+		h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
+	}
+
+	var cursor string
+	if total > int64(request.Limit) {
+		cursor = transactions[len(transactions)-1].Hash
+	}
+
+	var addressStatus []dbModel.Address
+	if request.QueryStatus {
+		addressStatus, _ = h.getAddress(ctx, []string{request.Address})
 	}
 
 	if len(transactions) == 0 {
 		return c.JSON(http.StatusOK, &Response{
-			Result: make([]dbModel.Transaction, 0),
+			Result:        make([]dbModel.Transaction, 0),
+			AddressStatus: addressStatus,
 		})
 	}
 
@@ -113,16 +124,6 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	for index := range transactions {
 		transactions[index].Transfers = transferMap[transactions[index].Hash]
-	}
-
-	var cursor string
-	if total > int64(request.Limit) {
-		cursor = transactions[len(transactions)-1].Hash
-	}
-
-	var addressStatus []dbModel.Address
-	if request.QueryStatus {
-		addressStatus, _ = h.getAddress(ctx, []string{request.Address})
 	}
 
 	return c.JSON(http.StatusOK, &Response{
@@ -285,15 +286,13 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	}
 
 	transactions, total, err = h.batchGetTransactions(ctx, request)
-
 	if err != nil {
 		return InternalError(c)
 	}
 
-	if total == 0 {
-		return c.JSON(http.StatusOK, &Response{
-			Result: make([]dbModel.Transaction, 0),
-		})
+	var addressStatus []dbModel.Address
+	if request.QueryStatus {
+		addressStatus, _ = h.getAddress(ctx, request.Address)
 	}
 
 	if request.CountOnly {
@@ -307,9 +306,11 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 		cursor = transactions[len(transactions)-1].Hash
 	}
 
-	var addressStatus []dbModel.Address
-	if request.QueryStatus {
-		addressStatus, _ = h.getAddress(ctx, request.Address)
+	if total == 0 {
+		return c.JSON(http.StatusOK, &Response{
+			Result:        make([]dbModel.Transaction, 0),
+			AddressStatus: addressStatus,
+		})
 	}
 
 	return c.JSON(http.StatusOK, &Response{
