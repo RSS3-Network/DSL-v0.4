@@ -36,7 +36,7 @@ type Datasource struct {
 }
 
 func (d *Datasource) Name() string {
-	return "eip1577"
+	return protocol.NetworkEIP1577
 }
 
 func (d *Datasource) Networks() []string {
