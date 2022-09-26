@@ -3,7 +3,10 @@ package token
 import (
 	"context"
 
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"go.uber.org/zap"
 )
 
 var nativeMap = map[string]Native{
@@ -52,4 +55,23 @@ func (c *Client) Native(context context.Context, network string) (*Native, error
 	}
 
 	return &token, nil
+}
+
+func (c *Client) NatvieToMetadata(context context.Context, network string) (*metadata.Token, error) {
+	native, err := c.Native(context, network)
+	if err != nil {
+		loggerx.Global().Error("get native token error", zap.Error(err))
+
+		return nil, err
+	}
+
+	tokenMetadata := &metadata.Token{
+		Name:     native.Name,
+		Symbol:   native.Symbol,
+		Decimals: native.Decimals,
+		Standard: protocol.TokenStandardNative,
+		Image:    native.Logo,
+	}
+
+	return tokenMetadata, nil
 }

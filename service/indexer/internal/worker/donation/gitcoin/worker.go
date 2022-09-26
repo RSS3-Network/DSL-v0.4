@@ -19,6 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin/job"
@@ -37,8 +38,8 @@ const (
 var _ worker.Worker = (*service)(nil)
 
 type service struct {
-	tokenClient            *token.Client
-	gitcoinProjectCacheKey string
+	tokenClient  *token.Client
+	zksyncClient *zksync.Client
 }
 
 func (s *service) Name() string {
@@ -66,14 +67,22 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactionMap := make(map[string]model.Transaction)
 
 	for _, transaction := range transactions {
-		if (message.Network == protocol.NetworkPolygon && transaction.AddressTo != ContractAddressPolygon) ||
-			(message.Network == protocol.NetworkEthereum && transaction.AddressTo != ContractAddressEth) {
+		var transfers []model.Transfer
+		var err error
+
+		switch {
+		case message.Network == protocol.NetworkEthereum && transaction.AddressTo == ContractAddressEth:
+			transfers, err = s.handleGitcoinEthereum(ctx, message, transaction)
+		case message.Network == protocol.NetworkPolygon && transaction.AddressTo == ContractAddressPolygon:
+			transfers, err = s.handleGitcoinEthereum(ctx, message, transaction)
+		case message.Network == protocol.NetworkZkSync:
+			transfers, err = s.handlerGitcoinZkSync(ctx, message, transaction)
+		default:
 			internalTransactionMap[transaction.Hash] = transaction
 
 			continue
 		}
 
-		transfers, err := s.handleGitcoin(ctx, message, transaction)
 		if err != nil {
 			loggerx.Global().Error("failed to handle gitcoin transaction", zap.Error(err))
 
@@ -112,7 +121,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	return internalTransactions, nil
 }
 
-func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, transaction model.Transaction) (transfers []model.Transfer, err error) {
+func (s *service) handleGitcoinEthereum(ctx context.Context, message *protocol.Message, transaction model.Transaction) (transfers []model.Transfer, err error) {
 	tracer := otel.Tracer("worker_gitcoin")
 	_, span := tracer.Start(ctx, "worker_gitcoin:handleGitcoin")
 
@@ -173,7 +182,7 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 		if err != nil {
 			loggerx.Global().Error("marshal source data error", zap.Error(err))
 
-			return nil, err
+			continue
 		}
 
 		transfer := model.Transfer{
@@ -192,44 +201,19 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 
 		transfer.RelatedUrls = append(transfer.RelatedUrls, "https://gitcoin.co/grants"+strconv.Itoa(project.ID)+"/"+project.Slug)
 
-		var tokenMetadata metadata.Token
+		var tokenMetadata *metadata.Token
 
 		if strings.ToLower(event.Token.String()) == ContractAddressEthereumNative {
-			native, err := s.tokenClient.Native(ctx, transaction.Network)
-			if err != nil {
-				loggerx.Global().Error("get native token error", zap.Error(err))
-
-				return nil, err
-			}
-
-			tokenMetadata = metadata.Token{
-				Name:     native.Name,
-				Symbol:   native.Symbol,
-				Decimals: native.Decimals,
-				Standard: protocol.TokenStandardNative,
-				Image:    native.Logo,
-			}
+			tokenMetadata, err = s.tokenClient.NatvieToMetadata(ctx, transaction.Network)
 		} else {
-			erc20, err := s.tokenClient.ERC20(ctx, transaction.Network, event.Token.String())
-			if err != nil {
-				loggerx.Global().Error("get erc20 error", zap.Error(err))
-
-				continue
-			}
-
-			tokenMetadata = metadata.Token{
-				Name:            erc20.Name,
-				Symbol:          erc20.Symbol,
-				Decimals:        erc20.Decimals,
-				Standard:        protocol.TokenStandardERC20,
-				ContractAddress: erc20.ContractAddress,
-				Image:           erc20.Logo,
-			}
+			tokenMetadata, err = s.tokenClient.ERC20ToMetadata(ctx, transaction.Network, event.Token.String())
+		}
+		if err != nil {
+			loggerx.Global().Error("get token error", zap.Error(err))
 		}
 
 		tokenValue := decimal.NewFromBigInt(event.Amount, 0)
 		tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
-
 		tokenMetadata.Value = &tokenValue
 		tokenMetadata.ValueDisplay = &tokenValueDisplay
 
@@ -239,7 +223,99 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 			Description: project.Description,
 			Logo:        project.Logo,
 			Platform:    protocol.PlatformGitcoin,
-			Token:       tokenMetadata,
+			Token:       *tokenMetadata,
+		})
+		if err != nil {
+			loggerx.Global().Error("marshal metadata error", zap.Error(err))
+
+			continue
+		}
+
+		transfer.Metadata = metadataRaw
+		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagDonation, transfer.Tag, filter.DonationDonate, transfer.Type)
+
+		if transfer.Tag == filter.TagDonation {
+			transfer.Platform = Name
+		}
+
+		transfers = append(transfers, transfer)
+	}
+
+	return transfers, nil
+}
+
+func (s *service) handlerGitcoinZkSync(ctx context.Context, message *protocol.Message, transaction model.Transaction) (transfers []model.Transfer, err error) {
+	for _, transfer := range transaction.Transfers {
+		if transfer.AddressTo == "" ||
+			transfer.AddressTo == "0x0" ||
+			transfer.AddressTo == "0x0000000000000000000000000000000000000000" {
+			continue
+		}
+
+		var data zksync.GetTransactionData
+
+		if err := json.Unmarshal(transfer.SourceData, &data); err != nil {
+			continue
+		}
+
+		// gitcoin grant info
+		var project donation.GitcoinProject
+
+		if err := database.Global().
+			Model((*donation.GitcoinProject)(nil)).
+			Where(map[string]any{
+				"admin_address": strings.ToLower(transfer.AddressTo),
+			}).
+			Order("id DESC").
+			First(&project).
+			Error; err != nil {
+			loggerx.Global().Error("get gitcoin project error", zap.Error(err))
+
+			continue
+		}
+
+		transfer.RelatedUrls = append(transfer.RelatedUrls, "https://gitcoin.co/grants"+strconv.Itoa(project.ID)+"/"+project.Slug)
+
+		// token matedata
+		tokenInfo, _, err := s.zksyncClient.GetToken(ctx, uint(data.Transaction.Operation.Token))
+		if err != nil {
+			loggerx.Global().Error("handlerGitcoinZkSync: failed to get token", zap.Error(err), zap.String("token_id", strconv.Itoa(int(data.Transaction.Operation.Token))))
+
+			continue
+		}
+
+		var tokenMetadata *metadata.Token
+
+		if tokenInfo.Address == ethereum.AddressGenesis.String() {
+			tokenMetadata, err = s.tokenClient.NatvieToMetadata(ctx, message.Network)
+		} else {
+			tokenMetadata, err = s.tokenClient.ERC20ToMetadata(ctx, message.Network, tokenInfo.Address)
+		}
+		if err != nil {
+			loggerx.Global().Error("get token error", zap.Error(err))
+
+			continue
+		}
+
+		tokenValue, err := decimal.NewFromString(data.Transaction.Operation.Amount)
+		if err != nil {
+			loggerx.Global().Error("decimal NewFromString error", zap.Error(err))
+
+			continue
+		}
+
+		tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
+		tokenMetadata.Value = &tokenValue
+		tokenMetadata.ValueDisplay = &tokenValueDisplay
+
+		// metadata
+		metadataRaw, err := json.Marshal(&metadata.Donation{
+			ID:          project.ID,
+			Title:       project.Title,
+			Description: project.Description,
+			Logo:        project.Logo,
+			Platform:    protocol.PlatformGitcoin,
+			Token:       *tokenMetadata,
 		})
 		if err != nil {
 			loggerx.Global().Error("marshal metadata error", zap.Error(err))
@@ -262,15 +338,14 @@ func (s *service) handleGitcoin(ctx context.Context, message *protocol.Message, 
 
 func (s *service) Jobs() []worker.Job {
 	return []worker.Job{
-		&job.GitcoinProjectJob{
-			GitcoinProjectCacheKey: s.gitcoinProjectCacheKey,
-		},
+		&job.GitcoinProjectJob{},
+		&job.GitcoinAllGrantJob{},
 	}
 }
 
 func New() worker.Worker {
 	return &service{
-		gitcoinProjectCacheKey: "gitcoin_project",
-		tokenClient:            token.New(),
+		tokenClient:  token.New(),
+		zksyncClient: zksync.New(),
 	}
 }

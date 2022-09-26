@@ -89,7 +89,7 @@ func (s *Server) Initialize() (err error) {
 
 	cache.ReplaceGlobal(redisClient)
 
-	ethereumClientMap, err := ethclientx.Dial(config.ConfigHub.RPC, []string{protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkCrossbell})
+	ethereumClientMap, err := ethclientx.Dial(config.ConfigHub.RPC, []string{protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkCrossbell, protocol.NetworkBinanceSmartChain})
 	if err != nil {
 		return err
 	}

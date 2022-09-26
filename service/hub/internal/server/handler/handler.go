@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -192,6 +193,13 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, message protocol.Me
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
+	}
+
+	for _, network := range networks {
+		key := fmt.Sprintf("indexer:%v:%v", message.Address, network)
+		if n, _ := cache.Global().Exists(ctx, key).Result(); n == 1 {
+			return
+		}
 	}
 
 	for _, network := range networks {
