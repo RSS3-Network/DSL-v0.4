@@ -195,6 +195,7 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, message protocol.Me
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
+		protocol.NetworkEIP1577,
 	}
 
 	for _, network := range networks {

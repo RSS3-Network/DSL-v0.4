@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"os"
 	"os/signal"
 	"strings"
@@ -138,6 +139,7 @@ func (s *Server) Initialize() (err error) {
 		blockscoutDatasource,
 		zksync.New(),
 		lensDatasource,
+		eip1577.New(s.employer),
 	}
 
 	swapWorker, err := swap.New(s.employer)
