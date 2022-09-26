@@ -3,6 +3,7 @@ package ethereum
 import (
 	"context"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database"
 )
 
@@ -16,12 +17,12 @@ type GetAssetTransfersResult struct {
 }
 
 type Transfer struct {
-	BlockNum int64   `gorm:"column:block_number"`
-	Hash     []byte  `gorm:"column:hash"`
-	From     []byte  `gorm:"column:from_address"`
-	To       []byte  `gorm:"column:to_address"`
-	Value    float64 `gorm:"column:value"`
-	Category string  `gorm:"column:category"`
+	BlockNum int64          `gorm:"column:block_number"`
+	Hash     common.Hash    `gorm:"column:hash"`
+	From     common.Address `gorm:"column:from_address"`
+	To       []byte         `gorm:"column:to_address"`
+	Value    float64        `gorm:"column:value"`
+	Category string         `gorm:"column:category"`
 }
 
 func GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter) (*GetAssetTransfersResult, error) {

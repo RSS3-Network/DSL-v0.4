@@ -2,17 +2,15 @@ package ethereum
 
 import (
 	"context"
-	"encoding/hex"
-	"fmt"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	eth_etl "github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -56,10 +54,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		internalTransaction := transaction
 
 		if internalTransaction.BlockNumber < message.BlockNumber {
-			continue
-		}
-
-		if internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) && !allowlist.AllowList.Contains(internalTransaction.AddressFrom) {
 			continue
 		}
 
@@ -130,15 +124,17 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 
 		transaction := model.Transaction{
 			BlockNumber: transfer.BlockNum,
-			Hash:        AppendHexPrefix(hex.EncodeToString(transfer.Hash)),
+			Hash:        transfer.Hash.Hex(),
 			Network:     message.Network,
 			Source:      d.Name(),
 			Transfers:   make([]model.Transfer, 0),
 		}
 
 		if strings.EqualFold(transfer.Category, eth_etl.CategoryExternal) {
-			transaction.AddressFrom = AppendHexPrefix(hex.EncodeToString(transfer.From))
-			transaction.AddressTo = AppendHexPrefix(hex.EncodeToString(transfer.To))
+			transaction.AddressFrom = strings.ToLower(transfer.From.Hex())
+			if len(transfer.To) > 0 {
+				transaction.AddressTo = strings.ToLower(common.BytesToAddress(transfer.To).Hex())
+			}
 		}
 
 		internalTransactions = append(internalTransactions, transaction)
@@ -149,8 +145,4 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 
 func New() datasource.Datasource {
 	return &Datasource{}
-}
-
-func AppendHexPrefix(hexaString string) string {
-	return fmt.Sprintf("%s%s", "0x", hexaString)
 }
