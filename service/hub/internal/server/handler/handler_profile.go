@@ -18,7 +18,7 @@ import (
 // - network
 // - platform
 func (h *Handler) GetProfilesFunc(c echo.Context) error {
-	go h.apiReport(GetProfiles, c.Get("API-KEY"))
+	go h.apiReport(GetProfiles, c)
 	tracer := otel.Tracer("GetProfilesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -43,18 +43,18 @@ func (h *Handler) GetProfilesFunc(c echo.Context) error {
 
 	if len(profileList) == 0 || request.Refresh {
 		// refresh profile
-		h.initializeIndexerStatus(ctx, request.Address)
 		go h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, IgnoreNote: true})
 	}
+	total := int64(len(profileList))
 
 	return c.JSON(http.StatusOK, &Response{
-		Total:  int64(len(profileList)),
+		Total:  &total,
 		Result: profileList,
 	})
 }
 
 func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
-	go h.apiReport(PostProfiles, c.Get("API-KEY"))
+	go h.apiReport(PostProfiles, c)
 	tracer := otel.Tracer("BatchGetProfilesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -85,15 +85,15 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 		// publish mq message
 		go func() {
 			for _, address := range request.Address {
-				h.initializeIndexerStatus(ctx, address)
 				h.publishIndexerMessage(ctx, protocol.Message{Address: address, IgnoreNote: true})
 				time.Sleep(500 * time.Millisecond)
 			}
 		}()
 	}
+	total := int64(len(profileList))
 
 	return c.JSON(http.StatusOK, &Response{
-		Total:  int64(len(profileList)),
+		Total:  &total,
 		Result: profileList,
 	})
 }

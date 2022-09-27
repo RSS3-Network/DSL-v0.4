@@ -50,7 +50,7 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 		}
 
 		return c.JSON(http.StatusOK, &Response{
-			Total:  total,
+			Total:  &total,
 			Cursor: cursor,
 			Result: result,
 		})
@@ -70,7 +70,7 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 		}
 
 		return c.JSON(http.StatusOK, &Response{
-			Total:  total,
+			Total:  &total,
 			Cursor: cursor,
 			Result: result,
 		})

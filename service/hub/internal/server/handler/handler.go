@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/cache"
+	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	utils "github.com/naturalselectionlabs/pregod/common/utils/interface"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -37,7 +38,7 @@ type Handler struct {
 }
 
 type Response struct {
-	Total         int64           `json:"total,omitempty"`
+	Total         *int64          `json:"total,omitempty"`
 	Cursor        string          `json:"cursor,omitempty"`
 	Result        any             `json:"result,omitempty"`
 	AddressStatus []model.Address `json:"address_status,omitempty"`
@@ -132,13 +133,14 @@ func (t Transactions) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
 }
 
-func (h *Handler) apiReport(path string, apiKey interface{}) {
+func (h *Handler) apiReport(path string, c echo.Context) {
 	report := map[string]interface{}{
-		"index":   EsIndex,
-		"path":    path,
-		"ts":      time.Now().Format("2006-01-02 15:04:05"),
-		"count":   true,
-		"api_key": apiKey,
+		"index":       EsIndex,
+		"path":        path,
+		"ts":          time.Now().Format("2006-01-02 15:04:05"),
+		"count":       true,
+		"api_key":     c.Get("API-KEY"),
+		"remote_addr": c.RealIP(),
 	}
 
 	output, _ := json.Marshal(report)
@@ -154,32 +156,23 @@ func (h *Handler) filterReport(path string, request interface{}) {
 		return
 	}
 
-	if path == PostNotes {
-		for _, address := range report["address"].([]interface{}) {
-			batchReport := map[string]interface{}{
-				"index":   EsIndex,
-				"path":    path,
-				"ts":      time.Now().Format("2006-01-02 15:04:05"),
-				"address": address,
-			}
-			output, _ := json.Marshal(batchReport)
-			fmt.Printf("[DATABEAT]%v\n", string(output))
-		}
-		delete(report, "address")
-	}
-
 	for k, v := range report {
 		if utils.IfInterfaceValueIsNil(v) {
 			delete(report, k)
 		}
 	}
 
-	report["index"] = EsIndex
-	report["path"] = path
-	report["ts"] = time.Now().Format("2006-01-02 15:04:05")
+	if path == PostNotes {
+		report["index"] = EsIndex
+		report["path"] = path
+		report["ts"] = time.Now().Format("2006-01-02 15:04:05")
+		for _, address := range report["address"].([]interface{}) {
+			report["address"] = address
 
-	output, _ := json.Marshal(report)
-	fmt.Printf("[DATABEAT]%v\n", string(output))
+			output, _ := json.Marshal(report)
+			fmt.Printf("[DATABEAT]%v\n", string(output))
+		}
+	}
 }
 
 // publishIndexerMessage create a rabbitmq job to index the latest user data
@@ -189,34 +182,46 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, message protocol.Me
 
 	defer rabbitmqSnap.End()
 
+	if len(message.Address) == 0 {
+		return
+	}
+
+	if !message.IgnoreNote {
+		var address model.Address
+		_ = database.Global().Model(&dbModel.Address{}).
+			Where("address = ?", message.Address).
+			First(&address).Error
+		if address.Address != "" && address.UpdatedAt.After(time.Now().Add(-2*time.Minute)) {
+			return
+		}
+
+		h.initializeIndexerStatus(ctx, message.Address)
+	}
+
 	networks := []string{
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
+		protocol.NetworkEIP1577,
 	}
 
-	for _, network := range networks {
-		key := fmt.Sprintf("indexer:%v:%v", message.Address, network)
-		if n, _ := cache.Global().Exists(ctx, key).Result(); n == 1 {
-			return
-		}
-	}
+	go func() {
+		for _, network := range networks {
+			message.Network = network
 
-	for _, network := range networks {
-		message.Network = network
+			messageData, err := json.Marshal(&message)
+			if err != nil {
+				return
+			}
 
-		messageData, err := json.Marshal(&message)
-		if err != nil {
-			return
+			if err := h.RabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
+				ContentType: protocol.ContentTypeJSON,
+				Body:        messageData,
+			}); err != nil {
+				return
+			}
 		}
-
-		if err := h.RabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
-			ContentType: protocol.ContentTypeJSON,
-			Body:        messageData,
-		}); err != nil {
-			return
-		}
-	}
+	}()
 }
 
 func (h *Handler) initializeIndexerStatus(ctx context.Context, address string) {

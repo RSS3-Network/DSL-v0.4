@@ -42,6 +42,9 @@ coinmarketcap:
 infura:
   projectid: ""
 
+eip1577:
+  endpoint: ""
+
 rpc:
   general:
     ethereum:

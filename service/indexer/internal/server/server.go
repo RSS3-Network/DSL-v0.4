@@ -31,6 +31,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
@@ -147,6 +148,7 @@ func (s *Server) Initialize() (err error) {
 		zksync.New(),
 		lensDatasource,
 		eth_etl.New(),
+		eip1577.New(s.employer),
 	}
 
 	swapWorker, err := swap.New(s.employer)
@@ -398,7 +400,15 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 			defer wg.Done()
 			for _, network := range datasource.Networks() {
 				if network == message.Network {
+					loggerx.Global().Info("start datasource", zap.String("datasource", datasource.Name()), zap.String("address", message.Address))
+					startTime := time.Now()
+
+					// handle
 					internalTransactions, err := datasource.Handle(ctx, message)
+
+					// log
+					loggerx.Global().Info("datasource completion", zap.String("datasource", datasource.Name()), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
+
 					// Avoid blocking indexed workers
 					if err != nil {
 						loggerx.Global().Error("datasource handle failed", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("datasource", datasource.Name()))
@@ -618,7 +628,15 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	for _, worker := range s.workers {
 		for _, network := range worker.Networks() {
 			if network == message.Network {
+				// log
+				loggerx.Global().Info("start worker", zap.String("worker", worker.Name()), zap.String("address", message.Address))
+				startTime := time.Now()
+
 				internalTransactions, err := worker.Handle(ctx, message, transactions)
+
+				// log
+				loggerx.Global().Info("worker completion", zap.String("worker", worker.Name()), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
+
 				if err != nil {
 					loggerx.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
 
