@@ -186,15 +186,17 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, message protocol.Me
 		return
 	}
 
-	var address model.Address
-	_ = database.Global().Model(&dbModel.Address{}).
-		Where("address = ?", message.Address).
-		First(&address).Error
-	if address.Address != "" && address.UpdatedAt.After(time.Now().Add(-2*time.Minute)) {
-		return
-	}
+	if !message.IgnoreNote {
+		var address model.Address
+		_ = database.Global().Model(&dbModel.Address{}).
+			Where("address = ?", message.Address).
+			First(&address).Error
+		if address.Address != "" && address.UpdatedAt.After(time.Now().Add(-2*time.Minute)) {
+			return
+		}
 
-	h.initializeIndexerStatus(ctx, message.Address)
+		h.initializeIndexerStatus(ctx, message.Address)
+	}
 
 	networks := []string{
 		protocol.NetworkEthereum,
