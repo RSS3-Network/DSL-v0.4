@@ -568,6 +568,10 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 			if bytes.Equal(transfer.Metadata, metadata.Default) {
 				continue
 			}
+			// handle unsupported Unicode escape sequence
+			if bytes.Contains(transfer.Metadata, []byte(`\u0000`)) {
+				transfer.Metadata = bytes.ReplaceAll(transfer.Metadata, []byte(`\u0000`), []byte{})
+			}
 
 			transfers = append(transfers, transfer)
 
