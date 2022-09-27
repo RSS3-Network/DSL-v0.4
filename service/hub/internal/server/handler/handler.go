@@ -182,6 +182,10 @@ func (h *Handler) publishIndexerMessage(ctx context.Context, message protocol.Me
 
 	defer rabbitmqSnap.End()
 
+	if len(message.Address) == 0 {
+		return
+	}
+
 	var address model.Address
 	_ = database.Global().Model(&dbModel.Address{}).
 		Where("address = ?", message.Address).
