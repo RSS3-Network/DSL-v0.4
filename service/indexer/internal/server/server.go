@@ -31,6 +31,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
@@ -138,6 +139,7 @@ func (s *Server) Initialize() (err error) {
 		blockscoutDatasource,
 		zksync.New(),
 		lensDatasource,
+		eip1577.New(s.employer),
 	}
 
 	swapWorker, err := swap.New(s.employer)
