@@ -53,7 +53,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	for _, transaction := range transactionMap {
 		internalTransaction := transaction
 
-		if internalTransaction.BlockNumber < message.BlockNumber {
+		if internalTransaction.BlockNumber < message.BlockNumber && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) {
 			continue
 		}
 

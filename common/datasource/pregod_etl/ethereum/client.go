@@ -27,7 +27,7 @@ type Transfer struct {
 
 func GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter) (*GetAssetTransfersResult, error) {
 	result := GetAssetTransfersResult{}
-	fromAddress := "\\" + parameter.FromAddress[1:]
+	fromAddress := common.HexToAddress(parameter.FromAddress)
 	blockNum := parameter.FromBlock
 
 	err := database.EthDb().
