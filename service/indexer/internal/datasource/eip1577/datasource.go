@@ -137,8 +137,9 @@ func (d *Datasource) buildTransactions(ctx context.Context, message *protocol.Me
 		success := true
 
 		metadataRaw, err := json.Marshal(metadata.Post{
-			Title: feed.Title,
-			Body:  feed.Summary,
+			Title:   feed.Title,
+			Summary: feed.Summary,
+			Body:    feed.Content,
 		})
 		if err != nil {
 			return nil, err
