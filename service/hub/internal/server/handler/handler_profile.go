@@ -108,7 +108,11 @@ func (h *Handler) getProfiles(c context.Context, request GetRequest) ([]social.P
 
 	lop.ForEach(ProfilePlatformList, func(platform string, i int) {
 		if m[platform] {
-			go h.getProfilesFromPlatform(c, platform, request.Address, true)
+			go func() {
+				if _, err := h.getProfilesFromPlatform(c, platform, request.Address, true); err != nil {
+					logrus.Errorf("[profile] getProfilesFromPlatform error, %v", err)
+				}
+			}()
 
 			return
 		}
@@ -140,7 +144,11 @@ func (h *Handler) batchGetProfiles(c context.Context, request BatchGetProfilesRe
 		lop.ForEach(ProfilePlatformList, func(platform string, i int) {
 			key := fmt.Sprintf("%v:%v", platform, address)
 			if m[key] {
-				go h.getProfilesFromPlatform(c, platform, address, true)
+				go func() {
+					if _, err := h.getProfilesFromPlatform(c, platform, address, true); err != nil {
+						logrus.Errorf("[profile] getProfilesFromPlatform error, %v", err)
+					}
+				}()
 
 				return
 			}
@@ -263,7 +271,7 @@ func (h *Handler) batchGetProfilesDatabase(c context.Context, request BatchGetPr
 	return dbResult, nil
 }
 
-func (h *Handler) upsertProfiles(c context.Context, profiles []social.Profile) error {
+func (h *Handler) upsertProfiles(c context.Context, profiles []social.Profile) {
 	err := database.Global().Model(&social.Profile{}).
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
@@ -271,9 +279,5 @@ func (h *Handler) upsertProfiles(c context.Context, profiles []social.Profile) e
 		Create(profiles).Error
 	if err != nil {
 		logrus.Errorf("[profile] upsertProfiles error, %v", err)
-
-		return err
 	}
-
-	return nil
 }
