@@ -18,6 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
+	lenscontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -51,6 +52,55 @@ func New() *Client {
 	return &Client{
 		httpClient: http.DefaultClient,
 	}
+}
+
+func (c *Client) GetProfile(address string) (*social.Profile, error) {
+	ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)
+	if err != nil {
+		logrus.Errorf("[common] lens: ethclientx.Global err, %v", err)
+
+		return nil, err
+	}
+
+	lensHubContract, err := lenscontract.NewHub(lens.HubProxyContractAddress, ethereumClient)
+	if err != nil {
+		logrus.Errorf("[common] lens: NewHub err, %v", err)
+
+		return nil, err
+	}
+
+	profileID, err := lensHubContract.DefaultProfile(&bind.CallOpts{}, common.HexToAddress(address))
+	if err != nil {
+		logrus.Errorf("[common] lens: Handle DefaultProfile err, %v", err)
+
+		return nil, err
+	}
+
+	if profileID.Int64() == 0 {
+		logrus.Infof("[common] lens: Handle getDefaultProfile is nil, address: %v", address)
+
+		return nil, nil
+	}
+
+	result, err := lensHubContract.GetProfile(&bind.CallOpts{}, profileID)
+	if err != nil {
+		logrus.Errorf("[common] lens: GetProfile err, %v", err)
+
+		return nil, err
+	}
+
+	profile := &social.Profile{
+		Address:     address,
+		Network:     protocol.NetworkPolygon,
+		Platform:    protocol.PlatformLens,
+		Source:      protocol.PlatformLens,
+		Name:        result.Handle,
+		Handle:      result.Handle,
+		URL:         fmt.Sprintf("https://lenster.xyz/u/%v", result.Handle),
+		ProfileUris: []string{ipfs.GetDirectURL(result.ImageURI)},
+	}
+
+	return profile, nil
 }
 
 func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transaction) (transfers []model.Transfer, err error) {
@@ -256,13 +306,14 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 	transfer.AddressTo = strings.ToLower(event.To.String())
 
 	profile := social.Profile{
-		Address:  strings.ToLower(event.To.String()),
-		Platform: protocol.PlatformLens,
-		Network:  transaction.Network,
-		Source:   transaction.Platform,
-		Type:     filter.SocialProfileCreate,
-		URL:      ipfs.GetDirectURL(event.ImageURI),
-		Handle:   event.Handle,
+		Address:     strings.ToLower(event.To.String()),
+		Platform:    protocol.PlatformLens,
+		Network:     transaction.Network,
+		Source:      transaction.Platform,
+		Type:        filter.SocialProfileCreate,
+		URL:         fmt.Sprintf("https://lenster.xyz/u/%v", event.Handle),
+		Handle:      event.Handle,
+		ProfileUris: []string{ipfs.GetDirectURL(event.ImageURI)},
 	}
 
 	rawMetadata, err := json.Marshal(&profile)
