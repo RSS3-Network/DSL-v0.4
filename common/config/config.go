@@ -84,6 +84,10 @@ type Infura struct {
 	ProjectID string `mapstructure:"projectid"`
 }
 
+type EIP1577 struct {
+	Endpoint string `mapstructure:"endpoint"`
+}
+
 type Gateway struct {
 	EthEndpoint string `mapstructure:"ethendpoint"`
 }

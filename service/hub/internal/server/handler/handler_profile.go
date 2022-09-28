@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -29,7 +30,7 @@ var ProfilePlatformList = []string{
 // - network
 // - platform
 func (h *Handler) GetProfilesFunc(c echo.Context) error {
-	go h.apiReport(GetProfiles, c.Get("API-KEY"))
+	go h.apiReport(GetProfiles, c)
 	tracer := otel.Tracer("GetProfilesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -52,14 +53,15 @@ func (h *Handler) GetProfilesFunc(c echo.Context) error {
 		return InternalError(c)
 	}
 
+	total := int64(len(profileList))
 	return c.JSON(http.StatusOK, &Response{
-		Total:  int64(len(profileList)),
+		Total:  &total,
 		Result: profileList,
 	})
 }
 
 func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
-	go h.apiReport(PostProfiles, c.Get("API-KEY"))
+	go h.apiReport(PostProfiles, c)
 	tracer := otel.Tracer("BatchGetProfilesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -86,8 +88,9 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 		return InternalError(c)
 	}
 
+	total := int64(len(profileList))
 	return c.JSON(http.StatusOK, &Response{
-		Total:  int64(len(profileList)),
+		Total:  &total,
 		Result: profileList,
 	})
 }
@@ -116,22 +119,42 @@ func (h *Handler) getProfiles(c context.Context, request GetRequest) ([]social.P
 		}
 	})
 
-	err := database.Global().Model(&social.Profile{}).
-		Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).
-		Create(result).Error
-	if err != nil {
-		logrus.Errorf("[profile] getProfiles error, %v", err)
-
-		return nil, err
-	}
+	go h.upsertProfiles(c, result)
 
 	return result, nil
 }
 
 func (h *Handler) batchGetProfiles(c context.Context, request BatchGetProfilesRequest) ([]social.Profile, error) {
-	return nil, nil
+	m := make(map[string]bool)
+	result := make([]social.Profile, 0)
+
+	profiles, _ := h.batchGetProfilesDatabase(c, request)
+
+	for _, profile := range profiles {
+		key := fmt.Sprintf("%v:%v", profile.Platform, profile.Address)
+		m[key] = true
+		result = append(result, profile)
+	}
+
+	lop.ForEach(request.Address, func(address string, i int) {
+		lop.ForEach(ProfilePlatformList, func(platform string, i int) {
+			key := fmt.Sprintf("%v:%v", platform, address)
+			if m[key] {
+				go h.getProfilesFromPlatform(c, platform, address, true)
+
+				return
+			}
+
+			list, err := h.getProfilesFromPlatform(c, platform, address, false)
+			if err == nil && len(list) > 0 {
+				result = append(result, list...)
+			}
+		})
+	})
+
+	go h.upsertProfiles(c, result)
+
+	return result, nil
 }
 
 func (h *Handler) getProfilesFromPlatform(c context.Context, platform, address string, update bool) ([]social.Profile, error) {
@@ -156,11 +179,7 @@ func (h *Handler) getProfilesFromPlatform(c context.Context, platform, address s
 	}
 
 	if update && err == nil && len(profiles) > 0 {
-		_ = database.Global().Model(&social.Profile{}).
-			Clauses(clause.OnConflict{
-				UpdateAll: true,
-			}).
-			Create(profiles).Error
+		go h.upsertProfiles(c, profiles)
 	}
 
 	return profiles, err
@@ -242,4 +261,19 @@ func (h *Handler) batchGetProfilesDatabase(c context.Context, request BatchGetPr
 	}
 
 	return dbResult, nil
+}
+
+func (h *Handler) upsertProfiles(c context.Context, profiles []social.Profile) error {
+	err := database.Global().Model(&social.Profile{}).
+		Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).
+		Create(profiles).Error
+	if err != nil {
+		logrus.Errorf("[profile] upsertProfiles error, %v", err)
+
+		return err
+	}
+
+	return nil
 }

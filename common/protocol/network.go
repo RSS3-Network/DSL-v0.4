@@ -13,6 +13,7 @@ const (
 	NetworkFantom            = "fantom"
 	NetworkAvalanche         = "avalanche"
 	NetworkCrossbell         = "crossbell"
+	NetworkEIP1577           = "EIP-1577"
 )
 
 var SupportNetworks = []string{

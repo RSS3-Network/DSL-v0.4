@@ -63,7 +63,7 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, &Response{
-		Total:  total,
+		Total:  &total,
 		Cursor: cursor,
 		Result: assetList,
 	})

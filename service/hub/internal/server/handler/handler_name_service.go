@@ -18,20 +18,15 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
+	"github.com/unstoppabledomains/resolution-go/v2"
+	"github.com/unstoppabledomains/resolution-go/v2/namingservice"
 	goens "github.com/wealdtech/go-ens/v3"
 	"go.opentelemetry.io/otel"
 )
 
-type NameServiceResult struct {
-	ENS       string `json:"ens"`
-	Crossbell string `json:"crossbell"`
-	Lens      string `json:"lens"`
-	SpaceID   string `json:"spaceid"`
-	Address   string `json:"address"`
-}
-
 func (h *Handler) GetNameResolveFunc(c echo.Context) error {
-	go h.apiReport(GetNS, c.Get("API-KEY"))
+	go h.apiReport(GetNS, c)
 	tracer := otel.Tracer("GetNameResolveFunc")
 	_, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -53,37 +48,9 @@ func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 
 	go h.filterReport(GetNS, request)
 
-	splits := strings.Split(request.Address, ".")
+	result := ReverseResolveAll(strings.ToLower(request.Address), true)
 
-	result := NameServiceResult{}
-	var address string
-
-	request.Address = strings.ToLower(request.Address)
-
-	switch splits[len(splits)-1] {
-	case "eth":
-		// error here means the address doesn't have a primary ENS, and can be ignored
-		address, _ = ResolveENS(request.Address)
-		result.ENS = request.Address
-	case "csb":
-		address, _ = ResolveCrossbell(request.Address)
-		result.Crossbell = request.Address
-	case "lens":
-		address, _ = ResolveLens(request.Address)
-		result.Lens = request.Address
-	case "bnb":
-		address, _ = ResolveSpaceID(request.Address)
-		result.SpaceID = request.Address
-	default:
-		if ValidateEthereumAddress(request.Address) {
-			address = request.Address
-		}
-	}
-
-	if address != "" {
-		result.Address = address
-		ResolveAll(&result)
-	} else {
+	if len(result.Address) == 0 {
 		return AddressIsInvalid(c)
 	}
 	return c.JSON(http.StatusOK, result)
@@ -190,7 +157,7 @@ func ResolveSpaceID(input string) (string, error) {
 	var result string
 	ethereumClient, err := ethclientx.Global(protocol.NetworkBinanceSmartChain)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to polygon rpc: %s", err)
+		return "", fmt.Errorf("failed to connect to bsc rpc: %s", err)
 	}
 
 	spaceidContract, err := spaceidcontract.NewSpaceid(spaceid.AddressSpaceID, ethereumClient)
@@ -246,7 +213,45 @@ func ResolveSpaceID(input string) (string, error) {
 	return strings.ToLower(result), nil
 }
 
-func ResolveAll(result *NameServiceResult) {
+func ResolveUnstoppableDomains(input string) (string, error) {
+	unsBuilder := resolution.NewUnsBuilder()
+	ethClient, err := ethclientx.Global(protocol.NetworkEthereum)
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to ethereum rpc: %s", err)
+	}
+
+	polygonClient, err := ethclientx.Global(protocol.NetworkPolygon)
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to polygon rpc: %s", err)
+	}
+
+	unsBuilder.SetContractBackend(ethClient)
+	unsBuilder.SetL2ContractBackend(polygonClient)
+
+	unsResolution, err := unsBuilder.Build()
+	if err != nil {
+		return "", fmt.Errorf("failed to build unsResolution: %s", err)
+	}
+
+	znsResolution, err := resolution.NewZnsBuilder().Build()
+	if err != nil {
+		return "", fmt.Errorf("failed to build znsResolution: %s", err)
+	}
+
+	namingServices := map[string]resolution.NamingService{namingservice.UNS: unsResolution, namingservice.ZNS: znsResolution}
+	namingServiceName, _ := resolution.DetectNamingService(input)
+	if namingServices[namingServiceName] != nil {
+		resolvedAddress, err := namingServices[namingServiceName].Addr(input, "ETH")
+		if err != nil {
+			return "", fmt.Errorf("failed to result %s: %s", namingServiceName, err)
+		}
+		return strings.ToLower(resolvedAddress), nil
+	}
+
+	return "", nil
+}
+
+func ResolveAll(result *model.NameServiceResult) {
 	if result.ENS == "" {
 		result.ENS, _ = ResolveENS(result.Address)
 	}
@@ -262,6 +267,43 @@ func ResolveAll(result *NameServiceResult) {
 	if result.SpaceID == "" {
 		result.SpaceID, _ = ResolveSpaceID(result.Address)
 	}
+}
+
+func ReverseResolveAll(input string, resolveAll bool) model.NameServiceResult {
+	result := model.NameServiceResult{}
+	splits := strings.Split(input, ".")
+	var address string
+
+	switch splits[len(splits)-1] {
+	case "eth":
+		// error here means the address doesn't have a primary ENS, and can be ignored
+		address, _ = ResolveENS(input)
+		result.ENS = input
+	case "csb":
+		address, _ = ResolveCrossbell(input)
+		result.Crossbell = input
+	case "lens":
+		address, _ = ResolveLens(input)
+		result.Lens = input
+	case "bnb":
+		address, _ = ResolveSpaceID(input)
+		result.SpaceID = input
+	case "crypto", "nft", "blockchain", "bitcoin", "coin", "wallet", "888", "dao", "x", "zil":
+		address, _ = ResolveUnstoppableDomains(input)
+		result.UnstoppableDomains = input
+	default:
+		if ValidateEthereumAddress(input) {
+			address = input
+		}
+	}
+	if address != "" {
+		result.Address = address
+		if resolveAll {
+			ResolveAll(&result)
+		}
+	}
+
+	return result
 }
 
 func ValidateEthereumAddress(address string) bool {
