@@ -2,17 +2,23 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	ws "github.com/naturalselectionlabs/pregod/common/websocket"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 )
 
 // GetNotesFunc HTTP handler for action API
@@ -81,7 +87,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
+		h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex, Refresh: request.Refresh, HubId: h.HubId, SocketId: request.SocketId})
 	}
 
 	if request.CountOnly {
@@ -435,4 +441,40 @@ func (h *Handler) getAddress(ctx context.Context, address []string) ([]dbModel.A
 	}
 
 	return addressStatus, nil
+}
+
+func (h *Handler) GetNotesWsFunc(c echo.Context) error {
+	ws.GetClientMaps()
+	clientId := c.Param("client_id")
+
+	conn, err := (&websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024, CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(c.Response(), c.Request(), nil)
+	if err != nil {
+		return err
+	}
+
+	client := &ws.WSClient{Hub: h.WsHub, Conn: conn, Send: make(chan []byte, 256), ClientId: []byte(clientId)}
+
+	client.Hub.Register <- client
+
+	ws.ClientMaps[clientId] = client
+
+	go func() {
+		deliveryCh, err := h.RabbitmqChannel.Consume(h.RabbitmqQueue.Name, "", true, false, false, false, nil)
+		if err != nil {
+			return
+		}
+		for delivery := range deliveryCh {
+			message := protocol.RefreshMessage{}
+			if err := json.Unmarshal(delivery.Body, &message); err != nil {
+				loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
+				continue
+			}
+			fmt.Println("get msg from mq: ", message)
+			h.WsHub.Broadcast <- delivery.Body
+		}
+	}()
+
+	go client.WritePump()
+
+	return nil
 }

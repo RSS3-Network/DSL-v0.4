@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
@@ -16,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/websocket"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
@@ -35,6 +37,7 @@ type Server struct {
 	httpHandler        *handler.Handler
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
+	rabbitmqQueue      rabbitmq.Queue
 	logger             *zap.Logger
 }
 
@@ -79,8 +82,21 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeJob, "direct", true, false, false, false, nil); err != nil {
-		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare failed", zap.Error(err))
+		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare Job failed", zap.Error(err))
 	}
+
+	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeRefresh, "direct", true, false, false, false, nil); err != nil {
+		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare Refresh failed", zap.Error(err))
+	}
+
+	if s.rabbitmqQueue, err = s.rabbitmqChannel.QueueDeclare(
+		"", false, false, true, false, nil,
+	); err != nil {
+		return err
+	}
+
+	uuid := uuid.New()
+	fmt.Println("hub id is : ", uuid.String())
 
 	redisClient, err := cache.Dial(config.ConfigHub.Redis)
 	if err != nil {
@@ -106,6 +122,14 @@ func (s *Server) Initialize() (err error) {
 	s.httpHandler = &handler.Handler{
 		RabbitmqConnection: s.rabbitmqConnection,
 		RabbitmqChannel:    s.rabbitmqChannel,
+		RabbitmqQueue:      &s.rabbitmqQueue,
+		HubId:              uuid.String(),
+	}
+
+	if err := s.rabbitmqChannel.QueueBind(
+		s.rabbitmqQueue.Name, s.httpHandler.HubId, protocol.ExchangeRefresh, false, nil,
+	); err != nil {
+		return err
 	}
 
 	s.httpServer.HTTPErrorHandler = s.httpHandler.ErrorFunc
@@ -141,6 +165,12 @@ func (s *Server) Initialize() (err error) {
 	// API KEY
 	s.httpServer.POST("/apikey/apply", s.httpHandler.PostAPIKeyFunc)
 	s.httpServer.GET("/apikey", s.httpHandler.GetAPIKeyFunc)
+
+	// WS Initialize
+	wsHub := websocket.NewHub()
+	go wsHub.Run()
+	s.httpHandler.WsHub = wsHub
+	s.httpServer.GET("/ws/:client_id", s.httpHandler.GetNotesWsFunc)
 
 	return nil
 }

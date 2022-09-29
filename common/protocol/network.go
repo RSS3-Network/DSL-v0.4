@@ -29,6 +29,7 @@ var SupportNetworks = []string{
 	NetworkFantom,
 	NetworkAvalanche,
 	NetworkCrossbell,
+	NetworkEIP1577,
 }
 
 var EthclientNetworks = []string{

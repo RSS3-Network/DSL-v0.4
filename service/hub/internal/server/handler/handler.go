@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	utils "github.com/naturalselectionlabs/pregod/common/utils/interface"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"github.com/naturalselectionlabs/pregod/common/websocket"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -35,6 +36,9 @@ const (
 type Handler struct {
 	RabbitmqConnection *rabbitmq.Connection
 	RabbitmqChannel    *rabbitmq.Channel
+	RabbitmqQueue      *rabbitmq.Queue
+	WsHub              *websocket.WSHub
+	HubId              string
 }
 
 type Response struct {
@@ -62,7 +66,8 @@ type GetRequest struct {
 	Page        int  `query:"page" json:"page"`
 	QueryStatus bool `query:"query_status" json:"query_status"`
 	// returns a count of transactions only
-	CountOnly bool `query:"count_only" json:"count_only"`
+	CountOnly bool   `query:"count_only" json:"count_only"`
+	SocketId  string `query:"socket_id" json:"socket_id"`
 }
 
 type GetExchangeRequest struct {
