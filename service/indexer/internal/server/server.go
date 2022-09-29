@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -331,6 +332,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	loggerx.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
 	// Ignore triggers
+	loggerx.Global().Info("IndexerDebugBefore IgnoreTrigger: " + message.Network + " " + message.Address)
 	if !message.IgnoreTrigger {
 		if err := s.executeTriggers(ctx, message); err != nil {
 			zap.L().Error("failed to execute trigger", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
@@ -343,9 +345,11 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	}
 
 	// Open a database transaction
+	loggerx.Global().Info("IndexerDebugBefore tx Begin: " + message.Network + " " + message.Address)
 	tx := database.Global().WithContext(ctx).Begin()
 
 	// Delete data from this address and reindex it
+	loggerx.Global().Info("IndexerDebugBefore Reindex: " + strconv.FormatBool(message.Reindex) + message.Network + " " + message.Address)
 	if message.Reindex {
 		var hashes []string
 
@@ -394,6 +398,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
+	loggerx.Global().Info("IndexerDebugBefore datasource: " + message.Network + " " + message.Address)
 	for _, ds := range s.datasources {
 		wg.Add(1)
 		go func(message *protocol.Message, datasource datasource.Datasource) {
@@ -423,10 +428,12 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		}(message, ds)
 
 	}
+	loggerx.Global().Info("IndexerDebugBefore WaitGroup: " + message.Network + " " + message.Address)
 	wg.Wait()
 
 	transactionsMap := getTransactionsMap(transactions)
 
+	loggerx.Global().Info("IndexerDebugBefore workers: " + message.Network + " " + message.Address)
 	return s.handleWorkers(ctx, message, tx, transactions, transactionsMap)
 }
 
@@ -569,6 +576,10 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 			// Ignore empty transfer
 			if bytes.Equal(transfer.Metadata, metadata.Default) {
 				continue
+			}
+			// handle unsupported Unicode escape sequence
+			if bytes.Contains(transfer.Metadata, []byte(`\u0000`)) {
+				transfer.Metadata = bytes.ReplaceAll(transfer.Metadata, []byte(`\u0000`), []byte{})
 			}
 
 			transfers = append(transfers, transfer)
