@@ -68,6 +68,6 @@ rpc:
   pregod_etl:
     polygon:
       http: ''
-  ipfs: 
+  ipfs:
     io: ''
     internal: ''
