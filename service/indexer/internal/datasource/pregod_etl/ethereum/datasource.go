@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	Source = "ethereum-etl"
+	Source = protocol.SourcePregodETL
 )
 
 var _ datasource.Datasource = &Datasource{}
