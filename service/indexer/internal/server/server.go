@@ -40,8 +40,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
 	rabbitmqx "github.com/naturalselectionlabs/pregod/service/indexer/internal/rabbitmq"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger/ens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/marketplace"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
@@ -70,7 +68,6 @@ type Server struct {
 	datasources      []datasource.Datasource
 	datasourcesAsset []datasource_asset.Datasource
 	workers          []worker.Worker
-	triggers         []trigger.Trigger
 	employer         *shedlock.Employer
 }
 
@@ -164,10 +161,6 @@ func (s *Server) Initialize() (err error) {
 
 	for network, client := range ethereumClientMap {
 		ethclientx.ReplaceGlobal(network, client)
-	}
-
-	s.triggers = []trigger.Trigger{
-		ens.New(),
 	}
 
 	s.workers = []worker.Worker{
@@ -331,19 +324,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	loggerx.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
-	// Ignore triggers
-	loggerx.Global().Info("IndexerDebugBefore IgnoreTrigger: " + message.Network + " " + message.Address)
-	if !message.IgnoreTrigger {
-		if err := s.executeTriggers(ctx, message); err != nil {
-			zap.L().Error("failed to execute trigger", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
-		}
-	}
-
-	// Ignore notes
-	if message.IgnoreNote {
-		return nil
-	}
-
 	// Open a database transaction
 	loggerx.Global().Info("IndexerDebugBefore tx Begin: " + message.Network + " " + message.Address)
 	tx := database.Global().WithContext(ctx).Begin()
@@ -435,25 +415,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	loggerx.Global().Info("IndexerDebugBefore workers: " + message.Network + " " + message.Address)
 	return s.handleWorkers(ctx, message, tx, transactions, transactionsMap)
-}
-
-func (s *Server) executeTriggers(ctx context.Context, message *protocol.Message) error {
-	// Get data from trigger
-	for _, internalTrigger := range s.triggers {
-		for _, network := range internalTrigger.Networks() {
-			if message.Network == network {
-				go func(internalTrigger trigger.Trigger) {
-					if err := internalTrigger.Handle(ctx, message); err != nil {
-						loggerx.Global().Error("failed to handle trigger", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
-					}
-				}(internalTrigger)
-
-				break
-			}
-		}
-	}
-
-	return nil
 }
 
 func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (err error) {
