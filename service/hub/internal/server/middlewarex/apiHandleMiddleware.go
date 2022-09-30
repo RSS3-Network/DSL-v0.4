@@ -7,7 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
+	// "github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 )
 
 func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -66,9 +66,9 @@ func CheckAPIKey(apiKey string) error {
 	return nil
 }
 
-// ResolveAddress resolve handles into an address
-func ResolveAddress(address string) (string, error) {
-	result := handler.ReverseResolveAll(strings.ToLower(address), false)
+// // ResolveAddress resolve handles into an address
+// func ResolveAddress(address string) (string, error) {
+// 	result := handler.ReverseResolveAll(strings.ToLower(address), false)
 
-	return strings.ToLower(result.Address), nil
-}
+// 	return strings.ToLower(result.Address), nil
+// }

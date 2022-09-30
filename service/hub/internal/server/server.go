@@ -15,17 +15,13 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
-	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/service"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/validatorx"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 	"go.uber.org/zap"
 )
 
@@ -40,48 +36,13 @@ type Server struct {
 }
 
 func (s *Server) Initialize() (err error) {
-	// do not check the err here
 	s.logger, _ = zap.NewProduction()
-	// if err != nil {
-	//	return err
-	//}
 
-	var exporter trace.SpanExporter
-
-	if config.ConfigHub.OpenTelemetry == nil {
-		if exporter, err = opentelemetry.DialWithPath(opentelemetry.DefaultPath); err != nil {
-			loggerx.Global().Error("opentelemetry DialWithPath failed", zap.Error(err))
-		}
-	} else if config.ConfigHub.OpenTelemetry.Enabled {
-		if exporter, err = opentelemetry.DialWithURL(config.ConfigHub.OpenTelemetry.String()); err != nil {
-			loggerx.Global().Error("opentelemetry DialWithURL failed", zap.Error(err))
-		}
-	}
-
-	otel.SetTracerProvider(trace.NewTracerProvider(
-		trace.WithBatcher(exporter),
-		trace.WithResource(resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("pregod-1-1-hub"),
-			semconv.ServiceVersionKey.String(protocol.Version),
-		)),
-	))
-
-	database.ReplaceGlobal(config.ConfigHub.DatabaseClient)
-
-	s.rabbitmqConnection, err = rabbitmq.Dial(config.ConfigHub.RabbitMQ.String())
+	databaseClient, err := database.Dial(config.ConfigHub.Postgres.String(), false)
 	if err != nil {
-		loggerx.Global().Error("rabbitmq dail failed", zap.Error(err))
+		panic(err)
 	}
-
-	s.rabbitmqChannel, err = s.rabbitmqConnection.Channel()
-	if err != nil {
-		loggerx.Global().Error("rabbitmqConnection failed", zap.Error(err))
-	}
-
-	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeJob, "direct", true, false, false, false, nil); err != nil {
-		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare failed", zap.Error(err))
-	}
+	database.ReplaceGlobal(databaseClient)
 
 	redisClient, err := cache.Dial(config.ConfigHub.Redis)
 	if err != nil {
@@ -101,18 +62,14 @@ func (s *Server) Initialize() (err error) {
 		ethclientx.ReplaceGlobal(network, client)
 	}
 
-	s.httpServer = echo.New()
+	dao := dao.New()
+	svc := service.New(dao)
+	s.httpHandler = handler.New(svc)
 
+	s.httpServer = echo.New()
 	s.httpServer.HideBanner = true
 	s.httpServer.HidePort = true
-
-	s.httpHandler = &handler.Handler{
-		RabbitmqConnection: s.rabbitmqConnection,
-		RabbitmqChannel:    s.rabbitmqChannel,
-	}
-
 	s.httpServer.HTTPErrorHandler = s.httpHandler.ErrorFunc
-
 	s.httpServer.Validator = validatorx.Default
 
 	s.httpServer.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
