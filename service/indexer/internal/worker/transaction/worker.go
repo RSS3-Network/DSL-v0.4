@@ -468,7 +468,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenMetadata.Value = &tokenValue
 			tokenMetadata.ValueDisplay = &tokenValueDisplay
 
-			if nft.Symbol == "ENS" {
+			if transfer.AddressTo == token.ENSContractAddress {
 				transfer.Platform = protocol.PlatformEns
 			}
 
