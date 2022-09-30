@@ -50,3 +50,9 @@ rpc:
   alchemy:
     ethereum: ''
     polygon: ''
+  pregod_etl:
+    polygon:
+      http: ''
+  ipfs:
+    io: ''
+    internal: ''

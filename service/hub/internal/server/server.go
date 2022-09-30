@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -100,6 +101,8 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	cache.ReplaceGlobal(redisClient)
+
+	ipfs.New(config.ConfigHub.RPC.IPFS.IO)
 
 	ethereumClientMap, err := ethclientx.Dial(config.ConfigHub.RPC, []string{protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkCrossbell, protocol.NetworkBinanceSmartChain})
 	if err != nil {

@@ -40,7 +40,25 @@ var (
 	client               *gorm.DB
 	globalLocker         sync.RWMutex
 	globalDatabaseClient *gorm.DB
+	ethDbLocker          sync.RWMutex
+	ethDbClient          *gorm.DB
 )
+
+func EthDb() *gorm.DB {
+	ethDbLocker.RLock()
+
+	defer ethDbLocker.RUnlock()
+
+	return ethDbClient
+}
+
+func ReplaceEthDb(db *gorm.DB) {
+	ethDbLocker.Lock()
+
+	defer ethDbLocker.Unlock()
+
+	ethDbClient = db
+}
 
 func Global() *gorm.DB {
 	globalLocker.RLock()

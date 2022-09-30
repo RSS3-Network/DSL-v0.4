@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -296,6 +295,13 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 		return InternalError(c)
 	}
 
+	// publish mq message
+	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
+		for _, address := range request.Address {
+			h.publishIndexerMessage(ctx, protocol.Message{Address: address})
+		}
+	}
+
 	var addressStatus []dbModel.Address
 	if request.QueryStatus {
 		addressStatus, _ = h.getAddress(ctx, request.Address)
@@ -389,16 +395,6 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 
 	if err := sql.Count(&total).Limit(request.Limit).Offset(request.Page * request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
 		return nil, 0, err
-	}
-
-	// publish mq message
-	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		go func() {
-			for _, address := range request.Address {
-				h.publishIndexerMessage(ctx, protocol.Message{Address: address})
-				time.Sleep(time.Minute)
-			}
-		}()
 	}
 
 	transactionHashes := make([]string, 0)
