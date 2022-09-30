@@ -428,10 +428,10 @@ func (c *Client) GetLensRelatedURL(ctx context.Context, profileId *big.Int, pubI
 	profileIdHex := []byte(hexutil.EncodeBig(profileId))
 	pubIdHex := []byte(hexutil.EncodeBig(pubId))
 
-	if len(profileIdHex) == 3 {
+	if len(profileIdHex)%2 == 1 {
 		profileIdHex = append(profileIdHex[:2], 48, profileIdHex[2])
 	}
-	if len(pubIdHex) == 3 {
+	if len(pubIdHex)%2 == 1 {
 		pubIdHex = append(pubIdHex[:2], 48, pubIdHex[2])
 	}
 
