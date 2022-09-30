@@ -469,7 +469,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenMetadata.Value = &tokenValue
 			tokenMetadata.ValueDisplay = &tokenValueDisplay
 
-			if transfer.AddressTo == ens.EnsRegistrarController.String() {
+			if transfer.AddressTo == ens.EnsRegistrarController.String() || transfer.AddressFrom == ens.EnsRegistrarController.String() {
 				transfer.Platform = protocol.PlatformEns
 			}
 
