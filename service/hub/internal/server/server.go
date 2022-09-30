@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
@@ -85,7 +84,7 @@ func (s *Server) Initialize() (err error) {
 		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare Job failed", zap.Error(err))
 	}
 
-	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeRefresh, "direct", true, false, false, false, nil); err != nil {
+	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeRefresh, "fanout", true, false, false, false, nil); err != nil {
 		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare Refresh failed", zap.Error(err))
 	}
 
@@ -94,9 +93,6 @@ func (s *Server) Initialize() (err error) {
 	); err != nil {
 		return err
 	}
-
-	uuid := uuid.New()
-	fmt.Println("hub id is : ", uuid.String())
 
 	redisClient, err := cache.Dial(config.ConfigHub.Redis)
 	if err != nil {
@@ -123,11 +119,10 @@ func (s *Server) Initialize() (err error) {
 		RabbitmqConnection: s.rabbitmqConnection,
 		RabbitmqChannel:    s.rabbitmqChannel,
 		RabbitmqQueue:      &s.rabbitmqQueue,
-		HubId:              uuid.String(),
 	}
 
 	if err := s.rabbitmqChannel.QueueBind(
-		s.rabbitmqQueue.Name, s.httpHandler.HubId, protocol.ExchangeRefresh, false, nil,
+		s.rabbitmqQueue.Name, "", protocol.ExchangeRefresh, false, nil,
 	); err != nil {
 		return err
 	}
@@ -170,7 +165,7 @@ func (s *Server) Initialize() (err error) {
 	wsHub := websocket.NewHub()
 	go wsHub.Run()
 	s.httpHandler.WsHub = wsHub
-	s.httpServer.GET("/ws/:client_id", s.httpHandler.GetNotesWsFunc)
+	s.httpServer.GET("/ws/:address", s.httpHandler.GetNotesWsFunc)
 
 	return nil
 }

@@ -696,22 +696,22 @@ func (s *Server) upsertAddress(ctx context.Context, message *protocol.Message) {
 		loggerx.Global().Error("failed to upsert address", zap.Error(err), zap.String("address", address.Address))
 	}
 
-	if len(address.IndexingNetworks) == 7 {
-		address.UpdatedAt = time.Now().Add(-1 * time.Second)
-	}
-
+	// refresh or new address
+	address.UpdatedAt = time.Now().Add(-1 * time.Second)
 	messageData, err := json.Marshal(&protocol.RefreshMessage{
-		SocketId: message.SocketId,
-		Address:  address,
+		Status:     address.Status,
+		FinishedAt: address.UpdatedAt,
+		// todo: first update time
+		Address: address,
 	})
 	if err != nil {
 		return
 	}
-	if err := rabbitmqx.GetRabbitmqChannel().Publish(protocol.ExchangeRefresh, message.HubId, false, false, rabbitmq.Publishing{
+	if err := rabbitmqx.GetRabbitmqChannel().Publish(protocol.ExchangeRefresh, "", false, false, rabbitmq.Publishing{
 		ContentType: protocol.ContentTypeJSON,
 		Body:        messageData,
 	}); err != nil {
-		return
+		loggerx.Global().Error("failed to send refresh message to mq", zap.Error(err), zap.String("address", address.Address))
 	}
 }
 

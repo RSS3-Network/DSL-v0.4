@@ -38,7 +38,6 @@ type Handler struct {
 	RabbitmqChannel    *rabbitmq.Channel
 	RabbitmqQueue      *rabbitmq.Queue
 	WsHub              *websocket.WSHub
-	HubId              string
 }
 
 type Response struct {
@@ -66,8 +65,7 @@ type GetRequest struct {
 	Page        int  `query:"page" json:"page"`
 	QueryStatus bool `query:"query_status" json:"query_status"`
 	// returns a count of transactions only
-	CountOnly bool   `query:"count_only" json:"count_only"`
-	SocketId  string `query:"socket_id" json:"socket_id"`
+	CountOnly bool `query:"count_only" json:"count_only"`
 }
 
 type GetExchangeRequest struct {

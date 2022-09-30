@@ -87,7 +87,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex, Refresh: request.Refresh, HubId: h.HubId, SocketId: request.SocketId})
+		h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex, Refresh: request.Refresh})
 	}
 
 	if request.CountOnly {
@@ -445,7 +445,7 @@ func (h *Handler) getAddress(ctx context.Context, address []string) ([]dbModel.A
 
 func (h *Handler) GetNotesWsFunc(c echo.Context) error {
 	ws.GetClientMaps()
-	clientId := c.Param("client_id")
+	clientId := c.Param("address")
 
 	conn, err := (&websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024, CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
@@ -474,7 +474,7 @@ func (h *Handler) GetNotesWsFunc(c echo.Context) error {
 		}
 	}()
 
-	go client.WritePump()
+	go client.WriteMsg()
 
 	return nil
 }

@@ -16,11 +16,11 @@ type Message struct {
 	IgnoreTrigger bool      `json:"ignore_trigger"`
 	Retry         int       `json:"retry"`
 	Refresh       bool      `json:"refresh"`
-	HubId         string    `json:"hub_id"`
-	SocketId      string    `json:"socket_id"`
 }
 
 type RefreshMessage struct {
-	SocketId string        `json:"socket_id"`
-	Address  model.Address `json:"result"`
+	Status     bool          `json:"status"`
+	FinishedAt time.Time     `json:"finished_at,omitempty"` // 完成时间
+	UpdatedAt  time.Time     `json:"updated_at,omitempty"`  // 本次最早的更新时间
+	Address    model.Address `json:"result"`
 }

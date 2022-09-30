@@ -1,7 +1,6 @@
 package websocket
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -35,7 +34,7 @@ type WSClient struct {
 	ClientId []byte
 }
 
-func (c *WSClient) WritePump() {
+func (c *WSClient) WriteMsg() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -61,8 +60,6 @@ func (c *WSClient) WritePump() {
 			if _, err := w.Write(message); err != nil {
 				return
 			}
-
-			fmt.Println("write msg: ", string(message))
 			if err := w.Close(); err != nil {
 				return
 			}
