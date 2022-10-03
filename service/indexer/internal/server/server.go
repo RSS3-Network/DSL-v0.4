@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"os"
 	"os/signal"
 	"strconv"
@@ -51,7 +52,6 @@ import (
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
-	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/samber/lo"
 	"github.com/scylladb/go-set/strset"
 	"go.opentelemetry.io/otel"
@@ -306,7 +306,9 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		loggerx.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
 
 		// upsert address status
-		go s.upsertAddress(ctx, message)
+		go s.upsertAddress(ctx, model.Address{
+			Address: message.Address,
+		})
 	}()
 
 	// convert address to lowercase
@@ -631,9 +633,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	return s.upsertTransactions(ctx, message, tx, transactions)
 }
 
-func (s *Server) upsertAddress(ctx context.Context, message *protocol.Message) {
-	var address model.Address
-	address.Address = message.Address
+func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 	for _, network := range protocol.SupportNetworks {
 		key := fmt.Sprintf("indexer:%v:%v", address.Address, network)
 		n, err := cache.Global().Exists(ctx, key).Result()
@@ -666,12 +666,17 @@ func (s *Server) upsertAddress(ctx context.Context, message *protocol.Message) {
 		loggerx.Global().Error("failed to upsert address", zap.Error(err), zap.String("address", address.Address))
 	}
 
+	s.publishRefreshMessage(ctx, address)
+}
+
+func (s *Server) publishRefreshMessage(ctx context.Context, address model.Address) {
+	tracer := otel.Tracer("publishRefreshMessage")
+	_, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")
+
+	defer rabbitmqSnap.End()
 	// refresh or new address
 	address.UpdatedAt = time.Now().Add(-1 * time.Second)
 	messageData, err := json.Marshal(&protocol.RefreshMessage{
-		Status:     address.Status,
-		FinishedAt: address.UpdatedAt,
-		// todo: first update time
 		Address: address,
 	})
 	if err != nil {
@@ -681,7 +686,7 @@ func (s *Server) upsertAddress(ctx context.Context, message *protocol.Message) {
 		ContentType: protocol.ContentTypeJSON,
 		Body:        messageData,
 	}); err != nil {
-		loggerx.Global().Error("failed to send refresh message to mq", zap.Error(err), zap.String("address", address.Address))
+		loggerx.Global().Error("failed to publish refresh message to mq", zap.Error(err), zap.String("address", address.Address))
 	}
 }
 

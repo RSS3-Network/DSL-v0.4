@@ -17,8 +17,5 @@ type Message struct {
 }
 
 type RefreshMessage struct {
-	Status     bool          `json:"status"`
-	FinishedAt time.Time     `json:"finished_at,omitempty"` // 完成时间
-	UpdatedAt  time.Time     `json:"updated_at,omitempty"`  // 本次最早的更新时间
-	Address    model.Address `json:"result"`
+	Address model.Address `json:"result"`
 }

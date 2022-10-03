@@ -86,7 +86,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex, Refresh: request.Refresh})
+		h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
 	}
 
 	if request.CountOnly {
@@ -151,7 +151,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 	sql := database.Global().
 		Model(&dbModel.Transaction{}).
 		Where("owner = ?", request.Address). // address was already converted to lowercase
-		Where("success IS TRUE")             // Hide failed transactions
+		Where("success IS TRUE") // Hide failed transactions
 
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
