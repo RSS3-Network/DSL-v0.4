@@ -17,7 +17,7 @@ import (
 // GetNotesFunc HTTP handler for action API
 // parse query parameters, query and assemble data
 func (h *Handler) GetNotesFunc(c echo.Context) error {
-	go h.apiReport(GetNotes, c.Get("API-KEY"))
+	go h.apiReport(GetNotes, c)
 	tracer := otel.Tracer("GetNotesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -80,19 +80,29 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		h.initializeIndexerStatus(ctx, request.Address)
-		go h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
-	}
-
-	if len(transactions) == 0 {
-		return c.JSON(http.StatusOK, &Response{
-			Result: make([]dbModel.Transaction, 0),
-		})
+		h.publishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
 	}
 
 	if request.CountOnly {
 		return c.JSON(http.StatusOK, &Response{
-			Total: total,
+			Total: &total,
+		})
+	}
+
+	var cursor string
+	if total > int64(request.Limit) {
+		cursor = transactions[len(transactions)-1].Hash
+	}
+
+	var addressStatus []dbModel.Address
+	if request.QueryStatus {
+		addressStatus, _ = h.getAddress(ctx, []string{request.Address})
+	}
+
+	if len(transactions) == 0 {
+		return c.JSON(http.StatusOK, &Response{
+			Result:        make([]dbModel.Transaction, 0),
+			AddressStatus: addressStatus,
 		})
 	}
 
@@ -115,18 +125,8 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		transactions[index].Transfers = transferMap[transactions[index].Hash]
 	}
 
-	var cursor string
-	if total > int64(request.Limit) {
-		cursor = transactions[len(transactions)-1].Hash
-	}
-
-	var addressStatus []dbModel.Address
-	if request.QueryStatus {
-		addressStatus, _ = h.getAddress(ctx, []string{request.Address})
-	}
-
 	return c.JSON(http.StatusOK, &Response{
-		Total:         total,
+		Total:         &total,
 		Cursor:        cursor,
 		Result:        transactions,
 		AddressStatus: addressStatus,
@@ -222,7 +222,7 @@ func (h *Handler) getTransfers(c context.Context, transactionHashes []string) ([
 
 // BatchGetNotesFunc query multiple addresses and filters
 func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
-	go h.apiReport(PostNotes, c.Get("API-KEY"))
+	go h.apiReport(PostNotes, c)
 	tracer := otel.Tracer("BatchGetNotesFunc")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "BatchGetNotesFunc:http")
 
@@ -285,20 +285,25 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	}
 
 	transactions, total, err = h.batchGetTransactions(ctx, request)
-
 	if err != nil {
 		return InternalError(c)
 	}
 
-	if total == 0 {
-		return c.JSON(http.StatusOK, &Response{
-			Result: make([]dbModel.Transaction, 0),
-		})
+	// publish mq message
+	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
+		for _, address := range request.Address {
+			h.publishIndexerMessage(ctx, protocol.Message{Address: address})
+		}
+	}
+
+	var addressStatus []dbModel.Address
+	if request.QueryStatus {
+		addressStatus, _ = h.getAddress(ctx, request.Address)
 	}
 
 	if request.CountOnly {
 		return c.JSON(http.StatusOK, &Response{
-			Total: total,
+			Total: &total,
 		})
 	}
 
@@ -307,13 +312,15 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 		cursor = transactions[len(transactions)-1].Hash
 	}
 
-	var addressStatus []dbModel.Address
-	if request.QueryStatus {
-		addressStatus, _ = h.getAddress(ctx, request.Address)
+	if total == 0 {
+		return c.JSON(http.StatusOK, &Response{
+			Result:        make([]dbModel.Transaction, 0),
+			AddressStatus: addressStatus,
+		})
 	}
 
 	return c.JSON(http.StatusOK, &Response{
-		Total:         total,
+		Total:         &total,
 		Cursor:        cursor,
 		Result:        transactions,
 		AddressStatus: addressStatus,
@@ -382,15 +389,6 @@ func (h *Handler) batchGetTransactions(ctx context.Context, request BatchGetNote
 
 	if err := sql.Count(&total).Limit(request.Limit).Offset(request.Page * request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
 		return nil, 0, err
-	}
-
-	// publish mq message
-	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		for _, address := range request.Address {
-			h.initializeIndexerStatus(ctx, address)
-
-			go h.publishIndexerMessage(ctx, protocol.Message{Address: address})
-		}
 	}
 
 	transactionHashes := make([]string, 0)

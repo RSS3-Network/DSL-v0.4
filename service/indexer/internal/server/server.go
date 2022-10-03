@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -31,14 +32,14 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
+	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
 	rabbitmqx "github.com/naturalselectionlabs/pregod/service/indexer/internal/rabbitmq"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/trigger/ens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/marketplace"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/partybid"
@@ -68,7 +69,6 @@ type Server struct {
 	datasources      []datasource.Datasource
 	datasourcesAsset []datasource_asset.Datasource
 	workers          []worker.Worker
-	triggers         []trigger.Trigger
 	employer         *shedlock.Employer
 }
 
@@ -102,6 +102,13 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	database.ReplaceGlobal(databaseClient)
+
+	ethDbClient, err := database.Dial(s.config.EthereumEtl.String(), false)
+	if err != nil {
+		return err
+	}
+
+	database.ReplaceEthDb(ethDbClient)
 
 	redisClient, err := cache.Dial(s.config.Redis)
 	if err != nil {
@@ -139,6 +146,8 @@ func (s *Server) Initialize() (err error) {
 		blockscoutDatasource,
 		zksync.New(),
 		lensDatasource,
+		eth_etl.New(),
+		eip1577.New(s.employer),
 	}
 
 	swapWorker, err := swap.New(s.employer)
@@ -153,10 +162,6 @@ func (s *Server) Initialize() (err error) {
 
 	for network, client := range ethereumClientMap {
 		ethclientx.ReplaceGlobal(network, client)
-	}
-
-	s.triggers = []trigger.Trigger{
-		ens.New(),
 	}
 
 	s.workers = []worker.Worker{
@@ -321,22 +326,12 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	loggerx.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
-	// Ignore triggers
-	if !message.IgnoreTrigger {
-		if err := s.executeTriggers(ctx, message); err != nil {
-			zap.L().Error("failed to execute trigger", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
-		}
-	}
-
-	// Ignore notes
-	if message.IgnoreNote {
-		return nil
-	}
-
 	// Open a database transaction
+	loggerx.Global().Info("IndexerDebugBefore tx Begin: " + message.Network + " " + message.Address)
 	tx := database.Global().WithContext(ctx).Begin()
 
 	// Delete data from this address and reindex it
+	loggerx.Global().Info("IndexerDebugBefore Reindex: " + strconv.FormatBool(message.Reindex) + message.Network + " " + message.Address)
 	if message.Reindex {
 		var hashes []string
 
@@ -385,13 +380,22 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
+	loggerx.Global().Info("IndexerDebugBefore datasource: " + message.Network + " " + message.Address)
 	for _, ds := range s.datasources {
 		wg.Add(1)
 		go func(message *protocol.Message, datasource datasource.Datasource) {
 			defer wg.Done()
 			for _, network := range datasource.Networks() {
 				if network == message.Network {
+					loggerx.Global().Info("start datasource", zap.String("datasource", datasource.Name()), zap.String("address", message.Address))
+					startTime := time.Now()
+
+					// handle
 					internalTransactions, err := datasource.Handle(ctx, message)
+
+					// log
+					loggerx.Global().Info("datasource completion", zap.String("datasource", datasource.Name()), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
+
 					// Avoid blocking indexed workers
 					if err != nil {
 						loggerx.Global().Error("datasource handle failed", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("datasource", datasource.Name()))
@@ -406,30 +410,13 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		}(message, ds)
 
 	}
+	loggerx.Global().Info("IndexerDebugBefore WaitGroup: " + message.Network + " " + message.Address)
 	wg.Wait()
 
 	transactionsMap := getTransactionsMap(transactions)
 
+	loggerx.Global().Info("IndexerDebugBefore workers: " + message.Network + " " + message.Address)
 	return s.handleWorkers(ctx, message, tx, transactions, transactionsMap)
-}
-
-func (s *Server) executeTriggers(ctx context.Context, message *protocol.Message) error {
-	// Get data from trigger
-	for _, internalTrigger := range s.triggers {
-		for _, network := range internalTrigger.Networks() {
-			if message.Network == network {
-				go func(internalTrigger trigger.Trigger) {
-					if err := internalTrigger.Handle(ctx, message); err != nil {
-						loggerx.Global().Error("failed to handle trigger", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
-					}
-				}(internalTrigger)
-
-				break
-			}
-		}
-	}
-
-	return nil
 }
 
 func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (err error) {
@@ -553,6 +540,10 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 			if bytes.Equal(transfer.Metadata, metadata.Default) {
 				continue
 			}
+			// handle unsupported Unicode escape sequence
+			if bytes.Contains(transfer.Metadata, []byte(`\u0000`)) {
+				transfer.Metadata = bytes.ReplaceAll(transfer.Metadata, []byte(`\u0000`), []byte{})
+			}
 
 			transfers = append(transfers, transfer)
 
@@ -611,7 +602,15 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	for _, worker := range s.workers {
 		for _, network := range worker.Networks() {
 			if network == message.Network {
+				// log
+				loggerx.Global().Info("start worker", zap.String("worker", worker.Name()), zap.String("address", message.Address))
+				startTime := time.Now()
+
 				internalTransactions, err := worker.Handle(ctx, message, transactions)
+
+				// log
+				loggerx.Global().Info("worker completion", zap.String("worker", worker.Name()), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
+
 				if err != nil {
 					loggerx.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
 

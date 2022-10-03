@@ -111,9 +111,10 @@ func (h *Handler) GetPlatformListFunc(c echo.Context) error {
 			})
 		}
 	}
+	total := int64(len(result))
 
 	return c.JSON(http.StatusOK, &Response{
-		Total:  int64(len(result)),
+		Total:  &total,
 		Result: result,
 	})
 }

@@ -28,6 +28,23 @@ func (p *Postgres) String() string {
 	)
 }
 
+var _ fmt.Stringer = &PostgresEtl{}
+
+type PostgresEtl struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	Database string `mapstructure:"database"`
+}
+
+func (p *PostgresEtl) String() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+		p.User, p.Password, p.Host, p.Port, p.Database,
+	)
+}
+
 var _ fmt.Stringer = &RabbitMQ{}
 
 type RabbitMQ struct {
@@ -82,6 +99,10 @@ type CoinMarketCap struct {
 
 type Infura struct {
 	ProjectID string `mapstructure:"projectid"`
+}
+
+type EIP1577 struct {
+	Endpoint string `mapstructure:"endpoint"`
 }
 
 type Gateway struct {

@@ -36,8 +36,8 @@ func (c *Client) GetProfile(address string) (*social.Profile, error) {
 	profile := &social.Profile{
 		Address:  address,
 		Network:  protocol.NetworkEthereum,
-		Platform: "ENS",
-		Source:   "ENS",
+		Platform: protocol.PlatformEns,
+		Source:   protocol.PlatformEns,
 		Name:     primaryENS,
 		Handle:   primaryENS,
 	}

@@ -12,11 +12,13 @@ type Config struct {
 	Mode          configx.Mode           `mapstructure:"mode"`
 	RabbitMQ      *configx.RabbitMQ      `mapstructure:"rabbitmq"`
 	Postgres      *configx.Postgres      `mapstructure:"postgres"`
+	EthereumEtl   *configx.PostgresEtl   `mapstructure:"ethereumetl"`
 	OpenTelemetry *configx.OpenTelemetry `mapstructure:"opentelemetry"`
 	Moralis       *configx.Moralis       `mapstructure:"moralis"`
 	Redis         *configx.Redis         `mapstructure:"redis"`
 	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
 	Infura        *configx.Infura        `mapstructure:"infura"`
+	EIP1577       *configx.EIP1577       `mapstructure:"eip1577"`
 	RPC           *configx.RPC           `mapstructure:"rpc"`
 }
 
