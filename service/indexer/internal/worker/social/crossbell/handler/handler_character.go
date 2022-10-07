@@ -417,6 +417,12 @@ func (c *characterHandler) buildPlatform(sources []string) string {
 		return protocol.PlatformCrossbell
 	}
 
+	for i, v := range sources {
+		if v == "xlog" {
+			sources[i] = protocol.PlatformCrossbellXlog
+		}
+	}
+
 	return strings.Trim(sources[0], `\"`)
 }
 

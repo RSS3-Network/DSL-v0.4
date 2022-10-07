@@ -4,9 +4,10 @@ package protocol
 // - service/hub/internal/server/handler/handler_platform.go
 const (
 	// social
-	PlatformMirror    = "Mirror"
-	PlatformLens      = "Lens"
-	PlatformCrossbell = "Crossbell"
+	PlatformMirror        = "Mirror"
+	PlatformLens          = "Lens"
+	PlatformCrossbell     = "Crossbell"
+	PlatformCrossbellXlog = "xLog"
 
 	// collectible
 	PlatformPOAP   = "POAP"
