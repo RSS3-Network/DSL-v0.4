@@ -17,9 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/internal/token"
 )
 
-var (
-	ErrorInvalidNumberOfToken = errors.New("invalid number of token")
-)
+var ErrorInvalidNumberOfToken = errors.New("invalid number of token")
 
 func (i *internal) handleUniswapV2Mint(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
@@ -174,7 +172,7 @@ func (i *internal) handleUniswapV3Burn(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 
-	if event.Amount0.Cmp(big.NewInt(0)) == 0 && event.Amount0.Cmp(big.NewInt(0)) == 0 {
+	if event.Amount0.Cmp(big.NewInt(0)) == 0 && event.Amount1.Cmp(big.NewInt(0)) == 0 {
 		return nil, ErrorInvalidNumberOfToken
 	}
 
