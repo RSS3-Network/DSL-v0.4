@@ -2,6 +2,7 @@ package liquidity
 
 import (
 	"context"
+	"errors"
 	"math/big"
 	"strings"
 
@@ -14,6 +15,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
+)
+
+var (
+	ErrorInvalidNumberOfToken = errors.New("invalid number of token")
 )
 
 func (i *internal) handleUniswapV2Mint(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
@@ -169,6 +174,10 @@ func (i *internal) handleUniswapV3Burn(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 
+	if event.Amount0.Cmp(big.NewInt(0)) == 0 && event.Amount0.Cmp(big.NewInt(0)) == 0 {
+		return nil, ErrorInvalidNumberOfToken
+	}
+
 	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityRemove, map[*token.ERC20]*big.Int{
 		tokenLeft:  event.Amount0,
 		tokenRight: event.Amount1,
@@ -198,17 +207,27 @@ func (i *internal) handleUniswapV3Collect(ctx context.Context, message *protocol
 		return nil, err
 	}
 
-	poolContract, err := uniswap.NewPoolV3(log.Address, ethclient)
+	positionContract, err := uniswap.NewPosition(log.Address, ethclient)
 	if err != nil {
 		return nil, err
 	}
 
-	tokenLeft, tokenRight, err := i.buildTokenPairV3(ctx, message.Network, poolContract)
+	event, err := positionContract.ParseCollect(log)
 	if err != nil {
 		return nil, err
 	}
 
-	event, err := poolContract.ParseCollect(log)
+	positions, err := positionContract.Positions(&bind.CallOpts{}, event.TokenId)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenLeft, err := i.tokenClient.ERC20(ctx, message.Network, positions.Token0.String())
+	if err != nil {
+		return nil, err
+	}
+
+	tokenRight, err := i.tokenClient.ERC20(ctx, message.Network, positions.Token1.String())
 	if err != nil {
 		return nil, err
 	}
