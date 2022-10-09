@@ -252,8 +252,11 @@ func ResolveUnstoppableDomains(input string) (string, error) {
 			}
 			return strings.ToLower(resolvedAddress), nil
 		}
-
 	}
+	// pending reverse resolution
+	// else {
+	//
+	// }
 
 	return "", nil
 }
