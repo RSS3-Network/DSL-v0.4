@@ -6,6 +6,7 @@ const (
 	// social
 	PlatformMirror        = "Mirror"
 	PlatformLens          = "Lens"
+	PlatformLenster       = "Lenster"
 	PlatformCrossbell     = "Crossbell"
 	PlatformCrossbellXlog = "xLog"
 

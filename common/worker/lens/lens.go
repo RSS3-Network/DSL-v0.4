@@ -174,7 +174,7 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			continue
 		}
 
-		if transfer.Platform == "Lens" || transfer.Platform == "Lenster" {
+		if transfer.Platform == protocol.PlatformLens || transfer.Platform == protocol.PlatformLenster {
 			transfers = append(transfers, transfer)
 		}
 	}
