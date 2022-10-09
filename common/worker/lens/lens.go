@@ -174,7 +174,9 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			continue
 		}
 
-		transfers = append(transfers, transfer)
+		if transfer.Platform == "Lens" || transfer.Platform == "Lenster" {
+			transfers = append(transfers, transfer)
+		}
 	}
 
 	return transfers, nil
@@ -429,10 +431,10 @@ func (c *Client) GetLensRelatedURL(ctx context.Context, profileId *big.Int, pubI
 	pubIdHex := []byte(hexutil.EncodeBig(pubId))
 
 	if len(profileIdHex)%2 == 1 {
-		profileIdHex = append(profileIdHex[:2], 48, profileIdHex[2])
+		profileIdHex = append(profileIdHex[:2], append([]byte("0"), profileIdHex[2:]...)...)
 	}
 	if len(pubIdHex)%2 == 1 {
-		pubIdHex = append(pubIdHex[:2], 48, pubIdHex[2])
+		pubIdHex = append(pubIdHex[:2], append([]byte("0"), pubIdHex[2:]...)...)
 	}
 
 	return fmt.Sprintf("https://lenster.xyz/posts/%v-%v", string(profileIdHex), string(pubIdHex))
