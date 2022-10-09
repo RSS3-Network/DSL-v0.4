@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -17,6 +20,7 @@ import (
 	spaceidcontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid/contracts"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/httpx"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"github.com/unstoppabledomains/resolution-go/v2"
@@ -214,41 +218,100 @@ func ResolveSpaceID(input string) (string, error) {
 }
 
 func ResolveUnstoppableDomains(input string) (string, error) {
-	unsBuilder := resolution.NewUnsBuilder()
-	ethClient, err := ethclientx.Global(protocol.NetworkEthereum)
-	if err != nil {
-		return "", fmt.Errorf("failed to connect to ethereum rpc: %s", err)
-	}
-
-	polygonClient, err := ethclientx.Global(protocol.NetworkPolygon)
-	if err != nil {
-		return "", fmt.Errorf("failed to connect to polygon rpc: %s", err)
-	}
-
-	unsBuilder.SetContractBackend(ethClient)
-	unsBuilder.SetL2ContractBackend(polygonClient)
-
-	unsResolution, err := unsBuilder.Build()
-	if err != nil {
-		return "", fmt.Errorf("failed to build unsResolution: %s", err)
-	}
-
-	znsResolution, err := resolution.NewZnsBuilder().Build()
-	if err != nil {
-		return "", fmt.Errorf("failed to build znsResolution: %s", err)
-	}
-
-	namingServices := map[string]resolution.NamingService{namingservice.UNS: unsResolution, namingservice.ZNS: znsResolution}
-	namingServiceName, _ := resolution.DetectNamingService(input)
-	if namingServices[namingServiceName] != nil {
-		resolvedAddress, err := namingServices[namingServiceName].Addr(input, "ETH")
+	if strings.Contains(input, ".") {
+		unsBuilder := resolution.NewUnsBuilder()
+		ethClient, err := ethclientx.Global(protocol.NetworkEthereum)
 		if err != nil {
-			return "", fmt.Errorf("failed to result %s: %s", namingServiceName, err)
+			return "", fmt.Errorf("failed to connect to ethereum rpc: %s", err)
 		}
-		return strings.ToLower(resolvedAddress), nil
+
+		polygonClient, err := ethclientx.Global(protocol.NetworkPolygon)
+		if err != nil {
+			return "", fmt.Errorf("failed to connect to polygon rpc: %s", err)
+		}
+
+		unsBuilder.SetContractBackend(ethClient)
+		unsBuilder.SetL2ContractBackend(polygonClient)
+
+		unsResolution, err := unsBuilder.Build()
+		if err != nil {
+			return "", fmt.Errorf("failed to build unsResolution: %s", err)
+		}
+
+		znsResolution, err := resolution.NewZnsBuilder().Build()
+		if err != nil {
+			return "", fmt.Errorf("failed to build znsResolution: %s", err)
+		}
+
+		namingServices := map[string]resolution.NamingService{namingservice.UNS: unsResolution, namingservice.ZNS: znsResolution}
+		namingServiceName, _ := resolution.DetectNamingService(input)
+		if namingServices[namingServiceName] != nil {
+			resolvedAddress, err := namingServices[namingServiceName].Addr(input, "ETH")
+			if err != nil {
+				return "", fmt.Errorf("failed to result %s: %s", namingServiceName, err)
+			}
+			return strings.ToLower(resolvedAddress), nil
+		}
 	}
+	// pending reverse resolution
+	// else {
+	//
+	// }
 
 	return "", nil
+}
+
+func ResolveBit(input string) (string, error) {
+	bitResult := &model.BitResult{}
+	bitEndpoint := "indexer-v1.did.id"
+	request := http.Request{Method: http.MethodPost, URL: &url.URL{Scheme: "https", Host: bitEndpoint, Path: "/"}}
+
+	if strings.HasSuffix(input, ".bit") {
+		request.Body = io.NopCloser(strings.NewReader(fmt.Sprintf(`{
+			"jsonrpc": "2.0",
+			"id": 1,
+			"method": "das_accountInfo",
+			"params": [
+				{
+					"account": "%s"
+				}
+			]
+		}`, input)))
+	} else {
+		request.Body = io.NopCloser(strings.NewReader(fmt.Sprintf(`{
+			"jsonrpc": "2.0",
+			"id": 1,
+			"method": "das_reverseRecord",
+			"params": [
+				{
+					"type": "blockchain",
+					"key_info": {
+						"coin_type": "60",
+						"chain_id": "1",
+						"key": "%s"
+					}
+				}
+			]
+		}`, input)))
+	}
+
+	err := httpx.DoRequest(context.Background(), http.DefaultClient, &request, &bitResult)
+
+	defer request.Body.Close()
+
+	if err != nil {
+		return "", fmt.Errorf("failed to request .bit resolver: %s", err)
+	}
+
+	if bitResult.Result.Error != "" {
+		return "", fmt.Errorf(".bit resolver returned an error: %s", bitResult.Result.Error)
+	}
+
+	if strings.HasSuffix(input, ".bit") {
+		return bitResult.Result.Data.AccountInfo.Address, nil
+	} else {
+		return bitResult.Result.Data.Account, nil
+	}
 }
 
 func ResolveAll(result *model.NameServiceResult) {
@@ -266,6 +329,14 @@ func ResolveAll(result *model.NameServiceResult) {
 
 	if result.SpaceID == "" {
 		result.SpaceID, _ = ResolveSpaceID(result.Address)
+	}
+
+	if result.UnstoppableDomains == "" {
+		result.UnstoppableDomains, _ = ResolveUnstoppableDomains(result.Address)
+	}
+
+	if result.Bit == "" {
+		result.Bit, _ = ResolveBit(result.Address)
 	}
 }
 
@@ -291,6 +362,9 @@ func ReverseResolveAll(input string, resolveAll bool) model.NameServiceResult {
 	case "crypto", "nft", "blockchain", "bitcoin", "coin", "wallet", "888", "dao", "x", "zil":
 		address, _ = ResolveUnstoppableDomains(input)
 		result.UnstoppableDomains = input
+	case "bit":
+		address, _ = ResolveBit(input)
+		result.Bit = input
 	default:
 		if ValidateEthereumAddress(input) {
 			address = input
