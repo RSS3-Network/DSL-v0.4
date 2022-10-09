@@ -3,11 +3,11 @@ package liquidity
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/aave"
@@ -17,7 +17,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
@@ -82,13 +81,6 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			case uniswap.EventHashBurnV3:
 				internalTransfer, err = i.handleUniswapV3Burn(ctx, message, internalTransaction, *log, router)
 			case uniswap.EventHashCollectV3:
-				// TODO Fee = Collect - Remove
-				if lo.ContainsBy(receipt.Logs, func(log *types.Log) bool {
-					return log.Topics[0] == uniswap.EventHashBurnV3
-				}) {
-					continue
-				}
-
 				internalTransfer, err = i.handleUniswapV3Collect(ctx, message, internalTransaction, *log, router)
 			case aave.EventHashSupplyV2:
 				internalTransfer, err = i.handleAAVEV2Deposit(ctx, message, transaction, *log, router)
@@ -111,8 +103,7 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			}
 
 			if err != nil {
-				// Log hash conflict, but it usually doesn't cause data errors
-				if err.Error() != "execution reverted" {
+				if !errors.Is(err, ErrorInvalidNumberOfToken) {
 					zap.L().Error("failed to handle log", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.Uint("log_index", log.Index))
 				}
 

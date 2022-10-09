@@ -20,6 +20,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
@@ -468,7 +469,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenMetadata.Value = &tokenValue
 			tokenMetadata.ValueDisplay = &tokenValueDisplay
 
-			if nft.Symbol == "ENS" {
+			if transfer.AddressTo == ens.EnsRegistrarController.String() || transfer.AddressFrom == ens.EnsRegistrarController.String() {
 				transfer.Platform = protocol.PlatformEns
 			}
 
