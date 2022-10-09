@@ -13,7 +13,7 @@ import (
 )
 
 // getTransactions get transaction data from database
-func (d *Dao) GetTransactions(ctx context.Context, request model.GetRequest) ([]dbModel.Transaction, int64, error) {
+func GetTransactions(ctx context.Context, request model.GetRequest) ([]dbModel.Transaction, int64, error) {
 	tracer := otel.Tracer("getTransactions")
 	_, postgresSnap := tracer.Start(ctx, "postgres")
 
@@ -79,7 +79,7 @@ func (d *Dao) GetTransactions(ctx context.Context, request model.GetRequest) ([]
 	return transactions, total, nil
 }
 
-func (d *Dao) BatchGetTransactions(ctx context.Context, request model.BatchGetNotesRequest) ([]dbModel.Transaction, int64, error) {
+func BatchGetTransactions(ctx context.Context, request model.BatchGetNotesRequest) ([]dbModel.Transaction, int64, error) {
 	tracer := otel.Tracer("batchGetTransactions")
 	_, postgresSnap := tracer.Start(ctx, "postgres")
 
@@ -143,7 +143,7 @@ func (d *Dao) BatchGetTransactions(ctx context.Context, request model.BatchGetNo
 }
 
 // getTransfers get transfer data from database
-func (d *Dao) GetTransfers(c context.Context, transactionHashes []string) ([]dbModel.Transfer, error) {
+func GetTransfers(c context.Context, transactionHashes []string) ([]dbModel.Transfer, error) {
 	tracer := otel.Tracer("getTransfers")
 	_, postgresSnap := tracer.Start(c, "postgres")
 

@@ -18,15 +18,12 @@ import (
 )
 
 type Service struct {
-	dao                *dao.Dao
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
 }
 
-func New(d *dao.Dao) (s *Service) {
-	s = &Service{
-		dao: d,
-	}
+func New() (s *Service) {
+	s = &Service{}
 
 	var err error
 	s.rabbitmqConnection, err = rabbitmq.Dial(config.ConfigHub.RabbitMQ.String())
@@ -65,7 +62,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 			return
 		}
 
-		s.dao.InitializeAddressStatus(ctx, message.Address)
+		dao.InitializeAddressStatus(ctx, message.Address)
 	}
 
 	networks := []string{

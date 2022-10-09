@@ -12,6 +12,7 @@ import (
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 )
@@ -25,7 +26,7 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := GetAssetRequest{}
+	request := model.GetAssetRequest{}
 
 	if err := c.Bind(&request); err != nil {
 		return BadRequest(c)
@@ -35,8 +36,8 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 		return err
 	}
 
-	if request.Limit <= 0 || request.Limit > DefaultLimit {
-		request.Limit = DefaultLimit
+	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
+		request.Limit = model.DefaultLimit
 	}
 
 	request.Address = strings.ToLower(request.Address)
@@ -51,7 +52,7 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 	}
 
 	if len(assetList) == 0 {
-		return c.JSON(http.StatusOK, &Response{
+		return c.JSON(http.StatusOK, &model.Response{
 			Result: make([]dbModel.Asset, 0),
 		})
 	}
@@ -62,14 +63,14 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 		cursor = fmt.Sprintf(cursorKey, last.Network, last.TokenAddress, last.TokenID)
 	}
 
-	return c.JSON(http.StatusOK, &Response{
+	return c.JSON(http.StatusOK, &model.Response{
 		Total:  &total,
 		Cursor: cursor,
 		Result: assetList,
 	})
 }
 
-func (h *Handler) getAssets(c context.Context, request GetAssetRequest) ([]dbModel.Asset, int64, error) {
+func (h *Handler) getAssets(c context.Context, request model.GetAssetRequest) ([]dbModel.Asset, int64, error) {
 	tracer := otel.Tracer("getAssets")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
@@ -148,7 +149,7 @@ func (h *Handler) publishIndexerAssetMessage(ctx context.Context, address string
 			return
 		}
 
-		if err := h.RabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerAssetRoutingKey, false, false, rabbitmq.Publishing{
+		if err := svc.rabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerAssetRoutingKey, false, false, rabbitmq.Publishing{
 			ContentType: protocol.ContentTypeJSON,
 			Body:        messageData,
 		}); err != nil {

@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func (d *Dao) InitializeAddressStatus(ctx context.Context, address string) {
+func InitializeAddressStatus(ctx context.Context, address string) {
 	status := dbModel.Address{
 		Address:          address,
 		IndexingNetworks: protocol.SupportNetworks,

@@ -99,15 +99,6 @@ type APIKeyRequest struct {
 
 type Transactions []dbModel.Transaction
 
-type NameServiceResult struct {
-	ENS                string `json:"ens"`
-	Crossbell          string `json:"crossbell"`
-	Lens               string `json:"lens"`
-	SpaceID            string `json:"spaceid"`
-	UnstoppableDomains string `json:"unstoppable_domains"`
-	Address            string `json:"address"`
-}
-
 // Len()
 func (t Transactions) Len() int {
 	return len(t)

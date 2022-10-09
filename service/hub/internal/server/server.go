@@ -16,7 +16,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
-	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/service"
@@ -62,8 +61,7 @@ func (s *Server) Initialize() (err error) {
 		ethclientx.ReplaceGlobal(network, client)
 	}
 
-	dao := dao.New()
-	svc := service.New(dao)
+	svc := service.New()
 	s.httpHandler = handler.New(svc)
 
 	s.httpServer = echo.New()

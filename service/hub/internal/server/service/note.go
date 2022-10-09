@@ -7,6 +7,7 @@ import (
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 )
 
@@ -22,7 +23,7 @@ func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbM
 	}
 
 	// get transactions from database
-	transactions, total, err := s.dao.GetTransactions(ctx, request)
+	transactions, total, err := dao.GetTransactions(ctx, request)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -33,7 +34,7 @@ func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbM
 		transactionHashes = append(transactionHashes, transactionHash.Hash)
 	}
 
-	transfers, err := s.dao.GetTransfers(ctx, transactionHashes)
+	transfers, err := dao.GetTransfers(ctx, transactionHashes)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -72,7 +73,7 @@ func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotes
 		request.Address[i] = strings.ToLower(v)
 	}
 
-	transactions, total, err := s.dao.BatchGetTransactions(ctx, request)
+	transactions, total, err := dao.BatchGetTransactions(ctx, request)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -82,7 +83,7 @@ func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotes
 		transactionHashes = append(transactionHashes, transactionHash.Hash)
 	}
 
-	transfers, err := s.dao.GetTransfers(ctx, transactionHashes)
+	transfers, err := dao.GetTransfers(ctx, transactionHashes)
 	if err != nil {
 		return nil, 0, err
 	}
