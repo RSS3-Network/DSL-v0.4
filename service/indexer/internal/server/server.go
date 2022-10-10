@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -294,7 +293,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	var transactions []model.Transaction
 	defer func() {
-		loggerx.Global().Info("completion start: " + message.Network + " " + message.Address)
 		cancel()
 		s.employer.UnLock(lockKey)
 
@@ -326,52 +324,24 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	loggerx.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
-	// Open a database transaction
-	loggerx.Global().Info("IndexerDebugBefore tx Begin: " + message.Network + " " + message.Address)
-	tx := database.Global().WithContext(ctx).Begin()
-
-	// Delete data from this address and reindex it
-	loggerx.Global().Info("IndexerDebugBefore Reindex: " + strconv.FormatBool(message.Reindex) + message.Network + " " + message.Address)
-	if message.Reindex {
-		var hashes []string
-
-		// TODO Use the owner to replace hashes field
-		// Get all hashes of this address on this network
-		if err := tx.
-			Model((*model.Transaction)(nil)).
-			Where("network = ? AND owner = ?", message.Network, message.Address).
-			Pluck("hash", &hashes).
-			Error; err != nil {
-			return err
-		}
-
-		if err := tx.Where("network = ? AND hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transaction{}).Error; err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		if err := tx.Where("network = ? AND transaction_hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transfer{}).Error; err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
 	// Get the time of the latest data for this address and network
 	var result struct {
 		Timestamp   time.Time `gorm:"column:timestamp"`
 		BlockNumber int64     `gorm:"column:block_number"`
 	}
 
-	if err := tx.
-		Model((*model.Transaction)(nil)).
-		Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
-		Where("owner = ?", message.Address).
-		Where("network = ?", message.Network).
-		Order("timestamp DESC").
-		Limit(1).
-		First(&result).
-		Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
+	if !message.Reindex {
+		if err := database.Global().
+			Model((*model.Transaction)(nil)).
+			Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
+			Where("owner = ?", message.Address).
+			Where("network = ?", message.Network).
+			Order("timestamp DESC").
+			Limit(1).
+			First(&result).
+			Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
 	}
 
 	message.Timestamp = result.Timestamp
@@ -380,7 +350,6 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
-	loggerx.Global().Info("IndexerDebugBefore datasource: " + message.Network + " " + message.Address)
 	for _, ds := range s.datasources {
 		wg.Add(1)
 		go func(message *protocol.Message, datasource datasource.Datasource) {
@@ -410,13 +379,11 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		}(message, ds)
 
 	}
-	loggerx.Global().Info("IndexerDebugBefore WaitGroup: " + message.Network + " " + message.Address)
 	wg.Wait()
 
 	transactionsMap := getTransactionsMap(transactions)
 
-	loggerx.Global().Info("IndexerDebugBefore workers: " + message.Network + " " + message.Address)
-	return s.handleWorkers(ctx, message, tx, transactions, transactionsMap)
+	return s.handleWorkers(ctx, message, transactions, transactionsMap)
 }
 
 func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (err error) {
@@ -592,7 +559,7 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 	return tx.Commit().Error
 }
 
-func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, tx *gorm.DB, transactions []model.Transaction, transactionsMap map[string]model.Transaction) (err error) {
+func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction, transactionsMap map[string]model.Transaction) (err error) {
 	tracer := otel.Tracer("indexer")
 	ctx, span := tracer.Start(ctx, "indexer:handleWorkers")
 
@@ -628,6 +595,34 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 
 				transactions = transactionsMap2Array(transactionsMap)
 			}
+		}
+	}
+
+	// Open a database transaction
+	tx := database.Global().WithContext(ctx).Begin()
+
+	// Delete data from this address and reindex it
+	if message.Reindex {
+		var hashes []string
+
+		// TODO Use the owner to replace hashes field
+		// Get all hashes of this address on this network
+		if err := tx.
+			Model((*model.Transaction)(nil)).
+			Where("network = ? AND owner = ?", message.Network, message.Address).
+			Pluck("hash", &hashes).
+			Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("network = ? AND hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transaction{}).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if err := tx.Where("network = ? AND transaction_hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transfer{}).Error; err != nil {
+			tx.Rollback()
+			return err
 		}
 	}
 

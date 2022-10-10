@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -96,20 +97,24 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 }
 
 func (h *Handler) getProfiles(c context.Context, request GetRequest) ([]social.Profile, error) {
-	m := make(map[string]bool)
+	m := make(map[string]social.Profile)
 	result := make([]social.Profile, 0)
 
 	profiles, _ := h.getProfilesDatabase(c, request)
 
 	for _, profile := range profiles {
-		m[profile.Platform] = true
+		m[profile.Platform] = profile
 		result = append(result, profile)
 	}
 
 	lop.ForEach(ProfilePlatformList, func(platform string, i int) {
-		if m[platform] {
+		if profile, ok := m[platform]; ok {
 			go func() {
-				if _, err := h.getProfilesFromPlatform(c, platform, request.Address, true); err != nil {
+				if profile.UpdatedAt.After(time.Now().Add(-2 * time.Minute)) {
+					return
+				}
+
+				if _, err := h.getProfilesFromPlatform(c, platform, request.Address); err != nil {
 					logrus.Errorf("[profile] getProfilesFromPlatform error, %v", err)
 				}
 			}()
@@ -117,55 +122,55 @@ func (h *Handler) getProfiles(c context.Context, request GetRequest) ([]social.P
 			return
 		}
 
-		list, err := h.getProfilesFromPlatform(c, platform, request.Address, false)
+		list, err := h.getProfilesFromPlatform(c, platform, request.Address)
 		if err == nil && len(list) > 0 {
 			result = append(result, list...)
 		}
 	})
 
-	go h.upsertProfiles(c, result)
-
 	return result, nil
 }
 
 func (h *Handler) batchGetProfiles(c context.Context, request BatchGetProfilesRequest) ([]social.Profile, error) {
-	m := make(map[string]bool)
+	m := make(map[string]social.Profile)
 	result := make([]social.Profile, 0)
 
 	profiles, _ := h.batchGetProfilesDatabase(c, request)
 
 	for _, profile := range profiles {
 		key := fmt.Sprintf("%v:%v", profile.Platform, profile.Address)
-		m[key] = true
+		m[key] = profile
 		result = append(result, profile)
 	}
 
 	lop.ForEach(request.Address, func(address string, i int) {
 		lop.ForEach(ProfilePlatformList, func(platform string, i int) {
 			key := fmt.Sprintf("%v:%v", platform, address)
-			if m[key] {
+			if profile, ok := m[key]; ok {
 				go func() {
-					if _, err := h.getProfilesFromPlatform(c, platform, address, true); err != nil {
-						logrus.Errorf("[profile] getProfilesFromPlatform error, %v", err)
+					if profile.UpdatedAt.After(time.Now().Add(-2 * time.Minute)) {
+						return
+					}
+
+					if _, err := h.getProfilesFromPlatform(c, platform, address); err != nil {
+						return
 					}
 				}()
 
 				return
 			}
 
-			list, err := h.getProfilesFromPlatform(c, platform, address, false)
+			list, err := h.getProfilesFromPlatform(c, platform, address)
 			if err == nil && len(list) > 0 {
 				result = append(result, list...)
 			}
 		})
 	})
 
-	go h.upsertProfiles(c, result)
-
 	return result, nil
 }
 
-func (h *Handler) getProfilesFromPlatform(c context.Context, platform, address string, update bool) ([]social.Profile, error) {
+func (h *Handler) getProfilesFromPlatform(c context.Context, platform, address string) ([]social.Profile, error) {
 	var profile *social.Profile
 	var profiles []social.Profile
 	var err error
@@ -182,13 +187,20 @@ func (h *Handler) getProfilesFromPlatform(c context.Context, platform, address s
 		profiles, err = csbClient.GetProfile(address)
 	}
 
+	if err != nil {
+		logrus.Errorf("[profile] getProfilesFromPlatform error, %v", err)
+		return nil, err
+	}
+
 	if profile != nil {
 		profiles = append(profiles, *profile)
 	}
 
-	if update && err == nil && len(profiles) > 0 {
-		go h.upsertProfiles(c, profiles)
+	if len(profiles) == 0 {
+		return nil, nil
 	}
+
+	go h.upsertProfiles(c, profiles)
 
 	return profiles, err
 }
@@ -275,6 +287,7 @@ func (h *Handler) upsertProfiles(c context.Context, profiles []social.Profile) {
 	err := database.Global().Model(&social.Profile{}).
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
+			DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
 		}).
 		Create(profiles).Error
 	if err != nil {
