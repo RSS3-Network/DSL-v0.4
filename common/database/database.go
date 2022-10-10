@@ -99,8 +99,8 @@ func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {
 	}
 	sqlDB, _ := client.DB()
 
-	sqlDB.SetMaxIdleConns(25)
-	sqlDB.SetMaxOpenConns(200)
+	sqlDB.SetMaxIdleConns(50)
+	sqlDB.SetMaxOpenConns(300)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	return client, nil
