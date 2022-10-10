@@ -20,18 +20,15 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/service"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/validatorx"
-	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
 
 var _ command.Interface = &Server{}
 
 type Server struct {
-	httpServer         *echo.Echo
-	httpHandler        *handler.Handler
-	rabbitmqConnection *rabbitmq.Connection
-	rabbitmqChannel    *rabbitmq.Channel
-	logger             *zap.Logger
+	httpServer  *echo.Echo
+	httpHandler *handler.Handler
+	logger      *zap.Logger
 }
 
 func (s *Server) Initialize() (err error) {

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -22,20 +23,24 @@ var ProfilePlatformList = []string{
 }
 
 func (s *Service) GetProfiles(c context.Context, request model.GetRequest) ([]social.Profile, error) {
-	m := make(map[string]bool)
+	m := make(map[string]social.Profile)
 	result := make([]social.Profile, 0)
 
 	profiles, _ := dao.GetProfiles(c, request)
 
 	for _, profile := range profiles {
-		m[profile.Platform] = true
+		m[profile.Platform] = profile
 		result = append(result, profile)
 	}
 
 	lop.ForEach(ProfilePlatformList, func(platform string, i int) {
-		if m[platform] {
+		if profile, ok := m[platform]; ok {
 			go func() {
-				if _, err := s.GetProfilesFromPlatform(c, platform, request.Address, true); err != nil {
+				if profile.UpdatedAt.After(time.Now().Add(-2 * time.Minute)) {
+					return
+				}
+
+				if _, err := s.GetProfilesFromPlatform(c, platform, request.Address); err != nil {
 					logrus.Errorf("[profile] getProfilesFromPlatform error, %v", err)
 				}
 			}()
@@ -43,55 +48,55 @@ func (s *Service) GetProfiles(c context.Context, request model.GetRequest) ([]so
 			return
 		}
 
-		list, err := s.GetProfilesFromPlatform(c, platform, request.Address, false)
+		list, err := s.GetProfilesFromPlatform(c, platform, request.Address)
 		if err == nil && len(list) > 0 {
 			result = append(result, list...)
 		}
 	})
 
-	go dao.UpsertProfiles(c, result)
-
 	return result, nil
 }
 
 func (s *Service) BatchGetProfiles(c context.Context, request model.BatchGetProfilesRequest) ([]social.Profile, error) {
-	m := make(map[string]bool)
+	m := make(map[string]social.Profile)
 	result := make([]social.Profile, 0)
 
 	profiles, _ := dao.BatchGetProfiles(c, request)
 
 	for _, profile := range profiles {
 		key := fmt.Sprintf("%v:%v", profile.Platform, profile.Address)
-		m[key] = true
+		m[key] = profile
 		result = append(result, profile)
 	}
 
 	lop.ForEach(request.Address, func(address string, i int) {
 		lop.ForEach(ProfilePlatformList, func(platform string, i int) {
 			key := fmt.Sprintf("%v:%v", platform, address)
-			if m[key] {
+			if profile, ok := m[key]; ok {
 				go func() {
-					if _, err := s.GetProfilesFromPlatform(c, platform, address, true); err != nil {
-						logrus.Errorf("[profile] getProfilesFromPlatform error, %v", err)
+					if profile.UpdatedAt.After(time.Now().Add(-2 * time.Minute)) {
+						return
+					}
+
+					if _, err := s.GetProfilesFromPlatform(c, platform, address); err != nil {
+						return
 					}
 				}()
 
 				return
 			}
 
-			list, err := s.GetProfilesFromPlatform(c, platform, address, false)
+			list, err := s.GetProfilesFromPlatform(c, platform, address)
 			if err == nil && len(list) > 0 {
 				result = append(result, list...)
 			}
 		})
 	})
 
-	go dao.UpsertProfiles(c, result)
-
 	return result, nil
 }
 
-func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address string, update bool) ([]social.Profile, error) {
+func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address string) ([]social.Profile, error) {
 	var profile *social.Profile
 	var profiles []social.Profile
 	var err error
@@ -108,13 +113,20 @@ func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address s
 		profiles, err = csbClient.GetProfile(address)
 	}
 
+	if err != nil {
+		logrus.Errorf("[profile] getProfilesFromPlatform error, %v", err)
+		return nil, err
+	}
+
 	if profile != nil {
 		profiles = append(profiles, *profile)
 	}
 
-	if update && err == nil && len(profiles) > 0 {
-		go dao.UpsertProfiles(c, profiles)
+	if len(profiles) == 0 {
+		return nil, nil
 	}
+
+	go dao.UpsertProfiles(c, profiles)
 
 	return profiles, err
 }

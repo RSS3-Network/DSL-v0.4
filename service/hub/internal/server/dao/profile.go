@@ -94,6 +94,7 @@ func UpsertProfiles(c context.Context, profiles []social.Profile) {
 	err := database.Global().Model(&social.Profile{}).
 		Clauses(clause.OnConflict{
 			UpdateAll: true,
+			DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
 		}).
 		Create(profiles).Error
 	if err != nil {
