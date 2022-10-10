@@ -54,6 +54,10 @@ func (c *Client) ERC721(ctx context.Context, network, contractAddress string, to
 		return nil, err
 	}
 
+	if tokenID == nil {
+		return &result, nil
+	}
+
 	tokenURI, err := erc721Contract.TokenURI(&bind.CallOpts{}, tokenID)
 	if err != nil {
 		return nil, err

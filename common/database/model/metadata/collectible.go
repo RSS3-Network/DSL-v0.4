@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"encoding/json"
 	"math/big"
 	"time"
 
@@ -13,8 +14,8 @@ type Party struct {
 	Symbol           string           `json:"symbol"`
 	PartyType        string           `json:"type"`
 	Creator          string           `json:"creator,omitempty"`
-	NftContract      string           `json:"contract_address,omitempty"`
-	TokenId          string           `json:"token_id,omitempty"`
+	NftContract      string           `json:"-"`
+	TokenId          string           `json:"-"`
 	MarketWrapper    string           `json:"marketplace"`
 	AuctionId        string           `json:"auction_id,omitempty"`
 	ExpiredTime      *time.Time       `json:"expired_date,omitempty"`
@@ -22,6 +23,7 @@ type Party struct {
 	PartyStatus      uint8            `json:"status,omitempty"`
 	Action           string           `json:"action,omitempty"`
 	TotalContributed *Token           `json:"total_contributed_amount,omitempty"`
+	NFTMetadata      json.RawMessage  `json:"nft_metadata,omitempty"`
 }
 
 type PartyContribute struct {
@@ -66,7 +68,7 @@ type PartyExpire struct {
 type PartyBuy struct {
 	PartyInfo        Party    `json:"crowdfund_info"`
 	Action           string   `json:"action"`
-	TokenId          *big.Int `json:"token_id,omitempty"`
+	TokenId          *big.Int `json:"-"`
 	TriggeredBy      string   `json:"-"`
 	TargetAddress    string   `json:"-"`
 	EthSpent         *Token   `json:"eth_spent"`

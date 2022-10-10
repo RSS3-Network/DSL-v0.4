@@ -22,22 +22,24 @@ func init() {
 
 // TODO Token constructor
 type Token struct {
-	Name            string           `json:"name"`
-	Collection      string           `json:"collection,omitempty"` // ERC-1155
-	Symbol          string           `json:"symbol"`
-	Decimals        uint8            `json:"decimals,omitempty"`
-	Standard        string           `json:"standard"`
-	ContractAddress string           `json:"contract_address,omitempty"`
-	Image           string           `json:"image,omitempty"`
-	ID              string           `json:"id,omitempty"`
-	Value           *decimal.Decimal `json:"value,omitempty"`
-	ValueDisplay    *decimal.Decimal `json:"value_display"`  // TODO Refactor it
-	Cost            *Token           `json:"cost,omitempty"` // TODO Differentiate between UMS
-	Description     string           `json:"description,omitempty"`
-	Attributes      []TokenAttribute `json:"attributes,omitempty"`
-	ExternalLink    string           `json:"external_link,omitempty"`
-	ExternalURL     string           `json:"external_url,omitempty"`
-	AnimationURL    string           `json:"animation_url,omitempty"`
+	Name               string           `json:"name"`
+	Collection         string           `json:"collection,omitempty"` // ERC-1155
+	Symbol             string           `json:"symbol"`
+	Decimals           uint8            `json:"decimals,omitempty"`
+	Standard           string           `json:"standard"`
+	ContractAddress    string           `json:"contract_address,omitempty"`
+	Image              string           `json:"image,omitempty"`
+	ID                 string           `json:"id,omitempty"`
+	Value              *decimal.Decimal `json:"value,omitempty"`
+	ValueDisplay       *decimal.Decimal `json:"value_display"`  // TODO Refactor it
+	Cost               *Token           `json:"cost,omitempty"` // TODO Differentiate between UMS
+	Description        string           `json:"description,omitempty"`
+	Attributes         []TokenAttribute `json:"attributes,omitempty"`
+	ExternalLink       string           `json:"external_link,omitempty"`
+	ExternalURL        string           `json:"external_url,omitempty"`
+	AnimationURL       string           `json:"animation_url,omitempty"`
+	TotalSupply        *decimal.Decimal `json:"total_supply,omitempty"`
+	TotalSupplyDisplay *decimal.Decimal `json:"total_supply_display,omitempty"`
 }
 
 type TokenAttribute struct {

@@ -15,6 +15,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/party"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/party/partybid"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/party/partybidfac"
@@ -174,6 +175,15 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 			if err != nil {
 				return nil, err
 			}
+
+			nft, err := i.tokenClient.NFT(ctx, transaction.Network, event.NftContract.String(), event.TokenId)
+			if err != nil {
+				return nil, err
+			}
+			nftMetadata, err := json.Marshal(nft)
+			if err != nil {
+				return nil, err
+			}
 			partyMetadata, err := json.Marshal(metadata.Party{
 				PartyAddress:  strings.ToLower(event.PartyBidProxy.String()),
 				Name:          event.Name,
@@ -185,6 +195,7 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 				MarketWrapper: party.AddressMapToMarket[event.MarketWrapper.String()],
 				AuctionId:     event.AuctionId.String(),
 				Action:        filter.PartyBidStart,
+				NFTMetadata:   nftMetadata,
 			})
 			if err != nil {
 				return nil, err
@@ -231,6 +242,14 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 			if err != nil {
 				return nil, err
 			}
+			nft, err := i.tokenClient.NFT(ctx, transaction.Network, event.NftContract.String(), event.TokenId)
+			if err != nil {
+				return nil, err
+			}
+			nftMetadata, err := json.Marshal(nft)
+			if err != nil {
+				return nil, err
+			}
 			expiredTime := internalTransaction.Timestamp.Add(time.Second * time.Duration(int(event.SecondsToTimeout.Int64())))
 			partyMetadata, err := json.Marshal(metadata.Party{
 				PartyAddress:  strings.ToLower(event.PartyProxy.String()),
@@ -243,6 +262,7 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 				MarketWrapper: party.AddressMapToMarket["opensea"],
 				ExpiredTime:   &expiredTime,
 				Action:        filter.PartyBidStart,
+				NFTMetadata:   nftMetadata,
 			})
 			if err != nil {
 				return nil, err
@@ -283,9 +303,19 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 	if err != nil {
 		return nil, err
 	}
+
 	for _, log := range receipt.Logs {
 		if log.Topics[0] == party.EventHashCollectionPartyDeployed {
 			event, err := partycolFacContract.ParseCollectionPartyDeployed(*log)
+			if err != nil {
+				return nil, err
+			}
+
+			nft, err := getERC721Collection(ctx, transaction.Network, event.NftContract.String())
+			if err != nil {
+				return nil, err
+			}
+			nftMetadata, err := json.Marshal(nft)
 			if err != nil {
 				return nil, err
 			}
@@ -301,6 +331,7 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 				ExpiredTime:   &expiredTime,
 				Deciders:      event.Deciders,
 				Action:        filter.PartyBidStart,
+				NFTMetadata:   nftMetadata,
 			})
 			if err != nil {
 				return nil, err
@@ -370,7 +401,19 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 	}
 	partyInfo.MarketWrapper = party.AddressMapToMarket[market.String()]
 	partyInfo.PartyType = filter.PartyBid
-
+	tokenId, err := partybidContract.TokenId(&bind.CallOpts{})
+	if err != nil {
+		return nil, err
+	}
+	nft, err := i.tokenClient.NFT(ctx, transaction.Network, partyInfo.NftContract, tokenId)
+	if err != nil {
+		return nil, err
+	}
+	nftMetadata, err := json.Marshal(nft)
+	if err != nil {
+		return nil, err
+	}
+	partyInfo.NFTMetadata = nftMetadata
 	native, err := i.tokenClient.Native(ctx, message.Network)
 	if err != nil || native == nil {
 		return nil, err
@@ -527,6 +570,20 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 	}
 	partyInfo.TotalContributed = parseToken(native, total)
 
+	tokenId, err := partybuyContract.TokenId(&bind.CallOpts{})
+	if err != nil {
+		return nil, err
+	}
+	nft, err := i.tokenClient.NFT(ctx, transaction.Network, partyInfo.NftContract, tokenId)
+	if err != nil {
+		return nil, err
+	}
+	nftMetadata, err := json.Marshal(nft)
+	if err != nil {
+		return nil, err
+	}
+	partyInfo.NFTMetadata = nftMetadata
+
 	for _, log := range receipt.Logs {
 		switch log.Topics[0] {
 		case party.EventHashContributed:
@@ -679,6 +736,20 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 	}
 	partyInfo.TotalContributed = parseToken(native, total)
 
+	tokenId, err := partycoContract.TokenId(&bind.CallOpts{})
+	if err != nil {
+		return nil, err
+	}
+	nft, err := i.tokenClient.NFT(ctx, transaction.Network, partyInfo.NftContract, tokenId)
+	if err != nil {
+		return nil, err
+	}
+	nftMetadata, err := json.Marshal(nft)
+	if err != nil {
+		return nil, err
+	}
+	partyInfo.NFTMetadata = nftMetadata
+
 	for _, log := range receipt.Logs {
 		switch log.Topics[0] {
 		case party.EventHashContributed:
@@ -804,15 +875,20 @@ func buildToken(erc20Token *token.ERC20, value *big.Int) *metadata.Token {
 	tokenValue := decimal.NewFromBigInt(value, 0)
 	tokenValueDisplay := tokenValue.Shift(-int32(erc20Token.Decimals))
 
+	totalValue := decimal.NewFromBigInt(erc20Token.TotalSupply, 0)
+	totalValueDisplay := totalValue.Shift(-int32(erc20Token.Decimals))
+
 	return &metadata.Token{
-		Name:            erc20Token.Name,
-		Symbol:          erc20Token.Symbol,
-		Decimals:        erc20Token.Decimals,
-		Standard:        protocol.TokenStandardERC20,
-		ContractAddress: strings.ToLower(erc20Token.ContractAddress),
-		Image:           erc20Token.Logo,
-		Value:           &tokenValue,
-		ValueDisplay:    &tokenValueDisplay,
+		Name:               erc20Token.Name,
+		Symbol:             erc20Token.Symbol,
+		Decimals:           erc20Token.Decimals,
+		Standard:           protocol.TokenStandardERC20,
+		ContractAddress:    strings.ToLower(erc20Token.ContractAddress),
+		Image:              erc20Token.Logo,
+		Value:              &tokenValue,
+		ValueDisplay:       &tokenValueDisplay,
+		TotalSupply:        &totalValue,
+		TotalSupplyDisplay: &totalValueDisplay,
 	}
 }
 
@@ -836,4 +912,30 @@ func buildInternalTransfer(internalTransaction model.Transaction, log *types.Log
 		),
 	})
 	return internalTransaction
+}
+
+func getERC721Collection(ctx context.Context, network, contractAddress string) (*token.NFT, error) {
+	result := &token.NFT{
+		ContractAddress: contractAddress,
+		Standard:        protocol.TokenStandardERC721,
+	}
+
+	ethclient, err := ethclientx.Global(network)
+	if err != nil {
+		return nil, err
+	}
+
+	erc721Contract, err := erc721.NewERC721(common.HexToAddress(contractAddress), ethclient)
+	if err != nil {
+		return nil, err
+	}
+
+	if result.Name, err = erc721Contract.Name(&bind.CallOpts{}); err != nil {
+		return nil, err
+	}
+
+	if result.Symbol, err = erc721Contract.Symbol(&bind.CallOpts{}); err != nil {
+		return nil, err
+	}
+	return result, nil
 }

@@ -23,11 +23,12 @@ type Native struct {
 }
 
 type ERC20 struct {
-	Name            string `json:"name"`
-	Symbol          string `json:"symbol"`
-	Decimals        uint8  `json:"decimals"`
-	ContractAddress string `json:"contract_address"`
-	Logo            string `json:"logo"`
+	Name            string   `json:"name"`
+	Symbol          string   `json:"symbol"`
+	Decimals        uint8    `json:"decimals"`
+	ContractAddress string   `json:"contract_address"`
+	Logo            string   `json:"logo"`
+	TotalSupply     *big.Int `json:"total_supply"`
 }
 
 type ERC721 struct {

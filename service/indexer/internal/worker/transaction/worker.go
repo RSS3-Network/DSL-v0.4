@@ -240,7 +240,7 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 			case erc20.EventHashTransfer, erc721.EventHashTransfer:
 				switch len(sourceData.Topics) {
 				case 3:
-					filterer, err := erc20.NewERC20Filterer(sourceData.Address, nil)
+					filterer, err := erc20.NewErc20Filterer(sourceData.Address, nil)
 					if err != nil {
 						return nil, err
 					}

@@ -55,7 +55,7 @@ func (c *Client) ERC20(ctx context.Context, network string, contractAddress stri
 		return nil, err
 	}
 
-	erc20Contract, err := erc20.NewERC20(common.HexToAddress(result.ContractAddress), ethclient)
+	erc20Contract, err := erc20.NewErc20(common.HexToAddress(result.ContractAddress), ethclient)
 	if err != nil {
 		return nil, err
 	}
@@ -72,6 +72,9 @@ func (c *Client) ERC20(ctx context.Context, network string, contractAddress stri
 		return nil, err
 	}
 
+	if result.TotalSupply, err = erc20Contract.TotalSupply(&bind.CallOpts{}); err != nil {
+		return nil, err
+	}
 	// TODO Insert token to database
 
 	return result, nil

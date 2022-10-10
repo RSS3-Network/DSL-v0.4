@@ -277,7 +277,7 @@ func handleLog(ctx context.Context, message *protocol.Message, transaction *mode
 	case erc20.EventHashTransfer, erc721.EventHashTransfer:
 		switch len(log.Topics) {
 		case 3:
-			filterer, err := erc20.NewERC20Filterer(log.Address, nil)
+			filterer, err := erc20.NewErc20Filterer(log.Address, nil)
 			if err != nil {
 				return nil, err
 			}
