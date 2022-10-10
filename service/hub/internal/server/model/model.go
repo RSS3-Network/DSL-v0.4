@@ -47,18 +47,6 @@ type GetRequest struct {
 	CountOnly bool `query:"count_only" json:"count_only"`
 }
 
-type GetExchangeRequest struct {
-	ExchangeType string   `param:"exchange_type"`
-	Cursor       int      `query:"cursor"`
-	Name         []string `query:"name"`
-	Network      []string `query:"network"`
-}
-
-type GetPlatformRequest struct {
-	PlatformType string   `param:"platform_type"`
-	Network      []string `query:"network"`
-}
-
 type GetAssetRequest struct {
 	Address      string   `param:"address" validate:"required"`
 	Network      []string `query:"network"`
@@ -95,6 +83,40 @@ type BatchGetProfilesRequest struct {
 
 type APIKeyRequest struct {
 	Address string `json:"address" validate:"required"`
+}
+
+// exchange
+type CexResult struct {
+	Name    string `json:"name"`
+	Address string `json:"address"`
+	Network string `json:"network"`
+}
+
+type DexResult struct {
+	Name    string `json:"name"`
+	Address string `json:"address"`
+	Network string `json:"network"`
+	Pair    string `json:"pair"`
+}
+
+type GetExchangeRequest struct {
+	ExchangeType string   `param:"exchange_type"`
+	Cursor       int      `query:"cursor"`
+	Name         []string `query:"name"`
+	Network      []string `query:"network"`
+}
+
+// platform
+type GetPlatformRequest struct {
+	PlatformType string   `param:"platform_type"`
+	Network      []string `query:"network"`
+}
+
+type PlatformResult struct {
+	Name    string `json:"name"`
+	Tag     string `json:"tag"`
+	Type    string `json:"type,omitempty"`
+	Network string `json:"network,omitempty"`
 }
 
 type Transactions []dbModel.Transaction

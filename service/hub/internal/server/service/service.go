@@ -90,3 +90,34 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		}
 	}()
 }
+
+// publishIndexerAssetMessage create a rabbitmq job to index the latest user data
+func (s *Service) PublishIndexerAssetMessage(ctx context.Context, address string) {
+	tracer := otel.Tracer("PublishIndexerAssetMessage")
+	_, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")
+
+	defer rabbitmqSnap.End()
+
+	networks := []string{
+		protocol.NetworkEthereum, protocol.NetworkPolygon,
+	}
+
+	for _, network := range networks {
+		message := protocol.Message{
+			Address: address,
+			Network: network,
+		}
+
+		messageData, err := json.Marshal(&message)
+		if err != nil {
+			return
+		}
+
+		if err := s.rabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerAssetRoutingKey, false, false, rabbitmq.Publishing{
+			ContentType: protocol.ContentTypeJSON,
+			Body:        messageData,
+		}); err != nil {
+			return
+		}
+	}
+}

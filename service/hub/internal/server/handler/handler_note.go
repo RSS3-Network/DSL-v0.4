@@ -1,12 +1,11 @@
 package handler
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"go.opentelemetry.io/otel"
 )
@@ -53,7 +52,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	var addressStatus []dbModel.Address
 	if request.QueryStatus {
-		addressStatus, _ = h.getAddress(ctx, []string{request.Address})
+		addressStatus, _ = dao.GetAddress(ctx, []string{request.Address})
 	}
 
 	return c.JSON(http.StatusOK, &model.Response{
@@ -93,7 +92,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 
 	var addressStatus []dbModel.Address
 	if request.QueryStatus {
-		addressStatus, _ = h.getAddress(ctx, request.Address)
+		addressStatus, _ = dao.GetAddress(ctx, request.Address)
 	}
 
 	if request.CountOnly {
@@ -120,24 +119,4 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 		Result:        transactions,
 		AddressStatus: addressStatus,
 	})
-}
-
-// getAddress
-func (h *Handler) getAddress(ctx context.Context, address []string) ([]dbModel.Address, error) {
-	tracer := otel.Tracer("getAddress")
-	_, postgresSnap := tracer.Start(ctx, "postgres")
-
-	defer postgresSnap.End()
-
-	addressStatus := make([]dbModel.Address, 0)
-
-	sql := database.Global().Model(&dbModel.Address{})
-
-	if err := sql.
-		Where("address IN ?", address).
-		Find(&addressStatus).Error; err != nil {
-		return nil, err
-	}
-
-	return addressStatus, nil
 }
