@@ -67,6 +67,7 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	}
 
 	for _, transaction := range transactions {
+
 		addressTo := common.HexToAddress(transaction.AddressTo)
 
 		partyProxy, err := party.NewPartyProxy(addressTo, ethclient)
@@ -178,7 +179,7 @@ func (i *internal) handlePartyBidDeployed(ctx context.Context, message *protocol
 
 			nft, err := i.tokenClient.NFT(ctx, transaction.Network, event.NftContract.String(), event.TokenId)
 			if err != nil {
-				return nil, err
+				nft = &token.NFT{ContractAddress: event.NftContract.String()}
 			}
 			nftMetadata, err := json.Marshal(nft)
 			if err != nil {
@@ -244,7 +245,7 @@ func (i *internal) handlePartyBuyDeployed(ctx context.Context, message *protocol
 			}
 			nft, err := i.tokenClient.NFT(ctx, transaction.Network, event.NftContract.String(), event.TokenId)
 			if err != nil {
-				return nil, err
+				nft = &token.NFT{ContractAddress: event.NftContract.String()}
 			}
 			nftMetadata, err := json.Marshal(nft)
 			if err != nil {
@@ -313,7 +314,7 @@ func (i *internal) handlePartyCollectionDeployed(ctx context.Context, message *p
 
 			nft, err := getERC721Collection(ctx, transaction.Network, event.NftContract.String())
 			if err != nil {
-				return nil, err
+				nft = &token.NFT{ContractAddress: event.NftContract.String()}
 			}
 			nftMetadata, err := json.Marshal(nft)
 			if err != nil {
@@ -407,7 +408,7 @@ func (i *internal) handlePartyBidEvent(ctx context.Context, message *protocol.Me
 	}
 	nft, err := i.tokenClient.NFT(ctx, transaction.Network, partyInfo.NftContract, tokenId)
 	if err != nil {
-		return nil, err
+		nft = &token.NFT{ContractAddress: partyInfo.NftContract, ID: tokenId}
 	}
 	nftMetadata, err := json.Marshal(nft)
 	if err != nil {
@@ -576,7 +577,7 @@ func (i *internal) handlePartyBuyEvent(ctx context.Context, message *protocol.Me
 	}
 	nft, err := i.tokenClient.NFT(ctx, transaction.Network, partyInfo.NftContract, tokenId)
 	if err != nil {
-		return nil, err
+		nft = &token.NFT{ContractAddress: partyInfo.NftContract, ID: tokenId}
 	}
 	nftMetadata, err := json.Marshal(nft)
 	if err != nil {
@@ -742,7 +743,7 @@ func (i *internal) handlePartyCollectionEvent(ctx context.Context, message *prot
 	}
 	nft, err := i.tokenClient.NFT(ctx, transaction.Network, partyInfo.NftContract, tokenId)
 	if err != nil {
-		return nil, err
+		nft = &token.NFT{ContractAddress: partyInfo.NftContract, ID: tokenId}
 	}
 	nftMetadata, err := json.Marshal(nft)
 	if err != nil {
