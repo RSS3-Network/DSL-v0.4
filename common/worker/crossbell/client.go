@@ -60,7 +60,7 @@ func (c *Client) GetProfile(address string) ([]social.Profile, error) {
 
 		var metadata *metadata.Token
 		if err := json.Unmarshal(content, &metadata); err != nil {
-			logrus.Errorf("[common] crossbell: json.Unmarshal err, %v, uri: %v", err, crossbell.URI)
+			logrus.Errorf("[common] crossbell: json.Unmarshal err, %v, uri: %v, json: %v", err, crossbell.URI, content)
 
 			return
 		}
