@@ -9,7 +9,8 @@ import (
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/database"
-	"github.com/naturalselectionlabs/pregod/common/database/model"
+	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 )
@@ -21,7 +22,7 @@ func (h *Handler) PostAPIKeyFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := APIKeyRequest{}
+	request := model.APIKeyRequest{}
 
 	if err := c.Bind(&request); err != nil {
 		return BadRequest(c)
@@ -32,7 +33,7 @@ func (h *Handler) PostAPIKeyFunc(c echo.Context) error {
 	}
 
 	// check if key already exists
-	item := model.APIKey{}
+	item := dbModel.APIKey{}
 	if err := database.Global().
 		Where("address = ?").
 		First(&item).Error; err == nil && len(item.UUID) > 0 {
@@ -40,7 +41,7 @@ func (h *Handler) PostAPIKeyFunc(c echo.Context) error {
 	}
 
 	// generate api key
-	item = model.APIKey{
+	item = dbModel.APIKey{
 		Address: request.Address,
 		UUID:    uuid.New().String(),
 	}
@@ -59,7 +60,7 @@ func (h *Handler) GetAPIKeyFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := APIKeyRequest{}
+	request := model.APIKeyRequest{}
 
 	if err := c.Bind(&request); err != nil {
 		return BadRequest(c)
@@ -89,7 +90,7 @@ func (h *Handler) GetAPIKeyFunc(c echo.Context) error {
 		return InternalError(c)
 	}
 
-	item := model.APIKey{}
+	item := dbModel.APIKey{}
 	database.Global().Where("address = ?").First(&item)
 
 	return c.JSON(http.StatusOK, &item)
