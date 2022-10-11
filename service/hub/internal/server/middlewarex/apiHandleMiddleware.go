@@ -70,14 +70,12 @@ func CheckAPIKey(apiKey string) error {
 func ResolveAddress(address string) (string, error) {
 	result := name_service.ReverseResolveAll(strings.ToLower(address), false)
 	if len(result.Address) == 0 {
-		fmt.Println("?")
 		return "", fmt.Errorf("The address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address.")
 	}
 
 	// check valid
 	valid := name_service.IsValidAddress(result.Address)
 	if !valid {
-		fmt.Println("1")
 		return "", fmt.Errorf("The address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address.")
 	}
 
