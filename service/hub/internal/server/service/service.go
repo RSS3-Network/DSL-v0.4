@@ -10,6 +10,7 @@ import (
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
@@ -18,12 +19,15 @@ import (
 )
 
 type Service struct {
+	employer           *shedlock.Employer
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
 }
 
 func New() (s *Service) {
-	s = &Service{}
+	s = &Service{
+		employer: shedlock.New(),
+	}
 
 	var err error
 	s.rabbitmqConnection, err = rabbitmq.Dial(config.ConfigHub.RabbitMQ.String())
