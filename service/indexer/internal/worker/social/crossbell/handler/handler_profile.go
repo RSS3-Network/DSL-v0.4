@@ -73,7 +73,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 
 	profile := &social.Profile{
 		Address:   transfer.AddressFrom,
-		Platform:  transfer.Network,
+		Platform:  protocol.PlatformCrossbell,
 		Network:   transfer.Network,
 		Source:    transfer.Network,
 		Type:      filter.SocialProfileCreate,
@@ -117,7 +117,7 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 	}
 
 	profile := &social.Profile{
-		Platform: transfer.Network,
+		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 	}
@@ -161,7 +161,7 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 	}
 
 	profile := &social.Profile{
-		Platform: transfer.Network,
+		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 	}
@@ -204,10 +204,8 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 	}
 
 	profile := &social.Profile{
-		Address: transfer.AddressFrom,
-		// TODO: use appId from CSB
-		// Platform: transfer.Platform,
-		Platform: transfer.Network,
+		Address:  transfer.AddressFrom,
+		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Type:     filter.SocialProfileUpdate,
