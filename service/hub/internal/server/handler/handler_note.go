@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"go.opentelemetry.io/otel"
 )
@@ -83,6 +84,18 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 
 	if len(request.Address) == 0 {
 		return AddressIsEmpty(c)
+	}
+
+	// check address
+	if len(request.Address) > model.DefaultLimit {
+		request.Address = request.Address[:model.DefaultLimit]
+	}
+	for i, v := range request.Address {
+		address, err := middlewarex.ResolveAddress(v)
+		if err != nil {
+			return err
+		}
+		request.Address[i] = address
 	}
 
 	transactions, total, err := h.service.BatchGetNotes(ctx, request)
