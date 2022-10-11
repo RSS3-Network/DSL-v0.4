@@ -61,16 +61,8 @@ func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotes
 		request.Limit = model.DefaultLimit
 	}
 
-	if len(request.Address) > model.DefaultLimit {
-		request.Address = request.Address[:model.DefaultLimit]
-	}
-
 	if len(request.Tag) > 0 {
 		request.Tag, request.Type, request.IncludePoap = s.CheckRequestTagAndType(request.Tag, request.Type)
-	}
-
-	for i, v := range request.Address {
-		request.Address[i] = strings.ToLower(v)
 	}
 
 	transactions, total, err := dao.BatchGetTransactions(ctx, request)
