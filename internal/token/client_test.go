@@ -2,13 +2,12 @@ package token_test
 
 import (
 	"context"
+	configx "github.com/naturalselectionlabs/pregod/common/config"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"log"
 	"math/big"
 	"testing"
 
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
-
-	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 )
@@ -16,28 +15,18 @@ import (
 var tokenClient *token.Client
 
 func init() {
-	ethereumClientMap, err := ethclientx.Dial(&configx.RPC{
+	globalEthereumClientMap, err := ethclientx.Dial(&configx.RPC{
 		General: configx.RPCNetwork{
 			Ethereum: &configx.RPCEndpoint{
-				HTTP: "https://rpc.rss3.dev/networks/ethereum",
-			},
-			Polygon: &configx.RPCEndpoint{
-				HTTP: "https://rpc.rss3.dev/networks/polygon",
-			},
-			BinanceSmartChain: &configx.RPCEndpoint{
-				HTTP: "https://rpc.rss3.dev/networks/binance",
-			},
-			XDAI: &configx.RPCEndpoint{
-				HTTP: "https://rpc.rss3.dev/networks/xdai",
-			},
-			Crossbell: &configx.RPCEndpoint{
-				HTTP: "https://rpc.rss3.dev/networks/crossbell",
+				HTTP: "https://shy-newest-brook.quiknode.pro/fac29f542ec6a0b43d53cff4f22be159172d1503/",
 			},
 		},
 	}, protocol.EthclientNetworks)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	ethclientx.ReplaceGlobal("ethereum", globalEthereumClientMap["ethereum"])
 
 	tokenClient = token.New()
 }
@@ -80,4 +69,13 @@ func TestClient_ERC1155(t *testing.T) {
 
 	t.Logf("%+v", erc1155)
 	t.Log(string(erc1155.Metadata))
+}
+
+func TestClient_ERC721_ZORA(t *testing.T) {
+	erc712, err := tokenClient.ERC721(context.Background(), protocol.NetworkEthereum, "0xabEFBc9fD2F806065b4f3C237d4b59D9A97Bcac7", big.NewInt(13737))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(erc712)
 }

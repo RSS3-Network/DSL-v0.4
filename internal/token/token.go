@@ -194,6 +194,9 @@ func (c *Client) Metadata(tokenURI string) ([]byte, error) {
 		return result, nil
 	}
 
+	if strings.HasPrefix(tokenURI, "ipfs://") {
+		tokenURI = strings.Replace(tokenURI, "ipfs://", "https://ipfs.rss3.page/ipfs/", 1)
+	}
 	response, err := http.Get(tokenURI)
 	if err != nil {
 		return nil, err

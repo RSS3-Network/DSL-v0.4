@@ -7,7 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
 )
 
 func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -68,7 +68,22 @@ func CheckAPIKey(apiKey string) error {
 
 // ResolveAddress resolve handles into an address
 func ResolveAddress(address string) (string, error) {
-	result := handler.ReverseResolveAll(strings.ToLower(address), false)
+	result := name_service.ReverseResolveAll(strings.ToLower(address), false)
+	if len(result.Address) == 0 {
+		return "", fmt.Errorf("The address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address.")
+	}
+
+	// check valid
+	valid := name_service.IsValidAddress(result.Address)
+	if !valid {
+		return "", fmt.Errorf("The address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address.")
+	}
+
+	// check contract
+	isContract, _ := name_service.IsEthereumContract(result.Address)
+	if isContract {
+		return "", fmt.Errorf("Contract addresses are not currently supported.")
+	}
 
 	return strings.ToLower(result.Address), nil
 }
