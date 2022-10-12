@@ -20,10 +20,9 @@ func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		address := c.Param("address")
 		if address != "" {
 			if address, err := ResolveAddress(address); err != nil {
-				c.JSON(http.StatusOK, &ErrorResponse{
+				return c.JSON(http.StatusOK, &ErrorResponse{
 					Error: err.Error(),
 				})
-				return nil
 			} else {
 				c.SetParamValues(address)
 			}
