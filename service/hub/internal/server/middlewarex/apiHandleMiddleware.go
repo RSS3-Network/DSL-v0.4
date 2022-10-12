@@ -2,6 +2,7 @@ package middlewarex
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -10,12 +11,18 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
 )
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		address := c.Param("address")
 		if address != "" {
 			if address, err := ResolveAddress(address); err != nil {
-				return err
+				return c.JSON(http.StatusOK, &ErrorResponse{
+					Error: err.Error(),
+				})
 			} else {
 				c.SetParamValues(address)
 			}

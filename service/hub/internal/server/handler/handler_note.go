@@ -93,7 +93,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	for i, v := range request.Address {
 		address, err := middlewarex.ResolveAddress(v)
 		if err != nil {
-			return err
+			return ErrorResp(c, err)
 		}
 		request.Address[i] = address
 	}

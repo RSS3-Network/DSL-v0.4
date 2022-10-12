@@ -64,7 +64,7 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer = echo.New()
 	s.httpServer.HideBanner = true
 	s.httpServer.HidePort = true
-	s.httpServer.HTTPErrorHandler = s.httpHandler.ErrorFunc
+	s.httpServer.HTTPErrorHandler = handler.ErrorFunc
 	s.httpServer.Validator = validatorx.Default
 
 	s.httpServer.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
