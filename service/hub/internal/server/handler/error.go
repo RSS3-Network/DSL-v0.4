@@ -12,6 +12,12 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+func ErrorResp(c echo.Context, err error) error {
+	return c.JSON(http.StatusOK, &ErrorResponse{
+		Error: err.Error(),
+	})
+}
+
 func BadRequest(c echo.Context) error {
 	return c.JSON(http.StatusBadRequest, &ErrorResponse{
 		Error: "Please check your request and try again.",
@@ -42,7 +48,7 @@ func InternalError(c echo.Context) error {
 	})
 }
 
-func (h *Handler) ErrorFunc(err error, c echo.Context) {
+func ErrorFunc(err error, c echo.Context) {
 	var (
 		httpCode     = http.StatusInternalServerError
 		errorMessage = err.Error()
