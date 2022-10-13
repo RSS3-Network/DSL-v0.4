@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/big"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -67,21 +68,21 @@ type NFT struct {
 }
 
 type Metadata struct {
-	Name            string                      `json:"name"`
-	ImageData       string                      `json:"image_data"`
-	Title           string                      `json:"title"`
-	Description     string                      `json:"description"`
-	AnimationURL    string                      `json:"animation_url"`
-	Image           string                      `json:"image"`
-	ImageURL        string                      `json:"image_url"` // POAP
-	Type            string                      `json:"type"`
-	Attributes      []MetadataAttribute         `json:"attributes"`
-	Properties      map[string]MetadataProperty `json:"properties"`
-	Traits          []MetadataTrait             `json:"traits"`
-	BackgroundColor string                      `json:"background_color"`
-	ExternalLink    string                      `json:"external_link"`
-	ExternalURL     string                      `json:"external_url"`
-	YoutubeURL      string                      `json:"youtube_url"`
+	Name            string              `json:"name"`
+	ImageData       string              `json:"image_data"`
+	Title           string              `json:"title"`
+	Description     string              `json:"description"`
+	AnimationURL    string              `json:"animation_url"`
+	Image           string              `json:"image"`
+	ImageURL        string              `json:"image_url"` // POAP
+	Type            string              `json:"type"`
+	Attributes      []MetadataAttribute `json:"attributes"`
+	Properties      map[string]any      `json:"properties"`
+	Traits          []MetadataTrait     `json:"traits"`
+	BackgroundColor string              `json:"background_color"`
+	ExternalLink    string              `json:"external_link"`
+	ExternalURL     string              `json:"external_url"`
+	YoutubeURL      string              `json:"youtube_url"`
 }
 
 type MetadataAttribute struct {
@@ -135,8 +136,17 @@ func (c *Client) metadataToAttributes(metadata Metadata) []MetadataAttribute {
 		attributeMap[attribute.DisplayType] = attribute.DisplayType
 	}
 
+	types := reflect.TypeOf(&MetadataProperty{})
+	field1 := types.Elem().Field(1)
+	description := field1.Tag.Get("json")
 	for key, value := range metadata.Properties {
-		attributeMap[key] = value.Description
+		t := reflect.TypeOf(value)
+		if strings.EqualFold(t.Kind().String(), reflect.Map.String()) {
+			if temp, ok := value.(map[string]any); ok {
+				value = temp[description]
+			}
+		}
+		attributeMap[key] = value
 	}
 
 	for _, trait := range metadata.Traits {
