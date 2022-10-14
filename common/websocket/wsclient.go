@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -71,5 +72,29 @@ func (c *WSClient) WriteMsg() {
 				return
 			}
 		}
+	}
+}
+
+func (c *WSClient) ReadMsg() {
+	defer func() {
+		c.Hub.Unregister <- c
+		c.Conn.Close()
+	}()
+
+	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error { c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	for {
+		_, message, err := c.Conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				// todo:断开连接后，会到这里来
+				fmt.Println(err)
+			}
+			break
+		}
+		//message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
+		//message = []byte(string(message))
+		fmt.Println("websocket读取到的消息=====" + string(message))
+		//c.Hub.Broadcast <- message
 	}
 }

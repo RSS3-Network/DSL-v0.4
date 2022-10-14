@@ -151,7 +151,7 @@ func (h *Handler) getTransactions(c context.Context, request GetRequest) ([]dbMo
 	sql := database.Global().
 		Model(&dbModel.Transaction{}).
 		Where("owner = ?", request.Address). // address was already converted to lowercase
-		Where("success IS TRUE") // Hide failed transactions
+		Where("success IS TRUE")             // Hide failed transactions
 
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
@@ -471,6 +471,7 @@ func (h *Handler) GetNotesWsFunc(c echo.Context) error {
 	}()
 
 	go client.WriteMsg()
+	go client.ReadMsg()
 
 	return nil
 }
