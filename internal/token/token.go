@@ -86,7 +86,7 @@ type Metadata struct {
 }
 
 type MetadataAttribute struct {
-	DisplayType string `json:"display_type"`
+	DisplayType string `json:"display_type,omitempty"`
 	TraitType   string `json:"trait_type"`
 	Value       any    `json:"value"`
 }
@@ -136,27 +136,22 @@ func (c *Client) metadataToAttributes(metadata Metadata) []MetadataAttribute {
 		attributeMap[attribute.DisplayType] = attribute.DisplayType
 	}
 
-	types := reflect.TypeOf(&MetadataProperty{})
-	field1 := types.Elem().Field(1)
-	description := field1.Tag.Get("json")
-	for key, value := range metadata.Properties {
-		t := reflect.TypeOf(value)
-		if strings.EqualFold(t.Kind().String(), reflect.Map.String()) {
-			if temp, ok := value.(map[string]any); ok {
-				value = temp[description]
-			}
-		}
-		attributeMap[key] = value
-	}
+	var attributes []MetadataAttribute
 
 	for _, trait := range metadata.Traits {
 		attributeMap[trait.TraitType] = trait.Value
 		attributeMap[trait.DisplayType] = trait.DisplayType
 	}
 
-	var attributes []MetadataAttribute
+	for key, value := range c.propertiesToAttributes(metadata.Properties) {
+		attributeMap[key] = value
+	}
 
 	for traitType, value := range attributeMap {
+		if traitType == "" || value == "" {
+			continue
+		}
+
 		attributes = append(attributes, MetadataAttribute{
 			TraitType: traitType,
 			Value:     value,
@@ -164,6 +159,28 @@ func (c *Client) metadataToAttributes(metadata Metadata) []MetadataAttribute {
 	}
 
 	return attributes
+}
+
+func (c *Client) propertiesToAttributes(properties map[string]any) (attributeMap map[string]any) {
+	attributeMap = map[string]any{}
+
+	types := reflect.TypeOf(&MetadataProperty{})
+	field1 := types.Elem().Field(1)
+	description := field1.Tag.Get("json")
+
+	for key, value := range properties {
+		t := reflect.TypeOf(value)
+
+		if strings.EqualFold(t.Kind().String(), reflect.Map.String()) {
+			if temp, ok := value.(map[string]any); ok {
+				value = temp[description]
+			}
+		}
+
+		attributeMap[key] = value
+	}
+
+	return attributeMap
 }
 
 func (c *Client) URI(contractAddress string, tokenID *big.Int, tokenURI string) (string, error) {

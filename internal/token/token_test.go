@@ -1,11 +1,10 @@
-package token_test
+package token
 
 import (
 	"encoding/json"
-	"github.com/naturalselectionlabs/pregod/internal/token"
-	"reflect"
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var str_0 = `{"name": "State of Mind 6377", "description": "Tools for collective imagination.", "image": "ipfs://bafybeibe57itbnezurdo4xml5722cw3eay5peb5jz43vmlvit3rkhtkj74?id=6377", "animation_url": "ipfs://bafybeibe57itbnezurdo4xml5722cw3eay5peb5jz43vmlvit3rkhtkj74?id=6377", "properties": {"number": 6377, "name": "State of Mind"}}`
@@ -27,53 +26,19 @@ var str_2 = `{"name":"RSS3 Whitepaper v1.0","description":"RSS3 Whitepaper v1.0 
     }}`
 
 func TestUnmarshall(t *testing.T) {
-	var metadata token.Metadata
+	var (
+		client   Client
+		metadata Metadata
+	)
 
-	if err := json.Unmarshal([]byte(str_1), &metadata); err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, json.Unmarshal([]byte(str_1), &metadata))
 
 	t.Log(metadata)
 
-	x := metadataToAttributes(metadata)
-	y, _ := json.Marshal(x)
-	t.Log(string(y))
-}
+	attributes := client.metadataToAttributes(metadata)
 
-func metadataToAttributes(metadata token.Metadata) []token.MetadataAttribute {
-	attributeMap := make(map[string]any)
+	result, err := json.Marshal(attributes)
+	assert.NoError(t, err)
 
-	for _, attribute := range metadata.Attributes {
-		attributeMap[attribute.TraitType] = attribute.Value
-		attributeMap[attribute.DisplayType] = attribute.DisplayType
-	}
-
-	types := reflect.TypeOf(&token.MetadataProperty{})
-	field1 := types.Elem().Field(1)
-	description := field1.Tag.Get("json")
-	for key, value := range metadata.Properties {
-		t := reflect.TypeOf(value)
-		if strings.EqualFold(t.Kind().String(), reflect.Map.String()) {
-			if temp, ok := value.(map[string]any); ok {
-				value = temp[description]
-			}
-		}
-		attributeMap[key] = value
-	}
-
-	for _, trait := range metadata.Traits {
-		attributeMap[trait.TraitType] = trait.Value
-		attributeMap[trait.DisplayType] = trait.DisplayType
-	}
-
-	var attributes []token.MetadataAttribute
-
-	for traitType, value := range attributeMap {
-		attributes = append(attributes, token.MetadataAttribute{
-			TraitType: traitType,
-			Value:     value,
-		})
-	}
-
-	return attributes
+	t.Log(string(result))
 }
