@@ -50,7 +50,7 @@ func (h *WSHub) Run() {
 				continue
 			}
 			for client := range h.Clients {
-				if string(client.ClientId) == message.Address.Address {
+				if _, ok := client.AddressMap[message.Address.Address]; ok {
 					select {
 					case client.Send <- data:
 					default:

@@ -99,7 +99,7 @@ func (s *Server) Initialize() (err error) {
 
 	// WS Initialize
 	go svc.WsHub.Run()
-	s.httpServer.GET("/ws/:address", s.httpHandler.GetNotesWsFunc)
+	s.httpServer.GET("/ws/:websocketId", s.httpHandler.GetNotesWsFunc)
 
 	return nil
 }

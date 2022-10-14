@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -159,7 +158,7 @@ func (s *Service) SubscribeIndexerRefreshMessage() {
 			loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
 			continue
 		}
-		fmt.Println("get msg from mq: ", message)
+
 		s.WsHub.Broadcast <- delivery.Body
 	}
 }

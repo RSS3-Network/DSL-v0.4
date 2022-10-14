@@ -138,14 +138,14 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 
 func (h *Handler) GetNotesWsFunc(c echo.Context) error {
 	ws.GetClientMaps()
-	clientId := c.Param("address")
+	clientId := c.Param("websocketId")
 
 	conn, err := (&websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024, CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
 		return err
 	}
 
-	client := &ws.WSClient{Hub: h.service.WsHub, Conn: conn, Send: make(chan []byte, 256), ClientId: []byte(clientId)}
+	client := &ws.WSClient{Hub: h.service.WsHub, Conn: conn, Send: make(chan []byte, 256), ClientId: []byte(clientId), AddressMap: make(map[string]struct{})}
 
 	client.Hub.Register <- client
 
@@ -154,7 +154,7 @@ func (h *Handler) GetNotesWsFunc(c echo.Context) error {
 	go h.service.SubscribeIndexerRefreshMessage()
 
 	go client.WriteMsg()
-	//go client.ReadMsg()
+	go client.ReadMsg()
 
 	return nil
 }
