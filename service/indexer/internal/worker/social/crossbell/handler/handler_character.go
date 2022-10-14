@@ -427,7 +427,7 @@ func (c *characterHandler) buildPlatform(sources []string) string {
 		switch source {
 		case "xlog":
 			sources[i] = protocol.PlatformCrossbellXLog
-		case "xcase":
+		case "xcast":
 			sources[i] = protocol.PlatformCrossbellXCast
 		}
 	}
