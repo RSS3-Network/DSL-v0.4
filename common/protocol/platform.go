@@ -1,12 +1,14 @@
 package protocol
 
-// NOTE: if you update the list, also update the list in the following files:
-// - service/hub/internal/server/handler/handler_platform.go
+import "github.com/naturalselectionlabs/pregod/common/protocol/filter"
+
 const (
 	// social
-	PlatformMirror    = "Mirror"
-	PlatformLens      = "Lens"
-	PlatformCrossbell = "Crossbell"
+	PlatformMirror        = "Mirror"
+	PlatformLens          = "Lens"
+	PlatformLenster       = "Lenster" // sub platform
+	PlatformCrossbell     = "Crossbell"
+	PlatformCrossbellXlog = "xLog"
 
 	// collectible
 	PlatformPOAP   = "POAP"
@@ -30,3 +32,32 @@ const (
 	PlatformAAVE        = "AAVE"
 	PlatformCurve       = "Curve"
 )
+
+var PlatformList = map[string][]string{
+	filter.TagSocial: {
+		PlatformMirror,
+		PlatformLens,
+		PlatformCrossbell,
+	},
+	filter.TagCollectible: {
+		PlatformPOAP,
+		PlatformGalaxy,
+		PlatformEns,
+	},
+	filter.TagDonation: {
+		PlatformGitcoin,
+	},
+	filter.TagGovernance: {
+		PlatformSnapshot,
+	},
+	filter.TagExchange: {
+		PlatformUniswap,
+		PlatformSushiswap,
+		PlatformPancakeswap,
+		Platform1inch,
+		PlatformMetamask,
+		Platform0x,
+		PlatformAAVE,
+		PlatformCurve,
+	},
+}

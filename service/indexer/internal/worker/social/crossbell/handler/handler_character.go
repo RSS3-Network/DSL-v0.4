@@ -218,13 +218,19 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 
 	transfer.Platform = c.buildPlatform(postOriginal.Sources)
 
-	if transfer.Metadata, err = json.Marshal(post); err != nil {
-		return nil, err
-	}
-
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
 
 	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
+		return nil, err
+	}
+
+	// special case for xLog
+	if transfer.Platform == protocol.PlatformCrossbellXlog {
+		transfer.RelatedUrls = append(transfer.RelatedUrls, postOriginal.ExternalUrls...)
+		post.Summary = postOriginal.Summary
+	}
+
+	if transfer.Metadata, err = json.Marshal(post); err != nil {
 		return nil, err
 	}
 
@@ -415,6 +421,12 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 func (c *characterHandler) buildPlatform(sources []string) string {
 	if len(sources) == 0 {
 		return protocol.PlatformCrossbell
+	}
+
+	for i, v := range sources {
+		if v == "xlog" {
+			sources[i] = protocol.PlatformCrossbellXlog
+		}
 	}
 
 	return strings.Trim(sources[0], `\"`)

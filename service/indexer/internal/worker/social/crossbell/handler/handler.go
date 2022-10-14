@@ -50,6 +50,10 @@ type CrossbellPostStruct struct {
 	DatePublished string   `json:"date_published"`
 	Title         string   `json:"title"`
 	Sources       []string `json:"sources"`
+
+	// special fields for xLog
+	ExternalUrls []string `json:"external_urls"`
+	Summary      string   `json:"summary"`
 }
 
 func (h *handler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {

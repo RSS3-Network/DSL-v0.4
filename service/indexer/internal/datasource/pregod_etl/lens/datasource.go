@@ -144,10 +144,10 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 			defer wg.Done()
 
 			parameter := pregod_etl.GetLogsRequest{
-				Address:         contractAddress.String(),
-				TopicSecond:     hash.String(),
-				TopicFirst:      eventHash.String(),
-				BlockNumberFrom: message.BlockNumber,
+				Address:     contractAddress.String(),
+				TopicSecond: hash.String(),
+				TopicFirst:  eventHash.String(),
+				// BlockNumberFrom: message.BlockNumber,
 			}
 
 			for {
