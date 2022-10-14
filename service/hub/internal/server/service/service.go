@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -11,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
+	"github.com/naturalselectionlabs/pregod/common/websocket"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
@@ -22,11 +24,14 @@ type Service struct {
 	employer           *shedlock.Employer
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
+	rabbitmqQueue      rabbitmq.Queue
+	WsHub              *websocket.WSHub
 }
 
 func New() (s *Service) {
 	s = &Service{
 		employer: shedlock.New(),
+		WsHub:    websocket.NewHub(),
 	}
 
 	var err error
@@ -41,8 +46,25 @@ func New() (s *Service) {
 	}
 
 	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeJob, "direct", true, false, false, false, nil); err != nil {
-		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare failed", zap.Error(err))
+		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare Job failed", zap.Error(err))
 	}
+
+	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeRefresh, "fanout", true, false, false, false, nil); err != nil {
+		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare Refresh failed", zap.Error(err))
+	}
+
+	if s.rabbitmqQueue, err = s.rabbitmqChannel.QueueDeclare(
+		"", false, false, true, false, nil,
+	); err != nil {
+		loggerx.Global().Error("rabbitmq QueueDeclare failed", zap.Error(err))
+	}
+
+	if err := s.rabbitmqChannel.QueueBind(
+		s.rabbitmqQueue.Name, "", protocol.ExchangeRefresh, false, nil,
+	); err != nil {
+		loggerx.Global().Error("rabbitmq QueueBind failed", zap.Error(err))
+	}
+
 	return s
 }
 
@@ -123,5 +145,21 @@ func (s *Service) PublishIndexerAssetMessage(ctx context.Context, address string
 		}); err != nil {
 			return
 		}
+	}
+}
+
+func (s *Service) SubscribeIndexerRefreshMessage() {
+	deliveryCh, err := s.rabbitmqChannel.Consume(s.rabbitmqQueue.Name, "", true, false, false, false, nil)
+	if err != nil {
+		return
+	}
+	for delivery := range deliveryCh {
+		message := protocol.RefreshMessage{}
+		if err := json.Unmarshal(delivery.Body, &message); err != nil {
+			loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
+			continue
+		}
+		fmt.Println("get msg from mq: ", message)
+		s.WsHub.Broadcast <- delivery.Body
 	}
 }

@@ -3,8 +3,10 @@ package handler
 import (
 	"net/http"
 
+	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
+	ws "github.com/naturalselectionlabs/pregod/common/websocket"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
@@ -132,4 +134,27 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 		Result:        transactions,
 		AddressStatus: addressStatus,
 	})
+}
+
+func (h *Handler) GetNotesWsFunc(c echo.Context) error {
+	ws.GetClientMaps()
+	clientId := c.Param("address")
+
+	conn, err := (&websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024, CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(c.Response(), c.Request(), nil)
+	if err != nil {
+		return err
+	}
+
+	client := &ws.WSClient{Hub: h.service.WsHub, Conn: conn, Send: make(chan []byte, 256), ClientId: []byte(clientId)}
+
+	client.Hub.Register <- client
+
+	ws.ClientMaps[clientId] = client
+
+	go h.service.SubscribeIndexerRefreshMessage()
+
+	go client.WriteMsg()
+	//go client.ReadMsg()
+
+	return nil
 }

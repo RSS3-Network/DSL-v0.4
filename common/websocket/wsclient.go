@@ -95,6 +95,6 @@ func (c *WSClient) ReadMsg() {
 		//message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		//message = []byte(string(message))
 		fmt.Println("websocket读取到的消息=====" + string(message))
-		//c.Hub.Broadcast <- message
+		c.Hub.Broadcast <- message
 	}
 }
