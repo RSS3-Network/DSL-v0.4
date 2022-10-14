@@ -225,7 +225,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 	}
 
 	// special case for xLog
-	if transfer.Platform == protocol.PlatformCrossbellXlog {
+	if transfer.Platform == protocol.PlatformCrossbellXLog {
 		transfer.RelatedUrls = append(transfer.RelatedUrls, postOriginal.ExternalUrls...)
 		post.Summary = postOriginal.Summary
 	}
@@ -423,9 +423,12 @@ func (c *characterHandler) buildPlatform(sources []string) string {
 		return protocol.PlatformCrossbell
 	}
 
-	for i, v := range sources {
-		if v == "xlog" {
-			sources[i] = protocol.PlatformCrossbellXlog
+	for i, source := range sources {
+		switch source {
+		case "xlog":
+			sources[i] = protocol.PlatformCrossbellXLog
+		case "xcast":
+			sources[i] = protocol.PlatformCrossbellXCast
 		}
 	}
 

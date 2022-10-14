@@ -4,11 +4,12 @@ import "github.com/naturalselectionlabs/pregod/common/protocol/filter"
 
 const (
 	// social
-	PlatformMirror        = "Mirror"
-	PlatformLens          = "Lens"
-	PlatformLenster       = "Lenster" // sub platform
-	PlatformCrossbell     = "Crossbell"
-	PlatformCrossbellXlog = "xLog"
+	PlatformMirror         = "Mirror"
+	PlatformLens           = "Lens"
+	PlatformLenster        = "Lenster" // sub platform
+	PlatformCrossbell      = "Crossbell"
+	PlatformCrossbellXLog  = "xLog"
+	PlatformCrossbellXCast = "xCast"
 
 	// collectible
 	PlatformPOAP   = "POAP"
