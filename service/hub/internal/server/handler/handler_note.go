@@ -6,10 +6,10 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
-	ws "github.com/naturalselectionlabs/pregod/common/websocket"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
+	ws "github.com/naturalselectionlabs/pregod/service/hub/internal/server/websocket"
 	"go.opentelemetry.io/otel"
 )
 
@@ -152,7 +152,6 @@ func (h *Handler) GetNotesWsFunc(c echo.Context) error {
 	ws.ClientMaps[clientId] = client
 
 	go h.service.SubscribeIndexerRefreshMessage()
-
 	go client.WriteMsg()
 	go client.ReadMsg()
 
