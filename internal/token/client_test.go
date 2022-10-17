@@ -49,8 +49,10 @@ func TestClient_ERC20(t *testing.T) {
 	t.Log(erc20)
 }
 
+// 0x712b9720b37bd206ed938a5fff4ca48cb89643ba 231
+// 0x4A0d5a851BB8e8c3d580C41Ffb2f880e0A4b2AA6 164
 func TestClient_ERC721(t *testing.T) {
-	erc712, err := tokenClient.ERC721(context.Background(), protocol.NetworkEthereum, "0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85", big.NewInt(1))
+	erc712, err := tokenClient.ERC721(context.Background(), protocol.NetworkEthereum, "0x4A0d5a851BB8e8c3d580C41Ffb2f880e0A4b2AA6", big.NewInt(164))
 	if err != nil {
 		t.Fatal(err)
 	}
