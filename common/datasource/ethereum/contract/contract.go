@@ -34,3 +34,9 @@ package contract
 //go:generate abigen --abi ./aave/pool_v2.abi --pkg aave --type PoolV2 --alias DataTypes.ReserveConfigurationMap=DataTypes.ReserveConfigurationMapV2 --out ./aave/pool_v2.go
 // https://polygonscan.com/address/0xdf9e4abdbd94107932265319479643d3b05809dc
 //go:generate abigen --abi ./aave/pool_v3.abi --pkg aave --type PoolV3 --out ./aave/pool_v3.go
+// https://etherscan.io/address/0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1
+//go:generate abigen --abi ./optimism/bridge.abi --pkg optimism --type Bridge --out ./optimism/bridge.go
+// https://etherscan.io/address/0x499a865ac595e6167482d2bd5A224876baB85ab4
+//go:generate abigen --abi ./polygon/predicate.abi --pkg polygon --type Predicate --out ./polygon/predicate.go
+// https://etherscan.io/address/0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f
+//go:generate abigen --abi ./arbitrum/inbox.abi --pkg arbitrum --type Inbox --out ./arbitrum/inbox.go

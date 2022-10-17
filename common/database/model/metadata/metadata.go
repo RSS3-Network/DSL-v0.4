@@ -120,3 +120,8 @@ type CrossbellNote struct {
 	Locked       bool            `json:"locked"`
 	Metadata     json.RawMessage `json:"metadata"`
 }
+
+type Bride struct {
+	ChainID uint64 `json:"chain_id"`
+	Token   Token  `json:"token"`
+}

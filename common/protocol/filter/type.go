@@ -12,6 +12,10 @@ const (
 	ExchangeSwap      string = "swap"
 	ExchangeLiquidity string = "liquidity"
 
+	// Bridge types
+	BridgeWithdraw string = "withdraw"
+	BridgeDeposit  string = "deposit"
+
 	// sub-types for Exchange-Liquidity
 	ExchangeLiquidityAdd      string = "add"
 	ExchangeLiquidityRemove   string = "remove"
