@@ -103,7 +103,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 
 	profile := &social.Profile{
 		Address:  transfer.AddressFrom,
-		Platform: transfer.Network,
+		Platform: protocol.NetworkCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Type:     filter.SocialProfileCreate,
@@ -148,7 +148,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 
 	profile := &social.Profile{
 		Address:  transfer.AddressFrom,
-		Platform: transfer.Network,
+		Platform: protocol.NetworkCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Type:     filter.SocialProfileUpdate,
@@ -255,7 +255,7 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 	}
 
 	profile := &social.Profile{
-		Platform: transfer.Network,
+		Platform: protocol.NetworkCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 	}
@@ -295,7 +295,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 
 	profile := &social.Profile{
 		Address:  strings.ToLower(event.Account.String()),
-		Platform: transfer.Network,
+		Platform: protocol.NetworkCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Type:     filter.SocialProfileUpdate,
@@ -337,7 +337,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 
 	profile := &social.Profile{
 		Address:  transfer.AddressFrom,
-		Platform: transfer.Network,
+		Platform: protocol.NetworkCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Type:     filter.SocialProfileUpdate,
