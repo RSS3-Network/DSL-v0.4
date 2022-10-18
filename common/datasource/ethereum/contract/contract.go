@@ -37,6 +37,8 @@ package contract
 // https://etherscan.io/address/0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1
 //go:generate abigen --abi ./optimism/bridge.abi --pkg optimism --type Bridge --out ./optimism/bridge.go
 // https://etherscan.io/address/0x499a865ac595e6167482d2bd5A224876baB85ab4
-//go:generate abigen --abi ./polygon/predicate.abi --pkg polygon --type Predicate --out ./polygon/predicate.go
-// https://etherscan.io/address/0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f
-//go:generate abigen --abi ./arbitrum/inbox.abi --pkg arbitrum --type Inbox --out ./arbitrum/inbox.go
+//go:generate abigen --abi ./polygon/predicate_ether.abi --pkg polygon --type EtherPredicate --out ./polygon/predicate_ether.go
+// https://etherscan.io/address/0x40ec5b33f54e0e8a33a975908c5ba1c14e5bbbdf
+//go:generate abigen --abi ./polygon/predicate_erc20.abi --pkg polygon --type ERC20Predicate --out ./polygon/predicate_erc20.go
+// https://etherscan.io/address/0x9923263fA127b3d1484cFD649df8f1831c2A74e4
+//go:generate abigen --abi ./polygon/predicate_erc20_mintable.abi --pkg polygon --type MintableERC20Predicate --out ./polygon/predicate_erc20_mintable.go

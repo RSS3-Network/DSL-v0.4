@@ -28,113 +28,113 @@ var (
 	_ = event.NewSubscription
 )
 
-// PredicateMetaData contains all meta data concerning the Predicate contract.
-var PredicateMetaData = &bind.MetaData{
+// EtherPredicateMetaData contains all meta data concerning the EtherPredicate contract.
+var EtherPredicateMetaData = &bind.MetaData{
 	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"exitor\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"ExitedEther\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"depositor\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"depositReceiver\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"LockedEther\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"previousAdminRole\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"newAdminRole\",\"type\":\"bytes32\"}],\"name\":\"RoleAdminChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleGranted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"}],\"name\":\"RoleRevoked\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"DEFAULT_ADMIN_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"MANAGER_ROLE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"TOKEN_TYPE\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"TRANSFER_EVENT_SIG\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"log\",\"type\":\"bytes\"}],\"name\":\"exitTokens\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleAdmin\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getRoleMember\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"}],\"name\":\"getRoleMemberCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"grantRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"hasRole\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"depositor\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"depositReceiver\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"depositData\",\"type\":\"bytes\"}],\"name\":\"lockTokens\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"renounceRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"role\",\"type\":\"bytes32\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"revokeRole\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}]",
 }
 
-// PredicateABI is the input ABI used to generate the binding from.
-// Deprecated: Use PredicateMetaData.ABI instead.
-var PredicateABI = PredicateMetaData.ABI
+// EtherPredicateABI is the input ABI used to generate the binding from.
+// Deprecated: Use EtherPredicateMetaData.ABI instead.
+var EtherPredicateABI = EtherPredicateMetaData.ABI
 
-// Predicate is an auto generated Go binding around an Ethereum contract.
-type Predicate struct {
-	PredicateCaller     // Read-only binding to the contract
-	PredicateTransactor // Write-only binding to the contract
-	PredicateFilterer   // Log filterer for contract events
+// EtherPredicate is an auto generated Go binding around an Ethereum contract.
+type EtherPredicate struct {
+	EtherPredicateCaller     // Read-only binding to the contract
+	EtherPredicateTransactor // Write-only binding to the contract
+	EtherPredicateFilterer   // Log filterer for contract events
 }
 
-// PredicateCaller is an auto generated read-only Go binding around an Ethereum contract.
-type PredicateCaller struct {
+// EtherPredicateCaller is an auto generated read-only Go binding around an Ethereum contract.
+type EtherPredicateCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// PredicateTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type PredicateTransactor struct {
+// EtherPredicateTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type EtherPredicateTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// PredicateFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type PredicateFilterer struct {
+// EtherPredicateFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type EtherPredicateFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// PredicateSession is an auto generated Go binding around an Ethereum contract,
+// EtherPredicateSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
-type PredicateSession struct {
-	Contract     *Predicate        // Generic contract binding to set the session for
+type EtherPredicateSession struct {
+	Contract     *EtherPredicate   // Generic contract binding to set the session for
 	CallOpts     bind.CallOpts     // Call options to use throughout this session
 	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
 }
 
-// PredicateCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// EtherPredicateCallerSession is an auto generated read-only Go binding around an Ethereum contract,
 // with pre-set call options.
-type PredicateCallerSession struct {
-	Contract *PredicateCaller // Generic contract caller binding to set the session for
-	CallOpts bind.CallOpts    // Call options to use throughout this session
+type EtherPredicateCallerSession struct {
+	Contract *EtherPredicateCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts         // Call options to use throughout this session
 }
 
-// PredicateTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// EtherPredicateTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
 // with pre-set transact options.
-type PredicateTransactorSession struct {
-	Contract     *PredicateTransactor // Generic contract transactor binding to set the session for
-	TransactOpts bind.TransactOpts    // Transaction auth options to use throughout this session
+type EtherPredicateTransactorSession struct {
+	Contract     *EtherPredicateTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts         // Transaction auth options to use throughout this session
 }
 
-// PredicateRaw is an auto generated low-level Go binding around an Ethereum contract.
-type PredicateRaw struct {
-	Contract *Predicate // Generic contract binding to access the raw methods on
+// EtherPredicateRaw is an auto generated low-level Go binding around an Ethereum contract.
+type EtherPredicateRaw struct {
+	Contract *EtherPredicate // Generic contract binding to access the raw methods on
 }
 
-// PredicateCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type PredicateCallerRaw struct {
-	Contract *PredicateCaller // Generic read-only contract binding to access the raw methods on
+// EtherPredicateCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type EtherPredicateCallerRaw struct {
+	Contract *EtherPredicateCaller // Generic read-only contract binding to access the raw methods on
 }
 
-// PredicateTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type PredicateTransactorRaw struct {
-	Contract *PredicateTransactor // Generic write-only contract binding to access the raw methods on
+// EtherPredicateTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type EtherPredicateTransactorRaw struct {
+	Contract *EtherPredicateTransactor // Generic write-only contract binding to access the raw methods on
 }
 
-// NewPredicate creates a new instance of Predicate, bound to a specific deployed contract.
-func NewPredicate(address common.Address, backend bind.ContractBackend) (*Predicate, error) {
-	contract, err := bindPredicate(address, backend, backend, backend)
+// NewEtherPredicate creates a new instance of EtherPredicate, bound to a specific deployed contract.
+func NewEtherPredicate(address common.Address, backend bind.ContractBackend) (*EtherPredicate, error) {
+	contract, err := bindEtherPredicate(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &Predicate{PredicateCaller: PredicateCaller{contract: contract}, PredicateTransactor: PredicateTransactor{contract: contract}, PredicateFilterer: PredicateFilterer{contract: contract}}, nil
+	return &EtherPredicate{EtherPredicateCaller: EtherPredicateCaller{contract: contract}, EtherPredicateTransactor: EtherPredicateTransactor{contract: contract}, EtherPredicateFilterer: EtherPredicateFilterer{contract: contract}}, nil
 }
 
-// NewPredicateCaller creates a new read-only instance of Predicate, bound to a specific deployed contract.
-func NewPredicateCaller(address common.Address, caller bind.ContractCaller) (*PredicateCaller, error) {
-	contract, err := bindPredicate(address, caller, nil, nil)
+// NewEtherPredicateCaller creates a new read-only instance of EtherPredicate, bound to a specific deployed contract.
+func NewEtherPredicateCaller(address common.Address, caller bind.ContractCaller) (*EtherPredicateCaller, error) {
+	contract, err := bindEtherPredicate(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &PredicateCaller{contract: contract}, nil
+	return &EtherPredicateCaller{contract: contract}, nil
 }
 
-// NewPredicateTransactor creates a new write-only instance of Predicate, bound to a specific deployed contract.
-func NewPredicateTransactor(address common.Address, transactor bind.ContractTransactor) (*PredicateTransactor, error) {
-	contract, err := bindPredicate(address, nil, transactor, nil)
+// NewEtherPredicateTransactor creates a new write-only instance of EtherPredicate, bound to a specific deployed contract.
+func NewEtherPredicateTransactor(address common.Address, transactor bind.ContractTransactor) (*EtherPredicateTransactor, error) {
+	contract, err := bindEtherPredicate(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &PredicateTransactor{contract: contract}, nil
+	return &EtherPredicateTransactor{contract: contract}, nil
 }
 
-// NewPredicateFilterer creates a new log filterer instance of Predicate, bound to a specific deployed contract.
-func NewPredicateFilterer(address common.Address, filterer bind.ContractFilterer) (*PredicateFilterer, error) {
-	contract, err := bindPredicate(address, nil, nil, filterer)
+// NewEtherPredicateFilterer creates a new log filterer instance of EtherPredicate, bound to a specific deployed contract.
+func NewEtherPredicateFilterer(address common.Address, filterer bind.ContractFilterer) (*EtherPredicateFilterer, error) {
+	contract, err := bindEtherPredicate(address, nil, nil, filterer)
 	if err != nil {
 		return nil, err
 	}
-	return &PredicateFilterer{contract: contract}, nil
+	return &EtherPredicateFilterer{contract: contract}, nil
 }
 
-// bindPredicate binds a generic wrapper to an already deployed contract.
-func bindPredicate(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := abi.JSON(strings.NewReader(PredicateABI))
+// bindEtherPredicate binds a generic wrapper to an already deployed contract.
+func bindEtherPredicate(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(EtherPredicateABI))
 	if err != nil {
 		return nil, err
 	}
@@ -145,46 +145,46 @@ func bindPredicate(address common.Address, caller bind.ContractCaller, transacto
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_Predicate *PredicateRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _Predicate.Contract.PredicateCaller.contract.Call(opts, result, method, params...)
+func (_EtherPredicate *EtherPredicateRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _EtherPredicate.Contract.EtherPredicateCaller.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_Predicate *PredicateRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Predicate.Contract.PredicateTransactor.contract.Transfer(opts)
+func (_EtherPredicate *EtherPredicateRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.EtherPredicateTransactor.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_Predicate *PredicateRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _Predicate.Contract.PredicateTransactor.contract.Transact(opts, method, params...)
+func (_EtherPredicate *EtherPredicateRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.EtherPredicateTransactor.contract.Transact(opts, method, params...)
 }
 
 // Call invokes the (constant) contract method with params as input values and
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_Predicate *PredicateCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _Predicate.Contract.contract.Call(opts, result, method, params...)
+func (_EtherPredicate *EtherPredicateCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _EtherPredicate.Contract.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_Predicate *PredicateTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Predicate.Contract.contract.Transfer(opts)
+func (_EtherPredicate *EtherPredicateTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_Predicate *PredicateTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _Predicate.Contract.contract.Transact(opts, method, params...)
+func (_EtherPredicate *EtherPredicateTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.contract.Transact(opts, method, params...)
 }
 
 // DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
 //
 // Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
-func (_Predicate *PredicateCaller) DEFAULTADMINROLE(opts *bind.CallOpts) ([32]byte, error) {
+func (_EtherPredicate *EtherPredicateCaller) DEFAULTADMINROLE(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _Predicate.contract.Call(opts, &out, "DEFAULT_ADMIN_ROLE")
+	err := _EtherPredicate.contract.Call(opts, &out, "DEFAULT_ADMIN_ROLE")
 
 	if err != nil {
 		return *new([32]byte), err
@@ -199,23 +199,23 @@ func (_Predicate *PredicateCaller) DEFAULTADMINROLE(opts *bind.CallOpts) ([32]by
 // DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
 //
 // Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
-func (_Predicate *PredicateSession) DEFAULTADMINROLE() ([32]byte, error) {
-	return _Predicate.Contract.DEFAULTADMINROLE(&_Predicate.CallOpts)
+func (_EtherPredicate *EtherPredicateSession) DEFAULTADMINROLE() ([32]byte, error) {
+	return _EtherPredicate.Contract.DEFAULTADMINROLE(&_EtherPredicate.CallOpts)
 }
 
 // DEFAULTADMINROLE is a free data retrieval call binding the contract method 0xa217fddf.
 //
 // Solidity: function DEFAULT_ADMIN_ROLE() view returns(bytes32)
-func (_Predicate *PredicateCallerSession) DEFAULTADMINROLE() ([32]byte, error) {
-	return _Predicate.Contract.DEFAULTADMINROLE(&_Predicate.CallOpts)
+func (_EtherPredicate *EtherPredicateCallerSession) DEFAULTADMINROLE() ([32]byte, error) {
+	return _EtherPredicate.Contract.DEFAULTADMINROLE(&_EtherPredicate.CallOpts)
 }
 
 // MANAGERROLE is a free data retrieval call binding the contract method 0xec87621c.
 //
 // Solidity: function MANAGER_ROLE() view returns(bytes32)
-func (_Predicate *PredicateCaller) MANAGERROLE(opts *bind.CallOpts) ([32]byte, error) {
+func (_EtherPredicate *EtherPredicateCaller) MANAGERROLE(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _Predicate.contract.Call(opts, &out, "MANAGER_ROLE")
+	err := _EtherPredicate.contract.Call(opts, &out, "MANAGER_ROLE")
 
 	if err != nil {
 		return *new([32]byte), err
@@ -230,23 +230,23 @@ func (_Predicate *PredicateCaller) MANAGERROLE(opts *bind.CallOpts) ([32]byte, e
 // MANAGERROLE is a free data retrieval call binding the contract method 0xec87621c.
 //
 // Solidity: function MANAGER_ROLE() view returns(bytes32)
-func (_Predicate *PredicateSession) MANAGERROLE() ([32]byte, error) {
-	return _Predicate.Contract.MANAGERROLE(&_Predicate.CallOpts)
+func (_EtherPredicate *EtherPredicateSession) MANAGERROLE() ([32]byte, error) {
+	return _EtherPredicate.Contract.MANAGERROLE(&_EtherPredicate.CallOpts)
 }
 
 // MANAGERROLE is a free data retrieval call binding the contract method 0xec87621c.
 //
 // Solidity: function MANAGER_ROLE() view returns(bytes32)
-func (_Predicate *PredicateCallerSession) MANAGERROLE() ([32]byte, error) {
-	return _Predicate.Contract.MANAGERROLE(&_Predicate.CallOpts)
+func (_EtherPredicate *EtherPredicateCallerSession) MANAGERROLE() ([32]byte, error) {
+	return _EtherPredicate.Contract.MANAGERROLE(&_EtherPredicate.CallOpts)
 }
 
 // TOKENTYPE is a free data retrieval call binding the contract method 0x609c92b8.
 //
 // Solidity: function TOKEN_TYPE() view returns(bytes32)
-func (_Predicate *PredicateCaller) TOKENTYPE(opts *bind.CallOpts) ([32]byte, error) {
+func (_EtherPredicate *EtherPredicateCaller) TOKENTYPE(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _Predicate.contract.Call(opts, &out, "TOKEN_TYPE")
+	err := _EtherPredicate.contract.Call(opts, &out, "TOKEN_TYPE")
 
 	if err != nil {
 		return *new([32]byte), err
@@ -261,23 +261,23 @@ func (_Predicate *PredicateCaller) TOKENTYPE(opts *bind.CallOpts) ([32]byte, err
 // TOKENTYPE is a free data retrieval call binding the contract method 0x609c92b8.
 //
 // Solidity: function TOKEN_TYPE() view returns(bytes32)
-func (_Predicate *PredicateSession) TOKENTYPE() ([32]byte, error) {
-	return _Predicate.Contract.TOKENTYPE(&_Predicate.CallOpts)
+func (_EtherPredicate *EtherPredicateSession) TOKENTYPE() ([32]byte, error) {
+	return _EtherPredicate.Contract.TOKENTYPE(&_EtherPredicate.CallOpts)
 }
 
 // TOKENTYPE is a free data retrieval call binding the contract method 0x609c92b8.
 //
 // Solidity: function TOKEN_TYPE() view returns(bytes32)
-func (_Predicate *PredicateCallerSession) TOKENTYPE() ([32]byte, error) {
-	return _Predicate.Contract.TOKENTYPE(&_Predicate.CallOpts)
+func (_EtherPredicate *EtherPredicateCallerSession) TOKENTYPE() ([32]byte, error) {
+	return _EtherPredicate.Contract.TOKENTYPE(&_EtherPredicate.CallOpts)
 }
 
 // TRANSFEREVENTSIG is a free data retrieval call binding the contract method 0xb017a30f.
 //
 // Solidity: function TRANSFER_EVENT_SIG() view returns(bytes32)
-func (_Predicate *PredicateCaller) TRANSFEREVENTSIG(opts *bind.CallOpts) ([32]byte, error) {
+func (_EtherPredicate *EtherPredicateCaller) TRANSFEREVENTSIG(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _Predicate.contract.Call(opts, &out, "TRANSFER_EVENT_SIG")
+	err := _EtherPredicate.contract.Call(opts, &out, "TRANSFER_EVENT_SIG")
 
 	if err != nil {
 		return *new([32]byte), err
@@ -292,23 +292,23 @@ func (_Predicate *PredicateCaller) TRANSFEREVENTSIG(opts *bind.CallOpts) ([32]by
 // TRANSFEREVENTSIG is a free data retrieval call binding the contract method 0xb017a30f.
 //
 // Solidity: function TRANSFER_EVENT_SIG() view returns(bytes32)
-func (_Predicate *PredicateSession) TRANSFEREVENTSIG() ([32]byte, error) {
-	return _Predicate.Contract.TRANSFEREVENTSIG(&_Predicate.CallOpts)
+func (_EtherPredicate *EtherPredicateSession) TRANSFEREVENTSIG() ([32]byte, error) {
+	return _EtherPredicate.Contract.TRANSFEREVENTSIG(&_EtherPredicate.CallOpts)
 }
 
 // TRANSFEREVENTSIG is a free data retrieval call binding the contract method 0xb017a30f.
 //
 // Solidity: function TRANSFER_EVENT_SIG() view returns(bytes32)
-func (_Predicate *PredicateCallerSession) TRANSFEREVENTSIG() ([32]byte, error) {
-	return _Predicate.Contract.TRANSFEREVENTSIG(&_Predicate.CallOpts)
+func (_EtherPredicate *EtherPredicateCallerSession) TRANSFEREVENTSIG() ([32]byte, error) {
+	return _EtherPredicate.Contract.TRANSFEREVENTSIG(&_EtherPredicate.CallOpts)
 }
 
 // GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca3.
 //
 // Solidity: function getRoleAdmin(bytes32 role) view returns(bytes32)
-func (_Predicate *PredicateCaller) GetRoleAdmin(opts *bind.CallOpts, role [32]byte) ([32]byte, error) {
+func (_EtherPredicate *EtherPredicateCaller) GetRoleAdmin(opts *bind.CallOpts, role [32]byte) ([32]byte, error) {
 	var out []interface{}
-	err := _Predicate.contract.Call(opts, &out, "getRoleAdmin", role)
+	err := _EtherPredicate.contract.Call(opts, &out, "getRoleAdmin", role)
 
 	if err != nil {
 		return *new([32]byte), err
@@ -323,23 +323,23 @@ func (_Predicate *PredicateCaller) GetRoleAdmin(opts *bind.CallOpts, role [32]by
 // GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca3.
 //
 // Solidity: function getRoleAdmin(bytes32 role) view returns(bytes32)
-func (_Predicate *PredicateSession) GetRoleAdmin(role [32]byte) ([32]byte, error) {
-	return _Predicate.Contract.GetRoleAdmin(&_Predicate.CallOpts, role)
+func (_EtherPredicate *EtherPredicateSession) GetRoleAdmin(role [32]byte) ([32]byte, error) {
+	return _EtherPredicate.Contract.GetRoleAdmin(&_EtherPredicate.CallOpts, role)
 }
 
 // GetRoleAdmin is a free data retrieval call binding the contract method 0x248a9ca3.
 //
 // Solidity: function getRoleAdmin(bytes32 role) view returns(bytes32)
-func (_Predicate *PredicateCallerSession) GetRoleAdmin(role [32]byte) ([32]byte, error) {
-	return _Predicate.Contract.GetRoleAdmin(&_Predicate.CallOpts, role)
+func (_EtherPredicate *EtherPredicateCallerSession) GetRoleAdmin(role [32]byte) ([32]byte, error) {
+	return _EtherPredicate.Contract.GetRoleAdmin(&_EtherPredicate.CallOpts, role)
 }
 
 // GetRoleMember is a free data retrieval call binding the contract method 0x9010d07c.
 //
 // Solidity: function getRoleMember(bytes32 role, uint256 index) view returns(address)
-func (_Predicate *PredicateCaller) GetRoleMember(opts *bind.CallOpts, role [32]byte, index *big.Int) (common.Address, error) {
+func (_EtherPredicate *EtherPredicateCaller) GetRoleMember(opts *bind.CallOpts, role [32]byte, index *big.Int) (common.Address, error) {
 	var out []interface{}
-	err := _Predicate.contract.Call(opts, &out, "getRoleMember", role, index)
+	err := _EtherPredicate.contract.Call(opts, &out, "getRoleMember", role, index)
 
 	if err != nil {
 		return *new(common.Address), err
@@ -354,23 +354,23 @@ func (_Predicate *PredicateCaller) GetRoleMember(opts *bind.CallOpts, role [32]b
 // GetRoleMember is a free data retrieval call binding the contract method 0x9010d07c.
 //
 // Solidity: function getRoleMember(bytes32 role, uint256 index) view returns(address)
-func (_Predicate *PredicateSession) GetRoleMember(role [32]byte, index *big.Int) (common.Address, error) {
-	return _Predicate.Contract.GetRoleMember(&_Predicate.CallOpts, role, index)
+func (_EtherPredicate *EtherPredicateSession) GetRoleMember(role [32]byte, index *big.Int) (common.Address, error) {
+	return _EtherPredicate.Contract.GetRoleMember(&_EtherPredicate.CallOpts, role, index)
 }
 
 // GetRoleMember is a free data retrieval call binding the contract method 0x9010d07c.
 //
 // Solidity: function getRoleMember(bytes32 role, uint256 index) view returns(address)
-func (_Predicate *PredicateCallerSession) GetRoleMember(role [32]byte, index *big.Int) (common.Address, error) {
-	return _Predicate.Contract.GetRoleMember(&_Predicate.CallOpts, role, index)
+func (_EtherPredicate *EtherPredicateCallerSession) GetRoleMember(role [32]byte, index *big.Int) (common.Address, error) {
+	return _EtherPredicate.Contract.GetRoleMember(&_EtherPredicate.CallOpts, role, index)
 }
 
 // GetRoleMemberCount is a free data retrieval call binding the contract method 0xca15c873.
 //
 // Solidity: function getRoleMemberCount(bytes32 role) view returns(uint256)
-func (_Predicate *PredicateCaller) GetRoleMemberCount(opts *bind.CallOpts, role [32]byte) (*big.Int, error) {
+func (_EtherPredicate *EtherPredicateCaller) GetRoleMemberCount(opts *bind.CallOpts, role [32]byte) (*big.Int, error) {
 	var out []interface{}
-	err := _Predicate.contract.Call(opts, &out, "getRoleMemberCount", role)
+	err := _EtherPredicate.contract.Call(opts, &out, "getRoleMemberCount", role)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -385,23 +385,23 @@ func (_Predicate *PredicateCaller) GetRoleMemberCount(opts *bind.CallOpts, role 
 // GetRoleMemberCount is a free data retrieval call binding the contract method 0xca15c873.
 //
 // Solidity: function getRoleMemberCount(bytes32 role) view returns(uint256)
-func (_Predicate *PredicateSession) GetRoleMemberCount(role [32]byte) (*big.Int, error) {
-	return _Predicate.Contract.GetRoleMemberCount(&_Predicate.CallOpts, role)
+func (_EtherPredicate *EtherPredicateSession) GetRoleMemberCount(role [32]byte) (*big.Int, error) {
+	return _EtherPredicate.Contract.GetRoleMemberCount(&_EtherPredicate.CallOpts, role)
 }
 
 // GetRoleMemberCount is a free data retrieval call binding the contract method 0xca15c873.
 //
 // Solidity: function getRoleMemberCount(bytes32 role) view returns(uint256)
-func (_Predicate *PredicateCallerSession) GetRoleMemberCount(role [32]byte) (*big.Int, error) {
-	return _Predicate.Contract.GetRoleMemberCount(&_Predicate.CallOpts, role)
+func (_EtherPredicate *EtherPredicateCallerSession) GetRoleMemberCount(role [32]byte) (*big.Int, error) {
+	return _EtherPredicate.Contract.GetRoleMemberCount(&_EtherPredicate.CallOpts, role)
 }
 
 // HasRole is a free data retrieval call binding the contract method 0x91d14854.
 //
 // Solidity: function hasRole(bytes32 role, address account) view returns(bool)
-func (_Predicate *PredicateCaller) HasRole(opts *bind.CallOpts, role [32]byte, account common.Address) (bool, error) {
+func (_EtherPredicate *EtherPredicateCaller) HasRole(opts *bind.CallOpts, role [32]byte, account common.Address) (bool, error) {
 	var out []interface{}
-	err := _Predicate.contract.Call(opts, &out, "hasRole", role, account)
+	err := _EtherPredicate.contract.Call(opts, &out, "hasRole", role, account)
 
 	if err != nil {
 		return *new(bool), err
@@ -416,167 +416,167 @@ func (_Predicate *PredicateCaller) HasRole(opts *bind.CallOpts, role [32]byte, a
 // HasRole is a free data retrieval call binding the contract method 0x91d14854.
 //
 // Solidity: function hasRole(bytes32 role, address account) view returns(bool)
-func (_Predicate *PredicateSession) HasRole(role [32]byte, account common.Address) (bool, error) {
-	return _Predicate.Contract.HasRole(&_Predicate.CallOpts, role, account)
+func (_EtherPredicate *EtherPredicateSession) HasRole(role [32]byte, account common.Address) (bool, error) {
+	return _EtherPredicate.Contract.HasRole(&_EtherPredicate.CallOpts, role, account)
 }
 
 // HasRole is a free data retrieval call binding the contract method 0x91d14854.
 //
 // Solidity: function hasRole(bytes32 role, address account) view returns(bool)
-func (_Predicate *PredicateCallerSession) HasRole(role [32]byte, account common.Address) (bool, error) {
-	return _Predicate.Contract.HasRole(&_Predicate.CallOpts, role, account)
+func (_EtherPredicate *EtherPredicateCallerSession) HasRole(role [32]byte, account common.Address) (bool, error) {
+	return _EtherPredicate.Contract.HasRole(&_EtherPredicate.CallOpts, role, account)
 }
 
 // ExitTokens is a paid mutator transaction binding the contract method 0x8274664f.
 //
 // Solidity: function exitTokens(address , address , bytes log) returns()
-func (_Predicate *PredicateTransactor) ExitTokens(opts *bind.TransactOpts, arg0 common.Address, arg1 common.Address, log []byte) (*types.Transaction, error) {
-	return _Predicate.contract.Transact(opts, "exitTokens", arg0, arg1, log)
+func (_EtherPredicate *EtherPredicateTransactor) ExitTokens(opts *bind.TransactOpts, arg0 common.Address, arg1 common.Address, log []byte) (*types.Transaction, error) {
+	return _EtherPredicate.contract.Transact(opts, "exitTokens", arg0, arg1, log)
 }
 
 // ExitTokens is a paid mutator transaction binding the contract method 0x8274664f.
 //
 // Solidity: function exitTokens(address , address , bytes log) returns()
-func (_Predicate *PredicateSession) ExitTokens(arg0 common.Address, arg1 common.Address, log []byte) (*types.Transaction, error) {
-	return _Predicate.Contract.ExitTokens(&_Predicate.TransactOpts, arg0, arg1, log)
+func (_EtherPredicate *EtherPredicateSession) ExitTokens(arg0 common.Address, arg1 common.Address, log []byte) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.ExitTokens(&_EtherPredicate.TransactOpts, arg0, arg1, log)
 }
 
 // ExitTokens is a paid mutator transaction binding the contract method 0x8274664f.
 //
 // Solidity: function exitTokens(address , address , bytes log) returns()
-func (_Predicate *PredicateTransactorSession) ExitTokens(arg0 common.Address, arg1 common.Address, log []byte) (*types.Transaction, error) {
-	return _Predicate.Contract.ExitTokens(&_Predicate.TransactOpts, arg0, arg1, log)
+func (_EtherPredicate *EtherPredicateTransactorSession) ExitTokens(arg0 common.Address, arg1 common.Address, log []byte) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.ExitTokens(&_EtherPredicate.TransactOpts, arg0, arg1, log)
 }
 
 // GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
 //
 // Solidity: function grantRole(bytes32 role, address account) returns()
-func (_Predicate *PredicateTransactor) GrantRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _Predicate.contract.Transact(opts, "grantRole", role, account)
+func (_EtherPredicate *EtherPredicateTransactor) GrantRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _EtherPredicate.contract.Transact(opts, "grantRole", role, account)
 }
 
 // GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
 //
 // Solidity: function grantRole(bytes32 role, address account) returns()
-func (_Predicate *PredicateSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _Predicate.Contract.GrantRole(&_Predicate.TransactOpts, role, account)
+func (_EtherPredicate *EtherPredicateSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.GrantRole(&_EtherPredicate.TransactOpts, role, account)
 }
 
 // GrantRole is a paid mutator transaction binding the contract method 0x2f2ff15d.
 //
 // Solidity: function grantRole(bytes32 role, address account) returns()
-func (_Predicate *PredicateTransactorSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _Predicate.Contract.GrantRole(&_Predicate.TransactOpts, role, account)
+func (_EtherPredicate *EtherPredicateTransactorSession) GrantRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.GrantRole(&_EtherPredicate.TransactOpts, role, account)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0xc4d66de8.
 //
 // Solidity: function initialize(address _owner) returns()
-func (_Predicate *PredicateTransactor) Initialize(opts *bind.TransactOpts, _owner common.Address) (*types.Transaction, error) {
-	return _Predicate.contract.Transact(opts, "initialize", _owner)
+func (_EtherPredicate *EtherPredicateTransactor) Initialize(opts *bind.TransactOpts, _owner common.Address) (*types.Transaction, error) {
+	return _EtherPredicate.contract.Transact(opts, "initialize", _owner)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0xc4d66de8.
 //
 // Solidity: function initialize(address _owner) returns()
-func (_Predicate *PredicateSession) Initialize(_owner common.Address) (*types.Transaction, error) {
-	return _Predicate.Contract.Initialize(&_Predicate.TransactOpts, _owner)
+func (_EtherPredicate *EtherPredicateSession) Initialize(_owner common.Address) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.Initialize(&_EtherPredicate.TransactOpts, _owner)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0xc4d66de8.
 //
 // Solidity: function initialize(address _owner) returns()
-func (_Predicate *PredicateTransactorSession) Initialize(_owner common.Address) (*types.Transaction, error) {
-	return _Predicate.Contract.Initialize(&_Predicate.TransactOpts, _owner)
+func (_EtherPredicate *EtherPredicateTransactorSession) Initialize(_owner common.Address) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.Initialize(&_EtherPredicate.TransactOpts, _owner)
 }
 
 // LockTokens is a paid mutator transaction binding the contract method 0xe375b64e.
 //
 // Solidity: function lockTokens(address depositor, address depositReceiver, address , bytes depositData) returns()
-func (_Predicate *PredicateTransactor) LockTokens(opts *bind.TransactOpts, depositor common.Address, depositReceiver common.Address, arg2 common.Address, depositData []byte) (*types.Transaction, error) {
-	return _Predicate.contract.Transact(opts, "lockTokens", depositor, depositReceiver, arg2, depositData)
+func (_EtherPredicate *EtherPredicateTransactor) LockTokens(opts *bind.TransactOpts, depositor common.Address, depositReceiver common.Address, arg2 common.Address, depositData []byte) (*types.Transaction, error) {
+	return _EtherPredicate.contract.Transact(opts, "lockTokens", depositor, depositReceiver, arg2, depositData)
 }
 
 // LockTokens is a paid mutator transaction binding the contract method 0xe375b64e.
 //
 // Solidity: function lockTokens(address depositor, address depositReceiver, address , bytes depositData) returns()
-func (_Predicate *PredicateSession) LockTokens(depositor common.Address, depositReceiver common.Address, arg2 common.Address, depositData []byte) (*types.Transaction, error) {
-	return _Predicate.Contract.LockTokens(&_Predicate.TransactOpts, depositor, depositReceiver, arg2, depositData)
+func (_EtherPredicate *EtherPredicateSession) LockTokens(depositor common.Address, depositReceiver common.Address, arg2 common.Address, depositData []byte) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.LockTokens(&_EtherPredicate.TransactOpts, depositor, depositReceiver, arg2, depositData)
 }
 
 // LockTokens is a paid mutator transaction binding the contract method 0xe375b64e.
 //
 // Solidity: function lockTokens(address depositor, address depositReceiver, address , bytes depositData) returns()
-func (_Predicate *PredicateTransactorSession) LockTokens(depositor common.Address, depositReceiver common.Address, arg2 common.Address, depositData []byte) (*types.Transaction, error) {
-	return _Predicate.Contract.LockTokens(&_Predicate.TransactOpts, depositor, depositReceiver, arg2, depositData)
+func (_EtherPredicate *EtherPredicateTransactorSession) LockTokens(depositor common.Address, depositReceiver common.Address, arg2 common.Address, depositData []byte) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.LockTokens(&_EtherPredicate.TransactOpts, depositor, depositReceiver, arg2, depositData)
 }
 
 // RenounceRole is a paid mutator transaction binding the contract method 0x36568abe.
 //
 // Solidity: function renounceRole(bytes32 role, address account) returns()
-func (_Predicate *PredicateTransactor) RenounceRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _Predicate.contract.Transact(opts, "renounceRole", role, account)
+func (_EtherPredicate *EtherPredicateTransactor) RenounceRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _EtherPredicate.contract.Transact(opts, "renounceRole", role, account)
 }
 
 // RenounceRole is a paid mutator transaction binding the contract method 0x36568abe.
 //
 // Solidity: function renounceRole(bytes32 role, address account) returns()
-func (_Predicate *PredicateSession) RenounceRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _Predicate.Contract.RenounceRole(&_Predicate.TransactOpts, role, account)
+func (_EtherPredicate *EtherPredicateSession) RenounceRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.RenounceRole(&_EtherPredicate.TransactOpts, role, account)
 }
 
 // RenounceRole is a paid mutator transaction binding the contract method 0x36568abe.
 //
 // Solidity: function renounceRole(bytes32 role, address account) returns()
-func (_Predicate *PredicateTransactorSession) RenounceRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _Predicate.Contract.RenounceRole(&_Predicate.TransactOpts, role, account)
+func (_EtherPredicate *EtherPredicateTransactorSession) RenounceRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.RenounceRole(&_EtherPredicate.TransactOpts, role, account)
 }
 
 // RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 //
 // Solidity: function revokeRole(bytes32 role, address account) returns()
-func (_Predicate *PredicateTransactor) RevokeRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _Predicate.contract.Transact(opts, "revokeRole", role, account)
+func (_EtherPredicate *EtherPredicateTransactor) RevokeRole(opts *bind.TransactOpts, role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _EtherPredicate.contract.Transact(opts, "revokeRole", role, account)
 }
 
 // RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 //
 // Solidity: function revokeRole(bytes32 role, address account) returns()
-func (_Predicate *PredicateSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _Predicate.Contract.RevokeRole(&_Predicate.TransactOpts, role, account)
+func (_EtherPredicate *EtherPredicateSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.RevokeRole(&_EtherPredicate.TransactOpts, role, account)
 }
 
 // RevokeRole is a paid mutator transaction binding the contract method 0xd547741f.
 //
 // Solidity: function revokeRole(bytes32 role, address account) returns()
-func (_Predicate *PredicateTransactorSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error) {
-	return _Predicate.Contract.RevokeRole(&_Predicate.TransactOpts, role, account)
+func (_EtherPredicate *EtherPredicateTransactorSession) RevokeRole(role [32]byte, account common.Address) (*types.Transaction, error) {
+	return _EtherPredicate.Contract.RevokeRole(&_EtherPredicate.TransactOpts, role, account)
 }
 
 // Receive is a paid mutator transaction binding the contract receive function.
 //
 // Solidity: receive() payable returns()
-func (_Predicate *PredicateTransactor) Receive(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Predicate.contract.RawTransact(opts, nil) // calldata is disallowed for receive function
+func (_EtherPredicate *EtherPredicateTransactor) Receive(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _EtherPredicate.contract.RawTransact(opts, nil) // calldata is disallowed for receive function
 }
 
 // Receive is a paid mutator transaction binding the contract receive function.
 //
 // Solidity: receive() payable returns()
-func (_Predicate *PredicateSession) Receive() (*types.Transaction, error) {
-	return _Predicate.Contract.Receive(&_Predicate.TransactOpts)
+func (_EtherPredicate *EtherPredicateSession) Receive() (*types.Transaction, error) {
+	return _EtherPredicate.Contract.Receive(&_EtherPredicate.TransactOpts)
 }
 
 // Receive is a paid mutator transaction binding the contract receive function.
 //
 // Solidity: receive() payable returns()
-func (_Predicate *PredicateTransactorSession) Receive() (*types.Transaction, error) {
-	return _Predicate.Contract.Receive(&_Predicate.TransactOpts)
+func (_EtherPredicate *EtherPredicateTransactorSession) Receive() (*types.Transaction, error) {
+	return _EtherPredicate.Contract.Receive(&_EtherPredicate.TransactOpts)
 }
 
-// PredicateExitedEtherIterator is returned from FilterExitedEther and is used to iterate over the raw logs and unpacked data for ExitedEther events raised by the Predicate contract.
-type PredicateExitedEtherIterator struct {
-	Event *PredicateExitedEther // Event containing the contract specifics and raw log
+// EtherPredicateExitedEtherIterator is returned from FilterExitedEther and is used to iterate over the raw logs and unpacked data for ExitedEther events raised by the EtherPredicate contract.
+type EtherPredicateExitedEtherIterator struct {
+	Event *EtherPredicateExitedEther // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -590,7 +590,7 @@ type PredicateExitedEtherIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *PredicateExitedEtherIterator) Next() bool {
+func (it *EtherPredicateExitedEtherIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -599,7 +599,7 @@ func (it *PredicateExitedEtherIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(PredicateExitedEther)
+			it.Event = new(EtherPredicateExitedEther)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -614,7 +614,7 @@ func (it *PredicateExitedEtherIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(PredicateExitedEther)
+		it.Event = new(EtherPredicateExitedEther)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -630,19 +630,19 @@ func (it *PredicateExitedEtherIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *PredicateExitedEtherIterator) Error() error {
+func (it *EtherPredicateExitedEtherIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *PredicateExitedEtherIterator) Close() error {
+func (it *EtherPredicateExitedEtherIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// PredicateExitedEther represents a ExitedEther event raised by the Predicate contract.
-type PredicateExitedEther struct {
+// EtherPredicateExitedEther represents a ExitedEther event raised by the EtherPredicate contract.
+type EtherPredicateExitedEther struct {
 	Exitor common.Address
 	Amount *big.Int
 	Raw    types.Log // Blockchain specific contextual infos
@@ -651,31 +651,31 @@ type PredicateExitedEther struct {
 // FilterExitedEther is a free log retrieval operation binding the contract event 0x0fc0eed41f72d3da77d0f53b9594fc7073acd15ee9d7c536819a70a67c57ef3c.
 //
 // Solidity: event ExitedEther(address indexed exitor, uint256 amount)
-func (_Predicate *PredicateFilterer) FilterExitedEther(opts *bind.FilterOpts, exitor []common.Address) (*PredicateExitedEtherIterator, error) {
+func (_EtherPredicate *EtherPredicateFilterer) FilterExitedEther(opts *bind.FilterOpts, exitor []common.Address) (*EtherPredicateExitedEtherIterator, error) {
 
 	var exitorRule []interface{}
 	for _, exitorItem := range exitor {
 		exitorRule = append(exitorRule, exitorItem)
 	}
 
-	logs, sub, err := _Predicate.contract.FilterLogs(opts, "ExitedEther", exitorRule)
+	logs, sub, err := _EtherPredicate.contract.FilterLogs(opts, "ExitedEther", exitorRule)
 	if err != nil {
 		return nil, err
 	}
-	return &PredicateExitedEtherIterator{contract: _Predicate.contract, event: "ExitedEther", logs: logs, sub: sub}, nil
+	return &EtherPredicateExitedEtherIterator{contract: _EtherPredicate.contract, event: "ExitedEther", logs: logs, sub: sub}, nil
 }
 
 // WatchExitedEther is a free log subscription operation binding the contract event 0x0fc0eed41f72d3da77d0f53b9594fc7073acd15ee9d7c536819a70a67c57ef3c.
 //
 // Solidity: event ExitedEther(address indexed exitor, uint256 amount)
-func (_Predicate *PredicateFilterer) WatchExitedEther(opts *bind.WatchOpts, sink chan<- *PredicateExitedEther, exitor []common.Address) (event.Subscription, error) {
+func (_EtherPredicate *EtherPredicateFilterer) WatchExitedEther(opts *bind.WatchOpts, sink chan<- *EtherPredicateExitedEther, exitor []common.Address) (event.Subscription, error) {
 
 	var exitorRule []interface{}
 	for _, exitorItem := range exitor {
 		exitorRule = append(exitorRule, exitorItem)
 	}
 
-	logs, sub, err := _Predicate.contract.WatchLogs(opts, "ExitedEther", exitorRule)
+	logs, sub, err := _EtherPredicate.contract.WatchLogs(opts, "ExitedEther", exitorRule)
 	if err != nil {
 		return nil, err
 	}
@@ -685,8 +685,8 @@ func (_Predicate *PredicateFilterer) WatchExitedEther(opts *bind.WatchOpts, sink
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(PredicateExitedEther)
-				if err := _Predicate.contract.UnpackLog(event, "ExitedEther", log); err != nil {
+				event := new(EtherPredicateExitedEther)
+				if err := _EtherPredicate.contract.UnpackLog(event, "ExitedEther", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -710,18 +710,18 @@ func (_Predicate *PredicateFilterer) WatchExitedEther(opts *bind.WatchOpts, sink
 // ParseExitedEther is a log parse operation binding the contract event 0x0fc0eed41f72d3da77d0f53b9594fc7073acd15ee9d7c536819a70a67c57ef3c.
 //
 // Solidity: event ExitedEther(address indexed exitor, uint256 amount)
-func (_Predicate *PredicateFilterer) ParseExitedEther(log types.Log) (*PredicateExitedEther, error) {
-	event := new(PredicateExitedEther)
-	if err := _Predicate.contract.UnpackLog(event, "ExitedEther", log); err != nil {
+func (_EtherPredicate *EtherPredicateFilterer) ParseExitedEther(log types.Log) (*EtherPredicateExitedEther, error) {
+	event := new(EtherPredicateExitedEther)
+	if err := _EtherPredicate.contract.UnpackLog(event, "ExitedEther", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// PredicateLockedEtherIterator is returned from FilterLockedEther and is used to iterate over the raw logs and unpacked data for LockedEther events raised by the Predicate contract.
-type PredicateLockedEtherIterator struct {
-	Event *PredicateLockedEther // Event containing the contract specifics and raw log
+// EtherPredicateLockedEtherIterator is returned from FilterLockedEther and is used to iterate over the raw logs and unpacked data for LockedEther events raised by the EtherPredicate contract.
+type EtherPredicateLockedEtherIterator struct {
+	Event *EtherPredicateLockedEther // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -735,7 +735,7 @@ type PredicateLockedEtherIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *PredicateLockedEtherIterator) Next() bool {
+func (it *EtherPredicateLockedEtherIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -744,7 +744,7 @@ func (it *PredicateLockedEtherIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(PredicateLockedEther)
+			it.Event = new(EtherPredicateLockedEther)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -759,7 +759,7 @@ func (it *PredicateLockedEtherIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(PredicateLockedEther)
+		it.Event = new(EtherPredicateLockedEther)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -775,19 +775,19 @@ func (it *PredicateLockedEtherIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *PredicateLockedEtherIterator) Error() error {
+func (it *EtherPredicateLockedEtherIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *PredicateLockedEtherIterator) Close() error {
+func (it *EtherPredicateLockedEtherIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// PredicateLockedEther represents a LockedEther event raised by the Predicate contract.
-type PredicateLockedEther struct {
+// EtherPredicateLockedEther represents a LockedEther event raised by the EtherPredicate contract.
+type EtherPredicateLockedEther struct {
 	Depositor       common.Address
 	DepositReceiver common.Address
 	Amount          *big.Int
@@ -797,7 +797,7 @@ type PredicateLockedEther struct {
 // FilterLockedEther is a free log retrieval operation binding the contract event 0x3e799b2d61372379e767ef8f04d65089179b7a6f63f9be3065806456c7309f1b.
 //
 // Solidity: event LockedEther(address indexed depositor, address indexed depositReceiver, uint256 amount)
-func (_Predicate *PredicateFilterer) FilterLockedEther(opts *bind.FilterOpts, depositor []common.Address, depositReceiver []common.Address) (*PredicateLockedEtherIterator, error) {
+func (_EtherPredicate *EtherPredicateFilterer) FilterLockedEther(opts *bind.FilterOpts, depositor []common.Address, depositReceiver []common.Address) (*EtherPredicateLockedEtherIterator, error) {
 
 	var depositorRule []interface{}
 	for _, depositorItem := range depositor {
@@ -808,17 +808,17 @@ func (_Predicate *PredicateFilterer) FilterLockedEther(opts *bind.FilterOpts, de
 		depositReceiverRule = append(depositReceiverRule, depositReceiverItem)
 	}
 
-	logs, sub, err := _Predicate.contract.FilterLogs(opts, "LockedEther", depositorRule, depositReceiverRule)
+	logs, sub, err := _EtherPredicate.contract.FilterLogs(opts, "LockedEther", depositorRule, depositReceiverRule)
 	if err != nil {
 		return nil, err
 	}
-	return &PredicateLockedEtherIterator{contract: _Predicate.contract, event: "LockedEther", logs: logs, sub: sub}, nil
+	return &EtherPredicateLockedEtherIterator{contract: _EtherPredicate.contract, event: "LockedEther", logs: logs, sub: sub}, nil
 }
 
 // WatchLockedEther is a free log subscription operation binding the contract event 0x3e799b2d61372379e767ef8f04d65089179b7a6f63f9be3065806456c7309f1b.
 //
 // Solidity: event LockedEther(address indexed depositor, address indexed depositReceiver, uint256 amount)
-func (_Predicate *PredicateFilterer) WatchLockedEther(opts *bind.WatchOpts, sink chan<- *PredicateLockedEther, depositor []common.Address, depositReceiver []common.Address) (event.Subscription, error) {
+func (_EtherPredicate *EtherPredicateFilterer) WatchLockedEther(opts *bind.WatchOpts, sink chan<- *EtherPredicateLockedEther, depositor []common.Address, depositReceiver []common.Address) (event.Subscription, error) {
 
 	var depositorRule []interface{}
 	for _, depositorItem := range depositor {
@@ -829,7 +829,7 @@ func (_Predicate *PredicateFilterer) WatchLockedEther(opts *bind.WatchOpts, sink
 		depositReceiverRule = append(depositReceiverRule, depositReceiverItem)
 	}
 
-	logs, sub, err := _Predicate.contract.WatchLogs(opts, "LockedEther", depositorRule, depositReceiverRule)
+	logs, sub, err := _EtherPredicate.contract.WatchLogs(opts, "LockedEther", depositorRule, depositReceiverRule)
 	if err != nil {
 		return nil, err
 	}
@@ -839,8 +839,8 @@ func (_Predicate *PredicateFilterer) WatchLockedEther(opts *bind.WatchOpts, sink
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(PredicateLockedEther)
-				if err := _Predicate.contract.UnpackLog(event, "LockedEther", log); err != nil {
+				event := new(EtherPredicateLockedEther)
+				if err := _EtherPredicate.contract.UnpackLog(event, "LockedEther", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -864,18 +864,18 @@ func (_Predicate *PredicateFilterer) WatchLockedEther(opts *bind.WatchOpts, sink
 // ParseLockedEther is a log parse operation binding the contract event 0x3e799b2d61372379e767ef8f04d65089179b7a6f63f9be3065806456c7309f1b.
 //
 // Solidity: event LockedEther(address indexed depositor, address indexed depositReceiver, uint256 amount)
-func (_Predicate *PredicateFilterer) ParseLockedEther(log types.Log) (*PredicateLockedEther, error) {
-	event := new(PredicateLockedEther)
-	if err := _Predicate.contract.UnpackLog(event, "LockedEther", log); err != nil {
+func (_EtherPredicate *EtherPredicateFilterer) ParseLockedEther(log types.Log) (*EtherPredicateLockedEther, error) {
+	event := new(EtherPredicateLockedEther)
+	if err := _EtherPredicate.contract.UnpackLog(event, "LockedEther", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// PredicateRoleAdminChangedIterator is returned from FilterRoleAdminChanged and is used to iterate over the raw logs and unpacked data for RoleAdminChanged events raised by the Predicate contract.
-type PredicateRoleAdminChangedIterator struct {
-	Event *PredicateRoleAdminChanged // Event containing the contract specifics and raw log
+// EtherPredicateRoleAdminChangedIterator is returned from FilterRoleAdminChanged and is used to iterate over the raw logs and unpacked data for RoleAdminChanged events raised by the EtherPredicate contract.
+type EtherPredicateRoleAdminChangedIterator struct {
+	Event *EtherPredicateRoleAdminChanged // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -889,7 +889,7 @@ type PredicateRoleAdminChangedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *PredicateRoleAdminChangedIterator) Next() bool {
+func (it *EtherPredicateRoleAdminChangedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -898,7 +898,7 @@ func (it *PredicateRoleAdminChangedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(PredicateRoleAdminChanged)
+			it.Event = new(EtherPredicateRoleAdminChanged)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -913,7 +913,7 @@ func (it *PredicateRoleAdminChangedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(PredicateRoleAdminChanged)
+		it.Event = new(EtherPredicateRoleAdminChanged)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -929,19 +929,19 @@ func (it *PredicateRoleAdminChangedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *PredicateRoleAdminChangedIterator) Error() error {
+func (it *EtherPredicateRoleAdminChangedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *PredicateRoleAdminChangedIterator) Close() error {
+func (it *EtherPredicateRoleAdminChangedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// PredicateRoleAdminChanged represents a RoleAdminChanged event raised by the Predicate contract.
-type PredicateRoleAdminChanged struct {
+// EtherPredicateRoleAdminChanged represents a RoleAdminChanged event raised by the EtherPredicate contract.
+type EtherPredicateRoleAdminChanged struct {
 	Role              [32]byte
 	PreviousAdminRole [32]byte
 	NewAdminRole      [32]byte
@@ -951,7 +951,7 @@ type PredicateRoleAdminChanged struct {
 // FilterRoleAdminChanged is a free log retrieval operation binding the contract event 0xbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff.
 //
 // Solidity: event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
-func (_Predicate *PredicateFilterer) FilterRoleAdminChanged(opts *bind.FilterOpts, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (*PredicateRoleAdminChangedIterator, error) {
+func (_EtherPredicate *EtherPredicateFilterer) FilterRoleAdminChanged(opts *bind.FilterOpts, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (*EtherPredicateRoleAdminChangedIterator, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -966,17 +966,17 @@ func (_Predicate *PredicateFilterer) FilterRoleAdminChanged(opts *bind.FilterOpt
 		newAdminRoleRule = append(newAdminRoleRule, newAdminRoleItem)
 	}
 
-	logs, sub, err := _Predicate.contract.FilterLogs(opts, "RoleAdminChanged", roleRule, previousAdminRoleRule, newAdminRoleRule)
+	logs, sub, err := _EtherPredicate.contract.FilterLogs(opts, "RoleAdminChanged", roleRule, previousAdminRoleRule, newAdminRoleRule)
 	if err != nil {
 		return nil, err
 	}
-	return &PredicateRoleAdminChangedIterator{contract: _Predicate.contract, event: "RoleAdminChanged", logs: logs, sub: sub}, nil
+	return &EtherPredicateRoleAdminChangedIterator{contract: _EtherPredicate.contract, event: "RoleAdminChanged", logs: logs, sub: sub}, nil
 }
 
 // WatchRoleAdminChanged is a free log subscription operation binding the contract event 0xbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff.
 //
 // Solidity: event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
-func (_Predicate *PredicateFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, sink chan<- *PredicateRoleAdminChanged, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (event.Subscription, error) {
+func (_EtherPredicate *EtherPredicateFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts, sink chan<- *EtherPredicateRoleAdminChanged, role [][32]byte, previousAdminRole [][32]byte, newAdminRole [][32]byte) (event.Subscription, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -991,7 +991,7 @@ func (_Predicate *PredicateFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts,
 		newAdminRoleRule = append(newAdminRoleRule, newAdminRoleItem)
 	}
 
-	logs, sub, err := _Predicate.contract.WatchLogs(opts, "RoleAdminChanged", roleRule, previousAdminRoleRule, newAdminRoleRule)
+	logs, sub, err := _EtherPredicate.contract.WatchLogs(opts, "RoleAdminChanged", roleRule, previousAdminRoleRule, newAdminRoleRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1001,8 +1001,8 @@ func (_Predicate *PredicateFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts,
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(PredicateRoleAdminChanged)
-				if err := _Predicate.contract.UnpackLog(event, "RoleAdminChanged", log); err != nil {
+				event := new(EtherPredicateRoleAdminChanged)
+				if err := _EtherPredicate.contract.UnpackLog(event, "RoleAdminChanged", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1026,18 +1026,18 @@ func (_Predicate *PredicateFilterer) WatchRoleAdminChanged(opts *bind.WatchOpts,
 // ParseRoleAdminChanged is a log parse operation binding the contract event 0xbd79b86ffe0ab8e8776151514217cd7cacd52c909f66475c3af44e129f0b00ff.
 //
 // Solidity: event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
-func (_Predicate *PredicateFilterer) ParseRoleAdminChanged(log types.Log) (*PredicateRoleAdminChanged, error) {
-	event := new(PredicateRoleAdminChanged)
-	if err := _Predicate.contract.UnpackLog(event, "RoleAdminChanged", log); err != nil {
+func (_EtherPredicate *EtherPredicateFilterer) ParseRoleAdminChanged(log types.Log) (*EtherPredicateRoleAdminChanged, error) {
+	event := new(EtherPredicateRoleAdminChanged)
+	if err := _EtherPredicate.contract.UnpackLog(event, "RoleAdminChanged", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// PredicateRoleGrantedIterator is returned from FilterRoleGranted and is used to iterate over the raw logs and unpacked data for RoleGranted events raised by the Predicate contract.
-type PredicateRoleGrantedIterator struct {
-	Event *PredicateRoleGranted // Event containing the contract specifics and raw log
+// EtherPredicateRoleGrantedIterator is returned from FilterRoleGranted and is used to iterate over the raw logs and unpacked data for RoleGranted events raised by the EtherPredicate contract.
+type EtherPredicateRoleGrantedIterator struct {
+	Event *EtherPredicateRoleGranted // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1051,7 +1051,7 @@ type PredicateRoleGrantedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *PredicateRoleGrantedIterator) Next() bool {
+func (it *EtherPredicateRoleGrantedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1060,7 +1060,7 @@ func (it *PredicateRoleGrantedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(PredicateRoleGranted)
+			it.Event = new(EtherPredicateRoleGranted)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1075,7 +1075,7 @@ func (it *PredicateRoleGrantedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(PredicateRoleGranted)
+		it.Event = new(EtherPredicateRoleGranted)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1091,19 +1091,19 @@ func (it *PredicateRoleGrantedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *PredicateRoleGrantedIterator) Error() error {
+func (it *EtherPredicateRoleGrantedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *PredicateRoleGrantedIterator) Close() error {
+func (it *EtherPredicateRoleGrantedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// PredicateRoleGranted represents a RoleGranted event raised by the Predicate contract.
-type PredicateRoleGranted struct {
+// EtherPredicateRoleGranted represents a RoleGranted event raised by the EtherPredicate contract.
+type EtherPredicateRoleGranted struct {
 	Role    [32]byte
 	Account common.Address
 	Sender  common.Address
@@ -1113,7 +1113,7 @@ type PredicateRoleGranted struct {
 // FilterRoleGranted is a free log retrieval operation binding the contract event 0x2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d.
 //
 // Solidity: event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
-func (_Predicate *PredicateFilterer) FilterRoleGranted(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*PredicateRoleGrantedIterator, error) {
+func (_EtherPredicate *EtherPredicateFilterer) FilterRoleGranted(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*EtherPredicateRoleGrantedIterator, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -1128,17 +1128,17 @@ func (_Predicate *PredicateFilterer) FilterRoleGranted(opts *bind.FilterOpts, ro
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _Predicate.contract.FilterLogs(opts, "RoleGranted", roleRule, accountRule, senderRule)
+	logs, sub, err := _EtherPredicate.contract.FilterLogs(opts, "RoleGranted", roleRule, accountRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
-	return &PredicateRoleGrantedIterator{contract: _Predicate.contract, event: "RoleGranted", logs: logs, sub: sub}, nil
+	return &EtherPredicateRoleGrantedIterator{contract: _EtherPredicate.contract, event: "RoleGranted", logs: logs, sub: sub}, nil
 }
 
 // WatchRoleGranted is a free log subscription operation binding the contract event 0x2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d.
 //
 // Solidity: event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
-func (_Predicate *PredicateFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink chan<- *PredicateRoleGranted, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error) {
+func (_EtherPredicate *EtherPredicateFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink chan<- *EtherPredicateRoleGranted, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -1153,7 +1153,7 @@ func (_Predicate *PredicateFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _Predicate.contract.WatchLogs(opts, "RoleGranted", roleRule, accountRule, senderRule)
+	logs, sub, err := _EtherPredicate.contract.WatchLogs(opts, "RoleGranted", roleRule, accountRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1163,8 +1163,8 @@ func (_Predicate *PredicateFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(PredicateRoleGranted)
-				if err := _Predicate.contract.UnpackLog(event, "RoleGranted", log); err != nil {
+				event := new(EtherPredicateRoleGranted)
+				if err := _EtherPredicate.contract.UnpackLog(event, "RoleGranted", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1188,18 +1188,18 @@ func (_Predicate *PredicateFilterer) WatchRoleGranted(opts *bind.WatchOpts, sink
 // ParseRoleGranted is a log parse operation binding the contract event 0x2f8788117e7eff1d82e926ec794901d17c78024a50270940304540a733656f0d.
 //
 // Solidity: event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
-func (_Predicate *PredicateFilterer) ParseRoleGranted(log types.Log) (*PredicateRoleGranted, error) {
-	event := new(PredicateRoleGranted)
-	if err := _Predicate.contract.UnpackLog(event, "RoleGranted", log); err != nil {
+func (_EtherPredicate *EtherPredicateFilterer) ParseRoleGranted(log types.Log) (*EtherPredicateRoleGranted, error) {
+	event := new(EtherPredicateRoleGranted)
+	if err := _EtherPredicate.contract.UnpackLog(event, "RoleGranted", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// PredicateRoleRevokedIterator is returned from FilterRoleRevoked and is used to iterate over the raw logs and unpacked data for RoleRevoked events raised by the Predicate contract.
-type PredicateRoleRevokedIterator struct {
-	Event *PredicateRoleRevoked // Event containing the contract specifics and raw log
+// EtherPredicateRoleRevokedIterator is returned from FilterRoleRevoked and is used to iterate over the raw logs and unpacked data for RoleRevoked events raised by the EtherPredicate contract.
+type EtherPredicateRoleRevokedIterator struct {
+	Event *EtherPredicateRoleRevoked // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1213,7 +1213,7 @@ type PredicateRoleRevokedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *PredicateRoleRevokedIterator) Next() bool {
+func (it *EtherPredicateRoleRevokedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1222,7 +1222,7 @@ func (it *PredicateRoleRevokedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(PredicateRoleRevoked)
+			it.Event = new(EtherPredicateRoleRevoked)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1237,7 +1237,7 @@ func (it *PredicateRoleRevokedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(PredicateRoleRevoked)
+		it.Event = new(EtherPredicateRoleRevoked)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1253,19 +1253,19 @@ func (it *PredicateRoleRevokedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *PredicateRoleRevokedIterator) Error() error {
+func (it *EtherPredicateRoleRevokedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *PredicateRoleRevokedIterator) Close() error {
+func (it *EtherPredicateRoleRevokedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// PredicateRoleRevoked represents a RoleRevoked event raised by the Predicate contract.
-type PredicateRoleRevoked struct {
+// EtherPredicateRoleRevoked represents a RoleRevoked event raised by the EtherPredicate contract.
+type EtherPredicateRoleRevoked struct {
 	Role    [32]byte
 	Account common.Address
 	Sender  common.Address
@@ -1275,7 +1275,7 @@ type PredicateRoleRevoked struct {
 // FilterRoleRevoked is a free log retrieval operation binding the contract event 0xf6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b.
 //
 // Solidity: event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
-func (_Predicate *PredicateFilterer) FilterRoleRevoked(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*PredicateRoleRevokedIterator, error) {
+func (_EtherPredicate *EtherPredicateFilterer) FilterRoleRevoked(opts *bind.FilterOpts, role [][32]byte, account []common.Address, sender []common.Address) (*EtherPredicateRoleRevokedIterator, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -1290,17 +1290,17 @@ func (_Predicate *PredicateFilterer) FilterRoleRevoked(opts *bind.FilterOpts, ro
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _Predicate.contract.FilterLogs(opts, "RoleRevoked", roleRule, accountRule, senderRule)
+	logs, sub, err := _EtherPredicate.contract.FilterLogs(opts, "RoleRevoked", roleRule, accountRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
-	return &PredicateRoleRevokedIterator{contract: _Predicate.contract, event: "RoleRevoked", logs: logs, sub: sub}, nil
+	return &EtherPredicateRoleRevokedIterator{contract: _EtherPredicate.contract, event: "RoleRevoked", logs: logs, sub: sub}, nil
 }
 
 // WatchRoleRevoked is a free log subscription operation binding the contract event 0xf6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b.
 //
 // Solidity: event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
-func (_Predicate *PredicateFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink chan<- *PredicateRoleRevoked, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error) {
+func (_EtherPredicate *EtherPredicateFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink chan<- *EtherPredicateRoleRevoked, role [][32]byte, account []common.Address, sender []common.Address) (event.Subscription, error) {
 
 	var roleRule []interface{}
 	for _, roleItem := range role {
@@ -1315,7 +1315,7 @@ func (_Predicate *PredicateFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink
 		senderRule = append(senderRule, senderItem)
 	}
 
-	logs, sub, err := _Predicate.contract.WatchLogs(opts, "RoleRevoked", roleRule, accountRule, senderRule)
+	logs, sub, err := _EtherPredicate.contract.WatchLogs(opts, "RoleRevoked", roleRule, accountRule, senderRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1325,8 +1325,8 @@ func (_Predicate *PredicateFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(PredicateRoleRevoked)
-				if err := _Predicate.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
+				event := new(EtherPredicateRoleRevoked)
+				if err := _EtherPredicate.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1350,9 +1350,9 @@ func (_Predicate *PredicateFilterer) WatchRoleRevoked(opts *bind.WatchOpts, sink
 // ParseRoleRevoked is a log parse operation binding the contract event 0xf6391f5c32d9c69d2a47ea670b442974b53935d1edc7fd64eb21e047a839171b.
 //
 // Solidity: event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
-func (_Predicate *PredicateFilterer) ParseRoleRevoked(log types.Log) (*PredicateRoleRevoked, error) {
-	event := new(PredicateRoleRevoked)
-	if err := _Predicate.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
+func (_EtherPredicate *EtherPredicateFilterer) ParseRoleRevoked(log types.Log) (*EtherPredicateRoleRevoked, error) {
+	event := new(EtherPredicateRoleRevoked)
+	if err := _EtherPredicate.contract.UnpackLog(event, "RoleRevoked", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

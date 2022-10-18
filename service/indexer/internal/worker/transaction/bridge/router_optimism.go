@@ -47,8 +47,7 @@ func (w *Worker) handleOptimism(ctx context.Context, transaction model.Transacti
 				continue
 			}
 
-			internalTransaction.Owner = internalTransfer.AddressFrom
-			internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(internalTransfer.Tag, internalTransaction.Tag, internalTransfer.Type, internalTransaction.Type)
+			internalTransaction = w.fillTransactionMetadata(internalTransaction, *internalTransfer)
 			internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
 		case optimism.EventHashERC20DepositInitiated:
 			internalTransfer, err := w.handleOptimismDepositERC20(ctx, transaction, *log, bridge)
@@ -58,8 +57,7 @@ func (w *Worker) handleOptimism(ctx context.Context, transaction model.Transacti
 				continue
 			}
 
-			internalTransaction.Owner = internalTransfer.AddressFrom
-			internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(internalTransfer.Tag, internalTransaction.Tag, internalTransfer.Type, internalTransaction.Type)
+			internalTransaction = w.fillTransactionMetadata(internalTransaction, *internalTransfer)
 			internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
 		case optimism.EventHashETHWithdrawalFinalized:
 			internalTransfer, err := w.handleOptimismWithdraw(ctx, transaction, *log, bridge)
@@ -69,8 +67,7 @@ func (w *Worker) handleOptimism(ctx context.Context, transaction model.Transacti
 				continue
 			}
 
-			internalTransaction.Owner = internalTransfer.AddressFrom
-			internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(internalTransfer.Tag, internalTransaction.Tag, internalTransfer.Type, internalTransaction.Type)
+			internalTransaction = w.fillTransactionMetadata(internalTransaction, *internalTransfer)
 			internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
 		case optimism.EventHashERC20WithdrawalFinalized:
 			internalTransfer, err := w.handleOptimismWithdrawERC20(ctx, transaction, *log, bridge)
@@ -80,8 +77,7 @@ func (w *Worker) handleOptimism(ctx context.Context, transaction model.Transacti
 				continue
 			}
 
-			internalTransaction.Owner = internalTransfer.AddressFrom
-			internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(internalTransfer.Tag, internalTransaction.Tag, internalTransfer.Type, internalTransaction.Type)
+			internalTransaction = w.fillTransactionMetadata(internalTransaction, *internalTransfer)
 			internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
 		}
 	}

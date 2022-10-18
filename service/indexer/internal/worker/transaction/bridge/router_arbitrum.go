@@ -11,21 +11,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/arbitrum"
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 )
 
 func (w *Worker) handleArbitrum(ctx context.Context, transaction model.Transaction) (*model.Transaction, error) {
-	ethereumClient, err := ethclientx.Global(transaction.Network)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get ethereum client: %w", err)
-	}
-
-	inbox, err := arbitrum.NewInbox(common.HexToAddress(transaction.AddressTo), ethereumClient)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get inbox contract: %w", err)
-	}
-
 	var sourceData ethereum.SourceData
 	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
 		return nil, err
@@ -40,13 +29,12 @@ func (w *Worker) handleArbitrum(ctx context.Context, transaction model.Transacti
 		}
 
 		if log.Topics[0] == arbitrum.EventHashMessageDelivered {
-			internalTransfer, err := w.handleArbitrumDeposit(ctx, transaction, *log, sourceData.Transaction.Value(), inbox)
+			internalTransfer, err := w.handleArbitrumDeposit(ctx, transaction, *log, sourceData.Transaction.Value())
 			if err != nil {
 				return nil, fmt.Errorf("failed to handle arbitrum deposit: %w", err)
 			}
 
-			internalTransaction.Owner = internalTransfer.AddressFrom
-			internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(internalTransfer.Tag, internalTransaction.Tag, internalTransfer.Type, internalTransaction.Type)
+			internalTransaction = w.fillTransactionMetadata(internalTransaction, *internalTransfer)
 			internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
 		}
 	}
@@ -54,11 +42,7 @@ func (w *Worker) handleArbitrum(ctx context.Context, transaction model.Transacti
 	return &internalTransaction, nil
 }
 
-func (w *Worker) handleArbitrumDeposit(ctx context.Context, transaction model.Transaction, log types.Log, value *big.Int, inbox *arbitrum.Inbox) (*model.Transfer, error) {
-	if _, err := inbox.ParseInboxMessageDelivered(log); err != nil {
-		return nil, fmt.Errorf("failed to parse InboxMessageDelivered event: %w", err)
-	}
-
+func (w *Worker) handleArbitrumDeposit(ctx context.Context, transaction model.Transaction, log types.Log, value *big.Int) (*model.Transfer, error) {
 	var (
 		platform string
 		chainID  uint64

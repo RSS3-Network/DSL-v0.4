@@ -16,13 +16,13 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const (
-	ChainIDEthereum     = 1
-	ChainIDOptimism     = 10
-	ChainIDPolygon      = 137
-	ChainIDArbitrumOne  = 42161
-	ChainIDArbitrumNova = 42170
-)
+func (w *Worker) fillTransactionMetadata(transaction model.Transaction, transfer model.Transfer) model.Transaction {
+	transaction.Owner = transfer.AddressFrom
+	transaction.Platform = transfer.Platform
+	transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
+
+	return transaction
+}
 
 func (w *Worker) buildTransfer(ctx context.Context, transaction model.Transaction, log types.Log, from, to common.Address, platform string, chainID uint64, tokenAddress *common.Address, tokenValue *big.Int, transferType string) (*model.Transfer, error) {
 	var (
@@ -47,8 +47,13 @@ func (w *Worker) buildTransfer(ctx context.Context, transaction model.Transactio
 	tokenDisplay := internalTokenValue.Shift(-int32(tokenMetadata.Decimals))
 	tokenMetadata.ValueDisplay = &tokenDisplay
 
+	network, exists := networkMap[chainID]
+	if !exists {
+		return nil, fmt.Errorf("unsupported chain id: %d", chainID)
+	}
+
 	metadataRaw, err := json.Marshal(metadata.Bride{
-		ChainID: chainID,
+		Network: network,
 		Token:   *tokenMetadata,
 	})
 	if err != nil {

@@ -64,7 +64,7 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 		// Arbitrum One Bridge
 		if transaction.Network == protocol.NetworkEthereum && (strings.EqualFold(transaction.AddressTo, arbitrum.AddressInboxOne.String()) || strings.EqualFold(transaction.AddressFrom, arbitrum.AddressInboxOne.String())) {
 			if internalTransaction, err = w.handleArbitrum(ctx, transaction); err != nil {
-				zap.L().Error("failed to handle optimism transaction", zap.Error(err))
+				zap.L().Error("failed to handle arbitrum transaction", zap.Error(err))
 
 				continue
 			}
@@ -73,7 +73,7 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 		// Arbitrum Nova Bridge
 		if transaction.Network == protocol.NetworkEthereum && (strings.EqualFold(transaction.AddressTo, arbitrum.AddressInboxNova.String()) || strings.EqualFold(transaction.AddressFrom, arbitrum.AddressInboxNova.String())) {
 			if internalTransaction, err = w.handleArbitrum(ctx, transaction); err != nil {
-				zap.L().Error("failed to handle optimism transaction", zap.Error(err))
+				zap.L().Error("failed to handle arbitrum transaction", zap.Error(err))
 
 				continue
 			}

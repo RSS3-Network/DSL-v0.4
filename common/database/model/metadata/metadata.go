@@ -122,6 +122,12 @@ type CrossbellNote struct {
 }
 
 type Bride struct {
+	Network Network `json:"network"`
+	Token   Token   `json:"token"`
+}
+
+type Network struct {
+	Name    string `json:"name"`
 	ChainID uint64 `json:"chain_id"`
-	Token   Token  `json:"token"`
+	Symbol  string `json:"symbol"`
 }
