@@ -88,7 +88,7 @@ func (c *Client) ERC721Ens(ctx context.Context, contractAddress string, tokenID 
 
 		return err
 	},
-		retry.Attempts(60*2), // ~ 2 minutes
+		retry.Attempts(2),
 		retry.DelayType(func(_ uint, _ error, _ *retry.Config) time.Duration {
 			delay, err := rand.Int(rand.Reader, big.NewInt(250))
 			if err != nil {

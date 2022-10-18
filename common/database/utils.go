@@ -6,10 +6,8 @@ import (
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/samber/lo"
-	"github.com/scylladb/go-set/strset"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	"gorm.io/gorm/clause"
@@ -21,8 +19,6 @@ func UpsertTransactions(ctx context.Context, transactions []*model.Transaction) 
 	updatedTransactions := []model.Transaction{}
 
 	for _, transaction := range transactions {
-		addresses := strset.New(transaction.AddressFrom, transaction.AddressTo)
-
 		// Ignore empty transactions
 		internalTransfers := make([]model.Transfer, 0)
 
@@ -46,17 +42,8 @@ func UpsertTransactions(ctx context.Context, transactions []*model.Transaction) 
 			}
 
 			transfers = append(transfers, transfer)
-
-			if transfer.AddressFrom != "" && transfer.AddressFrom != ethereum.AddressGenesis.String() {
-				addresses.Add(transfer.AddressFrom)
-			}
-
-			if transfer.AddressTo != "" && transfer.AddressTo != ethereum.AddressGenesis.String() {
-				addresses.Add(transfer.AddressTo)
-			}
 		}
 
-		transaction.Addresses = addresses.List()
 		updatedTransactions = append(updatedTransactions, *transaction)
 	}
 
