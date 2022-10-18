@@ -49,3 +49,5 @@ rpc:
   ipfs:
     io: ''
     internal: ''
+eip1577:
+  endpoint: ''
