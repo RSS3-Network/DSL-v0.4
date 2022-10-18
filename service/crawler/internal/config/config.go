@@ -10,4 +10,5 @@ type Config struct {
 	OpenTelemetry *configx.OpenTelemetry `mapstructure:"opentelemetry"`
 	Redis         *configx.Redis         `mapstructure:"redis"`
 	RPC           *configx.RPC           `mapstructure:"rpc"`
+	EIP1577       *configx.EIP1577       `mapstructure:"eip1577"`
 }
