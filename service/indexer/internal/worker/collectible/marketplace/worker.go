@@ -78,6 +78,9 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 }
 
 func (i *internal) buildTradeTransfer(transaction model.Transaction, index int64, platform string, seller, buyer common.Address, nft *metadata.Token, cost *metadata.Token) (*model.Transfer, error) {
+	valueDisplay := nft.Value.Shift(-int32(nft.Decimals))
+	nft.ValueDisplay = &valueDisplay
+
 	nft.Cost = cost
 
 	metadataRaw, err := json.Marshal(nft)
@@ -97,7 +100,12 @@ func (i *internal) buildTradeTransfer(transaction model.Transaction, index int64
 		Metadata:        metadataRaw,
 		Network:         transaction.Network,
 		Platform:        platform,
-		RelatedUrls:     ethereum.BuildTokenURL(transaction.Network, nft.ContractAddress, nft.ID),
+		RelatedUrls: ethereum.BuildURL(
+			[]string{
+				ethereum.BuildScanURL(transaction.Network, transaction.Hash),
+			},
+			ethereum.BuildTokenURL(transaction.Network, nft.ContractAddress, nft.ID)...,
+		),
 	}
 
 	return &transfer, nil

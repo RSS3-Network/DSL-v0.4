@@ -199,7 +199,10 @@ func (i *internal) handleOpenSeaWyvernExchangeOrdersMatched(ctx context.Context,
 		return nil, errors.New("transfer log not found")
 	}
 
-	var tokenID *big.Int
+	var (
+		tokenID    *big.Int
+		tokenValue *big.Int
+	)
 
 	switch standard {
 	case protocol.TokenStandardERC721:
@@ -214,6 +217,7 @@ func (i *internal) handleOpenSeaWyvernExchangeOrdersMatched(ctx context.Context,
 		}
 
 		tokenID = event.TokenId
+		tokenValue = big.NewInt(1)
 	case protocol.TokenStandardERC1155:
 		erc1155, err := erc1155.NewERC1155(transferLog.Address, ethereumClient)
 		if err != nil {
@@ -226,6 +230,7 @@ func (i *internal) handleOpenSeaWyvernExchangeOrdersMatched(ctx context.Context,
 		}
 
 		tokenID = event.Id
+		tokenValue = event.Value
 	}
 
 	nft, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, transferLog.Address.String(), tokenID)
@@ -234,6 +239,9 @@ func (i *internal) handleOpenSeaWyvernExchangeOrdersMatched(ctx context.Context,
 
 		return nil, err
 	}
+
+	nftValue := decimal.NewFromBigInt(tokenValue, 0)
+	nft.Value = &nftValue
 
 	cost, err := i.buildCost(ctx, transaction.Network, ethereum.AddressGenesis, event.Price)
 	if err != nil {
