@@ -21,6 +21,7 @@ import (
 	"golang.org/x/net/context"
 )
 
+//go:embed eip1577.csv
 var _ crawler.Crawler = (*service)(nil)
 
 type service struct {
@@ -128,6 +129,8 @@ func (s *service) HandleEIP1577(ctx context.Context, domain model.Domain) error 
 
 		return err
 	}
+
+	loggerx.Global().Info("eip1577: done ", zap.String("domain", domain.Name))
 
 	return nil
 }
