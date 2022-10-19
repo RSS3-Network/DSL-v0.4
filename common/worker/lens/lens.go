@@ -428,12 +428,16 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 		postFinal = post
 		contentURI, err := c.GetContentURI(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
 		if err != nil {
-			loggerx.Global().Error("[lens worker] FormatContent-Share: GetContentURI error", zap.Error(err))
+			loggerx.Global().Error("[lens worker] FormatContent-Comment: GetContentURI error", zap.Error(err))
 			return err
 		}
 		// get the target content
 		targetContent := LensContent{}
-		c.GetContent(ctx, contentURI, &targetContent)
+		err = c.GetContent(ctx, contentURI, &targetContent)
+		if err != nil {
+			loggerx.Global().Error("[lens worker] FormatContent-Comment: GetContentURI error", zap.Error(err))
+			return err
+		}
 
 		postFinal.Target = c.CreatePost(ctx, &targetContent)
 		// get the correct type on Lens
