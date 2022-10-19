@@ -25,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (i *internal) handleOpenSea(ctx context.Context, message *protocol.Message, transaction model.Transaction) (*model.Transaction, error) {
+func (i *internal) handleOpenSea(ctx context.Context, _ *protocol.Message, transaction model.Transaction) (*model.Transaction, error) {
 	tracer := otel.Tracer("worker_marketplace")
 	_, span := tracer.Start(ctx, "worker_marketplace:handleOpenSea")
 
@@ -96,6 +96,7 @@ func (i *internal) handleOpenseaSeaportOrderFulfilled(ctx context.Context, trans
 	internalTransfers := make([]model.Transfer, 0)
 
 	for _, item := range event.Consideration {
+		// OpenSea puts ERC20 transfers in Consideration as well
 		if item.ItemType == opensea.ItemTypeERC20 {
 			continue
 		}
@@ -128,6 +129,8 @@ func (i *internal) handleOpenseaSeaportOrderFulfilled(ctx context.Context, trans
 
 		var transferLogIndex int64
 		for _, logForIndex := range sourceData.Receipt.Logs {
+			// If a user purchases multiple NFTs in the same transaction,
+			// the log indexes will conflict and need to be matched with their transfer logs separately.
 			if len(logForIndex.Topics) == 4 &&
 				logForIndex.Topics[0] == erc721.EventHashTransfer &&
 				strings.EqualFold(common.HexToAddress(logForIndex.Topics[1].Hex()).String(), event.Offerer.String()) &&
@@ -176,6 +179,7 @@ func (i *internal) handleOpenSeaWyvernExchangeOrdersMatched(ctx context.Context,
 		transferLog *types.Log
 	)
 
+	// The value of ERC1155 is variable, while the value of ERC721 is always 1
 	for _, log := range sourceData.Receipt.Logs {
 		switch log.Topics[0] {
 		case erc721.EventHashTransfer:
@@ -195,6 +199,7 @@ func (i *internal) handleOpenSeaWyvernExchangeOrdersMatched(ctx context.Context,
 		break
 	}
 
+	// Defensive programming, not triggered by normal conditions
 	if transferLog == nil {
 		return nil, errors.New("transfer log not found")
 	}

@@ -19,13 +19,13 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-func (i *internal) handleLooksRare(ctx context.Context, message *protocol.Message, transaction model.Transaction) (*model.Transaction, error) {
+func (i *internal) handleLooksRare(ctx context.Context, _ *protocol.Message, transaction model.Transaction) (*model.Transaction, error) {
 	tracer := otel.Tracer("worker_marketplace")
 	_, span := tracer.Start(ctx, "worker_marketplace:handleLooksRare")
 
 	defer opentelemetry.Log(span, transaction, nil, nil)
 
-	ethclient, err := ethclientx.Global(message.Network)
+	ethclient, err := ethclientx.Global(transaction.Network)
 	if err != nil {
 		return nil, err
 	}
