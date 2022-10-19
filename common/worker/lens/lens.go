@@ -41,12 +41,32 @@ type LensContent struct {
 	ExternalURL string             `json:"external_url"`
 	AppId       string             `json:"appId"`
 	Media       []LensContentMedia `json:"media"`
+	CreatedOn   time.Time          `json:"createdOn"`
+	Attributes  []struct {
+		TraitType string `json:"traitType"`
+		Key       string `json:"key"`
+		Value     string `json:"value"`
+	} `json:"attributes"`
 }
 
 type LensContentMedia struct {
 	Item string `json:"item"`
 	Type string `json:"type"`
 }
+
+type FormatOption struct {
+	ContentURI       string
+	ContentType      string
+	Transfer         *model.Transfer
+	ProfileIdPointed *big.Int
+	PubIdPointed     *big.Int
+}
+
+const (
+	Post    = "post"
+	Comment = "comment"
+	Share   = "mirror"
+)
 
 func New() *Client {
 	return &Client{
@@ -185,52 +205,24 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Events, transfer *model.Transfer, log types.Log) (err error) {
 	event, err := lensContract.EventsFilterer.ParsePostCreated(log)
 	if err != nil {
-		loggerx.Global().Error("[lens worker] handleReceipt: ParsePostCreated error", zap.Error(err))
+		loggerx.Global().Error("[lens worker] HandlePostCreated: ParsePostCreated error", zap.Error(err))
 
 		return err
 	}
 
-	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
-
-	// get content
-	content, err := ipfs.GetFileByURL(event.ContentURI)
+	err = c.FormatContent(ctx, &FormatOption{
+		ContentURI:  event.ContentURI,
+		ContentType: Post,
+		Transfer:    transfer,
+	})
 	if err != nil {
-		logrus.Errorf("[lens worker] handleReceipt: getContent error, %v, ipfs: %v", err, event.ContentURI)
+		loggerx.Global().Error("[lens worker] HandlePostCreated: FormatContent error", zap.Error(err))
+
 		return err
 	}
 
-	lensContent := LensContent{}
-	if err = json.Unmarshal(content, &lensContent); err != nil {
-		logrus.Errorf("[lens worker] handleReceipt: json unmarshal error, %v, json: %v, ipfs: %v", err, string(content), event.ContentURI)
-		return err
-	}
-
-	post := &metadata.Post{
-		Body: lensContent.Content,
-	}
-	for _, media := range lensContent.Media {
-		post.Media = append(post.Media, metadata.Media{
-			Address:  ipfs.GetDirectURL(media.Item),
-			MimeType: media.Type,
-		})
-	}
-
-	if len(post.Body) == 0 && len(post.Media) == 0 {
-		return fmt.Errorf("content is nil, ipfs:%v", event.ContentURI)
-	}
-
-	rawMetadata, err := json.Marshal(post)
-	if err != nil {
-		return err
-	}
-
-	transfer.Platform = lensContent.AppId
-	transfer.Metadata = rawMetadata
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
-	transfer.RelatedUrls = []string{
-		c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId),
-		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
-	}
+	transfer.RelatedUrls = append(transfer.RelatedUrls, c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId))
 
 	return nil
 }
@@ -238,59 +230,28 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract.Events, transfer *model.Transfer, log types.Log) (err error) {
 	event, err := lensContract.EventsFilterer.ParseCommentCreated(log)
 	if err != nil {
-		loggerx.Global().Error("[lens worker] handleCommentCreated: ParsePostCreated error", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleCommentCreated: ParseCommentCreated error", zap.Error(err))
+
+		return err
+	}
+
+	err = c.FormatContent(ctx, &FormatOption{
+		ContentURI:       event.ContentURI,
+		ContentType:      Comment,
+		Transfer:         transfer,
+		ProfileIdPointed: event.ProfileIdPointed,
+		PubIdPointed:     event.PubIdPointed,
+	})
+
+	if err != nil {
+		loggerx.Global().Error("[lens worker] handleCommentCreated: FormatContent error", zap.Error(err))
 
 		return err
 	}
 
 	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
-
-	// get content
-	content, err := ipfs.GetFileByURL(event.ContentURI)
-	if err != nil {
-		logrus.Errorf("[lens worker] handleCommentCreated: getContent error, %v, ipfs: %v", err, event.ContentURI)
-		return err
-	}
-
-	lensContent := LensContent{}
-	if err = json.Unmarshal(content, &lensContent); err != nil {
-		logrus.Errorf("[lens worker] handleCommentCreated: json unmarshal error, %v, json: %v, ipfs: %v", err, string(content), event.ContentURI)
-		return err
-	}
-
-	post := &metadata.Post{
-		Body: lensContent.Content,
-	}
-	for _, media := range lensContent.Media {
-		post.Media = append(post.Media, metadata.Media{
-			Address:  ipfs.GetDirectURL(media.Item),
-			MimeType: media.Type,
-		})
-	}
-
-	if len(post.Body) == 0 && len(post.Media) == 0 {
-		return fmt.Errorf("content is nil, ipfs:%v", event.ContentURI)
-	}
-
-	// get content pointed
-	_, post.Target, err = c.GetContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed)
-	if err != nil {
-		logrus.Errorf("[lens worker] handleCommentCreated: getContenPointed error, %v", err)
-		return err
-	}
-
-	rawMetadata, err := json.Marshal(post)
-	if err != nil {
-		return err
-	}
-
-	transfer.Platform = lensContent.AppId
-	transfer.Metadata = rawMetadata
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialComment, transfer.Type)
-	transfer.RelatedUrls = []string{
-		c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId),
-		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
-	}
+	transfer.RelatedUrls = append(transfer.RelatedUrls, c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId))
 
 	return nil
 }
@@ -338,92 +299,49 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.Events, transfer *model.Transfer, log types.Log) (err error) {
 	event, err := lensContract.EventsFilterer.ParseMirrorCreated(log)
 	if err != nil {
-		loggerx.Global().Error("[lens worker] handleMirrorCreated: ParsePostCreated error", zap.Error(err))
+		loggerx.Global().Error("[lens worker] handleMirrorCreated: ParseMirrorCreated error", zap.Error(err))
+		return err
+	}
 
+	contentURI, err := c.GetContentURI(ctx, event.ProfileIdPointed, event.PubIdPointed)
+	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleMirrorCreated: GetContentURI error", zap.Error(err))
+		return err
+	}
+
+	err = c.FormatContent(ctx, &FormatOption{
+		ContentURI:       contentURI,
+		ContentType:      Share,
+		Transfer:         transfer,
+		ProfileIdPointed: event.ProfileIdPointed,
+		PubIdPointed:     event.PubIdPointed,
+	})
+	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleMirrorCreated: FormatContent error", zap.Error(err))
 		return err
 	}
 
 	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
-
-	// get content
-	content, share, err := c.GetContenPointed(ctx, event.ProfileId, event.PubId)
-	if err != nil {
-		logrus.Errorf("[lens worker] handleMirrorCreated: getContenPointed error, %v", err)
-		return err
-	}
-
-	// get content pointed
-	_, share.Target, err = c.GetContenPointed(ctx, event.ProfileIdPointed, event.PubIdPointed)
-	if err != nil {
-		logrus.Errorf("[lens worker] handleMirrorCreated: getContenPointed error, %v", err)
-		return err
-	}
-
-	rawMetadata, err := json.Marshal(share)
-	if err != nil {
-		return err
-	}
-
-	transfer.Platform = content.AppId
-	transfer.Metadata = rawMetadata
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialShare, transfer.Type)
-	transfer.RelatedUrls = []string{
-		c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId),
-		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
-		content.ExternalURL,
-	}
+	transfer.RelatedUrls = append(transfer.RelatedUrls, c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId))
 
 	return nil
 }
 
-func (c *Client) GetContenPointed(ctx context.Context, profileId *big.Int, pubId *big.Int) (*LensContent, *metadata.Post, error) {
+func (c *Client) GetContentURI(ctx context.Context, profileId *big.Int, pubId *big.Int) (string, error) {
 	// rpc
 	ethclient, err := ethclientx.Global(protocol.NetworkPolygon)
 	if err != nil {
-		return nil, nil, err
+		return "", err
 	}
 	iLensHub, err := contract.NewILensHub(lens.HubProxyContractAddress, ethclient)
 	if err != nil {
 		logrus.Errorf("[lens worker] NewILensHub error, %v", err)
 
-		return nil, nil, err
+		return "", err
 	}
 
-	contentURI, err := iLensHub.GetContentURI(&bind.CallOpts{}, profileId, pubId)
-	if err != nil {
-		logrus.Errorf("[lens worker] iLensHub GetContentURI error, %v", err)
-
-		return nil, nil, err
-	}
-
-	// get content
-	content, err := ipfs.GetFileByURL(contentURI)
-	if err != nil {
-		logrus.Errorf("[lens worker] getContenPointed: getContent error, %v, ipfs: %v", err, contentURI)
-		return nil, nil, err
-	}
-
-	lensContent := LensContent{}
-	if err = json.Unmarshal(content, &lensContent); err != nil {
-		logrus.Errorf("[lens worker] getContenPointed: json unmarshal error, %v, json: %v, ipfs: %v", err, string(content), contentURI)
-		return nil, nil, err
-	}
-
-	post := &metadata.Post{
-		Body: lensContent.Content,
-	}
-	for _, media := range lensContent.Media {
-		post.Media = append(post.Media, metadata.Media{
-			Address:  ipfs.GetDirectURL(media.Item),
-			MimeType: media.Type,
-		})
-	}
-
-	if len(post.Body) == 0 && len(post.Media) == 0 {
-		return nil, nil, fmt.Errorf("content is nil, ipfs:%v", contentURI)
-	}
-
-	return &lensContent, post, nil
+	return iLensHub.GetContentURI(&bind.CallOpts{}, profileId, pubId)
 }
 
 func (c *Client) GetLensRelatedURL(ctx context.Context, profileId *big.Int, pubId *big.Int) string {
@@ -438,4 +356,107 @@ func (c *Client) GetLensRelatedURL(ctx context.Context, profileId *big.Int, pubI
 	}
 
 	return fmt.Sprintf("https://lenster.xyz/posts/%v-%v", string(profileIdHex), string(pubIdHex))
+}
+
+// GetContent get content from arweave
+func (c *Client) GetContent(ctx context.Context, uri string, lensContent *LensContent) error {
+	// get content
+	content, err := ipfs.GetFileByURL(uri)
+	if err != nil {
+		logrus.Errorf("[lens worker] handleReceipt: getContent error, %v, ipfs: %v", err, uri)
+		return err
+	}
+
+	if err = json.Unmarshal(content, &lensContent); err != nil {
+		logrus.Errorf("[lens worker] handleReceipt: json unmarshal error, %v, json: %v, ipfs: %v", err, string(content), uri)
+		return err
+	}
+
+	if len(lensContent.Content) == 0 && len(lensContent.Media) == 0 {
+		return fmt.Errorf("content is nil, ipfs:%v", uri)
+	}
+
+	return nil
+}
+
+// CreatePost create the basic Post struct
+func (c *Client) CreatePost(ctx context.Context, lensContent *LensContent) *metadata.Post {
+	post := &metadata.Post{
+		Body: lensContent.Content,
+	}
+
+	if lensContent.ExternalURL != "" {
+		post.Author = []string{lensContent.ExternalURL}
+	}
+
+	for _, media := range lensContent.Media {
+		post.Media = append(post.Media, metadata.Media{
+			Address:  ipfs.GetDirectURL(media.Item),
+			MimeType: media.Type,
+		})
+	}
+	return post
+}
+func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
+	lensContent := LensContent{}
+	c.GetContent(ctx, opt.ContentURI, &lensContent)
+
+	// handle transfer fields
+	opt.Transfer.Platform = lensContent.AppId
+
+	opt.Transfer.RelatedUrls = []string{
+		utils.GetTxHashURL(protocol.NetworkPolygon, opt.Transfer.TransactionHash),
+	}
+
+	post := c.CreatePost(ctx, &lensContent)
+
+	// special handling for Share and Comment
+	var postFinal *metadata.Post
+	switch opt.ContentType {
+	case Share:
+		// get the correct type on Lens
+		post.TypeOnPlatform = []string{lensContent.Attributes[0].Value}
+		// get the pub time of the target
+		post.CreatedAt = lensContent.CreatedOn.Format(time.RFC3339)
+		post.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
+
+		postFinal = &metadata.Post{
+			Target:         post,
+			TypeOnPlatform: []string{opt.ContentType},
+		}
+	case Comment:
+		postFinal = post
+		contentURI, err := c.GetContentURI(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
+		if err != nil {
+			loggerx.Global().Error("[lens worker] FormatContent-Comment: GetContentURI error", zap.Error(err))
+			return err
+		}
+		// get the target content
+		targetContent := LensContent{}
+		err = c.GetContent(ctx, contentURI, &targetContent)
+		if err != nil {
+			loggerx.Global().Error("[lens worker] FormatContent-Comment: GetContentURI error", zap.Error(err))
+			return err
+		}
+
+		postFinal.Target = c.CreatePost(ctx, &targetContent)
+		// get the correct type on Lens
+		postFinal.Target.TypeOnPlatform = []string{targetContent.Attributes[0].Value}
+		// get the pub time of the target
+		postFinal.Target.CreatedAt = targetContent.CreatedOn.Format(time.RFC3339)
+		postFinal.Target.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
+
+	default:
+		post.TypeOnPlatform = []string{opt.ContentType}
+		postFinal = post
+	}
+
+	rawMetadata, err := json.Marshal(postFinal)
+	if err != nil {
+		return err
+	}
+
+	opt.Transfer.Metadata = rawMetadata
+
+	return nil
 }
