@@ -215,6 +215,11 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 		ContentType: Post,
 		Transfer:    transfer,
 	})
+	if err != nil {
+		loggerx.Global().Error("[lens worker] HandlePostCreated: FormatContent error", zap.Error(err))
+
+		return err
+	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
 	transfer.RelatedUrls = append(transfer.RelatedUrls, c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId))
