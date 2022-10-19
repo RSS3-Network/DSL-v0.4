@@ -23,6 +23,10 @@ type service struct {
 	client *farcaster.Client
 }
 
+const (
+	Post = "cast"
+)
+
 func (s *service) Name() string {
 	return protocol.PlatformFarcaster
 }
@@ -92,11 +96,10 @@ func (s *service) HandlePost(ctx context.Context, transfer *model.Transfer) (err
 	}
 
 	post := &metadata.Post{
-		CreatedAt: time.UnixMilli(cast.Body.PublishedAt).Format(time.RFC3339),
-		Title:     cast.Body.Data.Text,
-		Summary:   "",
-		Author:    []string{cast.Meta.DisplayName},
-		Body:      cast.Body.Data.Text,
+		CreatedAt:      time.UnixMilli(cast.Body.PublishedAt).Format(time.RFC3339),
+		Author:         []string{cast.Meta.DisplayName},
+		Body:           cast.Body.Data.Text,
+		TypeOnPlatform: []string{Post},
 	}
 	transfer.Metadata, _ = json.Marshal(post)
 	transfer.Tag = filter.TagSocial
