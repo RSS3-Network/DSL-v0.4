@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20/weth"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
@@ -21,6 +22,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 )
 
 func (i *internal) handleOpenSea(ctx context.Context, message *protocol.Message, transaction model.Transaction) (*model.Transaction, error) {
@@ -93,9 +95,15 @@ func (i *internal) handleOpenseaSeaportOrderFulfilled(ctx context.Context, trans
 
 	internalTransfers := make([]model.Transfer, 0)
 
-	for _, item := range event.Offer {
+	for _, item := range event.Consideration {
+		if item.ItemType == opensea.ItemTypeERC20 {
+			continue
+		}
+
 		nft, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, item.Token.String(), item.Identifier)
 		if err != nil {
+			zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("contract_address", item.Token.String()), zap.Int64("token_id", item.Amount.Int64()))
+
 			return nil, err
 		}
 
@@ -103,13 +111,14 @@ func (i *internal) handleOpenseaSeaportOrderFulfilled(ctx context.Context, trans
 		nft.Value = &tokenValue
 
 		var cost *metadata.Token
+		for _, offer := range event.Offer {
+			if cost, err = i.buildCost(ctx, transaction.Network, offer.Token, offer.Amount); err != nil {
+				zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("contract_address", offer.Token.String()), zap.Int64("token_id", offer.Amount.Int64()))
 
-		for _, receivedItem := range event.Consideration {
-			if receivedItem.Recipient == event.Offerer {
-				if cost, err = i.buildCost(ctx, transaction.Network, receivedItem.Token, receivedItem.Amount); err != nil {
-					return nil, err
-				}
+				return nil, err
 			}
+
+			break
 		}
 
 		var sourceData ethereum.SourceData
@@ -130,7 +139,7 @@ func (i *internal) handleOpenseaSeaportOrderFulfilled(ctx context.Context, trans
 			}
 		}
 
-		internalTransfer, err := i.buildTradeTransfer(transaction, transferLogIndex, opensea.Platform, event.Offerer, event.Recipient, nft, cost)
+		internalTransfer, err := i.buildTradeTransfer(transaction, transferLogIndex, opensea.Platform, event.Recipient, event.Offerer, nft, cost)
 		if err != nil {
 			return nil, err
 		}
@@ -170,6 +179,10 @@ func (i *internal) handleOpenSeaWyvernExchangeOrdersMatched(ctx context.Context,
 	for _, log := range sourceData.Receipt.Logs {
 		switch log.Topics[0] {
 		case erc721.EventHashTransfer:
+			if log.Address == weth.AddressEthereum {
+				continue
+			}
+
 			standard = protocol.TokenStandardERC721
 			transferLog = log
 		case erc1155.EventHashTransferSingle:
@@ -217,11 +230,15 @@ func (i *internal) handleOpenSeaWyvernExchangeOrdersMatched(ctx context.Context,
 
 	nft, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, transferLog.Address.String(), tokenID)
 	if err != nil {
+		zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("standard", standard), zap.String("contract_address", transferLog.Address.String()), zap.Int64("token_id", tokenID.Int64()))
+
 		return nil, err
 	}
 
 	cost, err := i.buildCost(ctx, transaction.Network, ethereum.AddressGenesis, event.Price)
 	if err != nil {
+		zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("contract_address", ethereum.AddressGenesis.String()), zap.Int64("value", event.Price.Int64()))
+
 		return nil, err
 	}
 
