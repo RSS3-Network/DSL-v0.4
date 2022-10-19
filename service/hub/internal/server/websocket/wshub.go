@@ -48,13 +48,7 @@ func (h *WSHub) Run() {
 			}
 			for client := range h.Clients {
 				if _, ok := client.AddressMap[message.Address.Address]; ok {
-					select {
-					case client.Send <- data:
-					default:
-						close(client.Send)
-						delete(h.Clients, client)
-						delete(GetClientMaps(), string(client.ClientId))
-					}
+					client.Send <- data
 				}
 			}
 		case data := <-h.Action:
@@ -65,13 +59,7 @@ func (h *WSHub) Run() {
 					if err := json.Unmarshal(message, &request); err != nil || request.Action == "" || request.Id == nil {
 						loggerx.Global().Error("failed to unmarshal websocket message", zap.Error(err))
 						response, _ = json.Marshal(model.WebsocketResponse{Status: "error", Result: map[string]any{"msg": "failed to unmarshal websocket message"}})
-						select {
-						case client.Send <- response:
-						default:
-							close(client.Send)
-							delete(h.Clients, client)
-							delete(GetClientMaps(), string(client.ClientId))
-						}
+						client.Send <- response
 					}
 
 					switch request.Action {
@@ -80,43 +68,19 @@ func (h *WSHub) Run() {
 							client.AddressMap[strings.ToLower(address)] = struct{}{}
 						}
 						response, _ = json.Marshal(model.WebsocketResponse{Id: *request.Id, Status: "success", Result: map[string]any{"msg": request.Action, "address": maps.Keys(client.AddressMap)}})
-						select {
-						case client.Send <- response:
-						default:
-							close(client.Send)
-							delete(h.Clients, client)
-							delete(GetClientMaps(), string(client.ClientId))
-						}
+						client.Send <- response
 					case model.Unsubscribe:
 						for _, address := range request.AddressArr {
 							delete(client.AddressMap, strings.ToLower(address))
 						}
 						response, _ = json.Marshal(model.WebsocketResponse{Id: *request.Id, Status: "success", Result: map[string]any{"msg": request.Action, "address": maps.Keys(client.AddressMap)}})
-						select {
-						case client.Send <- response:
-						default:
-							close(client.Send)
-							delete(h.Clients, client)
-							delete(GetClientMaps(), string(client.ClientId))
-						}
+						client.Send <- response
 					case model.Query:
 						response, _ = json.Marshal(model.WebsocketResponse{Id: *request.Id, Status: "success", Result: map[string]any{"msg": request.Action, "address": maps.Keys(client.AddressMap)}})
-						select {
-						case client.Send <- response:
-						default:
-							close(client.Send)
-							delete(h.Clients, client)
-							delete(GetClientMaps(), string(client.ClientId))
-						}
+						client.Send <- response
 					default:
 						response, _ = json.Marshal(model.WebsocketResponse{Id: *request.Id, Status: "error", Result: map[string]any{"msg": "unsupport action: " + request.Action}})
-						select {
-						case client.Send <- response:
-						default:
-							close(client.Send)
-							delete(h.Clients, client)
-							delete(GetClientMaps(), string(client.ClientId))
-						}
+						client.Send <- response
 					}
 				}
 			}
