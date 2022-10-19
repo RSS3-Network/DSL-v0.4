@@ -11,7 +11,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/farcaster"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/handler"
 	lop "github.com/samber/lo/parallel"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -21,8 +20,7 @@ import (
 var _ worker.Worker = (*service)(nil)
 
 type service struct {
-	client  *farcaster.Client
-	handler handler.Interface
+	client *farcaster.Client
 }
 
 func (s *service) Name() string {

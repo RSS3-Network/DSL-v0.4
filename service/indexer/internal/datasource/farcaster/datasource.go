@@ -4,15 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/worker/farcaster"
-	"go.opentelemetry.io/otel"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/common/worker/farcaster"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"go.opentelemetry.io/otel"
 )
 
 type Datasource struct {
