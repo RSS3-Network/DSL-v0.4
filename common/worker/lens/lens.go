@@ -444,7 +444,9 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 
 		postFinal.Target = c.CreatePost(ctx, &targetContent)
 		// get the correct type on Lens
-		postFinal.Target.TypeOnPlatform = []string{targetContent.Attributes[0].Value}
+		if len(targetContent.Attributes) > 0 {
+			postFinal.TypeOnPlatform = []string{targetContent.Attributes[0].Value}
+		}
 		// get the pub time of the target
 		postFinal.Target.CreatedAt = targetContent.CreatedOn.Format(time.RFC3339)
 		postFinal.Target.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
