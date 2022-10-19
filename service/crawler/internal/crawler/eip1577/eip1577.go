@@ -17,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
+	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
@@ -53,7 +54,7 @@ func (s *service) Run() error {
 	}
 	defer file.Close()
 
-	ch := make(chan struct{}, 5)
+	ch := make(chan struct{}, 30)
 	reader := csv.NewReader(bufio.NewReader(file))
 
 	var wg sync.WaitGroup
@@ -101,7 +102,7 @@ func (s *service) Run() error {
 }
 
 func (s *service) HandleEIP1577(ctx context.Context, domain string, address string) error {
-	loggerx.Global().Info("eip1577: start ", zap.String("domain", domain), zap.String("address", address))
+	logrus.Infof("eip1577: start, domain: %v, address: %v", domain, address)
 
 	message := &protocol.Message{
 		Address: strings.ToLower(address),
