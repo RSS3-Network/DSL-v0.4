@@ -105,7 +105,8 @@ func (s *service) Run() error {
 }
 
 func (s *service) HandleEIP1577(ctx context.Context, domain string, address string) error {
-	fmt.Println("1")
+	loggerx.Global().Info("eip1577: start ", zap.String("domain", domain), zap.String("address", address))
+
 	message := &protocol.Message{
 		Address: strings.ToLower(address),
 		Network: protocol.NetworkEIP1577,
@@ -130,8 +131,6 @@ func (s *service) HandleEIP1577(ctx context.Context, domain string, address stri
 
 		return err
 	}
-
-	loggerx.Global().Info("eip1577: done ", zap.String("domain", domain))
 
 	return nil
 }
