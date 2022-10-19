@@ -30,6 +30,7 @@ var SupportNetworks = []string{
 	NetworkFantom,
 	NetworkAvalanche,
 	NetworkCrossbell,
+	NetworkFarcaster,
 }
 
 var EthclientNetworks = []string{

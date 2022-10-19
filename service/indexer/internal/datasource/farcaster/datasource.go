@@ -3,6 +3,7 @@ package farcaster
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/farcaster"
@@ -44,7 +45,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		if err != nil {
 			return nil, err
 		}
-		timestamp := time.Unix(cast.Body.PublishedAt, 0)
+		timestamp := time.UnixMilli(cast.Body.PublishedAt)
 
 		var addressTo string
 		if cast.Meta.ReplyParentUsername.Address != "" {
@@ -53,12 +54,14 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 			addressTo = message.Address
 		}
 
+		hash := fmt.Sprintf("%s%d", cast.MerkleRoot, cast.Body.Sequence)
+
 		transactions = append(transactions, model.Transaction{
 			// use timestamp as block number, as there is no actual blocknumber on farcaster
 			BlockNumber: cast.Body.PublishedAt,
 			Timestamp:   timestamp,
 			// use MerkleRoot as hash, as there is no actual hash on farcaster
-			Hash:        cast.MerkleRoot,
+			Hash:        hash,
 			AddressFrom: message.Address,
 			AddressTo:   addressTo,
 			// TODO: identify the correct platform
@@ -69,7 +72,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{
-					TransactionHash: cast.MerkleRoot,
+					TransactionHash: hash,
 					Timestamp:       timestamp,
 					Index:           protocol.IndexVirtual,
 					AddressFrom:     message.Address,
