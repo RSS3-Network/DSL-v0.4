@@ -5,6 +5,7 @@ import (
 )
 
 type Config struct {
+	Mode          configx.Mode           `mapstructure:"mode"`
 	Postgres      *configx.Postgres      `mapstructure:"postgres"`
 	RabbitMQ      *configx.RabbitMQ      `mapstructure:"rabbitmq"`
 	OpenTelemetry *configx.OpenTelemetry `mapstructure:"opentelemetry"`
