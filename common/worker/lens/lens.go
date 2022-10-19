@@ -397,6 +397,7 @@ func (c *Client) CreatePost(ctx context.Context, lensContent *LensContent) *meta
 	}
 	return post
 }
+
 func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 	lensContent := LensContent{}
 	err := c.GetContent(ctx, opt.ContentURI, &lensContent)
