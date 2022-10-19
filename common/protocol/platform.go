@@ -10,6 +10,7 @@ const (
 	PlatformCrossbell      = "Crossbell"
 	PlatformCrossbellXLog  = "xLog"
 	PlatformCrossbellXCast = "xCast"
+	PlatformFarcaster      = "Farcaster"
 
 	// collectible
 	PlatformPOAP   = "POAP"

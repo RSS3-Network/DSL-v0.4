@@ -14,6 +14,7 @@ const (
 	NetworkAvalanche         = "avalanche"
 	NetworkCrossbell         = "crossbell"
 	NetworkEIP1577           = "EIP-1577"
+	NetworkFarcaster         = "farcaster"
 )
 
 var SupportNetworks = []string{
@@ -29,6 +30,7 @@ var SupportNetworks = []string{
 	NetworkFantom,
 	NetworkAvalanche,
 	NetworkCrossbell,
+	NetworkFarcaster,
 }
 
 var EthclientNetworks = []string{
