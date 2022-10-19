@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
@@ -138,7 +139,8 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 
 func (h *Handler) GetNotesWsFunc(c echo.Context) error {
 	ws.GetClientMaps()
-	clientId := c.Param("websocketId")
+
+	clientId := uuid.New().String()
 
 	conn, err := (&websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024, CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
@@ -151,7 +153,7 @@ func (h *Handler) GetNotesWsFunc(c echo.Context) error {
 
 	ws.ClientMaps[clientId] = client
 
-	go h.service.SubscribeIndexerRefreshMessage()
+	go h.service.SubscribeIndexerRefreshMessage(client)
 	go client.WriteMsg()
 	go client.ReadMsg()
 

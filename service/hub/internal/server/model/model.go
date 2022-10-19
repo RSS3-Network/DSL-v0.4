@@ -127,6 +127,7 @@ type WebSocketRequest struct {
 	Id         *int     `json:"id,omitempty"`
 	Action     string   `json:"action"`
 	AddressArr []string `json:"address"`
+	ClientId   string   `json:"client_id"`
 }
 
 type WebsocketResponse struct {

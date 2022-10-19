@@ -25,6 +25,7 @@ type Service struct {
 	rabbitmqChannel    *rabbitmq.Channel
 	rabbitmqQueue      rabbitmq.Queue
 	WsHub              *websocket.WSHub
+	DeliveryCh         <-chan rabbitmq.Delivery
 }
 
 func New() (s *Service) {
@@ -63,6 +64,13 @@ func New() (s *Service) {
 	); err != nil {
 		loggerx.Global().Error("rabbitmq QueueBind failed", zap.Error(err))
 	}
+
+	deliveryCh, err := s.rabbitmqChannel.Consume(s.rabbitmqQueue.Name, "", true, false, false, false, nil)
+	if err != nil {
+		loggerx.Global().Error("rabbitmq Consume Refresh Msg failed", zap.Error(err))
+		return
+	}
+	s.DeliveryCh = deliveryCh
 
 	return s
 }
@@ -147,18 +155,25 @@ func (s *Service) PublishIndexerAssetMessage(ctx context.Context, address string
 	}
 }
 
-func (s *Service) SubscribeIndexerRefreshMessage() {
-	deliveryCh, err := s.rabbitmqChannel.Consume(s.rabbitmqQueue.Name, "", true, false, false, false, nil)
-	if err != nil {
-		return
-	}
-	for delivery := range deliveryCh {
-		message := protocol.RefreshMessage{}
-		if err := json.Unmarshal(delivery.Body, &message); err != nil {
-			loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
-			continue
-		}
+func (s *Service) SubscribeIndexerRefreshMessage(client *websocket.WSClient) {
+	ticker := time.NewTicker(10 * time.Second)
 
-		s.WsHub.Broadcast <- delivery.Body
+	for {
+		select {
+		case delivery := <-s.DeliveryCh:
+			message := protocol.RefreshMessage{}
+			if err := json.Unmarshal(delivery.Body, &message); err != nil {
+				loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
+				continue
+			}
+			if _, ok := s.WsHub.Clients[client]; !ok {
+				return
+			}
+			s.WsHub.Broadcast <- delivery.Body
+		case <-ticker.C:
+			if _, ok := s.WsHub.Clients[client]; !ok {
+				return
+			}
+		}
 	}
 }

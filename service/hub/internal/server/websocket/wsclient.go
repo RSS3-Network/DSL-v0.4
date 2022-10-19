@@ -1,16 +1,12 @@
 package websocket
 
 import (
-	"encoding/json"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
-	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 )
 
 const (
@@ -78,9 +74,6 @@ func (c *WSClient) ReadMsg() {
 
 	for {
 		_, message, err := c.Conn.ReadMessage()
-		if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-			return
-		}
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				loggerx.Global().Info("websocket is disconnected", zap.String("websocket_id", string(c.ClientId)))
@@ -88,41 +81,6 @@ func (c *WSClient) ReadMsg() {
 			break
 		}
 
-		request := model.WebSocketRequest{}
-
-		if err := json.Unmarshal(message, &request); err != nil || request.Action == "" || request.Id == nil {
-			loggerx.Global().Error("failed to unmarshal websocket message", zap.Error(err))
-			if err = c.Conn.WriteJSON(model.WebsocketResponse{Status: "error", Result: map[string]any{"msg": "failed to unmarshal websocket message"}}); err != nil {
-				return
-			}
-			continue
-		}
-
-		switch request.Action {
-		case model.Subscribe:
-			for _, address := range request.AddressArr {
-				c.AddressMap[strings.ToLower(address)] = struct{}{}
-			}
-			if err = c.Conn.WriteJSON(model.WebsocketResponse{Id: *request.Id, Status: "success", Result: map[string]any{"msg": request.Action, "address": maps.Keys(c.AddressMap)}}); err != nil {
-				return
-			}
-
-		case model.Unsubscribe:
-			for _, address := range request.AddressArr {
-				delete(c.AddressMap, strings.ToLower(address))
-			}
-			if err = c.Conn.WriteJSON(model.WebsocketResponse{Id: *request.Id, Status: "success", Result: map[string]any{"msg": request.Action, "address": maps.Keys(c.AddressMap)}}); err != nil {
-				return
-			}
-
-		case model.Query:
-			if err = c.Conn.WriteJSON(model.WebsocketResponse{Id: *request.Id, Status: "success", Result: map[string]any{"msg": request.Action, "address": maps.Keys(c.AddressMap)}}); err != nil {
-				return
-			}
-		default:
-			if err = c.Conn.WriteJSON(model.WebsocketResponse{Id: *request.Id, Status: "error", Result: map[string]any{"msg": "unsupport action: " + request.Action}}); err != nil {
-				return
-			}
-		}
+		c.Hub.Action <- map[string][]byte{string(c.ClientId): message}
 	}
 }
