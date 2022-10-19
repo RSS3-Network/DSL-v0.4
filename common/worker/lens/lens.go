@@ -399,8 +399,11 @@ func (c *Client) CreatePost(ctx context.Context, lensContent *LensContent) *meta
 }
 func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 	lensContent := LensContent{}
-	c.GetContent(ctx, opt.ContentURI, &lensContent)
-
+	err := c.GetContent(ctx, opt.ContentURI, &lensContent)
+	if err != nil {
+		loggerx.Global().Error("[lens worker] FormatContent: GetContent error", zap.Error(err))
+		return err
+	}
 	// handle transfer fields
 	opt.Transfer.Platform = lensContent.AppId
 
