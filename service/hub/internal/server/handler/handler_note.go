@@ -151,7 +151,7 @@ func (h *Handler) GetNotesWsFunc(c echo.Context) error {
 
 	client.Hub.Register <- client
 
-	ws.ClientMaps[clientId] = client
+	ws.ReplaceGlobal(clientId, client)
 
 	go h.service.SubscribeIndexerRefreshMessage(client)
 	go client.WriteMsg()

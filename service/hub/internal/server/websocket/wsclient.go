@@ -13,9 +13,19 @@ const (
 	waitTime = 10 * time.Second
 )
 
+var globalLocker sync.RWMutex
+
 var ClientMaps map[string]*WSClient
 
 var once sync.Once
+
+func ReplaceGlobal(clientId string, client *WSClient) {
+	globalLocker.Lock()
+
+	defer globalLocker.Unlock()
+
+	ClientMaps[clientId] = client
+}
 
 func GetClientMaps() map[string]*WSClient {
 	once.Do(func() {
