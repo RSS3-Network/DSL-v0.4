@@ -8,6 +8,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -17,7 +18,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
-	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
@@ -88,9 +88,11 @@ func (s *service) Run() error {
 		wg.Add(1)
 		go func(domain string, address string) {
 			defer wg.Done()
-			err := s.HandleEIP1577(ctx, domain, address)
-			if err != nil {
-				loggerx.Global().Error("eip1577: HandleEIP1577 error", zap.Error(err))
+			for i := 0; i < 2; i++ {
+				err := s.HandleEIP1577(ctx, domain, address)
+				if err != nil {
+					loggerx.Global().Error("eip1577: HandleEIP1577 error", zap.Error(err))
+				}
 			}
 			<-ch
 		}(domain, address)
@@ -102,7 +104,12 @@ func (s *service) Run() error {
 }
 
 func (s *service) HandleEIP1577(ctx context.Context, domain string, address string) error {
-	logrus.Infof("eip1577: start, domain: %v, address: %v", domain, address)
+	loggerx.Global().Info("eip1577: start", zap.String("domain", domain), zap.String("address", address))
+
+	c, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer func() {
+		cancel()
+	}()
 
 	message := &protocol.Message{
 		Address: strings.ToLower(address),
@@ -110,7 +117,7 @@ func (s *service) HandleEIP1577(ctx context.Context, domain string, address stri
 	}
 
 	// datasource
-	internalTransactions, err := eip1577.GetEIP1577Transactions(ctx, message, domain, s.config.EIP1577.Endpoint)
+	internalTransactions, err := eip1577.GetEIP1577Transactions(c, message, domain, s.config.EIP1577.Endpoint)
 	if err != nil {
 		loggerx.Global().Error("eip1577: eip1577 Datasource Handle error", zap.Error(err))
 

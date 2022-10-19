@@ -30,7 +30,7 @@ func GetEIP1577Transactions(ctx context.Context, message *protocol.Message, name
 	}
 
 	if response.StatusCode() >= http.StatusBadRequest && response.StatusCode() < http.StatusNetworkAuthenticationRequired {
-		loggerx.Global().Warn("eip1577 notes are not found", zap.String("address", message.Address), zap.String("status", response.Status()))
+		loggerx.Global().Warn("eip1577 notes are not found", zap.String("domain", name), zap.String("address", message.Address), zap.String("status", response.Status()))
 
 		return []model.Transaction{}, nil
 	}

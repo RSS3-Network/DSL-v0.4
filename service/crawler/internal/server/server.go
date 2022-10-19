@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
@@ -41,6 +42,10 @@ type Server struct {
 }
 
 func (s *Server) Initialize() (err error) {
+	if err := loggerx.Initialize(string(s.config.Mode)); err != nil {
+		logrus.Fatalln(err)
+	}
+
 	var exporter trace.SpanExporter
 
 	if s.config.OpenTelemetry == nil {
