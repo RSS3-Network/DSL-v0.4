@@ -17,7 +17,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721/zora"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 var ENSContractAddress = strings.ToLower("0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85")
@@ -42,36 +44,39 @@ func (c *Client) ERC721(ctx context.Context, network, contractAddress string, to
 	}
 
 	result := ERC721{
-		ContractAddress: contractAddress,
+		ContractAddress: strings.ToLower(contractAddress),
 		ID:              tokenID,
 	}
 
 	if result.Name, err = erc721Contract.Name(&bind.CallOpts{}); err != nil {
+		loggerx.Global().Named(contractAddress).Warn("Get NFT Name error", zap.Error(err))
 		return nil, err
 	}
 
 	if result.Symbol, err = erc721Contract.Symbol(&bind.CallOpts{}); err != nil {
+		loggerx.Global().Named(contractAddress).Warn("Get NFT Symbol error", zap.Error(err))
 		return nil, err
 	}
 
 	tokenURI, err := erc721Contract.TokenURI(&bind.CallOpts{}, tokenID)
 	if err != nil {
+		loggerx.Global().Named(contractAddress).Warn("Get NFT Uri error", zap.Error(err))
 		return nil, err
 	}
 
 	if result.URI, err = c.URI(contractAddress, tokenID, tokenURI); err != nil {
+		loggerx.Global().Named(contractAddress).Warn("Get NFT Name error", zap.Error(err))
 		return nil, err
 	}
 
-	result.Metadata, err = c.Metadata(result.URI)
-	if err != nil {
-		return nil, err
+	if result.Metadata, err = c.Metadata(result.URI); err != nil {
+		loggerx.Global().Named(contractAddress).Warn("Get NFT Metadata error", zap.Error(err))
 	}
 
 	var metadata Metadata
 
 	if err := json.Unmarshal(result.Metadata, &metadata); err != nil {
-		return nil, err
+		loggerx.Global().Named(contractAddress).Warn("Get NFT Metadata Unmarshal error", zap.Error(err))
 	}
 
 	return &result, nil
@@ -88,7 +93,7 @@ func (c *Client) ERC721Ens(ctx context.Context, contractAddress string, tokenID 
 
 		return err
 	},
-		retry.Attempts(60*2), // ~ 2 minutes
+		retry.Attempts(2),
 		retry.DelayType(func(_ uint, _ error, _ *retry.Config) time.Duration {
 			delay, err := rand.Int(rand.Reader, big.NewInt(250))
 			if err != nil {
@@ -171,7 +176,12 @@ func (c *Client) erc721ToNFT(erc721 *ERC721, tokenID *big.Int) (*NFT, error) {
 	var metadata Metadata
 
 	if err := json.Unmarshal(erc721.Metadata, &metadata); err != nil {
-		return nil, err
+		loggerx.Global().Named(erc721.ContractAddress).Warn("Get NFT Metadata Unmarshal error", zap.Error(err))
+		metadata = Metadata{}
+	}
+
+	if metadata.Name == "" {
+		metadata.Name = erc721.Name
 	}
 
 	nft := NFT{

@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="hub" type="GoApplicationRunConfiguration" factoryName="Go Application">
-    <module name="PreGod" />
+    <module name="RSS3-PreGod" />
     <working_directory value="$PROJECT_DIR$" />
     <envs>
       <env name="CONFIG_ENV" value="local" />

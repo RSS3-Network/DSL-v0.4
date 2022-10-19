@@ -18,6 +18,8 @@ import (
 	lenscontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid"
 	spaceidcontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid/contracts"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/unstoppable_domains"
+	udcontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/unstoppable_domains/contracts"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/httpx"
@@ -250,6 +252,7 @@ func ResolveSpaceID(input string) (string, error) {
 }
 
 func ResolveUnstoppableDomains(input string) (string, error) {
+	var result string
 	if strings.Contains(input, ".") {
 		unsBuilder := resolution.NewUnsBuilder()
 		ethClient, err := ethclientx.Global(protocol.NetworkEthereum)
@@ -282,15 +285,37 @@ func ResolveUnstoppableDomains(input string) (string, error) {
 			if err != nil {
 				return "", fmt.Errorf("failed to result %s: %s", namingServiceName, err)
 			}
-			return strings.ToLower(resolvedAddress), nil
+			result = strings.ToLower(resolvedAddress)
 		}
-	}
-	// pending reverse resolution
-	// else {
-	//
-	// }
+	} else {
+		// polygon seems to be the most compatible network for unstoppable domains
+		ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)
+		if err != nil {
+			return "", fmt.Errorf("failed to connect to polygon rpc: %s", err)
+		}
+		reverseRegistry, err := udcontract.NewUnstoppableDomains(unstoppable_domains.AddressUDPolygon, ethereumClient)
+		if err != nil {
+			return "", fmt.Errorf("failed to initiate an unstoppable domains reverse registry: %w", err)
+		}
 
-	return "", nil
+		tokenURI, err := reverseRegistry.ReverseOf(&bind.CallOpts{}, common.HexToAddress(input))
+		if err != nil {
+			return "", fmt.Errorf("not a unstoppable domains user: %w", err)
+		}
+
+		UDResult := &unstoppable_domains.UnstoppableDomain{}
+		UDEndpoint := "metadata.unstoppabledomains.com"
+		request := http.Request{Method: http.MethodGet, URL: &url.URL{Scheme: "https", Host: UDEndpoint, Path: fmt.Sprintf("/metadata/%s", tokenURI)}}
+
+		err = httpx.DoRequest(context.Background(), http.DefaultClient, &request, &UDResult)
+		if err != nil {
+			return "", fmt.Errorf("failed to request unstoppabledomains metadata: %s", err)
+		}
+
+		result = UDResult.Name
+	}
+
+	return result, nil
 }
 
 func ResolveBit(input string) (string, error) {
