@@ -5,9 +5,7 @@ import (
 	"embed"
 	"encoding/csv"
 	"errors"
-	"fmt"
 	"io"
-	"os"
 	"strings"
 	"sync"
 
@@ -48,7 +46,7 @@ func (s *service) Name() string {
 
 func (s *service) Run() error {
 	ctx := context.Background()
-	file, err := os.Open("./service/crawler/internal/crawler/eip1577/eip1577.csv")
+	file, err := DomainFS.Open("eip1577.csv")
 	if err != nil {
 		loggerx.Global().Error("eip1577: open file error", zap.Error(err))
 		return err
@@ -84,8 +82,6 @@ func (s *service) Run() error {
 		if len(address) == 0 {
 			continue
 		}
-
-		fmt.Println(address)
 
 		ch <- struct{}{}
 		wg.Add(1)
