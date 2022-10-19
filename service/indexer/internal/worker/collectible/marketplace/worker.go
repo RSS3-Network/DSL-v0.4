@@ -2,7 +2,9 @@ package marketplace
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -11,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/shopspring/decimal"
@@ -48,7 +51,7 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 		addressTo := common.HexToAddress(transaction.AddressTo)
 
 		switch addressTo {
-		case opensea.AddressSeaport:
+		case opensea.AddressSeaport, opensea.AddressWyvernExchange:
 			internalTransaction, err := i.handleOpenSea(ctx, message, transaction)
 			if err != nil {
 				zap.L().Error("failed to handle opensea transaction", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
@@ -74,11 +77,37 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	return internalTransactions, nil
 }
 
-func (i *internal) buildToken(ctx context.Context, message *protocol.Message, address common.Address, id *big.Int, value *big.Int) (*metadata.Token, error) {
+func (i *internal) buildTradeTransfer(transaction model.Transaction, index int64, platform string, seller, buyer common.Address, nft *metadata.Token, cost *metadata.Token) (*model.Transfer, error) {
+	nft.Cost = cost
+
+	metadataRaw, err := json.Marshal(nft)
+	if err != nil {
+		return nil, err
+	}
+
+	transfer := model.Transfer{
+		TransactionHash: transaction.Hash,
+		Timestamp:       transaction.Timestamp,
+		BlockNumber:     big.NewInt(transaction.BlockNumber),
+		Tag:             filter.TagCollectible,
+		Type:            filter.CollectibleTrade,
+		Index:           index,
+		AddressFrom:     strings.ToLower(seller.String()),
+		AddressTo:       strings.ToLower(buyer.String()),
+		Metadata:        metadataRaw,
+		Network:         transaction.Network,
+		Platform:        platform,
+		RelatedUrls:     ethereum.BuildTokenURL(transaction.Network, nft.ContractAddress, nft.ID),
+	}
+
+	return &transfer, nil
+}
+
+func (i *internal) buildCost(ctx context.Context, network string, address common.Address, value *big.Int) (*metadata.Token, error) {
 	var costToken metadata.Token
 
 	if address == ethereum.AddressGenesis {
-		nativeToken, err := i.tokenClient.Native(ctx, message.Network)
+		nativeToken, err := i.tokenClient.Native(ctx, network)
 		if err != nil {
 			return nil, err
 		}
@@ -96,7 +125,7 @@ func (i *internal) buildToken(ctx context.Context, message *protocol.Message, ad
 			ValueDisplay: &costValueDisplay,
 		}
 	} else {
-		erc20Token, err := i.tokenClient.ERC20(ctx, message.Network, address.String())
+		erc20Token, err := i.tokenClient.ERC20(ctx, network, address.String())
 		if err != nil {
 			return nil, err
 		}

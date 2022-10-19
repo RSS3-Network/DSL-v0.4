@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -45,23 +43,23 @@ func (i *internal) handleLooksRare(ctx context.Context, message *protocol.Messag
 		return nil, err
 	}
 
-	var internalTransfer *model.Transfer
+	var internalTransfers []model.Transfer
 
 	for _, log := range sourceData.Receipt.Logs {
 		switch log.Topics[0] {
 		case looksrare.EventHashTakerAsk:
-			internalTransfer, err = i.handleLooksRareTakerAsk(ctx, message, internalTransaction, *log, exchangeContract)
+			if internalTransfers, err = i.handleLooksRareTakerAsk(ctx, internalTransaction, *log, exchangeContract); err != nil {
+				return nil, err
+			}
 		case looksrare.EventHashTakerBid:
-			internalTransfer, err = i.handleLooksRareTakerBid(ctx, message, internalTransaction, *log, exchangeContract)
+			if internalTransfers, err = i.handleLooksRareTakerBid(ctx, internalTransaction, *log, exchangeContract); err != nil {
+				return nil, err
+			}
 		default:
 			continue
 		}
 
-		if err != nil {
-			return nil, err
-		}
-
-		internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
+		internalTransaction.Transfers = append(internalTransaction.Transfers, internalTransfers...)
 	}
 
 	if len(internalTransaction.Transfers) == 0 {
@@ -69,145 +67,65 @@ func (i *internal) handleLooksRare(ctx context.Context, message *protocol.Messag
 	}
 
 	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
-	internalTransaction.Platform = looksrare.PlatformLooksrare
+	internalTransaction.Platform = looksrare.Platform
 
 	return &internalTransaction, nil
 }
 
-func (i *internal) handleLooksRareTakerAsk(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, exchangeContract *looksrare.Exchange) (*model.Transfer, error) {
+func (i *internal) handleLooksRareTakerAsk(ctx context.Context, transaction model.Transaction, log types.Log, exchangeContract *looksrare.Exchange) ([]model.Transfer, error) {
 	event, err := exchangeContract.ParseTakerAsk(log)
 	if err != nil {
 		return nil, err
 	}
 
-	nft, err := i.tokenClient.NFT(ctx, transaction.Network, event.Collection.String(), event.TokenId)
+	nft, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, event.Collection.String(), event.TokenId)
 	if err != nil {
 		return nil, err
 	}
 
-	var costToken *metadata.Token
-
-	if costToken, err = i.buildToken(ctx, message, event.Currency, nil, event.Price); err != nil {
+	var cost *metadata.Token
+	if cost, err = i.buildCost(ctx, transaction.Network, event.Currency, event.Price); err != nil {
 		return nil, err
 	}
 
 	nftValue := decimal.NewFromBigInt(event.Amount, 0)
+	nft.Value = &nftValue
 
-	var tokenAttributes []metadata.TokenAttribute
-
-	for _, attribute := range nft.Attributes {
-		tokenAttributes = append(tokenAttributes, metadata.TokenAttribute{
-			TraitType: attribute.TraitType,
-			Value:     attribute.Value,
-		})
-	}
-
-	tokenMetadata, err := json.Marshal(metadata.Token{
-		Name:            nft.Name,
-		Collection:      nft.Collection,
-		Symbol:          nft.Symbol,
-		Standard:        nft.Standard,
-		ContractAddress: nft.ContractAddress,
-		Image:           nft.Image,
-		ID:              nft.ID.String(),
-		Value:           &nftValue,
-		ValueDisplay:    &nftValue,
-		Cost:            costToken,
-		Description:     nft.Description,
-		Attributes:      tokenAttributes,
-		ExternalLink:    nft.ExternalLink,
-		ExternalURL:     nft.ExternalURL,
-		AnimationURL:    nft.AnimationURL,
-	})
+	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), looksrare.Platform, event.Maker, event.Taker, nft, cost)
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.Transfer{
-		TransactionHash: transaction.Hash,
-		Timestamp:       transaction.Timestamp,
-		BlockNumber:     big.NewInt(transaction.BlockNumber),
-		Tag:             filter.TagCollectible,
-		Type:            filter.CollectibleTrade,
-		Index:           int64(log.Index),
-		AddressFrom:     strings.ToLower(event.Taker.String()),
-		AddressTo:       strings.ToLower(event.Maker.String()),
-		Metadata:        tokenMetadata,
-		Network:         transaction.Network,
-		Platform:        looksrare.PlatformLooksrare,
-		Source:          ethereum.Source,
-		RelatedUrls: ethereum.BuildURL(
-			[]string{},
-			append(ethereum.BuildTokenURL(transaction.Network, nft.ContractAddress, nft.ID.String()), ethereum.BuildScanURL(transaction.Network, transaction.Hash))...,
-		),
+	return []model.Transfer{
+		*tradeTransfer,
 	}, nil
 }
 
-func (i *internal) handleLooksRareTakerBid(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, exchangeContract *looksrare.Exchange) (*model.Transfer, error) {
+func (i *internal) handleLooksRareTakerBid(ctx context.Context, transaction model.Transaction, log types.Log, exchangeContract *looksrare.Exchange) ([]model.Transfer, error) {
 	event, err := exchangeContract.ParseTakerBid(log)
 	if err != nil {
 		return nil, err
 	}
 
-	nft, err := i.tokenClient.NFT(ctx, transaction.Network, event.Collection.String(), event.TokenId)
+	nft, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, event.Collection.String(), event.TokenId)
 	if err != nil {
 		return nil, err
 	}
 
-	var costToken *metadata.Token
-
-	if costToken, err = i.buildToken(ctx, message, event.Currency, nil, event.Price); err != nil {
+	var cost *metadata.Token
+	if cost, err = i.buildCost(ctx, transaction.Network, event.Currency, event.Price); err != nil {
 		return nil, err
 	}
 
 	nftValue := decimal.NewFromBigInt(event.Amount, 0)
+	nft.Value = &nftValue
 
-	var tokenAttributes []metadata.TokenAttribute
-
-	for _, attribute := range nft.Attributes {
-		tokenAttributes = append(tokenAttributes, metadata.TokenAttribute{
-			TraitType: attribute.TraitType,
-			Value:     attribute.Value,
-		})
-	}
-
-	tokenMetadata, err := json.Marshal(metadata.Token{
-		Name:            nft.Name,
-		Collection:      nft.Collection,
-		Symbol:          nft.Symbol,
-		Standard:        nft.Standard,
-		ContractAddress: nft.ContractAddress,
-		Image:           nft.Image,
-		ID:              nft.ID.String(),
-		Value:           &nftValue,
-		ValueDisplay:    &nftValue,
-		Cost:            costToken,
-		Description:     nft.Description,
-		Attributes:      tokenAttributes,
-		ExternalLink:    nft.ExternalLink,
-		ExternalURL:     nft.ExternalURL,
-		AnimationURL:    nft.AnimationURL,
-	})
+	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), looksrare.Platform, event.Maker, event.Taker, nft, cost)
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.Transfer{
-		TransactionHash: transaction.Hash,
-		Timestamp:       transaction.Timestamp,
-		BlockNumber:     big.NewInt(transaction.BlockNumber),
-		Tag:             filter.TagCollectible,
-		Type:            filter.CollectibleTrade,
-		Index:           int64(log.Index),
-		AddressFrom:     strings.ToLower(event.Taker.String()),
-		AddressTo:       strings.ToLower(event.Maker.String()),
-		Metadata:        tokenMetadata,
-		Network:         transaction.Network,
-		Platform:        looksrare.PlatformLooksrare,
-		Source:          ethereum.Source,
-		RelatedUrls: ethereum.BuildURL(
-			[]string{},
-			append(ethereum.BuildTokenURL(transaction.Network, nft.ContractAddress, nft.ID.String()), ethereum.BuildScanURL(transaction.Network, transaction.Hash))...,
-		),
+	return []model.Transfer{
+		*tradeTransfer,
 	}, nil
 }
