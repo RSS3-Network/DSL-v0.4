@@ -414,7 +414,7 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 	post := c.CreatePost(ctx, &lensContent)
 
 	// special handling for Share and Comment
-	var postFinal *metadata.Post
+	postFinal := &metadata.Post{}
 	switch opt.ContentType {
 	case Share:
 		// get the correct type on Lens
@@ -425,10 +425,9 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 		post.CreatedAt = lensContent.CreatedOn.Format(time.RFC3339)
 		post.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
 
-		postFinal = &metadata.Post{
-			Target:         post,
-			TypeOnPlatform: []string{opt.ContentType},
-		}
+		postFinal.Target = post
+		postFinal.TypeOnPlatform = []string{opt.ContentType}
+
 	case Comment:
 		postFinal = post
 		contentURI, err := c.GetContentURI(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
