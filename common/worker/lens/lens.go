@@ -418,7 +418,9 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 	switch opt.ContentType {
 	case Share:
 		// get the correct type on Lens
-		post.TypeOnPlatform = []string{lensContent.Attributes[0].Value}
+		if len(lensContent.Attributes) > 0 {
+			postFinal.TypeOnPlatform = []string{lensContent.Attributes[0].Value}
+		}
 		// get the pub time of the target
 		post.CreatedAt = lensContent.CreatedOn.Format(time.RFC3339)
 		post.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
