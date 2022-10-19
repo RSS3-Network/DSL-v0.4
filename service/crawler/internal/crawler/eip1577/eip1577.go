@@ -2,11 +2,13 @@ package eip1577
 
 import (
 	"bufio"
+	"embed"
 	"encoding/csv"
 	"errors"
 	"io"
-	"os"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -16,12 +18,16 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
-	lop "github.com/samber/lo/parallel"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
 
-var _ crawler.Crawler = (*service)(nil)
+var (
+	//go:embed eip1577.csv
+	DomainFS embed.FS
+
+	_ crawler.Crawler = (*service)(nil)
+)
 
 type service struct {
 	config    *config.Config
@@ -41,33 +47,17 @@ func (s *service) Name() string {
 
 func (s *service) Run() error {
 	ctx := context.Background()
-	domainList, err := s.GetEIP1577DomainList(ctx)
-	if err != nil {
-		loggerx.Global().Error("eip1577: GetEIP1577AddressList error", zap.Error(err))
-		return err
-	}
-
-	opt := lop.NewOption().WithConcurrency(20)
-	lop.ForEach(domainList, func(domain model.Domain, i int) {
-		if err := s.HandleEIP1577(ctx, domain); err != nil {
-			loggerx.Global().Error("eip1577: HandleEIP1577 error", zap.Error(err))
-			return
-		}
-	}, opt)
-
-	return nil
-}
-
-func (s *service) GetEIP1577DomainList(ctx context.Context) ([]model.Domain, error) {
-	file, err := os.Open("./service/crawler/internal/crawler/eip1577/eip1577.csv")
+	file, err := DomainFS.Open("eip1577.csv")
 	if err != nil {
 		loggerx.Global().Error("eip1577: open file error", zap.Error(err))
-		return nil, err
+		return err
 	}
 	defer file.Close()
 
+	ch := make(chan struct{}, 30)
 	reader := csv.NewReader(bufio.NewReader(file))
-	domainList := []model.Domain{}
+
+	var wg sync.WaitGroup
 	for {
 		row, err := reader.Read()
 		if err != nil {
@@ -94,23 +84,40 @@ func (s *service) GetEIP1577DomainList(ctx context.Context) ([]model.Domain, err
 			continue
 		}
 
-		domainList = append(domainList, model.Domain{
-			Name:         domain,
-			AddressOwner: []byte(address),
-		})
+		ch <- struct{}{}
+		wg.Add(1)
+		go func(domain string, address string) {
+			defer wg.Done()
+			for i := 0; i < 2; i++ {
+				err := s.HandleEIP1577(ctx, domain, address)
+				if err != nil {
+					loggerx.Global().Error("eip1577: HandleEIP1577 error", zap.Error(err))
+				}
+			}
+			<-ch
+		}(domain, address)
 	}
 
-	return domainList, nil
+	wg.Wait()
+
+	return nil
 }
 
-func (s *service) HandleEIP1577(ctx context.Context, domain model.Domain) error {
+func (s *service) HandleEIP1577(ctx context.Context, domain string, address string) error {
+	loggerx.Global().Info("eip1577: start", zap.String("domain", domain), zap.String("address", address))
+
+	c, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer func() {
+		cancel()
+	}()
+
 	message := &protocol.Message{
-		Address: strings.ToLower(string(domain.AddressOwner)),
+		Address: strings.ToLower(address),
 		Network: protocol.NetworkEIP1577,
 	}
 
 	// datasource
-	internalTransactions, err := eip1577.GetEIP1577Transactions(ctx, message, domain.Name, s.config.EIP1577.Endpoint)
+	internalTransactions, err := eip1577.GetEIP1577Transactions(c, message, domain, s.config.EIP1577.Endpoint)
 	if err != nil {
 		loggerx.Global().Error("eip1577: eip1577 Datasource Handle error", zap.Error(err))
 

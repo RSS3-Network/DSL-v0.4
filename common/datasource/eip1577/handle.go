@@ -22,14 +22,15 @@ import (
 func GetEIP1577Transactions(ctx context.Context, message *protocol.Message, name string, endpoint string) ([]model.Transaction, error) {
 	var result Result
 
-	response, err := resty.New().NewRequest().SetContext(ctx).SetResult(&result).Get(fmt.Sprintf("%s/domains/%s", endpoint, name))
+	url := fmt.Sprintf("%s/domains/%s", endpoint, name)
+	response, err := resty.New().NewRequest().SetContext(ctx).SetResult(&result).Get(url)
 	if err != nil {
 		loggerx.Global().Error("eip1577 api error", zap.Error(err))
 		return nil, err
 	}
 
 	if response.StatusCode() >= http.StatusBadRequest && response.StatusCode() < http.StatusNetworkAuthenticationRequired {
-		loggerx.Global().Warn("eip1577 notes are not found", zap.String("address", message.Address), zap.String("status", response.Status()))
+		loggerx.Global().Warn("eip1577 notes are not found", zap.String("domain", name), zap.String("address", message.Address), zap.String("status", response.Status()))
 
 		return []model.Transaction{}, nil
 	}
