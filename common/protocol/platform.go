@@ -39,7 +39,11 @@ var PlatformList = map[string][]string{
 	filter.TagSocial: {
 		PlatformMirror,
 		PlatformLens,
+		PlatformLenster,
 		PlatformCrossbell,
+		PlatformCrossbellXLog,
+		PlatformFarcaster,
+		NetworkEIP1577,
 	},
 	filter.TagCollectible: {
 		PlatformPOAP,
