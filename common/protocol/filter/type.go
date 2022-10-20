@@ -3,6 +3,7 @@ package filter
 const (
 	// transaction types
 	TransactionTransfer string = "transfer"
+	TransactionBridge   string = "bridge"
 	TransactionMint     string = "mint"
 	TransactionBurn     string = "burn"
 
@@ -56,7 +57,7 @@ const (
 )
 
 var ValidTypeMap = map[string][]string{
-	TagTransaction: {TransactionTransfer, TransactionMint, TransactionBurn},
+	TagTransaction: {TransactionTransfer, TransactionBridge, TransactionMint, TransactionBurn},
 	TagExchange:    {ExchangeWithdraw, ExchangeDeposit, ExchangeSwap, ExchangeLiquidity},
 	TagCollectible: {CollectibleTransfer, CollectibleMint, CollectibleBurn, CollectiblePoap},
 	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike},
