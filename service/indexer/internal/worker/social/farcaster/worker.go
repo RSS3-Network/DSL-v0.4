@@ -3,6 +3,8 @@ package farcaster
 import (
 	"context"
 	"encoding/json"
+	"time"
+
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -14,7 +16,6 @@ import (
 	lop "github.com/samber/lo/parallel"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"time"
 )
 
 var _ worker.Worker = (*service)(nil)
