@@ -5,11 +5,10 @@ import (
 	"embed"
 	"encoding/csv"
 	"errors"
-	"fmt"
 	"io"
-	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -48,14 +47,14 @@ func (s *service) Name() string {
 
 func (s *service) Run() error {
 	ctx := context.Background()
-	file, err := os.Open("./service/crawler/internal/crawler/eip1577/eip1577.csv")
+	file, err := DomainFS.Open("eip1577.csv")
 	if err != nil {
 		loggerx.Global().Error("eip1577: open file error", zap.Error(err))
 		return err
 	}
 	defer file.Close()
 
-	ch := make(chan struct{}, 5)
+	ch := make(chan struct{}, 30)
 	reader := csv.NewReader(bufio.NewReader(file))
 
 	var wg sync.WaitGroup
@@ -85,15 +84,15 @@ func (s *service) Run() error {
 			continue
 		}
 
-		fmt.Println(address)
-
 		ch <- struct{}{}
 		wg.Add(1)
 		go func(domain string, address string) {
 			defer wg.Done()
-			err := s.HandleEIP1577(ctx, domain, address)
-			if err != nil {
-				loggerx.Global().Error("eip1577: HandleEIP1577 error", zap.Error(err))
+			for i := 0; i < 2; i++ {
+				err := s.HandleEIP1577(ctx, domain, address)
+				if err != nil {
+					loggerx.Global().Error("eip1577: HandleEIP1577 error", zap.Error(err))
+				}
 			}
 			<-ch
 		}(domain, address)
@@ -105,7 +104,12 @@ func (s *service) Run() error {
 }
 
 func (s *service) HandleEIP1577(ctx context.Context, domain string, address string) error {
-	loggerx.Global().Info("eip1577: start ", zap.String("domain", domain), zap.String("address", address))
+	loggerx.Global().Info("eip1577: start", zap.String("domain", domain), zap.String("address", address))
+
+	c, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer func() {
+		cancel()
+	}()
 
 	message := &protocol.Message{
 		Address: strings.ToLower(address),
@@ -113,7 +117,7 @@ func (s *service) HandleEIP1577(ctx context.Context, domain string, address stri
 	}
 
 	// datasource
-	internalTransactions, err := eip1577.GetEIP1577Transactions(ctx, message, domain, s.config.EIP1577.Endpoint)
+	internalTransactions, err := eip1577.GetEIP1577Transactions(c, message, domain, s.config.EIP1577.Endpoint)
 	if err != nil {
 		loggerx.Global().Error("eip1577: eip1577 Datasource Handle error", zap.Error(err))
 
