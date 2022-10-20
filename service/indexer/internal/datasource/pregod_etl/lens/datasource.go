@@ -19,6 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	lens_comm "github.com/naturalselectionlabs/pregod/common/worker/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -32,7 +33,8 @@ const (
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
-	clientMap map[string]*pregod_etl.Client // PregodETL
+	clientMap  map[string]*pregod_etl.Client // PregodETL
+	lensClient *lens_comm.Client
 }
 
 func (d *Datasource) Name() string {
@@ -53,51 +55,53 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	defer func() { opentelemetry.Log(trace, message, len(internalTransactions), err) }()
 
 	// get profileid by address
-	profileID, err := d.getDefaultProfile(ctx, message)
+	profileIDList, err := d.lensClient.GetProfiles(ctx, message.Address)
 	if err != nil {
 		return nil, err
 	}
 
-	if profileID.Int64() == 0 {
-		logrus.Infof("[datasource_lens] Handle getDefaultProfile is nil, address: %v", message.Address)
+	if len(profileIDList) == 0 {
+		logrus.Infof("[datasource_lens] Handle GetProfiles is nil, address: %v", message.Address)
 
 		return nil, nil
 	}
 
 	// get transaction
-	transactionMap, err := d.getLensTransferHashes(ctx, message, profileID)
-	if err != nil {
-		return nil, err
-	}
-
-	transactions := make([]*model.Transaction, 0)
-	for _, transaction := range transactionMap {
-		internalTransaction := transaction
-
-		if internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) {
-			continue
+	for _, profileID := range profileIDList {
+		transactionMap, err := d.getLensTransferHashes(ctx, message, profileID)
+		if err != nil {
+			return nil, err
 		}
 
-		transactions = append(transactions, &internalTransaction)
-	}
+		transactions := make([]*model.Transaction, 0)
+		for _, transaction := range transactionMap {
+			internalTransaction := transaction
 
-	// build transaction
-	if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
-		loggerx.Global().Error("failed to build transactions", zap.Error(err))
+			if internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) {
+				continue
+			}
 
-		return nil, err
-	}
+			transactions = append(transactions, &internalTransaction)
+		}
 
-	for _, transaction := range transactions {
-		if transaction != nil {
-			internalTransactions = append(internalTransactions, *transaction)
+		// build transaction
+		if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
+			loggerx.Global().Error("failed to build transactions", zap.Error(err))
+
+			return nil, err
+		}
+
+		for _, transaction := range transactions {
+			if transaction != nil {
+				internalTransactions = append(internalTransactions, *transaction)
+			}
 		}
 	}
 
 	return internalTransactions, nil
 }
 
-func (d *Datasource) getDefaultProfile(ctx context.Context, message *protocol.Message) (*big.Int, error) {
+func (d *Datasource) GetDefaultProfile(ctx context.Context, message *protocol.Message) (*big.Int, error) {
 	tracer := otel.Tracer("datasource_lens")
 	_, trace := tracer.Start(ctx, "datasource_lens:getDefaultProfile")
 	var profileID *big.Int
@@ -187,7 +191,8 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 
 func New(config *configx.RPC) (datasource.Datasource, error) {
 	internalDatasource := Datasource{
-		clientMap: map[string]*pregod_etl.Client{},
+		clientMap:  map[string]*pregod_etl.Client{},
+		lensClient: lens_comm.New(),
 	}
 
 	var err error

@@ -10,6 +10,7 @@ const (
 	PlatformCrossbell      = "Crossbell"
 	PlatformCrossbellXLog  = "xLog"
 	PlatformCrossbellXCast = "xCast"
+	PlatformFarcaster      = "Farcaster"
 
 	// collectible
 	PlatformPOAP   = "POAP"
@@ -38,7 +39,11 @@ var PlatformList = map[string][]string{
 	filter.TagSocial: {
 		PlatformMirror,
 		PlatformLens,
+		PlatformLenster,
 		PlatformCrossbell,
+		PlatformCrossbellXLog,
+		PlatformFarcaster,
+		NetworkEIP1577,
 	},
 	filter.TagCollectible: {
 		PlatformPOAP,

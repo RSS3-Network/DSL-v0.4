@@ -10,6 +10,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+
+	"go.uber.org/zap"
 )
 
 func (c *Client) ERC1155(context context.Context, network, contractAddress string, tokenID *big.Int) (*ERC1155, error) {
@@ -42,13 +45,13 @@ func (c *Client) ERC1155(context context.Context, network, contractAddress strin
 
 	result.Metadata, err = c.Metadata(result.URI)
 	if err != nil {
-		return nil, err
+		loggerx.Global().Named(contractAddress).Warn("Get ERC1155 Metadata error", zap.Error(err))
 	}
 
 	var metadata Metadata
 
 	if err := json.Unmarshal(result.Metadata, &metadata); err != nil {
-		return nil, err
+		loggerx.Global().Named(contractAddress).Warn("Get ERC1155 Metadata Unmarshal error", zap.Error(err))
 	}
 
 	return &result, nil
@@ -57,12 +60,13 @@ func (c *Client) ERC1155(context context.Context, network, contractAddress strin
 func (c *Client) erc1155ToNFT(erc1155 *ERC1155, tokenID *big.Int) (*NFT, error) {
 	var metadata Metadata
 
-	if erc1155.Metadata == nil {
-		return nil, ErrorInvalidMetadataFormat
+	if err := json.Unmarshal(erc1155.Metadata, &metadata); err != nil {
+		loggerx.Global().Named(erc1155.ContractAddress).Warn("Get ERC1155 Metadata Unmarshal error", zap.Error(err))
+		metadata = Metadata{}
 	}
 
-	if err := json.Unmarshal(erc1155.Metadata, &metadata); err != nil {
-		return nil, err
+	if metadata.Name == "" {
+		metadata.Name = erc1155.Name
 	}
 
 	nft := NFT{

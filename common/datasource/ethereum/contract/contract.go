@@ -28,6 +28,8 @@ package contract
 //go:generate abigen --abi ./crossbell/character.abi --pkg crossbell --type Character --out ./crossbell/character.go
 // https://etherscan.io/address/0x00000000006c3852cbef3e08e8df289169ede581
 //go:generate abigen --abi ./opensea/seaport.abi --pkg opensea --type Seaport --out ./opensea/seaport.go
+// https://etherscan.io/address/0x00000000006c3852cbef3e08e8df289169ede581
+//go:generate abigen --abi ./opensea/wyvern_exchange.abi --pkg opensea --type WyvernExchange --out ./opensea/wyvern_exchange.go
 // https://etherscan.io/address/0x59728544b08ab483533076417fbbb2fd0b17ce3a
 //go:generate abigen --abi ./looksrare/exchange.abi --pkg looksrare --type Exchange --out ./looksrare/exchange.go
 // https://etherscan.io/address/0xc6845a5c768bf8d7681249f8927877efda425baf

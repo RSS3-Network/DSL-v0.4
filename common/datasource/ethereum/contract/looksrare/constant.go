@@ -12,5 +12,5 @@ var (
 	EventHashTakerBid       = common.BytesToHash(crypto.Keccak256([]byte("TakerBid(bytes32,uint256,address,address,address,address,address,uint256,uint256,uint256)")))
 	EventHashTakerAsk       = common.BytesToHash(crypto.Keccak256([]byte("TakerAsk(bytes32,uint256,address,address,address,address,address,uint256,uint256,uint256)")))
 
-	PlatformLooksrare = "Looksrare"
+	Platform = "Looksrare"
 )

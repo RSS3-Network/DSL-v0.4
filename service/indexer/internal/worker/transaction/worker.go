@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -616,7 +617,7 @@ func (s *service) buildType(transaction model.Transaction, transfer model.Transf
 		case filter.TagCollectible:
 			transfer.Type = filter.CollectibleMint
 		}
-	case transfer.AddressTo == ethereum.AddressGenesis.String():
+	case ethereum.IsBlackHoleAddress(common.HexToAddress(transfer.AddressTo)):
 		transfer.Type = filter.TransactionBurn
 		switch transfer.Tag {
 		case filter.TagTransaction:

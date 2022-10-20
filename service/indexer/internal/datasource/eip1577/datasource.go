@@ -2,27 +2,21 @@ package eip1577
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/samber/lo"
 	"github.com/samber/lo/parallel"
-	"github.com/shopspring/decimal"
 	goens "github.com/wealdtech/go-ens/v3"
 	"go.uber.org/zap"
 )
@@ -88,7 +82,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	})
 
 	transactions := lo.Flatten(parallel.Map(names, func(name string, i int) []model.Transaction {
-		transactions, err := d.buildTransactions(ctx, message, name)
+		transactions, err := eip1577.GetEIP1577Transactions(ctx,
+			message,
+			name,
+			config.ConfigIndexer.EIP1577.Endpoint)
 		if err != nil {
 			loggerx.Global().Warn("failed to build transactions", zap.Error(err))
 
@@ -113,81 +110,6 @@ func (d *Datasource) handleENS(ctx context.Context, address common.Address) (str
 	}
 
 	return name, nil
-}
-
-func (d *Datasource) buildTransactions(ctx context.Context, message *protocol.Message, name string) ([]model.Transaction, error) {
-	var result Result
-
-	response, err := resty.New().NewRequest().SetContext(ctx).SetResult(&result).Get(fmt.Sprintf("%s/domains/%s", config.ConfigIndexer.EIP1577.Endpoint, name))
-	if err != nil {
-		return nil, err
-	}
-
-	if response.StatusCode() >= http.StatusBadRequest && response.StatusCode() < http.StatusNetworkAuthenticationRequired {
-		loggerx.Global().Warn("eip1577 notes are not found", zap.String("address", message.Address), zap.String("status", response.Status()))
-
-		return []model.Transaction{}, nil
-	}
-
-	transactions := make([]model.Transaction, 0, len(result.Feeds))
-
-	for _, feed := range result.Feeds {
-		// Use domain name and path as hash to cope with page content updates
-		hash := common.Hash(sha256.Sum256([]byte(fmt.Sprintf("%s%s", name, feed.Path)))).String()
-		success := true
-
-		metadataRaw, err := json.Marshal(metadata.Post{
-			Title:   feed.Title,
-			Summary: feed.Summary,
-			Body:    feed.Content,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		sourceData, err := json.Marshal(feed)
-		if err != nil {
-			return nil, err
-		}
-
-		transaction := model.Transaction{
-			BlockNumber: 0,
-			Timestamp:   feed.CreatedAt,
-			Hash:        hash,
-			Index:       0,
-			Owner:       message.Address,
-			AddressFrom: message.Address,
-			Network:     protocol.NetworkEIP1577,
-			Platform:    result.Platform,
-			Source:      d.Name(),
-			Tag:         filter.TagSocial,
-			Type:        filter.SocialPost,
-			Success:     &success,
-			Transfers: []model.Transfer{
-				{
-					TransactionHash: hash,
-					Timestamp:       time.Time{},
-					BlockNumber:     decimal.Zero.BigInt(),
-					Tag:             filter.TagSocial,
-					Type:            filter.SocialPost,
-					Index:           0,
-					AddressFrom:     message.Address,
-					Metadata:        metadataRaw,
-					Network:         protocol.NetworkEIP1577,
-					Platform:        result.Platform,
-					Source:          d.Name(),
-					SourceData:      sourceData,
-					RelatedUrls: []string{
-						feed.URL,
-					},
-				},
-			},
-		}
-
-		transactions = append(transactions, transaction)
-	}
-
-	return transactions, nil
 }
 
 func (d *Datasource) buildLockerName(address string) string {

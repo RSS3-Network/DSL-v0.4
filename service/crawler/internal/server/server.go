@@ -12,10 +12,12 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/lens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/mirror"
@@ -40,6 +42,10 @@ type Server struct {
 }
 
 func (s *Server) Initialize() (err error) {
+	if err := loggerx.Initialize(string(s.config.Mode)); err != nil {
+		logrus.Fatalln(err)
+	}
+
 	var exporter trace.SpanExporter
 
 	if s.config.OpenTelemetry == nil {
@@ -120,6 +126,7 @@ func (s *Server) Initialize() (err error) {
 		ens.New(s.rabbitmqChannel, s.employer, s.config),
 		lens.New(s.config),
 		mirror.New(s.config),
+		eip1577.New(s.config),
 	}
 
 	return nil
