@@ -101,7 +101,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	return internalTransactions, nil
 }
 
-func (d *Datasource) getDefaultProfile(ctx context.Context, message *protocol.Message) (*big.Int, error) {
+func (d *Datasource) GetDefaultProfile(ctx context.Context, message *protocol.Message) (*big.Int, error) {
 	tracer := otel.Tracer("datasource_lens")
 	_, trace := tracer.Start(ctx, "datasource_lens:getDefaultProfile")
 	var profileID *big.Int
