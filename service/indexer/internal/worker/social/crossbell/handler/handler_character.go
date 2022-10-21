@@ -188,7 +188,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 		return nil, fmt.Errorf("failed to parse post note event: %w", err)
 	}
 
-	post, note, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId)
+	post, note, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, contract.EventNamePostNote)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build note metadata: %w", err)
 	}
@@ -210,7 +210,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 			return nil, fmt.Errorf("failed to get linking note: %w", err)
 		}
 
-		targetPost, targetNote, _, err := c.buildNoteMetadata(ctx, targetNoteStruct.CharacterId, targetNoteStruct.NoteId)
+		targetPost, targetNote, _, err := c.buildNoteMetadata(ctx, targetNoteStruct.CharacterId, targetNoteStruct.NoteId, contract.EventNamePostNote /* It may be a comment of a comment, but we can hardly judge it. */)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build target note metadata: %w", err)
 		}
@@ -240,7 +240,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 	return &transfer, nil
 }
 
-func (c *characterHandler) buildNoteMetadata(ctx context.Context, characterID, noteID *big.Int) (*metadata.Post, *character.DataTypesNote, *CrossbellPostStruct, error) {
+func (c *characterHandler) buildNoteMetadata(ctx context.Context, characterID, noteID *big.Int, eventName string) (*metadata.Post, *character.DataTypesNote, *CrossbellPostStruct, error) {
 	note, err := c.characterContract.GetNote(&bind.CallOpts{}, characterID, noteID)
 	if err != nil {
 		return nil, nil, nil, err
@@ -272,9 +272,11 @@ func (c *characterHandler) buildNoteMetadata(ctx context.Context, characterID, n
 	}
 
 	post := metadata.Post{
-		TypeOnPlatform: []string{contract.EventNamePostNote},
-		Title:          postOriginal.Title,
-		Body:           postOriginal.Content,
+		TypeOnPlatform: []string{
+			eventName,
+		},
+		Title: postOriginal.Title,
+		Body:  postOriginal.Content,
 		Author: []string{
 			fmt.Sprintf("https://crossbell.io/@%s", handle),
 		},
@@ -427,7 +429,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		return nil, fmt.Errorf("failed to parse SetNoteUri event: %w", err)
 	}
 
-	post, _, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId)
+	post, _, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, contract.EventNameSetNoteUri)
 	if err != nil {
 		return nil, fmt.Errorf("build note metadata: %w", err)
 	}
@@ -461,7 +463,7 @@ func (c *characterHandler) handleMintNote(ctx context.Context, transaction model
 		return nil, fmt.Errorf("failed to parse event: %w", err)
 	}
 
-	post, _, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId)
+	post, _, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, contract.EventNameMintNote)
 	if err != nil {
 		return nil, fmt.Errorf("build note metadata: %w", err)
 	}
