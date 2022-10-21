@@ -14,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -184,28 +185,79 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 
 	event, err := c.characterContract.ParsePostNote(log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse post note event: %w", err)
 	}
 
-	note, err := c.characterContract.GetNote(&bind.CallOpts{}, event.CharacterId, event.NoteId)
+	post, note, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to build note metadata: %w", err)
+	}
+
+	// Comment
+	if note.LinkItemType == contract.LinkItemTypeNote {
+		ethereumClient, err := ethclientx.Global(transfer.Network)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get ethereum client: %w", err)
+		}
+
+		periphery, err := periphery.NewPeriphery(contract.AddressPeriphery, ethereumClient)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get periphery contract: %w", err)
+		}
+
+		targetNoteStruct, err := periphery.GetLinkingNote(&bind.CallOpts{}, note.LinkKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get linking note: %w", err)
+		}
+
+		targetPost, targetNote, _, err := c.buildNoteMetadata(ctx, targetNoteStruct.CharacterId, targetNoteStruct.NoteId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build target note metadata: %w", err)
+		}
+
+		post.Target = targetPost
+		post.TargetURL = targetNote.ContentUri
 	}
 
 	transfer.RelatedUrls = []string{note.ContentUri}
 
+	transfer.Platform = c.buildPlatform(postOriginal.Sources)
+
+	if post.Target == nil {
+		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
+	} else {
+		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialComment, transfer.Type)
+	}
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
+		return nil, err
+	}
+
+	if transfer.Metadata, err = json.Marshal(post); err != nil {
+		return nil, err
+	}
+
+	return &transfer, nil
+}
+
+func (c *characterHandler) buildNoteMetadata(ctx context.Context, characterID, noteID *big.Int) (*metadata.Post, *character.DataTypesNote, *CrossbellPostStruct, error) {
+	note, err := c.characterContract.GetNote(&bind.CallOpts{}, characterID, noteID)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	contentData, err := ipfs.GetFileByURL(note.ContentUri)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
 	postOriginal := CrossbellPostStruct{}
 
 	if err := json.Unmarshal(contentData, &postOriginal); err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	post := &metadata.Post{
+	post := metadata.Post{
 		TypeOnPlatform: []string{contract.EventNamePostNote},
 		Title:          postOriginal.Title,
 		Body:           postOriginal.Content,
@@ -218,25 +270,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 		})
 	}
 
-	transfer.Platform = c.buildPlatform(postOriginal.Sources)
-
-	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
-
-	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
-		return nil, err
-	}
-
-	// special case for xLog
-	if transfer.Platform == protocol.PlatformCrossbellXLog {
-		transfer.RelatedUrls = append(transfer.RelatedUrls, postOriginal.ExternalUrls...)
-		post.Summary = postOriginal.Summary
-	}
-
-	if transfer.Metadata, err = json.Marshal(post); err != nil {
-		return nil, err
-	}
-
-	return &transfer, nil
+	return &post, &note, &postOriginal, nil
 }
 
 func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
@@ -482,11 +516,12 @@ func (c *characterHandler) buildPlatform(sources []string) string {
 		return protocol.PlatformCrossbell
 	}
 
+	// Rewrite typos in sources
 	for i, source := range sources {
-		switch source {
-		case "xlog":
+		switch {
+		case strings.EqualFold(source, "xlog"):
 			sources[i] = protocol.PlatformCrossbellXLog
-		case "xcast":
+		case strings.EqualFold(source, "xcast"):
 			sources[i] = protocol.PlatformCrossbellXCast
 		}
 	}

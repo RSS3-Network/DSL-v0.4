@@ -47,7 +47,12 @@ var (
 	EventHashSetNoteUri            = common.BytesToHash(crypto.Keccak256([]byte("SetNoteUri(uint256,uint256,string)")))
 	EventHashMintNote              = common.BytesToHash(crypto.Keccak256([]byte("MintNote(address,uint256,uint256,address,uint256)")))
 
-	LinkItemTypeAnyUri = common.BytesToHash(common.RightPadBytes([]byte("AnyUri"), common.HashLength))
+	LinkItemTypeCharacter = common.BytesToHash(common.RightPadBytes([]byte("Character"), common.HashLength))
+	LinkItemTypeAddress   = common.BytesToHash(common.RightPadBytes([]byte("Address"), common.HashLength))
+	LinkItemTypeLinklist  = common.BytesToHash(common.RightPadBytes([]byte("Linklist"), common.HashLength))
+	LinkItemTypeNote      = common.BytesToHash(common.RightPadBytes([]byte("Note"), common.HashLength))
+	LinkItemTypeERC721    = common.BytesToHash(common.RightPadBytes([]byte("ERC721"), common.HashLength))
+	LinkItemTypeAnyUri    = common.BytesToHash(common.RightPadBytes([]byte("AnyUri"), common.HashLength))
 
 	LinkTypeFollow  = "follow"
 	LinkTypeLike    = "like"

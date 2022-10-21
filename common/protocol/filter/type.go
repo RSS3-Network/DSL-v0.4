@@ -72,5 +72,6 @@ func CheckTypeValid(tag string, transferType string) bool {
 			return true
 		}
 	}
+
 	return false
 }

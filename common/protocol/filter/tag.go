@@ -31,6 +31,7 @@ func UpdateTagAndType(targetTag string, currentTag string, targetType string, cu
 	if TagPriority[targetTag] > TagPriority[currentTag] {
 		return targetTag, targetType
 	}
+
 	return currentTag, currentType
 }
 
@@ -38,5 +39,6 @@ func UpdateTag(targetTag string, currentTag string) string {
 	if TagPriority[targetTag] > TagPriority[currentTag] {
 		return targetTag
 	}
+
 	return currentTag
 }
