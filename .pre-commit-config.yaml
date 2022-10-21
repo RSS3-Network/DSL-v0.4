@@ -8,11 +8,11 @@ repos:
       - id: check-yaml
         args: ['--allow-multiple-documents']
   - repo: https://github.com/golangci/golangci-lint
-    rev: v1.48.0
+    rev: v1.50.0
     hooks:
       - id: golangci-lint
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v2.29.5
+    rev: v2.35.0
     hooks:
       - id: commitizen
         stages: [commit-msg]

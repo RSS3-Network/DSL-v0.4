@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -29,6 +30,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -95,6 +97,8 @@ func (s *service) Initialize(ctx context.Context) error {
 				Source:        record[2],
 				Network:       record[3],
 			})
+
+			allowlist.AllowList.Add(record[0], record[1])
 		}
 
 		if len(walletModels) == 0 {
@@ -469,7 +473,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			tokenMetadata.Value = &tokenValue
 			tokenMetadata.ValueDisplay = &tokenValueDisplay
 
-			if transfer.AddressTo == ens.EnsRegistrarController.String() || transfer.AddressFrom == ens.EnsRegistrarController.String() {
+			if transfer.AddressTo == strings.ToLower(ens.EnsRegistrarController.String()) || transfer.AddressFrom == strings.ToLower(ens.EnsRegistrarController.String()) {
 				transfer.Platform = protocol.PlatformEns
 			}
 
@@ -616,7 +620,7 @@ func (s *service) buildType(transaction model.Transaction, transfer model.Transf
 		case filter.TagCollectible:
 			transfer.Type = filter.CollectibleMint
 		}
-	case transfer.AddressTo == ethereum.AddressGenesis.String():
+	case ethereum.IsBlackHoleAddress(common.HexToAddress(transfer.AddressTo)):
 		transfer.Type = filter.TransactionBurn
 		switch transfer.Tag {
 		case filter.TagTransaction:

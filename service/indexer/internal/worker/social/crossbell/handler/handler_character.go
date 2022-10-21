@@ -42,7 +42,7 @@ func (c *characterHandler) Handle(ctx context.Context, transaction model.Transac
 	}
 
 	// Default platform
-	transfer.Platform = strings.ToLower(protocol.PlatformCrossbell)
+	transfer.Platform = protocol.PlatformCrossbell
 
 	switch log.Topics[0] {
 	case contract.EventHashCharacterCreated, contract.EventHashProfileCreated:
@@ -103,7 +103,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 
 	profile := &social.Profile{
 		Address:  transfer.AddressFrom,
-		Platform: transfer.Network,
+		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Type:     filter.SocialProfileCreate,
@@ -148,7 +148,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 
 	profile := &social.Profile{
 		Address:  transfer.AddressFrom,
-		Platform: transfer.Network,
+		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Type:     filter.SocialProfileUpdate,
@@ -225,7 +225,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 	}
 
 	// special case for xLog
-	if transfer.Platform == protocol.PlatformCrossbellXlog {
+	if transfer.Platform == protocol.PlatformCrossbellXLog {
 		transfer.RelatedUrls = append(transfer.RelatedUrls, postOriginal.ExternalUrls...)
 		post.Summary = postOriginal.Summary
 	}
@@ -255,7 +255,7 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 	}
 
 	profile := &social.Profile{
-		Platform: transfer.Network,
+		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 	}
@@ -295,7 +295,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 
 	profile := &social.Profile{
 		Address:  strings.ToLower(event.Account.String()),
-		Platform: transfer.Network,
+		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Type:     filter.SocialProfileUpdate,
@@ -337,7 +337,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 
 	profile := &social.Profile{
 		Address:  transfer.AddressFrom,
-		Platform: transfer.Network,
+		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Type:     filter.SocialProfileUpdate,
@@ -423,9 +423,12 @@ func (c *characterHandler) buildPlatform(sources []string) string {
 		return protocol.PlatformCrossbell
 	}
 
-	for i, v := range sources {
-		if v == "xlog" {
-			sources[i] = protocol.PlatformCrossbellXlog
+	for i, source := range sources {
+		switch source {
+		case "xlog":
+			sources[i] = protocol.PlatformCrossbellXLog
+		case "xcast":
+			sources[i] = protocol.PlatformCrossbellXCast
 		}
 	}
 

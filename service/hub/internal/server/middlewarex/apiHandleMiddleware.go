@@ -2,6 +2,7 @@ package middlewarex
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -10,12 +11,18 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
 )
 
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		address := c.Param("address")
 		if address != "" {
-			if address, err := ResolveAddress(address); err != nil {
-				return err
+			if address, err := ResolveAddress(address, false); err != nil {
+				return c.JSON(http.StatusOK, &ErrorResponse{
+					Error: err.Error(),
+				})
 			} else {
 				c.SetParamValues(address)
 			}
@@ -67,7 +74,7 @@ func CheckAPIKey(apiKey string) error {
 }
 
 // ResolveAddress resolve handles into an address
-func ResolveAddress(address string) (string, error) {
+func ResolveAddress(address string, ignoreContract bool) (string, error) {
 	result := name_service.ReverseResolveAll(strings.ToLower(address), false)
 	if len(result.Address) == 0 {
 		return "", fmt.Errorf("The address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address.")
@@ -80,9 +87,11 @@ func ResolveAddress(address string) (string, error) {
 	}
 
 	// check contract
-	isContract, _ := name_service.IsEthereumContract(result.Address)
-	if isContract {
-		return "", fmt.Errorf("Contract addresses are not currently supported.")
+	if !ignoreContract {
+		isContract, _ := name_service.IsEthereumContract(result.Address)
+		if isContract {
+			return "", fmt.Errorf("Contract addresses are not currently supported.")
+		}
 	}
 
 	return strings.ToLower(result.Address), nil
