@@ -30,6 +30,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -96,6 +97,8 @@ func (s *service) Initialize(ctx context.Context) error {
 				Source:        record[2],
 				Network:       record[3],
 			})
+
+			allowlist.AllowList.Add(record[0], record[1])
 		}
 
 		if len(walletModels) == 0 {

@@ -12,6 +12,9 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"go.uber.org/zap"
 )
 
 const MaxSize = 1024 * 8
@@ -126,6 +129,41 @@ func (c *Client) NFT(ctx context.Context, network, contractAddress string, token
 	}
 
 	return nil, ErrorTokenNotFound
+}
+
+func (c *Client) NFTToMetadata(context context.Context, network, contractAddress string, tokenID *big.Int) (*metadata.Token, error) {
+	nft, err := c.NFT(context, network, contractAddress, tokenID)
+	if err != nil {
+		loggerx.Global().Error("get nft error", zap.Error(err))
+
+		return nil, err
+	}
+
+	var tokenAttributes []metadata.TokenAttribute
+
+	for _, attribute := range nft.Attributes {
+		tokenAttributes = append(tokenAttributes, metadata.TokenAttribute{
+			TraitType: attribute.TraitType,
+			Value:     attribute.Value,
+		})
+	}
+
+	tokenMetadata := &metadata.Token{
+		Name:            nft.Name,
+		Collection:      nft.Collection,
+		Symbol:          nft.Symbol,
+		Standard:        nft.Standard,
+		ContractAddress: nft.ContractAddress,
+		Image:           nft.Image,
+		ID:              nft.ID.String(),
+		Description:     nft.Description,
+		Attributes:      tokenAttributes,
+		ExternalLink:    nft.ExternalLink,
+		ExternalURL:     nft.ExternalURL,
+		AnimationURL:    nft.AnimationURL,
+	}
+
+	return tokenMetadata, nil
 }
 
 func (c *Client) metadataToAttributes(metadata Metadata) []MetadataAttribute {

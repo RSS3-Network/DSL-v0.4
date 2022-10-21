@@ -63,19 +63,20 @@ type GetAssetRequest struct {
 }
 
 type BatchGetNotesRequest struct {
-	Address     []string  `json:"address" validate:"required"`
-	Type        []string  `json:"type"`
-	Tag         []string  `json:"tag" validate:"required_with=Type"`
-	Network     []string  `json:"network"`
-	Platform    []string  `json:"platform"`
-	Timestamp   time.Time `json:"timestamp"`
-	Limit       int       `json:"limit"`
-	Cursor      string    `json:"cursor"`
-	Refresh     bool      `json:"refresh"`
-	IncludePoap bool      `json:"include_poap"`
-	Page        int       `json:"page"`
-	QueryStatus bool      `json:"query_status"`
-	CountOnly   bool      `json:"count_only"`
+	Address        []string  `json:"address" validate:"required"`
+	Type           []string  `json:"type"`
+	Tag            []string  `json:"tag" validate:"required_with=Type"`
+	Network        []string  `json:"network"`
+	Platform       []string  `json:"platform"`
+	Timestamp      time.Time `json:"timestamp"`
+	Limit          int       `json:"limit"`
+	Cursor         string    `json:"cursor"`
+	Refresh        bool      `json:"refresh"`
+	IncludePoap    bool      `json:"include_poap"`
+	Page           int       `json:"page"`
+	QueryStatus    bool      `json:"query_status"`
+	CountOnly      bool      `json:"count_only"`
+	IgnoreContract bool      `json:"ignore_contract"`
 }
 
 type BatchGetProfilesRequest struct {

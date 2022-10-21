@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"net/http"
 	"strings"
 	"time"
 
@@ -30,10 +29,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
-
-type Client struct {
-	httpClient *http.Client
-}
 
 type LensContent struct {
 	Description string             `json:"description"`
@@ -67,12 +62,6 @@ const (
 	Comment = "comment"
 	Share   = "mirror"
 )
-
-func New() *Client {
-	return &Client{
-		httpClient: http.DefaultClient,
-	}
-}
 
 func (c *Client) GetProfile(address string) (*social.Profile, error) {
 	ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)

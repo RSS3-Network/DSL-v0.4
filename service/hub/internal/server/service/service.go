@@ -95,7 +95,8 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 			return
 		}
 
-		dao.InitializeAddressStatus(ctx, message.Address)
+		address.Address = message.Address
+		dao.InitializeAddressStatus(ctx, address)
 	}
 
 	networks := []string{
