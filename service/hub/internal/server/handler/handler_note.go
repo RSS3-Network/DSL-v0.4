@@ -91,7 +91,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 		request.Address = request.Address[:model.DefaultLimit]
 	}
 	for i, v := range request.Address {
-		address, err := middlewarex.ResolveAddress(v)
+		address, err := middlewarex.ResolveAddress(v, request.IgnoreContract)
 		if err != nil {
 			return ErrorResp(c, err)
 		}
