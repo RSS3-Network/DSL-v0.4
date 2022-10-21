@@ -276,7 +276,7 @@ func (c *characterHandler) buildNoteMetadata(ctx context.Context, characterID, n
 		Title:          postOriginal.Title,
 		Body:           postOriginal.Content,
 		Author: []string{
-			handle,
+			fmt.Sprintf("https://crossbell.io/@%s", handle),
 		},
 	}
 
