@@ -484,7 +484,7 @@ func (c *characterHandler) handleMintNote(ctx context.Context, transaction model
 	}
 
 	post := &metadata.Post{
-		TypeOnPlatform: []string{contract.EventNamePostNote},
+		TypeOnPlatform: []string{contract.EventNameMintNote},
 		Title:          postOriginal.Title,
 		Body:           postOriginal.Content,
 	}

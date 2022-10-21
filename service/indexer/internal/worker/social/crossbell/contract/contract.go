@@ -26,6 +26,7 @@ var (
 	EventNameSetHandle        = "SetHandle"
 	EventNameCharacterCreated = "CharacterCreated"
 	EventNamePostNote         = "PostNote"
+	EventNameMintNote         = "MintNote"
 	EventNameLinkCharacter    = "LinkCharacter"
 	EventNameUnlinkCharacter  = "UnlinkCharacter"
 	EventNameSetProfileUri    = "SetProfileUri"
