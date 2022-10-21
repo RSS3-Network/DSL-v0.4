@@ -79,6 +79,8 @@ func (c *characterHandler) Handle(ctx context.Context, transaction model.Transac
 		return c.profileHandler.handleSetProfileUri(ctx, transaction, transfer, log)
 	case contract.EventHashSetNoteUri:
 		return c.handleSetNoteUri(ctx, transaction, transfer, log)
+	case contract.EventHashMintNote:
+		return c.handleMintNote(ctx, transaction, transfer, log)
 	default:
 		return nil, contract.ErrorUnknownEvent
 	}
@@ -410,6 +412,63 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialRevise, transfer.Type)
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
+		return nil, err
+	}
+
+	return &transfer, nil
+}
+
+func (c *characterHandler) handleMintNote(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("worker_crossbell_handler")
+
+	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleMintNote")
+
+	defer snap.End()
+
+	var err error
+
+	event, err := c.characterContract.ParseMintNote(log)
+	if err != nil {
+		return nil, err
+	}
+
+	note, err := c.characterContract.GetNote(&bind.CallOpts{}, event.CharacterId, event.NoteId)
+	if err != nil {
+		return nil, err
+	}
+
+	contentData, err := ipfs.GetFileByURL(note.ContentUri)
+	if err != nil {
+		return nil, err
+	}
+
+	postOriginal := CrossbellPostStruct{}
+	if err := json.Unmarshal(contentData, &postOriginal); err != nil {
+		return nil, err
+	}
+
+	post := &metadata.Post{
+		TypeOnPlatform: []string{contract.EventNamePostNote},
+		Title:          postOriginal.Title,
+		Body:           postOriginal.Content,
+	}
+
+	for _, attachment := range postOriginal.Attachments {
+		post.Media = append(post.Media, metadata.Media{
+			Address:  attachment.Address,
+			MimeType: attachment.MimeType,
+		})
+	}
+
+	transfer.Platform = c.buildPlatform(postOriginal.Sources)
+
+	if transfer.Metadata, err = json.Marshal(post); err != nil {
+		return nil, err
+	}
+
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialMint, transfer.Type)
 
 	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
 		return nil, err
