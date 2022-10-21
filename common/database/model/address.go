@@ -13,6 +13,7 @@ type Address struct {
 	IndexingNetworks pq.StringArray `gorm:"column:indexing_networks;type:text[]" json:"indexing_networks"`
 	CreatedAt        time.Time      `gorm:"column:created_at;autoCreateTime;not null;default:now();index" json:"-"`
 	UpdatedAt        time.Time      `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index" json:"updated_at"`
+	Count            int            `gorm:"column:count;default:0" json:"count"`
 }
 
 func (Address) TableName() string {
