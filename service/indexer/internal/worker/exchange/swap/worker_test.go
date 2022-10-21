@@ -7,17 +7,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/zerox"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -41,37 +41,23 @@ func TestBuildTransferMetadata(t *testing.T) {
 			},
 		},
 	}, []string{protocol.NetworkEthereum})
-	if err != nil {
-		t.Fatalf("failed to create ethereum client: %v", err)
-	}
+	assert.NoError(t, err, "failed to create ethereum client")
 
 	ethereumClient, exists := ethereumClientMap[protocol.NetworkEthereum]
-	if !exists {
-		t.Fatalf("failed to find ethereum client")
-	}
+	assert.True(t, exists, "failed to find ethereum client")
+
+	ethclientx.ReplaceGlobal(protocol.NetworkEthereum, ethereumClient)
 
 	transaction, _, err := ethereumClient.TransactionByHash(context.Background(), common.HexToHash("0x4b37b3dcb3014a9f09d0ce9ced7385a9662f0464b738c5957a96cd8c4af12160"))
-	if err != nil {
-		t.Fatalf("failed to get transaction: %v", err)
-	}
+	assert.NoError(t, err, "failed to get transaction")
 
-	if transaction.To() == nil {
-		t.Errorf("not is a swap transaction")
-
-		return
-	}
+	assert.NotNil(t, transaction.To(), "not is a swap transaction")
 
 	router, exist := RouterMap[*transaction.To()]
-	if !exist {
-		t.Errorf("not is a swap transaction")
-
-		return
-	}
+	assert.True(t, exist, "not is a swap transaction")
 
 	receipt, err := ethereumClient.TransactionReceipt(context.Background(), transaction.Hash())
-	if err != nil {
-		t.Fatalf("failed to get transaction receipt: %v", err)
-	}
+	assert.NoError(t, err, "failed to get transaction receipt")
 
 	tokenMap := map[common.Address]*big.Int{}
 
@@ -80,14 +66,10 @@ func TestBuildTransferMetadata(t *testing.T) {
 			switch log.Topics[0] {
 			case zerox.EventHashTransformedERC20:
 				zeroXContact, err := zerox.NewZeroX(common.HexToAddress(log.Address.Hex()), ethereumClient)
-				if err != nil {
-					t.Fatalf("falied to create zerox contract: %v", err)
-				}
+				assert.NoError(t, err, "falied to create zerox contract")
 
 				event, err := zeroXContact.ParseTransformedERC20(*log)
-				if err != nil {
-					t.Fatalf("falied to parse transformed erc20 event: %v", err)
-				}
+				assert.NoError(t, err, "falied to parse transformed erc20 event")
 
 				token0Value, exist := tokenMap[event.InputToken]
 				if !exist {
@@ -110,24 +92,16 @@ func TestBuildTransferMetadata(t *testing.T) {
 			switch log.Topics[0] {
 			case uniswap.EventHashSwapV2:
 				uniswapPoolContact, err := uniswap.NewPoolV2(common.HexToAddress(log.Address.Hex()), ethereumClient)
-				if err != nil {
-					t.Fatalf("failed to create uniswap pool contract: %v", err)
-				}
+				assert.NoError(t, err, "failed to create uniswap pool contract")
 
 				event, err := uniswapPoolContact.ParseSwap(*log)
-				if err != nil {
-					t.Fatalf("failed to parse swap event: %v", err)
-				}
+				assert.NoError(t, err, "failed to parse swap event")
 
 				token0, err := uniswapPoolContact.Token0(&bind.CallOpts{})
-				if err != nil {
-					t.Fatalf("failed to get token0: %v", err)
-				}
+				assert.NoError(t, err, "failed to get token0")
 
 				token1, err := uniswapPoolContact.Token1(&bind.CallOpts{})
-				if err != nil {
-					t.Fatalf("failed to get token1: %v", err)
-				}
+				assert.NoError(t, err, "failed to get token1")
 
 				token0Value, exist := tokenMap[token0]
 				if !exist {
@@ -150,24 +124,16 @@ func TestBuildTransferMetadata(t *testing.T) {
 				}
 			case uniswap.EventHashSwapV3:
 				uniswapPoolContact, err := uniswap.NewPoolV3(common.HexToAddress(log.Address.Hex()), ethereumClient)
-				if err != nil {
-					t.Fatalf("failed to create uniswap pool contract: %v", err)
-				}
+				assert.NoError(t, err, "failed to create uniswap pool contract")
 
 				event, err := uniswapPoolContact.ParseSwap(*log)
-				if err != nil {
-					t.Fatalf("failed to parse swap event: %v", err)
-				}
+				assert.NoError(t, err, "failed to parse swap event")
 
 				token0, err := uniswapPoolContact.Token0(&bind.CallOpts{})
-				if err != nil {
-					t.Fatalf("failed to get token0: %v", err)
-				}
+				assert.NoError(t, err, "failed to get token0")
 
 				token1, err := uniswapPoolContact.Token1(&bind.CallOpts{})
-				if err != nil {
-					t.Fatalf("failed to get token1: %v", err)
-				}
+				assert.NoError(t, err, "failed to get token1")
 
 				token0Value, exist := tokenMap[token0]
 				if !exist {
@@ -198,9 +164,7 @@ func TestBuildTransferMetadata(t *testing.T) {
 
 		tokenClient := token.New()
 		erc20, err := tokenClient.ERC20(context.Background(), protocol.NetworkEthereum, strings.ToLower(internalToken.String()))
-		if err != nil {
-			t.Fatalf("failed to get erc20 contract: %v", err)
-		}
+		assert.NoError(t, err, "failed to get erc20 contract")
 
 		tokenValueTo := decimal.NewFromBigInt(value, 0)
 		tokenValueDisplayTo := tokenValueTo.Shift(-int32(erc20.Decimals))
@@ -237,9 +201,7 @@ func TestBuildTransferMetadata(t *testing.T) {
 	}
 
 	data, err := json.MarshalIndent(swapMetadata, "", "\t")
-	if err != nil {
-		t.Fatalf("failed to marshal swap metadata: %v", err)
-	}
+	assert.NoError(t, err, "failed to marshal swap metadata", err)
 
 	t.Log(string(data))
 }
