@@ -3,8 +3,10 @@ package everipedia
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -15,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	everipedia_contract "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/everipedia/contract"
 	"go.opentelemetry.io/otel"
+	"gorm.io/gorm"
 )
 
 type Datasource struct {
@@ -41,8 +44,16 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	if err != nil {
 		return nil, err
 	}
+	blockNum := d.getEveTransactions(strings.ToLower(message.Address))
+	if message.Reindex {
+		blockNum = 0
+	}
 
 	for _, activity := range activityList {
+
+		if activity.Block <= int(blockNum) {
+			continue
+		}
 		var action string
 
 		if activity.Type == graphqlx.StatusCreated {
@@ -59,7 +70,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 			transactions = append(transactions, model.Transaction{
 				BlockNumber: int64(activity.Block),
 				Timestamp:   activity.Datetime,
-				// use MerkleRoot as hash, as there is no actual hash on farcaster
 				Hash:        content.TransactionHash,
 				AddressFrom: strings.ToLower(everipedia_contract.AddressEveripediaSign.String()),
 				AddressTo:   strings.ToLower(everipedia_contract.AddressEveripedia.String()),
@@ -91,6 +101,27 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	}
 
 	return transactions, nil
+}
+
+func (d *Datasource) getEveTransactions(address string) int64 {
+	var result struct {
+		BlockNumber int64 `gorm:"column:block_number"`
+	}
+
+	if err := database.Global().
+		Model(&model.Transaction{}).
+		Select("COALESCE(block_number, 0) AS block_number").
+		Where("owner = ?", address).
+		Where("address_from", strings.ToLower(everipedia_contract.AddressEveripediaSign.String())).
+		Where("address_to", strings.ToLower(everipedia_contract.AddressEveripedia.String())).
+		Where("success IS TRUE").
+		Order("block_number DESC").
+		Limit(1).
+		Find(&result).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return 0
+	}
+
+	return result.BlockNumber
 }
 
 func New() datasource.Datasource {

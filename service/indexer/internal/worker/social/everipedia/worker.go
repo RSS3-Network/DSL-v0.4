@@ -4,14 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/everipedia/graphql"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	everipedia "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/everipedia/contract"
@@ -22,7 +27,7 @@ import (
 var _ worker.Worker = (*internal)(nil)
 
 const (
-	SourceName = "everipedia"
+	SourceName = "Everipedia"
 )
 
 type internal struct{}
@@ -64,7 +69,7 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 		case everipedia.AddressEveripedia:
 			receipt, err := polygonClient.TransactionReceipt(context.Background(), common.HexToHash(transaction.Hash))
 			if err != nil {
-				loggerx.Global().Warn("worker_farcaster: failed to Get Receipt", zap.Error(err), zap.String("network", message.Network), zap.String("transaction_hash", transaction.Hash), zap.String("address", message.Address))
+				loggerx.Global().Warn("worker_everipedia: failed to Get Receipt", zap.Error(err), zap.String("network", message.Network), zap.String("transaction_hash", transaction.Hash), zap.String("address", message.Address))
 				continue
 			}
 
@@ -73,22 +78,12 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 					switch log.Topics[0] {
 					case everipedia.EventPosted:
 						transfer.Index = int64(log.Index)
+						transfer.SourceData = transaction.SourceData
+						if err := i.HandleTransfer(ctx, &transfer); err != nil {
+							loggerx.Global().Warn("worker_everipedia: failed to HandleTransfer", zap.Error(err), zap.String("network", message.Network), zap.String("transaction_hash", transaction.Hash), zap.String("address", message.Address))
 
-						var data graphqlx.GetUserActivitiesActivitiesByUserActivityContentWiki
-						transfer.Metadata = transaction.SourceData
-
-						err := json.Unmarshal(transaction.SourceData, &data)
-						if err != nil {
 							continue
 						}
-						transfer.RelatedUrls = ethereum.BuildURL(
-							[]string{
-								ethereum.BuildScanURL(transaction.Network, transaction.Hash),
-							}, fmt.Sprintf("https://iq.wiki/wiki/%s", data.Id),
-							fmt.Sprintf("https://iq.wiki/account/%s", common.HexToAddress(transaction.Owner).String()),
-							fmt.Sprintf("https://ipfs.rss3.page/ipfs/%s", data.Ipfs),
-						)
-
 					default:
 						continue
 					}
@@ -105,6 +100,63 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	}
 
 	return internalTransactions, nil
+}
+
+func (i *internal) HandleTransfer(ctx context.Context, transfer *model.Transfer) (err error) {
+	tracer := otel.Tracer("worker_everipedia")
+	_, trace := tracer.Start(ctx, "worker_everipedia:HandleTransfer")
+
+	defer func() { opentelemetry.Log(trace, transfer.AddressFrom, transfer.TransactionHash, err) }()
+
+	var wiki graphqlx.GetUserActivitiesActivitiesByUserActivityContentWiki
+	err = json.Unmarshal(transfer.SourceData, &wiki)
+	if err != nil {
+		return err
+	}
+	uri := fmt.Sprintf("https://ipfs.rss3.page/ipfs/%s", wiki.Ipfs)
+	response, err := http.Get(uri)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = response.Body.Close()
+	}()
+
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+
+	if err = json.Unmarshal(data, &json.RawMessage{}); err != nil {
+		return err
+	}
+
+	var wikiContent Wiki
+	if err = json.Unmarshal(data, &wikiContent); err != nil {
+		return err
+	}
+
+	post := &metadata.Post{
+		CreatedAt:      wiki.Created.Format(time.RFC3339),
+		Author:         []string{wiki.Author.Id},
+		Body:           wikiContent.Content,
+		TypeOnPlatform: []string{SourceName},
+		Title:          wiki.Title,
+		Summary:        wiki.Summary,
+		TargetURL:      fmt.Sprintf("https://iq.wiki/wiki/%s", wiki.Id),
+	}
+	transfer.Metadata, _ = json.Marshal(post)
+	transfer.RelatedUrls = ethereum.BuildURL(
+		[]string{
+			ethereum.BuildScanURL(transfer.Network, wiki.TransactionHash),
+		},
+		fmt.Sprintf("https://iq.wiki/account/%s", common.HexToAddress(wiki.User.Id).String()),
+	)
+	return nil
+}
+
+type Wiki struct {
+	Content string `json:"content"`
 }
 
 func (i *internal) Jobs() []worker.Job {
