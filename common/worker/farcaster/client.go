@@ -57,18 +57,30 @@ type Cast struct {
 	// } `json:"attachments"`
 }
 
+type Directory struct {
+	Body struct {
+		AddressActivityUrl string `json:"addressActivityUrl"`
+		AvatarUrl          string `json:"avatarUrl"`
+		DisplayName        string `json:"displayName"`
+		ProofUrl           string `json:"proofUrl"`
+		Timestamp          int64  `json:"timestamp"`
+		Version            int    `json:"version"`
+	} `json:"body"`
+	MerkleRoot string `json:"merkleRoot"`
+	Signature  string `json:"signature"`
+}
+
 type Client struct {
 	httpClient *http.Client
 }
 
 func (c *Client) GetActivityList(ctx context.Context, address string) ([]Cast, error) {
-	requestURL := &url.URL{
-		Scheme: Scheme,
-		Host:   Endpoint,
-		Path:   fmt.Sprintf("/origin/address_activity/%s", address),
+	activityUrl, err := c.GetFarcasterAddress(ctx, address)
+	if err != nil {
+		return nil, err
 	}
 
-	httpResponse, err := c.httpClient.Get(requestURL.String())
+	httpResponse, err := c.httpClient.Get(activityUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +96,36 @@ func (c *Client) GetActivityList(ctx context.Context, address string) ([]Cast, e
 	}
 
 	return activityList, nil
+}
+
+func (c *Client) GetFarcasterAddress(ctx context.Context, address string) (string, error) {
+	requestURL := &url.URL{
+		Scheme: Scheme,
+		Host:   Endpoint,
+		Path:   fmt.Sprintf("/origin/directory/%s", address),
+	}
+
+	httpResponse, err := c.httpClient.Get(requestURL.String())
+	if err != nil {
+		return "", err
+	}
+
+	defer func() {
+		_ = httpResponse.Body.Close()
+	}()
+	// non-200 means the address is not registered
+	// or the server is down
+	if httpResponse.StatusCode != http.StatusOK {
+		return "", nil
+	}
+
+	var directory Directory
+
+	if err := json.NewDecoder(httpResponse.Body).Decode(&directory); err != nil {
+		return "", err
+	}
+
+	return directory.Body.AddressActivityUrl, nil
 }
 
 func NewClient() *Client {
