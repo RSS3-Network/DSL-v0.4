@@ -32,6 +32,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/everipedia"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/farcaster"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
@@ -48,6 +49,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
+	everipediaWorker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/everipedia"
 	farcasterWorker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/farcaster"
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
@@ -149,6 +151,7 @@ func (s *Server) Initialize() (err error) {
 		eth_etl.New(),
 		eip1577.New(s.employer),
 		farcaster.New(),
+		everipedia.New(),
 	}
 
 	swapWorker, err := swap.New(s.employer)
@@ -175,6 +178,7 @@ func (s *Server) Initialize() (err error) {
 		snapshot.New(),
 		crossbell.New(),
 		lens_worker.New(),
+		everipediaWorker.New(),
 		transaction.New(),
 		farcasterWorker.New(),
 	}
