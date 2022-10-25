@@ -123,24 +123,14 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 			}
 		}
 
-		var (
-			transactionMessage types.Message
-			err                error
-		)
-
 		if internalTransaction == nil {
 			return nil, nil
 		}
 
-		switch internalTransaction.Type() {
-		case types.LegacyTxType:
-			transactionMessage, err = internalTransaction.AsMessage(types.NewEIP155Signer(internalTransaction.ChainId()), nil)
-		case types.AccessListTxType:
-			transactionMessage, err = internalTransaction.AsMessage(types.NewEIP2930Signer(internalTransaction.ChainId()), nil)
-		case types.DynamicFeeTxType:
-			transactionMessage, err = internalTransaction.AsMessage(types.LatestSignerForChainID(internalTransaction.ChainId()), nil)
-		default:
-			err = ErrorUnsupportedTransactionType
+		// Supports EIP-2930 and EIP-2718 and EIP-1559 and EIP-155 and legacy transactions
+		transactionMessage, err := internalTransaction.AsMessage(types.LatestSignerForChainID(internalTransaction.ChainId()), block.BaseFee())
+		if err != nil {
+			return nil, err
 		}
 
 		if err != nil {
