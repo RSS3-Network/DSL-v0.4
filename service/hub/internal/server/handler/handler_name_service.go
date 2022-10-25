@@ -33,20 +33,12 @@ func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 
 	go h.filterReport(model.GetNS, request)
 
-	result := name_service.ReverseResolveAll(strings.ToLower(request.Address), true)
+	// temporary disable ReverseResolveAll
+	// result := name_service.ReverseResolveAll(strings.ToLower(request.Address), true)
+	result := name_service.ReverseResolveAll(strings.ToLower(request.Address), false)
 
 	if len(result.Address) == 0 {
 		return AddressIsInvalid(c)
 	}
-	return c.JSON(http.StatusOK, result)
-}
-
-// LensResolveFunc temporary function to resolve Lens for Pinata
-func (h *Handler) LensResolveFunc(c echo.Context) error {
-	result, err := name_service.ResolveLens(c.Param("address"))
-	if err != nil {
-		return err
-	}
-
 	return c.JSON(http.StatusOK, result)
 }
