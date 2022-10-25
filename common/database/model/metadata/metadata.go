@@ -120,15 +120,3 @@ type CrossbellNote struct {
 	Locked       bool            `json:"locked"`
 	Metadata     json.RawMessage `json:"metadata"`
 }
-
-type Bride struct {
-	Action  string  `json:"action"`
-	Network Network `json:"network"`
-	Token   Token   `json:"token"`
-}
-
-type Network struct {
-	Name    string `json:"name"`
-	ChainID uint64 `json:"chain_id"`
-	Symbol  string `json:"symbol"`
-}

@@ -1,6 +1,8 @@
 package bridge
 
-import "github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+import (
+	"github.com/naturalselectionlabs/pregod/common/database/model/transaction"
+)
 
 const (
 	ChainIDEthereum     = 1
@@ -10,7 +12,7 @@ const (
 	ChainIDArbitrumNova = 42170
 )
 
-var networkMap = map[uint64]metadata.Network{
+var networkMap = map[uint64]transaction.TargetNetwork{
 	ChainIDEthereum: {
 		Name:    "Ethereum",
 		ChainID: 1,

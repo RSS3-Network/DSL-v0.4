@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	bridge "github.com/naturalselectionlabs/pregod/common/database/model/transaction"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/arbitrum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/optimism"
@@ -136,10 +137,10 @@ func (w *Worker) buildTransfer(ctx context.Context, transaction model.Transactio
 		return nil, fmt.Errorf("unsupported chain id: %d", chainID)
 	}
 
-	metadataRaw, err := json.Marshal(metadata.Bride{
-		Action:  transferType,
-		Network: network,
-		Token:   *tokenMetadata,
+	metadataRaw, err := json.Marshal(bridge.Bridge{
+		Action:        transferType,
+		TargetNetwork: network,
+		Token:         *tokenMetadata,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
