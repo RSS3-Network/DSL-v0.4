@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -20,7 +19,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/handler"
 	lop "github.com/samber/lo/parallel"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -90,16 +88,18 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		transaction.Transfers = make([]model.Transfer, 0)
 		transaction.Transfers = append(transaction.Transfers, transferMap[protocol.IndexVirtual])
 
-		// Get the raw data directly via Ethereum RPC node
-		receipt, err := s.ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
-		if err != nil {
-			logrus.Errorf("[crossbell worker] ethereumClient TransactionReceipt error, %v", err)
+		// Get the raw data directly via source data
+		var sourceData ethereum.SourceData
+		if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
+			zap.L().Error("failed to unmarshal source data", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
+
 			return
 		}
 
-		internalTransfers, err := s.handleReceipt(ctx, message, transaction, receipt, transferMap)
+		internalTransfers, err := s.handleReceipt(ctx, message, transaction, sourceData.Receipt, transferMap)
 		if err != nil {
-			logrus.Errorf("[crossbell worker] handleReceipt error, %v", err)
+			zap.L().Error("failed to handle receipt", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
+
 			return
 		}
 
@@ -161,12 +161,11 @@ func (s *service) handleReceipt(ctx context.Context, message *protocol.Message, 
 		if err != nil {
 			if !errors.Is(err, contract.ErrorUnknownEvent) {
 				loggerx.Global().Warn(
-					"handle crossbell transfer failed",
+					"failed to handle crossbell transfer",
 					zap.Error(err),
-					zap.String("worker", s.Name()),
-					zap.String("network", message.Network),
 					zap.String("address", message.Address),
 					zap.String("transaction_hash", transaction.Hash),
+					zap.String("network", message.Network),
 				)
 			}
 

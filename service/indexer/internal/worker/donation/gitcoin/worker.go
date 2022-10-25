@@ -3,11 +3,11 @@ package gitcoin
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/donation"
@@ -133,14 +133,12 @@ func (s *service) handleGitcoinEthereum(ctx context.Context, message *protocol.M
 		return nil, err
 	}
 
-	receipt, err := ethclient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
-	if err != nil {
-		loggerx.Global().Error("get transaction receipt error", zap.Error(err))
-
-		return nil, err
+	var sourceData ethereum.SourceData
+	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal source data: %w", err)
 	}
 
-	for _, log := range receipt.Logs {
+	for _, log := range sourceData.Receipt.Logs {
 		if log.Topics[0] != gitcoin.EventHashDonationSent {
 			continue
 		}

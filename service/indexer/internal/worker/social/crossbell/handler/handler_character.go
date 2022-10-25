@@ -14,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -79,6 +80,8 @@ func (c *characterHandler) Handle(ctx context.Context, transaction model.Transac
 		return c.profileHandler.handleSetProfileUri(ctx, transaction, transfer, log)
 	case contract.EventHashSetNoteUri:
 		return c.handleSetNoteUri(ctx, transaction, transfer, log)
+	case contract.EventHashMintNote:
+		return c.handleMintNote(ctx, transaction, transfer, log)
 	default:
 		return nil, contract.ErrorUnknownEvent
 	}
@@ -182,31 +185,101 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 
 	event, err := c.characterContract.ParsePostNote(log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse post note event: %w", err)
 	}
 
-	note, err := c.characterContract.GetNote(&bind.CallOpts{}, event.CharacterId, event.NoteId)
+	post, note, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, contract.EventNamePostNote)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to build note metadata: %w", err)
+	}
+
+	// Comment
+	if note.LinkItemType == contract.LinkItemTypeNote {
+		ethereumClient, err := ethclientx.Global(transfer.Network)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get ethereum client: %w", err)
+		}
+
+		periphery, err := periphery.NewPeriphery(contract.AddressPeriphery, ethereumClient)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get periphery contract: %w", err)
+		}
+
+		targetNoteStruct, err := periphery.GetLinkingNote(&bind.CallOpts{}, note.LinkKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get linking note: %w", err)
+		}
+
+		targetPost, targetNote, _, err := c.buildNoteMetadata(ctx, targetNoteStruct.CharacterId, targetNoteStruct.NoteId, contract.EventNamePostNote /* It may be a comment of a comment, but we can hardly judge it. */)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build target note metadata: %w", err)
+		}
+
+		post.Target = targetPost
+		post.TargetURL = targetNote.ContentUri
 	}
 
 	transfer.RelatedUrls = []string{note.ContentUri}
 
+	transfer.Platform = c.buildPlatform(postOriginal.Sources)
+
+	if post.Target == nil {
+		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
+	} else {
+		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialComment, transfer.Type)
+	}
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
+		return nil, err
+	}
+
+	if transfer.Metadata, err = json.Marshal(post); err != nil {
+		return nil, err
+	}
+
+	return &transfer, nil
+}
+
+func (c *characterHandler) buildNoteMetadata(ctx context.Context, characterID, noteID *big.Int, eventName string) (*metadata.Post, *character.DataTypesNote, *CrossbellPostStruct, error) {
+	note, err := c.characterContract.GetNote(&bind.CallOpts{}, characterID, noteID)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	contentData, err := ipfs.GetFileByURL(note.ContentUri)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
+	}
+
+	ethereumClient, err := ethclientx.Global(protocol.NetworkCrossbell)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to get ethereum client: %w", err)
+	}
+
+	characterContract, err := character.NewCharacter(contract.AddressCharacter, ethereumClient)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to get character contract: %w", err)
+	}
+
+	handle, err := characterContract.GetHandle(&bind.CallOpts{}, characterID)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to get character handle: %w", err)
 	}
 
 	postOriginal := CrossbellPostStruct{}
-
 	if err := json.Unmarshal(contentData, &postOriginal); err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	post := &metadata.Post{
-		TypeOnPlatform: []string{contract.EventNamePostNote},
-		Title:          postOriginal.Title,
-		Body:           postOriginal.Content,
+	post := metadata.Post{
+		TypeOnPlatform: []string{
+			eventName,
+		},
+		Title: postOriginal.Title,
+		Body:  postOriginal.Content,
+		Author: []string{
+			fmt.Sprintf("https://crossbell.io/@%s", handle),
+		},
 	}
 
 	for _, attachment := range postOriginal.Attachments {
@@ -216,25 +289,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 		})
 	}
 
-	transfer.Platform = c.buildPlatform(postOriginal.Sources)
-
-	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
-
-	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
-		return nil, err
-	}
-
-	// special case for xLog
-	if transfer.Platform == protocol.PlatformCrossbellXLog {
-		transfer.RelatedUrls = append(transfer.RelatedUrls, postOriginal.ExternalUrls...)
-		post.Summary = postOriginal.Summary
-	}
-
-	if transfer.Metadata, err = json.Marshal(post); err != nil {
-		return nil, err
-	}
-
-	return &transfer, nil
+	return &post, &note, &postOriginal, nil
 }
 
 func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
@@ -371,45 +426,55 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 
 	event, err := c.characterContract.ParseSetNoteUri(log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse SetNoteUri event: %w", err)
 	}
 
-	note, err := c.characterContract.GetNote(&bind.CallOpts{}, event.CharacterId, event.NoteId)
+	post, _, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, contract.EventNameSetNoteUri)
 	if err != nil {
-		return nil, err
-	}
-
-	contentData, err := ipfs.GetFileByURL(note.ContentUri)
-	if err != nil {
-		return nil, err
-	}
-
-	postOriginal := CrossbellPostStruct{}
-
-	if err := json.Unmarshal(contentData, &postOriginal); err != nil {
-		return nil, err
-	}
-
-	post := &metadata.Post{
-		TypeOnPlatform: []string{contract.EventNamePostNote},
-		Title:          postOriginal.Title,
-		Body:           postOriginal.Content,
-	}
-
-	for _, attachment := range postOriginal.Attachments {
-		post.Media = append(post.Media, metadata.Media{
-			Address:  attachment.Address,
-			MimeType: attachment.MimeType,
-		})
+		return nil, fmt.Errorf("build note metadata: %w", err)
 	}
 
 	transfer.Platform = c.buildPlatform(postOriginal.Sources)
 
 	if transfer.Metadata, err = json.Marshal(post); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("marshal post: %w", err)
 	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialRevise, transfer.Type)
+
+	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
+		return nil, fmt.Errorf("build related urls: %w", err)
+	}
+
+	return &transfer, nil
+}
+
+func (c *characterHandler) handleMintNote(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+	tracer := otel.Tracer("worker_crossbell_handler")
+
+	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleMintNote")
+
+	defer snap.End()
+
+	var err error
+
+	event, err := c.characterContract.ParseMintNote(log)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse event: %w", err)
+	}
+
+	post, _, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, contract.EventNameMintNote)
+	if err != nil {
+		return nil, fmt.Errorf("build note metadata: %w", err)
+	}
+
+	transfer.Platform = c.buildPlatform(postOriginal.Sources)
+
+	if transfer.Metadata, err = json.Marshal(post); err != nil {
+		return nil, fmt.Errorf("failed to marshal post metadata: %w", err)
+	}
+
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialMint, transfer.Type)
 
 	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
 		return nil, err
@@ -423,11 +488,12 @@ func (c *characterHandler) buildPlatform(sources []string) string {
 		return protocol.PlatformCrossbell
 	}
 
+	// Rewrite typos in sources
 	for i, source := range sources {
-		switch source {
-		case "xlog":
+		switch {
+		case strings.EqualFold(source, "xlog"):
 			sources[i] = protocol.PlatformCrossbellXLog
-		case "xcast":
+		case strings.EqualFold(source, "xcast"):
 			sources[i] = protocol.PlatformCrossbellXCast
 		}
 	}

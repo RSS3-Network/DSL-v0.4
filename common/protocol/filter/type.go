@@ -42,6 +42,7 @@ const (
 	SocialFollow   string = "follow"
 	SocialUnfollow string = "unfollow"
 	SocialLike     string = "like"
+	SocialMint     string = "mint"
 
 	// sub-types for Social-Profile
 	SocialProfileCreate string = "create"
@@ -76,5 +77,6 @@ func CheckTypeValid(tag string, transferType string) bool {
 			return true
 		}
 	}
+
 	return false
 }

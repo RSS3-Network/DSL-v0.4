@@ -14,8 +14,8 @@ import (
 	lens_comm "github.com/naturalselectionlabs/pregod/common/worker/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	lop "github.com/samber/lo/parallel"
-	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 )
 
 var _ worker.Worker = (*service)(nil)
@@ -67,7 +67,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		// get receipt
 		internalTransfers, err := s.commWorkerClient.HandleReceipt(ctx, &transaction)
 		if err != nil {
-			logrus.Errorf("[lens worker] handleReceipt error, %v", err)
+			zap.L().Error("failed to handle receipt", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
 
 			return
 		}
