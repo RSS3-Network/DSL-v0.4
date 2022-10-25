@@ -33,9 +33,7 @@ func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 
 	go h.filterReport(model.GetNS, request)
 
-	// temporary disable ReverseResolveAll
-	// result := name_service.ReverseResolveAll(strings.ToLower(request.Address), true)
-	result := name_service.ReverseResolveAll(strings.ToLower(request.Address), false)
+	result := name_service.ReverseResolveAll(strings.ToLower(request.Address), true)
 
 	if len(result.Address) == 0 {
 		return AddressIsInvalid(c)
