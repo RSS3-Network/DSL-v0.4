@@ -216,7 +216,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 		}
 
 		post.Target = targetPost
-		post.TargetURL = targetNote.ContentUri
+		post.Target.TargetURL = targetNote.ContentUri
 	}
 
 	transfer.RelatedUrls = []string{note.ContentUri}
