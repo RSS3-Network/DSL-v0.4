@@ -32,8 +32,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/everipedia"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/farcaster"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/iqwiki"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
@@ -151,7 +151,7 @@ func (s *Server) Initialize() (err error) {
 		eth_etl.New(),
 		eip1577.New(s.employer),
 		farcaster.New(),
-		everipedia.New(),
+		iqwiki.New(),
 	}
 
 	swapWorker, err := swap.New(s.employer)

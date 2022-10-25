@@ -1,4 +1,4 @@
-package everipedia
+package iqwiki
 
 import (
 	"context"

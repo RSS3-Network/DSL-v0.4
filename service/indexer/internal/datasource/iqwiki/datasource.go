@@ -1,4 +1,4 @@
-package everipedia
+package iqwiki
 
 import (
 	"context"
@@ -12,8 +12,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/worker/everipedia"
-	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/everipedia/graphql"
+	"github.com/naturalselectionlabs/pregod/common/worker/iqwiki"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/iqwiki/graphql"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	everipedia_contract "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/everipedia/contract"
 	"go.opentelemetry.io/otel"
@@ -21,11 +21,11 @@ import (
 )
 
 type Datasource struct {
-	everipediaClient *everipedia.Client
+	everipediaClient *iqwiki.Client
 }
 
 func (d *Datasource) Name() string {
-	return protocol.PlatformEveripedia
+	return protocol.PlatformIQWiki
 }
 
 func (d *Datasource) Networks() []string {
@@ -74,7 +74,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 				AddressFrom: strings.ToLower(everipedia_contract.AddressEveripediaSign.String()),
 				AddressTo:   strings.ToLower(everipedia_contract.AddressEveripedia.String()),
 				Owner:       strings.ToLower(activity.User.Id),
-				Platform:    protocol.PlatformEveripedia,
+				Platform:    protocol.PlatformIQWiki,
 				Network:     message.Network,
 				Source:      d.Name(),
 				SourceData:  sourceData,
@@ -126,6 +126,6 @@ func (d *Datasource) getEveTransactions(address string) int64 {
 
 func New() datasource.Datasource {
 	return &Datasource{
-		everipediaClient: everipedia.NewClient(),
+		everipediaClient: iqwiki.NewClient(),
 	}
 }

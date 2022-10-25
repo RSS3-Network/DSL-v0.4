@@ -1,4 +1,4 @@
-package everipedia
+package iqwiki
 
 import (
 	"context"
@@ -7,12 +7,12 @@ import (
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/ethereum/go-ethereum/common"
-	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/everipedia/graphql"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/iqwiki/graphql"
 )
 
 const (
 	Scheme   = "https"
-	Endpoint = "graph.everipedia.org"
+	Endpoint = "graph.iqwiki.org"
 	Path     = "graphql"
 	Limit    = 30
 )

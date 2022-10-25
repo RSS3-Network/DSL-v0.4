@@ -17,7 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/everipedia/graphql"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/iqwiki/graphql"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	everipedia "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/everipedia/contract"
 	"go.opentelemetry.io/otel"
