@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -79,29 +81,57 @@ func ValidateEthereumAddress(address string) bool {
 }
 
 func ResolveAll(result *model.NameServiceResult) {
-	if result.ENS == "" {
-		result.ENS, _ = ResolveENS(result.Address)
-	}
+	var wg sync.WaitGroup
 
-	if result.Crossbell == "" {
-		result.Crossbell, _ = ResolveCrossbell(result.Address)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if result.ENS == "" {
+			result.ENS, _ = ResolveENS(result.Address)
+		}
+	}()
 
-	if result.Lens == "" {
-		result.Lens, _ = ResolveLens(result.Address)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if result.Crossbell == "" {
+			result.Crossbell, _ = ResolveCrossbell(result.Address)
+		}
+	}()
 
-	if result.SpaceID == "" {
-		result.SpaceID, _ = ResolveSpaceID(result.Address)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if result.Lens == "" {
+			result.Lens, _ = ResolveLens(result.Address)
+		}
+	}()
 
-	if result.UnstoppableDomains == "" {
-		result.UnstoppableDomains, _ = ResolveUnstoppableDomains(result.Address)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if result.SpaceID == "" {
+			result.SpaceID, _ = ResolveSpaceID(result.Address)
+		}
+	}()
 
-	if result.Bit == "" {
-		result.Bit, _ = ResolveBit(result.Address)
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if result.UnstoppableDomains == "" {
+			result.UnstoppableDomains, _ = ResolveUnstoppableDomains(result.Address)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if result.Bit == "" {
+			result.Bit, _ = ResolveBit(result.Address)
+		}
+	}()
+
+	wg.Wait()
 }
 
 func ResolveCrossbell(input string) (string, error) {
@@ -319,6 +349,11 @@ func ResolveUnstoppableDomains(input string) (string, error) {
 }
 
 func ResolveBit(input string) (string, error) {
+	c, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer func() {
+		cancel()
+	}()
+
 	bitResult := &model.BitResult{}
 	bitEndpoint := "indexer-v1.did.id"
 	request := http.Request{Method: http.MethodPost, URL: &url.URL{Scheme: "https", Host: bitEndpoint, Path: "/"}}
@@ -352,7 +387,7 @@ func ResolveBit(input string) (string, error) {
 		}`, input)))
 	}
 
-	err := httpx.DoRequest(context.Background(), http.DefaultClient, &request, &bitResult)
+	err := httpx.DoRequest(c, http.DefaultClient, &request, &bitResult)
 
 	defer request.Body.Close()
 
