@@ -37,6 +37,7 @@ const (
 	SocialFollow   string = "follow"
 	SocialUnfollow string = "unfollow"
 	SocialLike     string = "like"
+	SocialMint     string = "mint"
 	SocialWiki     string = "wiki"
 
 	// sub-types for Social-Profile
