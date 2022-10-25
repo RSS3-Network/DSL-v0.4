@@ -4,15 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/aave"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
@@ -47,11 +47,6 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	internalTransactions := make([]model.Transaction, 0)
 
 	for _, transaction := range transactions {
-		ethclient, err := ethclientx.Global(message.Network)
-		if err != nil {
-			return nil, err
-		}
-
 		router, exists := routerMap[strings.ToLower(transaction.AddressTo)]
 		if !exists {
 			continue
@@ -61,13 +56,16 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 		internalTransaction.Transfers = make([]model.Transfer, 0)
 		internalTransaction.Platform = router.Name
 
-		receipt, err := ethclient.TransactionReceipt(context.Background(), common.HexToHash(transaction.Hash))
-		if err != nil {
-			return nil, err
+		var sourceData ethereum.SourceData
+		if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal source data: %w", err)
 		}
 
-		for _, log := range receipt.Logs {
-			var internalTransfer *model.Transfer
+		for _, log := range sourceData.Receipt.Logs {
+			var (
+				internalTransfer *model.Transfer
+				err              error
+			)
 
 			switch log.Topics[0] {
 			// Uniswap Protocol V2

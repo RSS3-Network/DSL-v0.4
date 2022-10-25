@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -40,7 +41,9 @@ func (s *service) Name() string {
 
 func (s *service) Networks() []string {
 	return []string{
-		protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
+		protocol.NetworkEthereum,
+		protocol.NetworkPolygon,
+		protocol.NetworkBinanceSmartChain,
 	}
 }
 
@@ -141,12 +144,12 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 		}
 	}
 
-	receipt, err := ethereumClient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
-	if err != nil {
-		return nil, err
+	var sourceData ethereum.SourceData
+	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal source data: %w", err)
 	}
 
-	for _, log := range receipt.Logs {
+	for _, log := range sourceData.Receipt.Logs {
 		for _, topic := range log.Topics {
 			var internalTokenMap map[common.Address]*big.Int
 			switch topic {
@@ -238,7 +241,7 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 		internalTransfers = append(internalTransfers, transfer)
 	} else {
 		// let transaction worker take care of it
-		if transaction.SourceData, err = json.Marshal(receipt.Logs); err != nil {
+		if transaction.SourceData, err = json.Marshal(sourceData.Receipt.Logs); err != nil {
 			return nil, err
 		}
 	}
