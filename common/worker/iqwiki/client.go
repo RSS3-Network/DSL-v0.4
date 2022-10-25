@@ -12,7 +12,7 @@ import (
 
 const (
 	Scheme   = "https"
-	Endpoint = "graph.iqwiki.org"
+	Endpoint = "graph.everipedia.org"
 	Path     = "graphql"
 	Limit    = 30
 )
