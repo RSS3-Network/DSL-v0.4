@@ -37,6 +37,7 @@ const (
 	SocialFollow   string = "follow"
 	SocialUnfollow string = "unfollow"
 	SocialLike     string = "like"
+	SocialWiki     string = "wiki"
 
 	// sub-types for Social-Profile
 	SocialProfileCreate string = "create"
@@ -55,7 +56,7 @@ var ValidTypeMap = map[string][]string{
 	TagTransaction: {TransactionTransfer, TransactionMint, TransactionBurn},
 	TagExchange:    {ExchangeWithdraw, ExchangeDeposit, ExchangeSwap, ExchangeLiquidity},
 	TagCollectible: {CollectibleTransfer, CollectibleMint, CollectibleBurn, CollectiblePoap},
-	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike},
+	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike, SocialWiki},
 	TagDonation:    {DonationLaunch, DonationDonate},
 	TagGovernance:  {GovernancePropose, GovernanceVote},
 }
