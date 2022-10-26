@@ -63,6 +63,13 @@ const (
 	Share   = "mirror"
 )
 
+var SupportLensPlatform = map[string]bool{
+	protocol.PlatformLens:          true,
+	protocol.PlatformLenster:       true,
+	protocol.PlatformLenstube:      true,
+	protocol.PlatformLenstubeBytes: true,
+}
+
 func (c *Client) GetProfile(address string) (*social.Profile, error) {
 	ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)
 	if err != nil {
@@ -183,7 +190,7 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			continue
 		}
 
-		if transfer.Platform == protocol.PlatformLens || transfer.Platform == protocol.PlatformLenster {
+		if SupportLensPlatform[transfer.Platform] {
 			transfers = append(transfers, transfer)
 		}
 	}
@@ -200,9 +207,11 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 	}
 
 	err = c.FormatContent(ctx, &FormatOption{
-		ContentURI:  event.ContentURI,
-		ContentType: Post,
-		Transfer:    transfer,
+		ContentURI:       event.ContentURI,
+		ContentType:      Post,
+		Transfer:         transfer,
+		ProfileIdPointed: event.ProfileId,
+		PubIdPointed:     event.PubId,
 	})
 	if err != nil {
 		loggerx.Global().Error("[lens worker] HandlePostCreated: FormatContent error", zap.Error(err))
