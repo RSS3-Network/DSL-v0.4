@@ -57,6 +57,24 @@ type Cast struct {
 	// } `json:"attachments"`
 }
 
+type FarcasterUser struct {
+	Address  string `json:"address"`
+	Username string `json:"username"`
+	Avatar   struct {
+		Url        string `json:"url"`
+		IsVerified bool   `json:"isVerified"`
+	} `json:"avatar"`
+	DisplayName       string `json:"displayName"`
+	IsViewerFollowing bool   `json:"isViewerFollowing"`
+	IsFollowingViewer bool   `json:"isFollowingViewer"`
+	Profile           struct {
+		Bio struct {
+			Text     string        `json:"text"`
+			Mentions []interface{} `json:"mentions"`
+		} `json:"bio"`
+	} `json:"profile"`
+}
+
 type Directory struct {
 	Body struct {
 		AddressActivityUrl string `json:"addressActivityUrl"`
@@ -72,6 +90,46 @@ type Directory struct {
 
 type Client struct {
 	httpClient *http.Client
+}
+
+func (c *Client) GetUserList(ctx context.Context) ([]string, error) {
+	var userList []string
+	listLen := 1
+	for i := 1; listLen != 0; i++ {
+		requestURL := &url.URL{
+			Scheme: Scheme,
+			Host:   Endpoint,
+			Path:   "/indexer/users",
+		}
+
+		requestURL.RawQuery = url.Values{
+			"filter":   {"recent"},
+			"per_page": {"500"},
+			"page":     {fmt.Sprint(i)},
+		}.Encode()
+
+		httpResponse, err := c.httpClient.Get(requestURL.String())
+		if err != nil {
+			return nil, err
+		}
+
+		var list []FarcasterUser
+
+		if err := json.NewDecoder(httpResponse.Body).Decode(&list); err != nil {
+			return nil, err
+		}
+
+		httpResponse.Body.Close()
+
+		listLen = len(list)
+		if listLen > 0 {
+			for _, user := range list {
+				userList = append(userList, user.Address)
+			}
+		}
+	}
+
+	return userList, nil
 }
 
 func (c *Client) GetActivityList(ctx context.Context, address string) ([]Cast, error) {
