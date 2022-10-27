@@ -46,7 +46,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/boardroom"
+	_ "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	farcasterWorker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/farcaster"
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
@@ -173,11 +174,11 @@ func (s *Server) Initialize() (err error) {
 		poap.New(),
 		mirror.New(),
 		gitcoin.New(),
-		snapshot.New(),
 		crossbell.New(),
 		lens_worker.New(),
 		transaction.New(),
 		farcasterWorker.New(),
+		boardroom.New(),
 	}
 
 	s.employer = shedlock.New()

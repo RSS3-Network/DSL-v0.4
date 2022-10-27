@@ -25,6 +25,7 @@ const (
 
 	// governance
 	PlatformSnapshot = "Snapshot"
+	PlatformOnchain  = "Onchain"
 
 	// exchange
 	// dex
@@ -58,6 +59,7 @@ var PlatformList = map[string][]string{
 	},
 	filter.TagGovernance: {
 		PlatformSnapshot,
+		PlatformOnchain,
 	},
 	filter.TagExchange: {
 		PlatformUniswap,

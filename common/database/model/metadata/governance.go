@@ -27,3 +27,19 @@ type Organization struct {
 	Name           string   `json:"name"`
 	About          string   `json:"about,omitempty"`
 }
+
+type BrVote struct {
+	TypeOnPlatform []string    `json:"type_on_platform,omitempty"`
+	Choice         string      `json:"choice"`
+	BrProposal     *BrProposal `json:"proposal"`
+}
+
+type BrProposal struct {
+	TypeOnPlatform []string  `json:"type_on_platform,omitempty"`
+	Id             string    `json:"id"`
+	Title          string    `json:"title,omitempty"`
+	Body           string    `json:"body,omitempty"`
+	Options        []string  `json:"options"`
+	StartAt        time.Time `json:"start_at"`
+	EndAt          time.Time `json:"end_at"`
+}
