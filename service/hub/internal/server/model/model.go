@@ -48,7 +48,8 @@ type GetRequest struct {
 	Page        int  `query:"page" json:"page"`
 	QueryStatus bool `query:"query_status" json:"query_status"`
 	// returns a count of transactions only
-	CountOnly bool `query:"count_only" json:"count_only"`
+	CountOnly      bool `query:"count_only" json:"count_only"`
+	IgnoreContract bool `query:"ignore_contract" json:"ignore_contract"`
 }
 
 type GetAssetRequest struct {
