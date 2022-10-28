@@ -2,192 +2,162 @@ package farcaster
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/url"
+	"strings"
+	"sync"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"go.uber.org/zap"
 )
 
 const (
-	Scheme   = "https"
-	Endpoint = "guardian.farcaster.xyz"
 	//	https://guardian.farcaster.xyz/origin/address_activity/0x012D3606bAe7aebF03a04F8802c561330eAce70A
+	BaseUrl  = "https://guardian.farcaster.xyz"
+	PageSize = 1000
 )
 
-type Cast struct {
-	Body struct {
-		Type        string `json:"type"`
-		PublishedAt int64  `json:"publishedAt"`
-		Sequence    int    `json:"sequence"`
-		Username    string `json:"username"`
-		Address     string `json:"address"`
-		Data        struct {
-			Text                  string `json:"text"`
-			ReplyParentMerkleRoot string `json:"replyParentMerkleRoot"`
-		} `json:"data"`
-		// PrevMerkleRoot string `json:"prevMerkleRoot"`
-	} `json:"body"`
-	MerkleRoot string `json:"merkleRoot"`
-	// Signature  string `json:"signature"`
-	Meta struct {
-		DisplayName string `json:"displayName"`
-		Avatar      string `json:"avatar"`
-		// IsVerifiedAvatar bool   `json:"isVerifiedAvatar"`
-		// NumReplyChildren int    `json:"numReplyChildren"`
-		// Reactions        struct {
-		//	Count int    `json:"count"`
-		//	Type  string `json:"type"`
-		//	Self  bool   `json:"self"`
-		// } `json:"reactions"`
-		// Recasts struct {
-		//	Count int  `json:"count"`
-		//	Self  bool `json:"self"`
-		// } `json:"recasts"`
-		// Watches struct {
-		//	Count int  `json:"count"`
-		//	Self  bool `json:"self"`
-		// } `json:"watches"`
-		ReplyParentUsername struct {
-			Address  string `json:"address"`
-			Username string `json:"username"`
-		} `json:"replyParentUsername"`
-	} `json:"meta"`
-	// Attachments struct {
-	//	OpenGraph []interface{} `json:"openGraph"`
-	// } `json:"attachments"`
-}
-
-type FarcasterUser struct {
-	Address  string `json:"address"`
-	Username string `json:"username"`
-	Avatar   struct {
-		Url        string `json:"url"`
-		IsVerified bool   `json:"isVerified"`
-	} `json:"avatar"`
-	DisplayName       string `json:"displayName"`
-	IsViewerFollowing bool   `json:"isViewerFollowing"`
-	IsFollowingViewer bool   `json:"isFollowingViewer"`
-	Profile           struct {
-		Bio struct {
-			Text     string        `json:"text"`
-			Mentions []interface{} `json:"mentions"`
-		} `json:"bio"`
-	} `json:"profile"`
-}
-
-type Directory struct {
-	Body struct {
-		AddressActivityUrl string `json:"addressActivityUrl"`
-		AvatarUrl          string `json:"avatarUrl"`
-		DisplayName        string `json:"displayName"`
-		ProofUrl           string `json:"proofUrl"`
-		Timestamp          int64  `json:"timestamp"`
-		Version            int    `json:"version"`
-	} `json:"body"`
-	MerkleRoot string `json:"merkleRoot"`
-	Signature  string `json:"signature"`
-}
+var (
+	FarcasterCacheMap map[string]*CacheAddress
+	once              sync.Once
+	globalLocker      sync.RWMutex
+)
 
 type Client struct {
-	httpClient *http.Client
+	client *resty.Client
 }
 
-func (c *Client) GetUserList(ctx context.Context) ([]string, error) {
-	var userList []string
-	listLen := 1
-	for i := 1; listLen != 0; i++ {
-		requestURL := &url.URL{
-			Scheme: Scheme,
-			Host:   Endpoint,
-			Path:   "/indexer/users",
-		}
+func ReplaceGlobal(address string, cacheAddress *CacheAddress) {
+	globalLocker.Lock()
 
-		requestURL.RawQuery = url.Values{
-			"filter":   {"recent"},
-			"per_page": {"500"},
-			"page":     {fmt.Sprint(i)},
-		}.Encode()
+	defer globalLocker.Unlock()
 
-		httpResponse, err := c.httpClient.Get(requestURL.String())
+	FarcasterCacheMap[address] = cacheAddress
+}
+
+func (c *Client) GetFarcasterCacheMap() map[string]*CacheAddress {
+	once.Do(func() {
+		FarcasterCacheMap = make(map[string]*CacheAddress)
+		farAddresses, err := c.GetUserList(context.Background())
 		if err != nil {
-			return nil, err
+			loggerx.Global().Named("GetFarcasterCacheMap").Warn("unable to get farcaster data", zap.Error(err))
 		}
 
-		var list []FarcasterUser
-
-		if err := json.NewDecoder(httpResponse.Body).Decode(&list); err != nil {
-			return nil, err
+		for _, cast := range farAddresses {
+			evmAddress, err := c.ConvertFarcasterAdderess(context.Background(), cast.Address)
+			if err != nil {
+				loggerx.Global().Named("GetFarcasterCacheMap").Warn("unable to convert farcaster address", zap.Error(err))
+			}
+			if len(evmAddress) > 0 {
+				ReplaceGlobal(strings.ToLower(cast.Address), &CacheAddress{
+					EvmAddress: strings.ToLower(evmAddress),
+				})
+			}
 		}
+	})
+	return FarcasterCacheMap
+}
 
-		httpResponse.Body.Close()
+func (c *Client) UpdateFarcasterCacheMap() {
+	farAddresses, err := c.GetUserList(context.Background())
+	if err != nil {
+		loggerx.Global().Named("UpdateFarcasterCacheMap").Warn("unable to get farcaster data", zap.Error(err))
+	}
 
-		listLen = len(list)
-		if listLen > 0 {
-			for _, user := range list {
-				userList = append(userList, user.Address)
+	for _, cast := range farAddresses {
+		_, ok := FarcasterCacheMap[strings.ToLower(cast.Address)]
+		if !ok {
+			evmAddress, err := c.ConvertFarcasterAdderess(context.Background(), cast.Address)
+			if err != nil {
+				loggerx.Global().Named("UpdateFarcasterCacheMap").Warn("unable to convert farcaster address", zap.Error(err))
+			}
+			if len(evmAddress) > 0 {
+				ReplaceGlobal(strings.ToLower(cast.Address), &CacheAddress{
+					EvmAddress: strings.ToLower(evmAddress),
+				})
 			}
 		}
 	}
+}
 
-	return userList, nil
+func (c *Client) GetUserList(ctx context.Context) ([]FarcasterUser, error) {
+	var res []FarcasterUser
+	param := map[string]string{
+		"filter":   "recent",
+		"per_page": fmt.Sprint(PageSize),
+	}
+
+	page := 1
+
+	for {
+		var list []FarcasterUser
+		param["page"] = fmt.Sprint(page)
+		_, err := c.client.R().
+			SetResult(&list).
+			SetQueryParams(param).
+			SetContext(ctx).
+			Get("/indexer/users")
+		if err != nil {
+			loggerx.Global().Named("GetUserList").Warn("unable to get farcaster data", zap.Error(err))
+			return nil, err
+		}
+
+		res = append(res, list...)
+		if len(list) < PageSize {
+			break
+		}
+
+		page++
+
+	}
+
+	return res, nil
+}
+
+func (c *Client) ConvertFarcasterAdderess(ctx context.Context, address string) (string, error) {
+	var evmAddress ConvertAddress
+
+	param := map[string]string{
+		"address": address,
+	}
+
+	_, err := c.client.R().
+		SetResult(&evmAddress).
+		SetPathParams(param).
+		SetContext(ctx).
+		Get("/origin/proof/{address}")
+	if err != nil {
+		loggerx.Global().Named("ConvertFarcasterAdderess").Warn("unable to convert farcaster address", zap.Error(err))
+		return "", err
+	}
+
+	return strings.ToLower(evmAddress.SignerAddress), nil
 }
 
 func (c *Client) GetActivityList(ctx context.Context, address string) ([]Cast, error) {
-	activityUrl, err := c.GetFarcasterAddress(ctx, address)
-	if err != nil {
-		return nil, err
-	}
-
-	httpResponse, err := c.httpClient.Get(activityUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	defer func() {
-		_ = httpResponse.Body.Close()
-	}()
-
 	var activityList []Cast
 
-	if err := json.NewDecoder(httpResponse.Body).Decode(&activityList); err != nil {
+	param := map[string]string{
+		"address": address,
+	}
+
+	_, err := c.client.R().
+		SetResult(&activityList).
+		SetPathParams(param).
+		SetContext(ctx).
+		Get("/origin/address_activity/{address}")
+	if err != nil {
+		loggerx.Global().Named("GetActivityList").Warn("unable to get farcaster data", zap.Error(err))
 		return nil, err
 	}
 
 	return activityList, nil
 }
 
-func (c *Client) GetFarcasterAddress(ctx context.Context, address string) (string, error) {
-	requestURL := &url.URL{
-		Scheme: Scheme,
-		Host:   Endpoint,
-		Path:   fmt.Sprintf("/origin/directory/%s", address),
-	}
-
-	httpResponse, err := c.httpClient.Get(requestURL.String())
-	if err != nil {
-		return "", err
-	}
-
-	defer func() {
-		_ = httpResponse.Body.Close()
-	}()
-	// non-200 means the address is not registered
-	// or the server is down
-	if httpResponse.StatusCode != http.StatusOK {
-		return "", nil
-	}
-
-	var directory Directory
-
-	if err := json.NewDecoder(httpResponse.Body).Decode(&directory); err != nil {
-		return "", err
-	}
-
-	return directory.Body.AddressActivityUrl, nil
-}
-
 func NewClient() *Client {
+	client := resty.New()
+	client.SetBaseURL(BaseUrl)
 	return &Client{
-		httpClient: http.DefaultClient,
+		client: client,
 	}
 }
