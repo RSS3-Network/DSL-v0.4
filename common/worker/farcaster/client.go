@@ -2,11 +2,15 @@ package farcaster
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/go-resty/resty/v2"
+	"github.com/naturalselectionlabs/pregod/common/cache"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"go.uber.org/zap"
 )
@@ -35,27 +39,36 @@ func ReplaceGlobal(address string, cacheAddress *CacheAddress) {
 	FarcasterCacheMap[address] = cacheAddress
 }
 
-func (c *Client) GetFarcasterCacheMap() map[string]*CacheAddress {
+func (c *Client) GetFarcasterCacheMap() (map[string]*CacheAddress, error) {
+	var err error
 	once.Do(func() {
-		FarcasterCacheMap = make(map[string]*CacheAddress)
-		farAddresses, err := c.GetUserList(context.Background())
-		if err != nil {
-			loggerx.Global().Named("GetFarcasterCacheMap").Warn("unable to get farcaster data", zap.Error(err))
-		}
+		FarcasterCacheMap, err = c.GetLastMapFromCache(context.Background())
 
-		for _, cast := range farAddresses {
-			evmAddress, err := c.ConvertFarcasterAdderess(context.Background(), cast.Address)
+		if len(FarcasterCacheMap) == 0 {
+			FarcasterCacheMap = make(map[string]*CacheAddress)
+			farAddresses, err := c.GetUserList(context.Background())
 			if err != nil {
-				loggerx.Global().Named("GetFarcasterCacheMap").Warn("unable to convert farcaster address", zap.Error(err))
+				loggerx.Global().Named("GetFarcasterCacheMap").Warn("unable to get farcaster data", zap.Error(err))
 			}
-			if len(evmAddress) > 0 {
-				ReplaceGlobal(strings.ToLower(cast.Address), &CacheAddress{
-					EvmAddress: strings.ToLower(evmAddress),
-				})
+
+			for _, cast := range farAddresses {
+				evmAddress, err := c.ConvertFarcasterAdderess(context.Background(), cast.Address)
+				if err != nil {
+					loggerx.Global().Named("GetFarcasterCacheMap").Warn("unable to convert farcaster address", zap.Error(err))
+				}
+				if len(evmAddress) > 0 {
+					ReplaceGlobal(strings.ToLower(cast.Address), &CacheAddress{
+						EvmAddress: strings.ToLower(evmAddress),
+					})
+				}
+			}
+			err = c.SetCurrentMap(context.Background(), FarcasterCacheMap)
+			if err != nil && err != redis.Nil {
+				loggerx.Global().Named("GetFarcasterCacheMap").Warn("unable to set cache data", zap.Error(err))
 			}
 		}
 	})
-	return FarcasterCacheMap
+	return FarcasterCacheMap, err
 }
 
 func (c *Client) UpdateFarcasterCacheMap() {
@@ -78,6 +91,45 @@ func (c *Client) UpdateFarcasterCacheMap() {
 			}
 		}
 	}
+}
+
+func (c *Client) GetLastMapFromCache(ctx context.Context) (farcasterCacheMap map[string]*CacheAddress, err error) {
+	if cache.Global() == nil {
+		return nil, fmt.Errorf("redis worker is nil")
+	}
+
+	mapKey := protocol.NetworkFarcaster
+	farcasterCacheMap = make(map[string]*CacheAddress)
+
+	data, err := cache.Global().Get(ctx, mapKey).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	if err = json.Unmarshal([]byte(data), &farcasterCacheMap); err != nil {
+		return nil, fmt.Errorf("unmarshal %s from cache error:%+v", mapKey, err)
+	}
+
+	return farcasterCacheMap, nil
+}
+
+func (c *Client) SetCurrentMap(ctx context.Context, farcasterCacheMap map[string]*CacheAddress) error {
+	if cache.Global() == nil {
+		return fmt.Errorf("redis worker is nil")
+	}
+
+	if len(farcasterCacheMap) == 0 {
+		return fmt.Errorf("farcasterCacheMap is less than 0")
+	}
+
+	data, err := json.Marshal(farcasterCacheMap)
+	if err != nil {
+		return fmt.Errorf("marshal %+v to json error:%+v", farcasterCacheMap, err)
+	}
+
+	cache.Global().Set(ctx, protocol.NetworkFarcaster, data, 0)
+
+	return nil
 }
 
 func (c *Client) GetUserList(ctx context.Context) ([]FarcasterUser, error) {

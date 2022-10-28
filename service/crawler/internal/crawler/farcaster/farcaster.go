@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -41,8 +42,15 @@ func (s *service) Name() string {
 func (s *service) Run() error {
 	ctx := context.Background()
 	// init cache cast number 0
-	farcasterCacheMap := s.farClient.GetFarcasterCacheMap()
+	loggerx.Global().Info("farcaster_crawler start to init Map Cache")
+	farcasterCacheMap, err := s.farClient.GetFarcasterCacheMap()
+	if err != nil && err != redis.Nil {
+		loggerx.Global().Error("farcaster_crawler fail to init Map Cache", zap.Error(err))
+		return err
+	}
+
 	// get address cast number from db
+	loggerx.Global().Info("farcaster_crawler start to get db data")
 	s.GetAddressCastNumFromDb()
 
 	for {
@@ -84,16 +92,25 @@ func (s *service) Run() error {
 		}
 		s.farClient.UpdateFarcasterCacheMap()
 
-		if len(farcasterCacheMap) == len(s.farClient.GetFarcasterCacheMap()) {
+		res, err := s.farClient.GetFarcasterCacheMap()
+		if err != nil {
+			loggerx.Global().Error("farcaster_crawler fail to get Map Cache", zap.Error(err))
+			return err
+		}
+		if len(farcasterCacheMap) == len(res) {
 			time.Sleep(time.Hour)
+		} else {
+			err = s.farClient.SetCurrentMap(ctx, res)
+			loggerx.Global().Error("farcaster_crawler fail to set Map Cache", zap.Error(err))
+			return err
 		}
 
-		farcasterCacheMap = s.farClient.GetFarcasterCacheMap()
+		farcasterCacheMap = res
 	}
 }
 
 func (s *service) GetAddressCastNumFromDb() {
-	farcasterCacheMap := s.farClient.GetFarcasterCacheMap()
+	farcasterCacheMap, _ := s.farClient.GetFarcasterCacheMap()
 
 	var wg sync.WaitGroup
 
