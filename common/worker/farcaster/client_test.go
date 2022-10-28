@@ -34,8 +34,3 @@ func TestConvertFarcasterAdderess(t *testing.T) {
 	}
 	t.Log(result)
 }
-
-func TestGetFarcasterCacheMap(t *testing.T) {
-	result := client.GetFarcasterCacheMap()
-	t.Log(len(result))
-}
