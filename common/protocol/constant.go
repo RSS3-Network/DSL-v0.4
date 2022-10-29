@@ -10,7 +10,5 @@ const (
 	IndexerAssetRoutingKey = "pregod11.indexer.asset"
 	ContentTypeJSON        = "application/json"
 
-	ExchangeRefresh = "pregod11.refresh"
-
 	IndexVirtual int64 = -1
 )
