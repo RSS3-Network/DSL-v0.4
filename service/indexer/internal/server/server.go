@@ -46,6 +46,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/game"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	farcasterWorker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/farcaster"
@@ -176,6 +177,7 @@ func (s *Server) Initialize() (err error) {
 		crossbell.New(),
 		lens_worker.New(),
 		transaction.New(),
+		game.New(),
 		farcasterWorker.New(),
 	}
 

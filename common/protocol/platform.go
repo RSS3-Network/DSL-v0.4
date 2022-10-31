@@ -36,6 +36,9 @@ const (
 	Platform0x          = "0x"
 	PlatformAAVE        = "AAVE"
 	PlatformCurve       = "Curve"
+
+	// game
+	PlatformMars4 = "Mars4"
 )
 
 var PlatformList = map[string][]string{
