@@ -5,13 +5,16 @@ import "github.com/naturalselectionlabs/pregod/common/protocol/filter"
 const (
 	// social
 	PlatformMirror         = "Mirror"
-	PlatformLens           = "Lens"
-	PlatformLenster        = "Lenster" // sub platform
 	PlatformCrossbell      = "Crossbell"
 	PlatformCrossbellXLog  = "xLog"
 	PlatformCrossbellXCast = "xCast"
 	PlatformFarcaster      = "Farcaster"
 	PlatformIQWiki         = "IQ.Wiki"
+
+	PlatformLens              = "Lens"
+	PlatformLensLenster       = "Lenster"
+	PlatformLensLenstube      = "Lenstube"
+	PlatformLensLenstubeBytes = "lenstube-bytes"
 
 	// collectible
 	PlatformPOAP   = "POAP"
@@ -40,7 +43,7 @@ var PlatformList = map[string][]string{
 	filter.TagSocial: {
 		PlatformMirror,
 		PlatformLens,
-		PlatformLenster,
+		PlatformLensLenster,
 		PlatformCrossbell,
 		PlatformCrossbellXLog,
 		PlatformFarcaster,

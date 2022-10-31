@@ -3,6 +3,7 @@ package filter
 const (
 	// transaction types
 	TransactionTransfer string = "transfer"
+	TransactionBridge   string = "bridge"
 	TransactionMint     string = "mint"
 	TransactionBurn     string = "burn"
 
@@ -11,6 +12,10 @@ const (
 	ExchangeDeposit   string = "deposit"
 	ExchangeSwap      string = "swap"
 	ExchangeLiquidity string = "liquidity"
+
+	// Bridge types
+	BridgeWithdraw string = "withdraw"
+	BridgeDeposit  string = "deposit"
 
 	// sub-types for Exchange-Liquidity
 	ExchangeLiquidityAdd      string = "add"
@@ -54,7 +59,7 @@ const (
 )
 
 var ValidTypeMap = map[string][]string{
-	TagTransaction: {TransactionTransfer, TransactionMint, TransactionBurn},
+	TagTransaction: {TransactionTransfer, TransactionBridge, TransactionMint, TransactionBurn},
 	TagExchange:    {ExchangeWithdraw, ExchangeDeposit, ExchangeSwap, ExchangeLiquidity},
 	TagCollectible: {CollectibleTransfer, CollectibleMint, CollectibleBurn, CollectiblePoap},
 	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike, SocialWiki},

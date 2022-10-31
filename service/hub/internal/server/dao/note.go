@@ -58,7 +58,7 @@ func GetTransactions(ctx context.Context, request model.GetRequest) ([]dbModel.T
 			request.Network[i] = strings.ToLower(v)
 		}
 
-		sql = sql.Where("network IN ?", request.Network)
+		sql = sql.Where("LOWER(network) IN ?", request.Network)
 	}
 
 	if len(request.Platform) > 0 {
