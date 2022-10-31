@@ -50,7 +50,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	farcasterWorker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/farcaster"
-	everipediaWorker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/iqwiki"
+	iqwikiWorker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/iqwiki"
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
@@ -180,7 +180,7 @@ func (s *Server) Initialize() (err error) {
 		snapshot.New(),
 		crossbell.New(),
 		lens_worker.New(),
-		everipediaWorker.New(),
+		iqwikiWorker.New(),
 		transaction.New(),
 		farcasterWorker.New(),
 	}
