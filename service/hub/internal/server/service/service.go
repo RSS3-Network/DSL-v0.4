@@ -122,6 +122,7 @@ func (s *Service) PublishIndexerAssetMessage(ctx context.Context, address string
 			ContentType: protocol.ContentTypeJSON,
 			Body:        messageData,
 		}); err != nil {
+			loggerx.Global().Error("publish indexer asset message failed", zap.Error(err))
 			return
 		}
 	}
