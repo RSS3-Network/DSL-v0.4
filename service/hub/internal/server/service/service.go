@@ -90,6 +90,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 				ContentType: protocol.ContentTypeJSON,
 				Body:        messageData,
 			}); err != nil {
+				loggerx.Global().Error("publish indexer message failed", zap.Error(err))
 				return
 			}
 		}
@@ -122,6 +123,7 @@ func (s *Service) PublishIndexerAssetMessage(ctx context.Context, address string
 			ContentType: protocol.ContentTypeJSON,
 			Body:        messageData,
 		}); err != nil {
+			loggerx.Global().Error("publish indexer asset message failed", zap.Error(err))
 			return
 		}
 	}
