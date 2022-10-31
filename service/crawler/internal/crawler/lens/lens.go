@@ -118,7 +118,7 @@ func (s *service) Run() error {
 func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contractAddress common.Address) ([]*model.Transaction, error) {
 	tracer := otel.Tracer("lens")
 	_, trace := tracer.Start(ctx, "len:GetLensLogs")
-	internalTransactions := []*model.Transaction{}
+	var internalTransactions []*model.Transaction
 	var err error
 	defer func() { opentelemetry.Log(trace, nil, internalTransactions, err) }()
 
@@ -211,7 +211,7 @@ func (s *service) getLensOwnerAddressById(ctx context.Context, profileId *big.In
 
 func (s *service) getInternalTransaction(ctx context.Context, transactions []*model.Transaction) []*model.Transaction {
 	var mu sync.Mutex
-	internalTransactions := []*model.Transaction{}
+	var internalTransactions []*model.Transaction
 	opt := lop.NewOption().WithConcurrency(10)
 	lop.ForEach(transactions, func(transaction *model.Transaction, i int) {
 		addressTo := common.HexToAddress(transaction.AddressTo)

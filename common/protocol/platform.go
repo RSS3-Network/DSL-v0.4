@@ -10,10 +10,10 @@ const (
 	PlatformCrossbellXCast = "xCast"
 	PlatformFarcaster      = "Farcaster"
 
-	PlatformLens          = "Lens"
-	PlatformLenster       = "Lenster"
-	PlatformLenstube      = "lenstub"
-	PlatformLenstubeBytes = "lenstube-bytes"
+	PlatformLens              = "Lens"
+	PlatformLensLenster       = "Lenster"
+	PlatformLensLenstube      = "Lenstube"
+	PlatformLensLenstubeBytes = "lenstube-bytes"
 
 	// collectible
 	PlatformPOAP   = "POAP"
@@ -42,7 +42,7 @@ var PlatformList = map[string][]string{
 	filter.TagSocial: {
 		PlatformMirror,
 		PlatformLens,
-		PlatformLenster,
+		PlatformLensLenster,
 		PlatformCrossbell,
 		PlatformCrossbellXLog,
 		PlatformFarcaster,

@@ -64,10 +64,10 @@ const (
 )
 
 var SupportLensPlatform = map[string]bool{
-	protocol.PlatformLens:          true,
-	protocol.PlatformLenster:       true,
-	protocol.PlatformLenstube:      true,
-	protocol.PlatformLenstubeBytes: true,
+	protocol.PlatformLens:              true,
+	protocol.PlatformLensLenster:       true,
+	protocol.PlatformLensLenstube:      true,
+	protocol.PlatformLensLenstubeBytes: true,
 }
 
 func (c *Client) GetProfile(address string) (*social.Profile, error) {
