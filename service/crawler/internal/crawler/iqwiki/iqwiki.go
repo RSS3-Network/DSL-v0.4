@@ -371,38 +371,9 @@ func (s *service) HandleMedia(wiki Wiki) []metadata.Media {
 
 		medias = append(medias, metadata.Media{
 			Address:  image.Id,
-			MimeType: image.Type,
+			MimeType: "image/png",
 		})
 	}
 
-	// media
-	for _, media := range wiki.Media {
-		if !strings.HasPrefix(media.Id, "http") {
-			media.Id = fmt.Sprintf("https://ipfs.rss3.page/ipfs/%s", media.Id)
-		}
-
-		medias = append(medias, metadata.Media{
-			Address:  media.Id,
-			MimeType: media.Name,
-		})
-	}
-
-	// references
-	for _, md := range wiki.Metadata {
-		if !strings.EqualFold("references", md.Id) || len(md.Value) == 0 {
-			continue
-		}
-		var references []Reference
-		if err := json.Unmarshal([]byte(md.Value), &references); err != nil {
-			loggerx.Global().Warn("iqwiki_crawler references unmarshal error", zap.String("title", wiki.Id))
-			continue
-		}
-		for _, rf := range references {
-			medias = append(medias, metadata.Media{
-				Address:  rf.Url,
-				MimeType: fmt.Sprintf("#cite-id-%s", rf.Id),
-			})
-		}
-	}
 	return medias
 }
