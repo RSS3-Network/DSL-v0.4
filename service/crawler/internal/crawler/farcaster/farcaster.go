@@ -54,7 +54,7 @@ func (s *service) Run() error {
 	s.GetAddressCastNumFromDb(farcasterCacheMap)
 
 	var wg sync.WaitGroup
-	ch := make(chan struct{}, 10)
+	ch := make(chan struct{}, 5)
 	for {
 		loggerx.Global().Info("farcaster_crawler start a new round ", zap.Int("cache user is:", len(farcasterCacheMap)))
 
@@ -208,6 +208,7 @@ func (s *service) HandleTransactions(ctx context.Context, castList []farcaster.C
 					AddressTo:       strings.ToLower(cast.Body.Address),
 					Metadata:        metadata.Default,
 					Network:         protocol.NetworkFarcaster,
+					Platform:        protocol.PlatformFarcaster,
 					SourceData:      sourceData,
 				},
 			},
