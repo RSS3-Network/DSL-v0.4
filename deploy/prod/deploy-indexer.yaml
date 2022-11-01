@@ -27,5 +27,12 @@ spec:
               memory: "800Mi"
               cpu: "1"
             limits:
-              memory: "5000Mi"
+              memory: "8000Mi"
               cpu: "3"
+      tolerations:
+      - key: "rss3.io/usage"
+        value: "indexer"
+        operator: "Exists"
+        effect: "NoSchedule"
+      nodeSelector:
+        rss3.io/usage: indexer
