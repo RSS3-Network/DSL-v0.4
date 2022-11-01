@@ -19,6 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/farcaster"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/iqwiki"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/lens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/mirror"
@@ -128,6 +129,7 @@ func (s *Server) Initialize() (err error) {
 		lens.New(s.config),
 		mirror.New(s.config),
 		eip1577.New(s.config),
+		farcaster.New(),
 		iqwiki.New(),
 	}
 
