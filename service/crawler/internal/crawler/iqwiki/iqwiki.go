@@ -308,10 +308,6 @@ func (s *service) HandleTransfer(ctx context.Context, transactions []model.Trans
 	return internalTransactions, nil
 }
 
-type Wiki struct {
-	Content string `json:"content"`
-}
-
 func (s *service) HandlePost(ctx context.Context, transfer *model.Transfer) (err error) {
 	tracer := otel.Tracer("worker_iqwiki")
 	_, trace := tracer.Start(ctx, "worker_iqwiki:HandleTransfer")
@@ -337,14 +333,12 @@ func (s *service) HandlePost(ctx context.Context, transfer *model.Transfer) (err
 		return err
 	}
 
-	if err = json.Unmarshal(data, &json.RawMessage{}); err != nil {
-		return err
-	}
-
 	var wikiContent Wiki
 	if err = json.Unmarshal(data, &wikiContent); err != nil {
 		return err
 	}
+
+	medias := s.HandleMedia(wikiContent)
 
 	post := &metadata.Post{
 		CreatedAt:      wiki.Created.Format(time.RFC3339),
@@ -354,6 +348,7 @@ func (s *service) HandlePost(ctx context.Context, transfer *model.Transfer) (err
 		Title:          wiki.Title,
 		Summary:        wiki.Summary,
 		TargetURL:      fmt.Sprintf("https://iq.wiki/wiki/%s", wiki.Id),
+		Media:          medias,
 	}
 	transfer.Metadata, _ = json.Marshal(post)
 	transfer.RelatedUrls = ethereum.BuildURL(
@@ -363,4 +358,51 @@ func (s *service) HandlePost(ctx context.Context, transfer *model.Transfer) (err
 		fmt.Sprintf("https://iq.wiki/account/%s", common.HexToAddress(wiki.User.Id).String()),
 	)
 	return nil
+}
+
+func (s *service) HandleMedia(wiki Wiki) []metadata.Media {
+	medias := make([]metadata.Media, 0)
+
+	// image
+	for _, image := range wiki.Images {
+		if !strings.HasPrefix(image.Id, "http") {
+			image.Id = fmt.Sprintf("https://ipfs.rss3.page/ipfs/%s", image.Id)
+		}
+
+		medias = append(medias, metadata.Media{
+			Address:  image.Id,
+			MimeType: image.Type,
+		})
+	}
+
+	// media
+	for _, media := range wiki.Media {
+		if !strings.HasPrefix(media.Id, "http") {
+			media.Id = fmt.Sprintf("https://ipfs.rss3.page/ipfs/%s", media.Id)
+		}
+
+		medias = append(medias, metadata.Media{
+			Address:  media.Id,
+			MimeType: media.Name,
+		})
+	}
+
+	// references
+	for _, md := range wiki.Metadata {
+		if !strings.EqualFold("references", md.Id) || len(md.Value) == 0 {
+			continue
+		}
+		var references []Reference
+		if err := json.Unmarshal([]byte(md.Value), &references); err != nil {
+			loggerx.Global().Warn("iqwiki_crawler references unmarshal error", zap.String("title", wiki.Id))
+			continue
+		}
+		for _, rf := range references {
+			medias = append(medias, metadata.Media{
+				Address:  rf.Url,
+				MimeType: fmt.Sprintf("#cite-id-%s", rf.Id),
+			})
+		}
+	}
+	return medias
 }
