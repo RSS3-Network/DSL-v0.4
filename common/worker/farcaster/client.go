@@ -98,7 +98,7 @@ func (c *Client) GetLastMapFromCache(ctx context.Context) (farcasterCacheMap map
 		return nil, fmt.Errorf("redis worker is nil")
 	}
 
-	mapKey := protocol.NetworkFarcaster
+	mapKey := fmt.Sprintf("crawler_%s", protocol.NetworkFarcaster)
 	farcasterCacheMap = make(map[string]*CacheAddress)
 
 	data, err := cache.Global().Get(ctx, mapKey).Result()
@@ -127,7 +127,8 @@ func (c *Client) SetCurrentMap(ctx context.Context, farcasterCacheMap map[string
 		return fmt.Errorf("marshal %+v to json error:%+v", farcasterCacheMap, err)
 	}
 
-	cache.Global().Set(ctx, protocol.NetworkFarcaster, data, 0)
+	mapKey := fmt.Sprintf("crawler_%s", protocol.NetworkFarcaster)
+	cache.Global().Set(ctx, mapKey, data, 0)
 
 	return nil
 }
