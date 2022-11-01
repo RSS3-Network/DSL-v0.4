@@ -13,9 +13,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/iqwiki"
+	iqwiki_contract "github.com/naturalselectionlabs/pregod/common/worker/iqwiki/contract"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/iqwiki/graphql"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
-	iqwiki_contract "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/iqwiki/contract"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 )

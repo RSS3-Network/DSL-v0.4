@@ -17,9 +17,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	iqwiki "github.com/naturalselectionlabs/pregod/common/worker/iqwiki/contract"
 	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/iqwiki/graphql"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	iqwiki "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/iqwiki/contract"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )

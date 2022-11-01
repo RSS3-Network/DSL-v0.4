@@ -213,6 +213,22 @@ func (v *GetUserActivitiesResponse) GetActivitiesByUser() []GetUserActivitiesAct
 	return v.ActivitiesByUser
 }
 
+// GetUsersResponse is returned by GetUsers on success.
+type GetUsersResponse struct {
+	Users []GetUsersUsersUser `json:"users"`
+}
+
+// GetUsers returns GetUsersResponse.Users, and is useful for accessing the field via an interface.
+func (v *GetUsersResponse) GetUsers() []GetUsersUsersUser { return v.Users }
+
+// GetUsersUsersUser includes the requested fields of the GraphQL type User.
+type GetUsersUsersUser struct {
+	Id string `json:"id"`
+}
+
+// GetId returns GetUsersUsersUser.Id, and is useful for accessing the field via an interface.
+func (v *GetUsersUsersUser) GetId() string { return v.Id }
+
 type Status string
 
 const (
@@ -235,6 +251,18 @@ func (v *__GetUserActivitiesInput) GetLimit() int { return v.Limit }
 
 // GetOffset returns __GetUserActivitiesInput.Offset, and is useful for accessing the field via an interface.
 func (v *__GetUserActivitiesInput) GetOffset() int { return v.Offset }
+
+// __GetUsersInput is used internally by genqlient
+type __GetUsersInput struct {
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+}
+
+// GetLimit returns __GetUsersInput.Limit, and is useful for accessing the field via an interface.
+func (v *__GetUsersInput) GetLimit() int { return v.Limit }
+
+// GetOffset returns __GetUsersInput.Offset, and is useful for accessing the field via an interface.
+func (v *__GetUsersInput) GetOffset() int { return v.Offset }
 
 func GetUserActivities(
 	ctx context.Context,
@@ -300,6 +328,40 @@ query GetUserActivities ($userId: String!, $limit: Int, $offset: Int) {
 	var err error
 
 	var data GetUserActivitiesResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func GetUsers(
+	ctx context.Context,
+	client graphql.Client,
+	limit int,
+	offset int,
+) (*GetUsersResponse, error) {
+	req := &graphql.Request{
+		OpName: "GetUsers",
+		Query: `
+query GetUsers ($limit: Int, $offset: Int) {
+	users(offset: $offset, limit: $limit) {
+		id
+	}
+}
+`,
+		Variables: &__GetUsersInput{
+			Limit:  limit,
+			Offset: offset,
+		},
+	}
+	var err error
+
+	var data GetUsersResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

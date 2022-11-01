@@ -19,5 +19,14 @@ func TestGetUserActivityList(t *testing.T) {
 	}
 
 	t.Log(len(resp))
+}
 
+func TestGetUserList(t *testing.T) {
+	resp, err := client.GetUserList(context.Background())
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(len(resp))
 }
