@@ -36,8 +36,11 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
+
 	"go.opentelemetry.io/otel"
+
 	"go.uber.org/zap"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -186,125 +189,173 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 
 	defer snap.End()
 
+	// The transaction has already been handled by another worker
+	if transaction.Type != "" || transaction.Tag != "" {
+		return &transaction, nil
+	}
+
+	// The transaction used as the return value
 	internalTransaction := transaction
 	internalTransaction.Transfers = make([]model.Transfer, 0)
 
-	if internalTransaction.Type != "" || internalTransaction.Tag != "" {
-		for _, transfer := range transaction.Transfers {
-			if transfer.Index != protocol.IndexVirtual {
-				internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+	for _, transfer := range transaction.Transfers {
+		var (
+			internalTransfers []model.Transfer
+			err               error
+		)
+
+		if transfer.Index == protocol.IndexVirtual {
+			// Native token
+			if internalTransfer, err := s.handleEthereumOriginNative(ctx, message, transaction, transfer); err == nil { // Require error as nil
+				internalTransfers = append(internalTransfers, *internalTransfer)
 			}
+		} else {
+			// Contract events
+			internalTransfers, err = s.handleEthereumOriginToken(ctx, message, transaction, transfer)
 		}
 
-		return &internalTransaction, nil
-	}
-
-	for _, transfer := range transaction.Transfers {
-		if !(transfer.Metadata == nil || bytes.Equal(transfer.Metadata, metadata.Default)) {
-			internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
+		if err != nil && !errors.Is(err, ErrorNativeTokenTransferValueIsZero) && !errors.Is(err, ErrorUnsupportedContractEvent) /* Ignore actively aborted transactions */ {
+			zap.L().Warn("handle ethereum origin", zap.Error(err), zap.String("network", transaction.Network), zap.String("address", message.Address), zap.String("transaction_hash", transaction.Hash))
 
 			continue
 		}
 
-		if transfer.Index == protocol.IndexVirtual {
-			var sourceData ethereum.SourceData
+		for _, internalTransfer := range internalTransfers {
+			var wallet exchange.CexWallet
 
-			if err := json.Unmarshal(transfer.SourceData, &sourceData); err != nil {
-				loggerx.Global().Error("failed to unmarshal source data", zap.Error(err), zap.String("source_data", string(transfer.SourceData)))
-
+			if err := s.checkCexWallet(ctx, message.Address, &transaction, &internalTransfer, &wallet); err != nil {
 				return nil, err
 			}
 
-			if sourceData.Transaction.Value().Cmp(big.NewInt(0)) == 0 {
-				continue
-			}
-
-			internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transaction, transfer, nil, nil, sourceData.Transaction.Value())
-			if err != nil {
-				continue
-			}
-
-			transfer = *internalTransfer
-		} else {
-			var sourceData types.Log
-
-			if err := json.Unmarshal(transfer.SourceData, &sourceData); err != nil {
-				loggerx.Global().Error("failed to unmarshal source data", zap.Error(err), zap.String("source_data", string(transfer.SourceData)))
-
-				return nil, err
-			}
-
-			var (
-				tokenValue   *big.Int
-				tokenID      *big.Int
-				tokenAddress = strings.ToLower(sourceData.Address.String())
-			)
-
-			switch sourceData.Topics[0] {
-			case erc20.EventHashTransfer, erc721.EventHashTransfer:
-				switch len(sourceData.Topics) {
-				case 3:
-					filterer, err := erc20.NewERC20Filterer(sourceData.Address, nil)
-					if err != nil {
-						return nil, err
-					}
-
-					event, err := filterer.ParseTransfer(sourceData)
-					if err != nil {
-						return nil, err
-					}
-
-					tokenValue = event.Value
-				case 4:
-					filterer, err := erc721.NewERC721Filterer(sourceData.Address, nil)
-					if err != nil {
-						return nil, err
-					}
-
-					event, err := filterer.ParseTransfer(sourceData)
-					if err != nil {
-						return nil, err
-					}
-
-					tokenID = event.TokenId
-				}
-			case erc1155.EventHashTransferSingle:
-				filterer, err := erc1155.NewERC1155Filterer(sourceData.Address, nil)
-				if err != nil {
-					return nil, err
-				}
-
-				event, err := filterer.ParseTransferSingle(sourceData)
-				if err != nil {
-					return nil, err
-				}
-
-				tokenID = event.Id
-				tokenValue = event.Value
-			default:
-				continue
-			}
-
-			internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transaction, transfer, &tokenAddress, tokenID, tokenValue)
-			if err != nil {
-				return nil, err
-			}
-
-			transfer = *internalTransfer
+			internalTransaction, transfer = s.buildType(internalTransaction, internalTransfer)
+			internalTransaction.Transfers = append(internalTransaction.Transfers, internalTransfer)
+			internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(internalTransfer.Tag, internalTransaction.Tag, internalTransfer.Type, internalTransaction.Type)
 		}
-
-		var wallet exchange.CexWallet
-
-		if err := s.checkCexWallet(ctx, message.Address, &transaction, &transfer, &wallet); err != nil {
-			return nil, err
-		}
-
-		internalTransaction, transfer = s.buildType(internalTransaction, transfer)
-		internalTransaction.Transfers = append(internalTransaction.Transfers, transfer)
-		internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(transfer.Tag, internalTransaction.Tag, transfer.Type, internalTransaction.Type)
 	}
 
 	return s.buildCostMetadata(ctx, internalTransaction)
+}
+
+// Used to handle native token transactions, such as ETH, MATIC, BNB
+func (s *service) handleEthereumOriginNative(ctx context.Context, message *protocol.Message, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+	// Unmarshal transaction and receipt
+	var sourceData ethereum.SourceData
+	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
+		loggerx.Global().Error("unmarshal source data", zap.Error(err), zap.String("source_data", string(transaction.SourceData)))
+
+		return nil, err
+	}
+
+	// Ignore native token transfers with value 0
+	if sourceData.Transaction.Value().Cmp(big.NewInt(0)) == 0 {
+		return nil, ErrorNativeTokenTransferValueIsZero
+	}
+
+	return s.buildEthereumTokenMetadata(ctx, message, transaction, transfer, nil, nil, sourceData.Transaction.Value())
+}
+
+// Used to handle ERC20 and NFT token transactions, such as DAI, AZUKI
+func (s *service) handleEthereumOriginToken(ctx context.Context, message *protocol.Message, transaction model.Transaction, transfer model.Transfer) ([]model.Transfer, error) {
+	var log *types.Log
+	if err := json.Unmarshal(transfer.SourceData, &log); err != nil {
+		loggerx.Global().Error("unmarshal log", zap.Error(err), zap.String("source_data", string(transfer.SourceData)))
+
+		return nil, err
+	}
+
+	// There may be malicious or defective topics in the data
+	if len(log.Topics) == 0 {
+		return nil, ErrorInvalidTopicsLength
+	}
+
+	var (
+		tokenAddress = strings.ToLower(log.Address.String())
+		tokenIDs     = make([]*big.Int, 0)
+		tokenValues  = make([]*big.Int, 0)
+
+		transfers = make([]model.Transfer, 0)
+	)
+
+	switch log.Topics[0] {
+	case erc20.EventHashTransfer, erc721.EventHashTransfer:
+		if len(log.Topics) == 4 { // ERC-721 added last topic to index
+			filterer, err := erc721.NewERC721Filterer(log.Address, nil) // https://eips.ethereum.org/EIPS/eip-721
+			if err != nil {
+				return nil, err
+			}
+
+			event, err := filterer.ParseTransfer(*log)
+			if err != nil {
+				return nil, err
+			}
+
+			tokenIDs = append(tokenIDs, event.TokenId)
+			tokenValues = append(tokenValues, big.NewInt(1))
+		} else {
+			filterer, err := erc20.NewERC20Filterer(log.Address, nil) // https://eips.ethereum.org/EIPS/eip-20
+			if err != nil {
+				return nil, err
+			}
+
+			event, err := filterer.ParseTransfer(*log)
+			if err != nil {
+				return nil, err
+			}
+
+			tokenValues = append(tokenValues, event.Value)
+		}
+	case erc1155.EventHashTransferSingle: // https://eips.ethereum.org/EIPS/eip-1155
+		filterer, err := erc1155.NewERC1155Filterer(log.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		event, err := filterer.ParseTransferSingle(*log)
+		if err != nil {
+			return nil, err
+		}
+
+		tokenIDs = append(tokenIDs, event.Id)
+		tokenValues = append(tokenValues, event.Value)
+	case erc1155.EventHashTransferBatch:
+		filterer, err := erc1155.NewERC1155Filterer(log.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		event, err := filterer.ParseTransferBatch(*log)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(event.Ids) != len(event.Values) {
+			return nil, ErrorInvalidContractEvent
+		}
+
+		for i, id := range event.Ids {
+			tokenIDs = append(tokenIDs, id)
+			tokenValues = append(tokenValues, event.Values[i])
+		}
+	default:
+		return nil, ErrorUnsupportedContractEvent
+	}
+
+	for i := range tokenValues {
+		var tokenID *big.Int
+
+		if len(tokenIDs) > i {
+			tokenID = tokenIDs[i]
+		}
+
+		internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transaction, transfer, &tokenAddress, tokenID, tokenValues[i])
+		if err != nil {
+			return nil, err
+		}
+
+		transfers = append(transfers, *internalTransfer)
+	}
+
+	return transfers, nil
 }
 
 func (s *service) makeArweaveHandlerFunc(ctx context.Context, message *protocol.Message, transactions []model.Transaction) func(transaction model.Transaction, i int) (*model.Transaction, error) {
