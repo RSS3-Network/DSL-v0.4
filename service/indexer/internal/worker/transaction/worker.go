@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/samber/lo"
 	"math/big"
 	"strconv"
 	"strings"
@@ -223,11 +224,11 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 		for _, internalTransfer := range internalTransfers {
 			var wallet exchange.CexWallet
 
-			if err := s.checkCexWallet(ctx, message.Address, &transaction, &internalTransfer, &wallet); err != nil {
+			if err := s.checkCexWallet(ctx, message.Address, &internalTransaction, &internalTransfer, &wallet); err != nil {
 				return nil, err
 			}
 
-			internalTransaction, transfer = s.buildType(internalTransaction, internalTransfer)
+			internalTransaction, internalTransfer = s.buildType(internalTransaction, internalTransfer)
 			internalTransaction.Transfers = append(internalTransaction.Transfers, internalTransfer)
 			internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(internalTransfer.Tag, internalTransaction.Tag, internalTransfer.Type, internalTransaction.Type)
 		}
@@ -290,7 +291,6 @@ func (s *service) handleEthereumOriginToken(ctx context.Context, message *protoc
 			}
 
 			tokenIDs = append(tokenIDs, event.TokenId)
-			tokenValues = append(tokenValues, big.NewInt(1))
 		} else {
 			filterer, err := erc20.NewERC20Filterer(log.Address, nil) // https://eips.ethereum.org/EIPS/eip-20
 			if err != nil {
@@ -340,14 +340,21 @@ func (s *service) handleEthereumOriginToken(ctx context.Context, message *protoc
 		return nil, ErrorUnsupportedContractEvent
 	}
 
-	for i := range tokenValues {
-		var tokenID *big.Int
+	for i := 0; i < lo.Max([]int{len(tokenIDs), len(tokenValues)}); i++ {
+		var (
+			tokenID    *big.Int
+			tokenValue *big.Int
+		)
 
 		if len(tokenIDs) > i {
 			tokenID = tokenIDs[i]
 		}
 
-		internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transaction, transfer, &tokenAddress, tokenID, tokenValues[i])
+		if len(tokenValues) > i {
+			tokenValue = tokenValues[i]
+		}
+
+		internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transaction, transfer, &tokenAddress, tokenID, tokenValue)
 		if err != nil {
 			return nil, err
 		}
