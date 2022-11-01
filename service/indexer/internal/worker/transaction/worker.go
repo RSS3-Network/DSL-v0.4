@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/samber/lo"
 	"math/big"
 	"strconv"
 	"strings"
@@ -35,6 +34,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
 
