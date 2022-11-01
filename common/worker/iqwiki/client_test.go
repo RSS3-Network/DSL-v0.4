@@ -11,7 +11,7 @@ var (
 )
 
 func TestGetUserActivityList(t *testing.T) {
-	address := "0xFF1D1d9E1E3a88A1176870244b5a456FC42e5E90"
+	address := "0x2fE6aCD015384E1ee5138eF79fe1a434dA8FA12e"
 	resp, err := client.GetUserActivityList(context.Background(), strings.ToLower(address))
 
 	if err != nil {

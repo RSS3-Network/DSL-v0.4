@@ -62,51 +62,59 @@ func (s *service) Run() error {
 	s.GetAddressCastNumFromDb(iqwikiCacheMap)
 
 	for {
-		loggerx.Global().Info("iqwiki_crawler start a new round ", zap.Int("cache user is:", len(iqwikiCacheMap)))
+		loggerx.Global().Info("iqwiki_crawler start a new round ", zap.Int("cache user is", len(iqwikiCacheMap)))
 
 		for address, num := range iqwikiCacheMap {
 			activityList, err := s.iqClient.GetUserActivityList(ctx, address)
+			loggerx.Global().Info("iqwiki_crawler start to indexer address", zap.String("name", address))
 			if err != nil {
-				loggerx.Global().Warn("iqwiki_crawler get cast error, ", zap.Error(err))
+				loggerx.Global().Warn("iqwiki_crawler get cast error", zap.Error(err))
 				continue
 			}
 
 			if len(activityList) == num {
+				loggerx.Global().Info("iqwiki_crawler end to indexer address", zap.String("name", address))
 				continue
 			}
 
 			transactions, err := s.HandleTransactions(ctx, activityList, address)
 			if err != nil {
-				loggerx.Global().Warn("iqwiki_crawler handle transactions error, ", zap.Error(err))
+				loggerx.Global().Warn("iqwiki_crawler handle transactions error", zap.Error(err))
 				continue
 			}
-
 			internalTransactions, err := s.HandleTransfer(ctx, transactions)
 			if err != nil {
-				loggerx.Global().Warn("iqwiki_crawler handle transfer error, ", zap.Error(err))
+				loggerx.Global().Warn("iqwiki_crawler handle transfer error", zap.Error(err))
 				continue
 			}
 
 			err = database.UpsertTransactions(ctx, internalTransactions)
 			if err != nil {
-				loggerx.Global().Warn("iqwiki_crawler upsertTransactions error, ", zap.Error(err))
+				loggerx.Global().Warn("iqwiki_crawler upsertTransactions error", zap.Error(err))
 				continue
 			}
 
+			loggerx.Global().Info("iqwiki_crawler refresh to indexer address", zap.String("name", address))
 			iqwiki.ReplaceGlobal(address, len(transactions))
 		}
-		loggerx.Global().Info("iqwiki_crawler end a round ", zap.Int("cache user is:", len(iqwikiCacheMap)))
+
+		loggerx.Global().Info("iqwiki_crawler end a round ", zap.Int("cache user is", len(iqwikiCacheMap)))
 
 		s.iqClient.UpdateIqwikiCacheMap()
+		loggerx.Global().Info("iqwiki_crawler finish update cache map", zap.Int("cache user is", len(iqwiki.IqwikiCacheMap)))
 
 		res, err := s.iqClient.GetIqwikiCacheMap()
 		if err != nil {
 			loggerx.Global().Error("iqwiki_crawler fail to get Map Cache", zap.Error(err))
 		}
 
-		err = s.iqClient.SetCurrentMap(ctx, res)
-		if err != nil {
-			loggerx.Global().Error("iqwiki_crawler fail to set Map Cache", zap.Error(err))
+		if len(res) > 0 {
+			err = s.iqClient.SetCurrentMap(ctx, res)
+			if err != nil {
+				loggerx.Global().Error("iqwiki_crawler fail to set Map Cache", zap.Error(err))
+			}
+		} else {
+			res = iqwiki.IqwikiCacheMap
 		}
 
 		iqwikiCacheMap = res
@@ -121,7 +129,10 @@ func (s *service) GetAddressCastNumFromDb(iqwikiCacheMap map[string]int) {
 	for userAddress := range iqwikiCacheMap {
 		wg.Add(1)
 		go func(address string) {
-			defer wg.Done()
+			defer func() {
+				<-ch
+				wg.Done()
+			}()
 			ch <- struct{}{}
 			total := int64(0)
 			if err := database.Global().
@@ -133,9 +144,7 @@ func (s *service) GetAddressCastNumFromDb(iqwikiCacheMap map[string]int) {
 				Count(&total).Error; err != nil {
 				loggerx.Global().Warn("iqwiki_crawler find transfer error, ", zap.Error(err))
 			}
-
 			iqwiki.ReplaceGlobal(address, int(total))
-			<-ch
 		}(userAddress)
 	}
 	wg.Wait()
@@ -168,6 +177,7 @@ func (s *service) HandleTransactions(ctx context.Context, activityList []graphql
 	defer trace.End()
 
 	transactions := make([]model.Transaction, 0)
+	txMap := make(map[string]bool)
 
 	blockNum := s.getEveTransactions(strings.ToLower(address))
 
@@ -189,6 +199,11 @@ func (s *service) HandleTransactions(ctx context.Context, activityList []graphql
 			if err != nil {
 				continue
 			}
+			// dirty data
+			if _, ok := txMap[content.TransactionHash]; ok {
+				continue
+			}
+
 			transactions = append(transactions, model.Transaction{
 				BlockNumber: int64(activity.Block),
 				Timestamp:   activity.Datetime,
@@ -212,14 +227,15 @@ func (s *service) HandleTransactions(ctx context.Context, activityList []graphql
 						AddressTo:       strings.ToLower(iqwiki_contract.AddressEveripedia.String()),
 						Metadata:        metadata.Default,
 						Network:         protocol.NetworkPolygon,
+						Platform:        protocol.PlatformIQWiki,
 						SourceData:      sourceData,
 						Tag:             filter.TagSocial,
 						Type:            action,
 					},
 				},
 			})
+			txMap[content.TransactionHash] = true
 		}
-
 	}
 
 	return transactions, nil
@@ -239,18 +255,25 @@ func (s *service) HandleTransfer(ctx context.Context, transactions []model.Trans
 		return nil, err
 	}
 
-	for _, transaction := range transactions {
-		internalTransaction := transaction
-		internalTransaction.Transfers = make([]model.Transfer, 0)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	ch := make(chan struct{}, 20)
 
-		addressTo := common.HexToAddress(transaction.AddressTo)
+	for _, tx := range transactions {
+		wg.Add(1)
+		go func(transaction model.Transaction) {
+			defer func() {
+				<-ch
+				wg.Done()
+			}()
+			ch <- struct{}{}
+			internalTransaction := transaction
+			internalTransaction.Transfers = make([]model.Transfer, 0)
 
-		switch addressTo {
-		case iqwiki_contract.AddressEveripedia:
 			receipt, err := polygonClient.TransactionReceipt(context.Background(), common.HexToHash(transaction.Hash))
 			if err != nil {
 				loggerx.Global().Warn("worker_iqwiki: failed to Get Receipt", zap.Error(err), zap.String("network", protocol.NetworkPolygon), zap.String("transaction_hash", transaction.Hash), zap.String("address", transaction.Owner))
-				continue
+				return
 			}
 
 			for _, transfer := range transaction.Transfers {
@@ -273,12 +296,14 @@ func (s *service) HandleTransfer(ctx context.Context, transactions []model.Trans
 
 				internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(transfer.Tag, internalTransaction.Tag, transfer.Type, internalTransaction.Type)
 			}
-
+			mu.Lock()
 			internalTransactions = append(internalTransactions, &internalTransaction)
-		default:
-			continue
-		}
+			mu.Unlock()
+		}(tx)
+
 	}
+
+	wg.Wait()
 
 	return internalTransactions, nil
 }

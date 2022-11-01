@@ -91,7 +91,7 @@ func (c *Client) GetLastMapFromCache(ctx context.Context) (iqwikiCacheMap map[st
 		return nil, fmt.Errorf("redis worker is nil")
 	}
 
-	mapKey := protocol.PlatformIQWiki
+	mapKey := fmt.Sprintf("crawler_%s", protocol.PlatformIQWiki)
 	iqwikiCacheMap = make(map[string]int)
 
 	data, err := cache.Global().Get(ctx, mapKey).Result()
@@ -120,7 +120,8 @@ func (c *Client) SetCurrentMap(ctx context.Context, iqwikiCacheMap map[string]in
 		return fmt.Errorf("marshal %+v to json error:%+v", iqwikiCacheMap, err)
 	}
 
-	cache.Global().Set(ctx, protocol.PlatformIQWiki, data, 0)
+	mapKey := fmt.Sprintf("crawler_%s", protocol.PlatformIQWiki)
+	cache.Global().Set(ctx, mapKey, data, 0)
 
 	return nil
 }
