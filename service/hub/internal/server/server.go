@@ -86,9 +86,6 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfilesFunc, middlewarex.APIMiddleware)
 	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolveFunc)
 
-	// LensResolveFunc temporary function to resolve Lens for Pinata
-	s.httpServer.GET("/nslens/:address", s.httpHandler.LensResolveFunc)
-
 	// POST
 	s.httpServer.POST("/notes", s.httpHandler.BatchGetNotesFunc, middlewarex.CheckAPIKeyMiddleware)
 	s.httpServer.POST("/profiles", s.httpHandler.BatchGetProfilesFunc, middlewarex.CheckAPIKeyMiddleware)

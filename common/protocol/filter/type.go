@@ -3,6 +3,7 @@ package filter
 const (
 	// transaction types
 	TransactionTransfer string = "transfer"
+	TransactionBridge   string = "bridge"
 	TransactionMint     string = "mint"
 	TransactionBurn     string = "burn"
 
@@ -11,6 +12,10 @@ const (
 	ExchangeDeposit   string = "deposit"
 	ExchangeSwap      string = "swap"
 	ExchangeLiquidity string = "liquidity"
+
+	// Bridge types
+	BridgeWithdraw string = "withdraw"
+	BridgeDeposit  string = "deposit"
 
 	// sub-types for Exchange-Liquidity
 	ExchangeLiquidityAdd      string = "add"
@@ -51,6 +56,7 @@ const (
 	SocialFollow   string = "follow"
 	SocialUnfollow string = "unfollow"
 	SocialLike     string = "like"
+	SocialMint     string = "mint"
 
 	// sub-types for Social-Profile
 	SocialProfileCreate string = "create"
@@ -66,7 +72,7 @@ const (
 )
 
 var ValidTypeMap = map[string][]string{
-	TagTransaction: {TransactionTransfer, TransactionMint, TransactionBurn},
+	TagTransaction: {TransactionTransfer, TransactionBridge, TransactionMint, TransactionBurn},
 	TagExchange:    {ExchangeWithdraw, ExchangeDeposit, ExchangeSwap, ExchangeLiquidity},
 	TagCollectible: {CollectibleTransfer, CollectibleMint, CollectibleBurn, CollectiblePoap, CollectibleCrowdFund},
 	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike},
@@ -85,5 +91,6 @@ func CheckTypeValid(tag string, transferType string) bool {
 			return true
 		}
 	}
+
 	return false
 }
