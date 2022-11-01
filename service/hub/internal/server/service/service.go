@@ -29,21 +29,46 @@ func New() (s *Service) {
 		employer: shedlock.New(),
 	}
 
+	if err := s.connectMQ(); err != nil {
+		loggerx.Global().Fatal("connect mq failed", zap.Error(err))
+	}
+
+	go func() {
+		maxRetry := 3
+		for {
+			<-s.rabbitmqConnection.NotifyClose(make(chan *rabbitmq.Error))
+			loggerx.Global().Error("rabbitmq connection closed, reconnecting...")
+			if err := s.connectMQ(); err != nil {
+				loggerx.Global().Error("connect mq failed", zap.Error(err))
+			}
+			maxRetry--
+			if maxRetry == 0 {
+				panic("rabbitmq reconnect failed")
+			}
+		}
+	}()
+	return s
+}
+
+func (s *Service) connectMQ() error {
 	var err error
 	s.rabbitmqConnection, err = rabbitmq.Dial(config.ConfigHub.RabbitMQ.String())
 	if err != nil {
 		loggerx.Global().Error("rabbitmq dail failed", zap.Error(err))
+		return err
 	}
 
 	s.rabbitmqChannel, err = s.rabbitmqConnection.Channel()
 	if err != nil {
 		loggerx.Global().Error("rabbitmqConnection failed", zap.Error(err))
+		return err
 	}
 
 	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeJob, "direct", true, false, false, false, nil); err != nil {
 		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare failed", zap.Error(err))
+		return err
 	}
-	return s
+	return nil
 }
 
 // publishIndexerMessage create a rabbitmq job to index the latest user data
