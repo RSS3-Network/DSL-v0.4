@@ -353,7 +353,8 @@ func handleLog(ctx context.Context, message *protocol.Message, transaction *mode
 
 	address := strings.ToLower(message.Address)
 
-	if len(address) > 0 && transfer.AddressTo != address && transfer.AddressFrom != address {
+	// Ignore transfers that are not related to message.address
+	if len(address) > 0 && transaction.AddressFrom != address && transfer.AddressTo != address && transfer.AddressFrom != address {
 		return nil, ErrorUnrelatedEvent
 	}
 

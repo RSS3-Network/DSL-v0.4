@@ -99,7 +99,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
-		protocol.NetworkEIP1577,
+		protocol.NetworkEIP1577, protocol.NetworkFarcaster,
 	}
 
 	go func() {
