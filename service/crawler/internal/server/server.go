@@ -19,7 +19,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/farcaster"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/iqwiki"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/lens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/mirror"
