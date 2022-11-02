@@ -285,5 +285,6 @@ func (s *service) HandlePost(ctx context.Context, transfer *model.Transfer) (err
 	transfer.Tag = filter.TagSocial
 	transfer.Type = filter.SocialPost
 	// TODO: farcaster does not have an API for individual posts, so we can't get the post URL
+	transfer.RelatedUrls = []string{fmt.Sprintf("https://www.discove.xyz/casts/%s", cast.MerkleRoot)}
 	return nil
 }
