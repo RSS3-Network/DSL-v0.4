@@ -10,34 +10,57 @@ import (
 	"sync"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
+
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
+
+type service struct {
+	employer *shedlock.Employer
+	job      crawler.Job
+}
 
 var (
 	//go:embed eip1577.csv
 	DomainFS embed.FS
 
 	_ crawler.Crawler = (*service)(nil)
+	_ crawler.Job     = (*EIP1577Job)(nil)
+
+	ensClient *ens.Client
+	conf      *config.Config
 )
 
-type service struct {
-	config    *config.Config
-	ensClient *ens.Client
+type EIP1577Job struct{}
+
+func (job *EIP1577Job) Name() string {
+	return "crawler_eip1577_cron"
 }
 
-func New(config *config.Config) crawler.Crawler {
+func (job *EIP1577Job) Spec() string {
+	return "CRON_TZ=Asia/Shanghai 0 10 * * *"
+}
+
+func (job *EIP1577Job) Timeout() time.Duration {
+	return time.Hour * 5
+}
+
+func New(c *config.Config, employer *shedlock.Employer) crawler.Crawler {
+	ensClient = ens.New()
+	conf = c
+
 	return &service{
-		config:    config,
-		ensClient: ens.New(),
+		employer: employer,
+		job:      &EIP1577Job{},
 	}
 }
 
@@ -46,6 +69,15 @@ func (s *service) Name() string {
 }
 
 func (s *service) Run() error {
+	// job
+	if err := s.employer.AddJob(s.job.Name(), s.job.Spec(), s.job.Timeout(), crawler.NewCronJob(s.employer, s.job)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (job *EIP1577Job) Run(renewal crawler.RenewalFunc) error {
 	ctx := context.Background()
 	file, err := DomainFS.Open("eip1577.csv")
 	if err != nil {
@@ -73,7 +105,7 @@ func (s *service) Run() error {
 		domain := row[0]
 
 		// resolve
-		address, err := s.ensClient.GetResolvedAddress(domain)
+		address, err := ensClient.GetResolvedAddress(domain)
 		if err != nil {
 			loggerx.Global().Error("eip1577: domain resolve error", zap.Error(err))
 
@@ -89,7 +121,7 @@ func (s *service) Run() error {
 		go func(domain string, address string) {
 			defer wg.Done()
 			for i := 0; i < 2; i++ {
-				err := s.HandleEIP1577(ctx, domain, address)
+				err := HandleEIP1577(ctx, domain, address)
 				if err != nil {
 					loggerx.Global().Error("eip1577: HandleEIP1577 error", zap.Error(err))
 				}
@@ -103,7 +135,7 @@ func (s *service) Run() error {
 	return nil
 }
 
-func (s *service) HandleEIP1577(ctx context.Context, domain string, address string) error {
+func HandleEIP1577(ctx context.Context, domain string, address string) error {
 	loggerx.Global().Info("eip1577: start", zap.String("domain", domain), zap.String("address", address))
 
 	c, cancel := context.WithTimeout(ctx, 2*time.Minute)
@@ -117,7 +149,7 @@ func (s *service) HandleEIP1577(ctx context.Context, domain string, address stri
 	}
 
 	// datasource
-	internalTransactions, err := eip1577.GetEIP1577Transactions(c, message, domain, s.config.EIP1577.Endpoint)
+	internalTransactions, err := eip1577.GetEIP1577Transactions(c, message, domain, conf.EIP1577.Endpoint)
 	if err != nil {
 		loggerx.Global().Error("eip1577: eip1577 Datasource Handle error", zap.Error(err))
 

@@ -2,8 +2,6 @@ package protocol
 
 import (
 	"time"
-
-	"github.com/naturalselectionlabs/pregod/common/database/model"
 )
 
 type Message struct {
@@ -14,8 +12,4 @@ type Message struct {
 	Reindex     bool      `json:"reindex"`
 	IgnoreNote  bool      `json:"ignore_note"`
 	Retry       int       `json:"retry"`
-}
-
-type RefreshMessage struct {
-	Address model.Address `json:"result"`
 }

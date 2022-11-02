@@ -17,10 +17,6 @@ const (
 	GetNS        = "/ns/"
 
 	EsIndex = "pregod-v1-visit-path"
-
-	Subscribe   = "subscribe"
-	Unsubscribe = "unsubscribe"
-	Query       = "query"
 )
 
 type Response struct {
@@ -123,19 +119,6 @@ type PlatformResult struct {
 	Tag     string `json:"tag"`
 	Type    string `json:"type,omitempty"`
 	Network string `json:"network,omitempty"`
-}
-
-type WebSocketRequest struct {
-	Id         *int     `json:"id,omitempty"`
-	Action     string   `json:"action"`
-	AddressArr []string `json:"address"`
-	ClientId   string   `json:"client_id"`
-}
-
-type WebsocketResponse struct {
-	Id     int            `json:"id"`
-	Status string         `json:"status"`
-	Result map[string]any `json:"result"`
 }
 
 type Transactions []dbModel.Transaction
