@@ -12,11 +12,12 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/profile"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/profile"
+
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm/clause"
 )
@@ -42,14 +43,14 @@ func (p *profileHandler) Handle(ctx context.Context, transaction model.Transacti
 	}
 
 	switch log.Topics[0] {
-	case contract.EventHashProfileCreated:
+	case crossbell.EventHashProfileCreated:
 		return p.handleProfileCreated(ctx, transaction, transfer, log)
-	case contract.EventHashLinkProfile:
+	case crossbell.EventHashLinkProfile:
 		return p.handleLinkProfile(ctx, transaction, transfer, log)
-	case contract.EventHashUnlinkProfile:
+	case crossbell.EventHashUnlinkProfile:
 		return p.handleUnLinkProfile(ctx, transaction, transfer, log)
 	default:
-		return nil, contract.ErrorUnknownEvent
+		return nil, crossbell.ErrorUnknownEvent
 	}
 }
 
@@ -66,7 +67,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	}
 
 	// Self-hosted IPFS files may be out of date
-	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ProfileId)
+	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.ProfileId)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +112,7 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 		return nil, err
 	}
 
-	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ToProfileId)
+	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.ToProfileId)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +156,7 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ToProfileId)
+	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.ToProfileId)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +199,7 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ProfileId)
+	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.ProfileId)
 	if err != nil {
 		return nil, err
 	}
