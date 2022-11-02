@@ -31,7 +31,6 @@ spec:
               cpu: "3"
       tolerations:
       - key: "rss3.io/usage"
-        value: "indexer"
         operator: "Exists"
         effect: "NoSchedule"
       nodeSelector:

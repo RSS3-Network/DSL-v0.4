@@ -129,7 +129,6 @@ func (s *Server) Initialize() (err error) {
 		lens.New(s.config),
 		mirror.New(s.config),
 		eip1577.New(s.config),
-		farcaster.New(),
 		iqwiki.New(),
 	}
 
