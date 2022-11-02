@@ -292,7 +292,7 @@ func (s *service) handleEthereumOriginToken(ctx context.Context, message *protoc
 
 			tokenIDs = append(tokenIDs, event.TokenId)
 		} else {
-			filterer, err := erc20.NewERC20Filterer(log.Address, nil) // https://eips.ethereum.org/EIPS/eip-20
+			filterer, err := erc20.NewErc20Filterer(log.Address, nil) // https://eips.ethereum.org/EIPS/eip-20
 			if err != nil {
 				return nil, err
 			}
