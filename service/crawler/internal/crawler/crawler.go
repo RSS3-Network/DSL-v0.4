@@ -1,11 +1,12 @@
 package crawler
 
 import (
+	"time"
+
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-	"time"
 )
 
 type RenewalFunc func(ctx context.Context, duration time.Duration) error

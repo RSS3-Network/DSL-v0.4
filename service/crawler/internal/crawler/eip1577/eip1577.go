@@ -5,12 +5,13 @@ import (
 	"embed"
 	"encoding/csv"
 	"errors"
-	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"io"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
