@@ -154,6 +154,12 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 			continue
 		}
 
+		// when it is an all-zero address, it means the profile no longer exists for whatever reason (deleted, banned)
+		// so we should ignore this transaction, otherwise the transaction owner will be set with an all-zero address
+		if profile == ethereum.AddressGenesis {
+			continue
+		}
+
 		transaction := &model.Transaction{
 			BlockNumber: transfer.BlockNumber.BigInt().Int64(),
 			Hash:        transfer.TransactionHash,
