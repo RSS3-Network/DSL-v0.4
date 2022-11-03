@@ -230,8 +230,6 @@ func (s *service) HandleTransfer(ctx context.Context, transactions []model.Trans
 	var mu sync.Mutex
 
 	lop.ForEach(transactions, func(transaction model.Transaction, i int) {
-		transaction.Platform = protocol.PlatformFarcaster
-
 		// Retain the action model of the transfer type
 		transferMap := make(map[int64]model.Transfer)
 
