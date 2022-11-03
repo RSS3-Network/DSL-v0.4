@@ -14,14 +14,15 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/character"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/periphery"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/character"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/periphery"
+
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm/clause"
 )
@@ -46,44 +47,44 @@ func (c *characterHandler) Handle(ctx context.Context, transaction model.Transac
 	transfer.Platform = protocol.PlatformCrossbell
 
 	switch log.Topics[0] {
-	case contract.EventHashCharacterCreated, contract.EventHashProfileCreated:
+	case crossbell.EventHashCharacterCreated, crossbell.EventHashProfileCreated:
 		// Broken change
-		if transaction.BlockNumber >= contract.BrokenBlockNumber {
+		if transaction.BlockNumber >= crossbell.BrokenBlockNumber {
 			return c.handleCharacterCreated(ctx, transaction, transfer, log)
 		}
 
 		return c.profileHandler.handleProfileCreated(ctx, transaction, transfer, log)
-	case contract.EventHashSetHandle:
+	case crossbell.EventHashSetHandle:
 		return c.handleSetHandle(ctx, transaction, transfer, log)
-	case contract.EventHashPostNote:
+	case crossbell.EventHashPostNote:
 		return c.handlePostNote(ctx, transaction, transfer, log)
-	case contract.EventHashLinkCharacter, contract.EventHashLinkProfile:
+	case crossbell.EventHashLinkCharacter, crossbell.EventHashLinkProfile:
 		// Broken change
-		if transaction.BlockNumber >= contract.BrokenBlockNumber {
+		if transaction.BlockNumber >= crossbell.BrokenBlockNumber {
 			return c.handleLinkCharacter(ctx, transaction, transfer, log)
 		}
 
 		return c.profileHandler.handleLinkProfile(ctx, transaction, transfer, log)
-	case contract.EventHashUnlinkCharacter, contract.EventHashUnlinkProfile:
+	case crossbell.EventHashUnlinkCharacter, crossbell.EventHashUnlinkProfile:
 		// Broken change
-		if transaction.BlockNumber >= contract.BrokenBlockNumber {
+		if transaction.BlockNumber >= crossbell.BrokenBlockNumber {
 			return c.handleUnLinkCharacter(ctx, transaction, transfer, log)
 		}
 
 		return c.profileHandler.handleUnLinkProfile(ctx, transaction, transfer, log)
-	case contract.EventHashSetCharacterUri, contract.EventHashSetProfileUri:
+	case crossbell.EventHashSetCharacterUri, crossbell.EventHashSetProfileUri:
 		// Broken change
-		if transaction.BlockNumber >= contract.BrokenBlockNumber {
+		if transaction.BlockNumber >= crossbell.BrokenBlockNumber {
 			return c.handleSetCharacterUri(ctx, transaction, transfer, log)
 		}
 
 		return c.profileHandler.handleSetProfileUri(ctx, transaction, transfer, log)
-	case contract.EventHashSetNoteUri:
+	case crossbell.EventHashSetNoteUri:
 		return c.handleSetNoteUri(ctx, transaction, transfer, log)
-	case contract.EventHashMintNote:
+	case crossbell.EventHashMintNote:
 		return c.handleMintNote(ctx, transaction, transfer, log)
 	default:
-		return nil, contract.ErrorUnknownEvent
+		return nil, crossbell.ErrorUnknownEvent
 	}
 }
 
@@ -99,7 +100,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 		return nil, err
 	}
 
-	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.CharacterId)
+	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.CharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +145,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 		return nil, err
 	}
 
-	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.CharacterId)
+	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.CharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -188,19 +189,19 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 		return nil, fmt.Errorf("failed to parse post note event: %w", err)
 	}
 
-	post, note, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, contract.EventNamePostNote)
+	post, note, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, crossbell.EventNamePostNote)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build note metadata: %w", err)
 	}
 
 	// Comment
-	if note.LinkItemType == contract.LinkItemTypeNote {
+	if note.LinkItemType == crossbell.LinkItemTypeNote {
 		ethereumClient, err := ethclientx.Global(transfer.Network)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get ethereum client: %w", err)
 		}
 
-		periphery, err := periphery.NewPeriphery(contract.AddressPeriphery, ethereumClient)
+		periphery, err := periphery.NewPeriphery(crossbell.AddressPeriphery, ethereumClient)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get periphery contract: %w", err)
 		}
@@ -210,7 +211,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 			return nil, fmt.Errorf("failed to get linking note: %w", err)
 		}
 
-		targetPost, targetNote, _, err := c.buildNoteMetadata(ctx, targetNoteStruct.CharacterId, targetNoteStruct.NoteId, contract.EventNamePostNote /* It may be a comment of a comment, but we can hardly judge it. */)
+		targetPost, targetNote, _, err := c.buildNoteMetadata(ctx, targetNoteStruct.CharacterId, targetNoteStruct.NoteId, crossbell.EventNamePostNote /* It may be a comment of a comment, but we can hardly judge it. */)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build target note metadata: %w", err)
 		}
@@ -256,7 +257,7 @@ func (c *characterHandler) buildNoteMetadata(ctx context.Context, characterID, n
 		return nil, nil, nil, fmt.Errorf("failed to get ethereum client: %w", err)
 	}
 
-	characterContract, err := character.NewCharacter(contract.AddressCharacter, ethereumClient)
+	characterContract, err := character.NewCharacter(crossbell.AddressCharacter, ethereumClient)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to get character contract: %w", err)
 	}
@@ -304,7 +305,7 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 		return nil, err
 	}
 
-	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ToCharacterId)
+	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.ToCharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +344,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 		return nil, err
 	}
 
-	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ToCharacterId)
+	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.ToCharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +386,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		return nil, err
 	}
 
-	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.CharacterId)
+	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.CharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -429,7 +430,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		return nil, fmt.Errorf("failed to parse SetNoteUri event: %w", err)
 	}
 
-	post, _, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, contract.EventNameSetNoteUri)
+	post, _, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, crossbell.EventNameSetNoteUri)
 	if err != nil {
 		return nil, fmt.Errorf("build note metadata: %w", err)
 	}
@@ -463,7 +464,7 @@ func (c *characterHandler) handleMintNote(ctx context.Context, transaction model
 		return nil, fmt.Errorf("failed to parse event: %w", err)
 	}
 
-	post, _, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, contract.EventNameMintNote)
+	post, _, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, crossbell.EventNameMintNote)
 	if err != nil {
 		return nil, fmt.Errorf("build note metadata: %w", err)
 	}
