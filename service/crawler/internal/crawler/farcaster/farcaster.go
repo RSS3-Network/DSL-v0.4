@@ -230,8 +230,6 @@ func (s *service) HandleTransfer(ctx context.Context, transactions []model.Trans
 	var mu sync.Mutex
 
 	lop.ForEach(transactions, func(transaction model.Transaction, i int) {
-		transaction.Platform = protocol.PlatformFarcaster
-
 		// Retain the action model of the transfer type
 		transferMap := make(map[int64]model.Transfer)
 
@@ -285,5 +283,6 @@ func (s *service) HandlePost(ctx context.Context, transfer *model.Transfer) (err
 	transfer.Tag = filter.TagSocial
 	transfer.Type = filter.SocialPost
 	// TODO: farcaster does not have an API for individual posts, so we can't get the post URL
+	transfer.RelatedUrls = []string{fmt.Sprintf("https://www.discove.xyz/casts/%s", cast.MerkleRoot)}
 	return nil
 }
