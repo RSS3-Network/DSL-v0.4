@@ -48,9 +48,8 @@ func ReplaceGlobal(address string, cacheAddress *CacheAddress) {
 
 func (c *Client) SetFarcasterCacheMap() error {
 	var err error
-	farcasterCacheMap = make(map[string]*CacheAddress)
-
 	farcasterCacheMap, err = c.GetLastMapFromCache(context.Background())
+
 	if len(farcasterCacheMap) == 0 {
 		farcasterCacheMap = make(map[string]*CacheAddress)
 		farAddresses, err := c.GetUserList(context.Background())
