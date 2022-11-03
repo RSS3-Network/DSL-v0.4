@@ -43,7 +43,7 @@ func (s *service) Run() error {
 	ctx := context.Background()
 	// init cache cast number 0
 	loggerx.Global().Info("farcaster_crawler start to init Map Cache")
-	farcasterCacheMap, err := s.farClient.GetFarcasterCacheMap()
+	err := s.farClient.SetFarcasterCacheMap()
 	if err != nil && err != redis.Nil {
 		loggerx.Global().Error("farcaster_crawler fail to init Map Cache", zap.Error(err))
 		return err
@@ -51,14 +51,14 @@ func (s *service) Run() error {
 
 	// get address cast number from db
 	loggerx.Global().Info("farcaster_crawler start to get db data")
-	s.GetAddressCastNumFromDb(farcasterCacheMap)
+	s.GetAddressCastNumFromDb()
 
 	var wg sync.WaitGroup
 	ch := make(chan struct{}, 5)
 	for {
-		loggerx.Global().Info("farcaster_crawler start a new round ", zap.Int("cache user is:", len(farcasterCacheMap)))
+		loggerx.Global().Info("farcaster_crawler start a new round ", zap.Int("cache user is:", len(farcaster.Global())))
 
-		for address, data := range farcasterCacheMap {
+		for address, data := range farcaster.Global() {
 			wg.Add(1)
 			go func(faAddress string, cacheData *farcaster.CacheAddress) {
 				defer func() {
@@ -72,7 +72,8 @@ func (s *service) Run() error {
 					return
 				}
 
-				if len(castList) == int(cacheData.CastNumber) {
+				// castList maybe nil
+				if len(castList) <= int(cacheData.CastNumber) {
 					return
 				}
 
@@ -94,6 +95,8 @@ func (s *service) Run() error {
 					return
 				}
 
+				loggerx.Global().Info("farcaster_crawler refresh", zap.String("user", cacheData.EvmAddress), zap.Int("num", len(internalTransactions)))
+
 				farcaster.ReplaceGlobal(faAddress, &farcaster.CacheAddress{
 					EvmAddress: cacheData.EvmAddress,
 					CastNumber: int64(len(castList)),
@@ -102,37 +105,25 @@ func (s *service) Run() error {
 		}
 		wg.Wait()
 
-		loggerx.Global().Info("farcaster_crawler end a new round ", zap.Int("cache user is:", len(farcasterCacheMap)))
+		loggerx.Global().Info("farcaster_crawler end a new round ", zap.Int("cache user is:", len(farcaster.Global())))
 
 		// add new users to cache map
 		s.farClient.UpdateFarcasterCacheMap()
-		loggerx.Global().Info("farcaster_crawler finish update cache map ", zap.Int("cache user is:", len(farcaster.FarcasterCacheMap)))
+		loggerx.Global().Info("farcaster_crawler finish update cache map ", zap.Int("cache user is:", len(farcaster.Global())))
 
-		// get cache map
-		res, err := s.farClient.GetFarcasterCacheMap()
+		err = s.farClient.SetCurrentMap(ctx, farcaster.Global())
 		if err != nil {
-			loggerx.Global().Error("farcaster_crawler fail to get Map Cache", zap.Error(err))
+			loggerx.Global().Error("farcaster_crawler fail to set Map Cache", zap.Error(err))
 		}
-
-		if len(res) > 0 {
-			err = s.farClient.SetCurrentMap(ctx, res)
-			if err != nil {
-				loggerx.Global().Error("farcaster_crawler fail to set Map Cache", zap.Error(err))
-			}
-		} else {
-			res = farcaster.FarcasterCacheMap
-		}
-
-		farcasterCacheMap = res
 	}
 }
 
-func (s *service) GetAddressCastNumFromDb(farcasterCacheMap map[string]*farcaster.CacheAddress) {
+func (s *service) GetAddressCastNumFromDb() {
 	var wg sync.WaitGroup
 
 	ch := make(chan struct{}, 10)
 
-	for address, cache := range farcasterCacheMap {
+	for address, cache := range farcaster.Global() {
 		wg.Add(1)
 		go func(evmAddress string, faAddress string) {
 			defer func() {
@@ -144,7 +135,7 @@ func (s *service) GetAddressCastNumFromDb(farcasterCacheMap map[string]*farcaste
 			if err := database.Global().
 				Model(&model.Transfer{}).
 				Where("address_from = ?", evmAddress).
-				Where("network = ?", protocol.NetworkFarcaster).
+				Where("platform = ?", protocol.PlatformFarcaster).
 				Count(&total).Error; err != nil {
 				loggerx.Global().Warn("farcaster_crawler find transactions error, ", zap.Error(err))
 			}
