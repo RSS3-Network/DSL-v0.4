@@ -27,8 +27,7 @@ const (
 )
 
 var (
-	IqwikiCacheMap map[string]int
-	once           sync.Once
+	iqwikiCacheMap map[string]int
 	globalLocker   sync.RWMutex
 )
 
@@ -37,37 +36,44 @@ func ReplaceGlobal(address string, activityNum int) {
 
 	defer globalLocker.Unlock()
 
-	IqwikiCacheMap[address] = activityNum
+	iqwikiCacheMap[address] = activityNum
+}
+
+func Global() map[string]int {
+	globalLocker.RLock()
+
+	defer globalLocker.RUnlock()
+
+	return iqwikiCacheMap
 }
 
 type Client struct {
 	GClient *graphql.Client
 }
 
-func (c *Client) GetIqwikiCacheMap() (map[string]int, error) {
+func (c *Client) SetIqwikiCacheMap() error {
 	var err error
-	once.Do(func() {
-		IqwikiCacheMap, err = c.GetLastMapFromCache(context.Background())
+	iqwikiCacheMap, err = c.GetLastMapFromCache(context.Background())
 
-		if len(IqwikiCacheMap) == 0 {
-			IqwikiCacheMap = make(map[string]int)
-			iqwikiUsers, err := c.GetUserList(context.Background())
-			if err != nil {
-				loggerx.Global().Named("GetIqwikiCacheMap").Warn("unable to get iqwiki data", zap.Error(err))
-			}
+	if len(iqwikiCacheMap) == 0 {
+		iqwikiCacheMap = make(map[string]int)
+		iqwikiUsers, err := c.GetUserList(context.Background())
+		if err != nil {
+			loggerx.Global().Named("GetIqwikiCacheMap").Warn("unable to get iqwiki data", zap.Error(err))
+		}
 
-			for _, user := range iqwikiUsers {
-				if len(user.Id) > 0 {
-					ReplaceGlobal(strings.ToLower(user.Id), 0)
-				}
-			}
-			err = c.SetCurrentMap(context.Background(), IqwikiCacheMap)
-			if err != nil && err != redis.Nil {
-				loggerx.Global().Named("GetIqwikiCacheMap").Warn("unable to set cache data", zap.Error(err))
+		for _, user := range iqwikiUsers {
+			if len(user.Id) > 0 {
+				ReplaceGlobal(strings.ToLower(user.Id), 0)
 			}
 		}
-	})
-	return IqwikiCacheMap, err
+		err = c.SetCurrentMap(context.Background(), iqwikiCacheMap)
+		if err != nil && err != redis.Nil {
+			loggerx.Global().Named("GetIqwikiCacheMap").Warn("unable to set cache data", zap.Error(err))
+		}
+	}
+
+	return err
 }
 
 func (c *Client) UpdateIqwikiCacheMap() {
@@ -77,7 +83,7 @@ func (c *Client) UpdateIqwikiCacheMap() {
 	}
 
 	for _, user := range iqwikiUsers {
-		_, ok := IqwikiCacheMap[strings.ToLower(user.Id)]
+		_, ok := iqwikiCacheMap[strings.ToLower(user.Id)]
 		if !ok {
 			if len(user.Id) > 0 {
 				ReplaceGlobal(strings.ToLower(user.Id), 0)

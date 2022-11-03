@@ -51,7 +51,7 @@ func (s *service) Run() error {
 	ctx := context.Background()
 	// init cache cast number 0
 	loggerx.Global().Info("iqwiki_crawler start to init Map Cache")
-	iqwikiCacheMap, err := s.iqClient.GetIqwikiCacheMap()
+	err := s.iqClient.SetIqwikiCacheMap()
 	if err != nil && err != redis.Nil {
 		loggerx.Global().Error("iqwiki_crawler fail to init Map Cache", zap.Error(err))
 		return err
@@ -59,21 +59,19 @@ func (s *service) Run() error {
 
 	// get address cast number from db
 	loggerx.Global().Info("iqwiki_crawler start to get db data")
-	s.GetAddressCastNumFromDb(iqwikiCacheMap)
+	s.GetAddressCastNumFromDb()
 
 	for {
-		loggerx.Global().Info("iqwiki_crawler start a new round ", zap.Int("cache user is", len(iqwikiCacheMap)))
+		loggerx.Global().Info("iqwiki_crawler start a new round ", zap.Int("cache user is", len(iqwiki.Global())))
 
-		for address, num := range iqwikiCacheMap {
+		for address, num := range iqwiki.Global() {
 			activityList, err := s.iqClient.GetUserActivityList(ctx, address)
-			loggerx.Global().Info("iqwiki_crawler start to indexer address", zap.String("name", address))
 			if err != nil {
 				loggerx.Global().Warn("iqwiki_crawler get cast error", zap.Error(err))
 				continue
 			}
 
-			if len(activityList) == num {
-				loggerx.Global().Info("iqwiki_crawler end to indexer address", zap.String("name", address))
+			if len(activityList) <= num {
 				continue
 			}
 
@@ -94,39 +92,29 @@ func (s *service) Run() error {
 				continue
 			}
 
-			loggerx.Global().Info("iqwiki_crawler refresh to indexer address", zap.String("name", address))
-			iqwiki.ReplaceGlobal(address, len(transactions))
+			loggerx.Global().Info("iqwiki_crawler refresh to indexer address", zap.String("user", address), zap.Int("num", len(internalTransactions)))
+
+			iqwiki.ReplaceGlobal(address, len(activityList))
 		}
 
-		loggerx.Global().Info("iqwiki_crawler end a round ", zap.Int("cache user is", len(iqwikiCacheMap)))
+		loggerx.Global().Info("iqwiki_crawler end a round ", zap.Int("cache user is", len(iqwiki.Global())))
 
 		s.iqClient.UpdateIqwikiCacheMap()
-		loggerx.Global().Info("iqwiki_crawler finish update cache map", zap.Int("cache user is", len(iqwiki.IqwikiCacheMap)))
+		loggerx.Global().Info("iqwiki_crawler finish update cache map", zap.Int("cache user is", len(iqwiki.Global())))
 
-		res, err := s.iqClient.GetIqwikiCacheMap()
+		err = s.iqClient.SetCurrentMap(ctx, iqwiki.Global())
 		if err != nil {
-			loggerx.Global().Error("iqwiki_crawler fail to get Map Cache", zap.Error(err))
+			loggerx.Global().Error("iqwiki_crawler fail to set Map Cache", zap.Error(err))
 		}
-
-		if len(res) > 0 {
-			err = s.iqClient.SetCurrentMap(ctx, res)
-			if err != nil {
-				loggerx.Global().Error("iqwiki_crawler fail to set Map Cache", zap.Error(err))
-			}
-		} else {
-			res = iqwiki.IqwikiCacheMap
-		}
-
-		iqwikiCacheMap = res
 	}
 }
 
-func (s *service) GetAddressCastNumFromDb(iqwikiCacheMap map[string]int) {
+func (s *service) GetAddressCastNumFromDb() {
 	var wg sync.WaitGroup
 
 	ch := make(chan struct{}, 10)
 
-	for userAddress := range iqwikiCacheMap {
+	for userAddress := range iqwiki.Global() {
 		wg.Add(1)
 		go func(address string) {
 			defer func() {
