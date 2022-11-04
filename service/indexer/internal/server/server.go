@@ -32,7 +32,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/farcaster"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
@@ -49,10 +48,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/metaverse"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
-	farcasterWorker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/farcaster"
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
 	"github.com/samber/lo"
 	"github.com/scylladb/go-set/strset"
 	"go.opentelemetry.io/otel"
@@ -149,7 +148,6 @@ func (s *Server) Initialize() (err error) {
 		lensDatasource,
 		eth_etl.New(),
 		eip1577.New(s.employer),
-		farcaster.New(),
 	}
 
 	swapWorker, err := swap.New(s.employer)
@@ -169,6 +167,7 @@ func (s *Server) Initialize() (err error) {
 	s.workers = []worker.Worker{
 		liquidity.New(),
 		swapWorker,
+		bridge.New(),
 		marketplace.New(),
 		poap.New(),
 		mirror.New(),
@@ -178,7 +177,6 @@ func (s *Server) Initialize() (err error) {
 		lens_worker.New(),
 		transaction.New(),
 		metaverse.New(),
-		farcasterWorker.New(),
 	}
 
 	s.employer = shedlock.New()

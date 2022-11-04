@@ -83,12 +83,12 @@ func (i *internal) handleOpenseaSeaportOrderFulfilled(ctx context.Context, trans
 		return nil, err
 	}
 
-	seaport, err := opensea.NewSeaport(opensea.AddressSeaport, ethereumClient)
+	filterer, err := opensea.NewSeaportFilterer(opensea.AddressSeaport, ethereumClient)
 	if err != nil {
 		return nil, err
 	}
 
-	event, err := seaport.ParseOrderFulfilled(log)
+	event, err := filterer.ParseOrderFulfilled(log)
 	if err != nil {
 		return nil, err
 	}
@@ -159,12 +159,12 @@ func (i *internal) handleOpenSeaWyvernExchangeOrdersMatched(ctx context.Context,
 		return nil, err
 	}
 
-	wyvernExchange, err := opensea.NewWyvernExchange(opensea.AddressWyvernExchange, ethereumClient)
+	filterer, err := opensea.NewWyvernExchangeFilterer(opensea.AddressWyvernExchangeV1, ethereumClient)
 	if err != nil {
 		return nil, err
 	}
 
-	event, err := wyvernExchange.ParseOrdersMatched(log)
+	event, err := filterer.ParseOrdersMatched(log)
 	if err != nil {
 		return nil, err
 	}

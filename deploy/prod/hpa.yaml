@@ -24,4 +24,4 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: pregod-1-1-indexer
-  targetCPUUtilizationPercentage: 70
+  targetCPUUtilizationPercentage: 80

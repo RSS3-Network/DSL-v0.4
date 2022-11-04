@@ -19,9 +19,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/farcaster"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/lens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/mirror"
-
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -126,7 +126,8 @@ func (s *Server) Initialize() (err error) {
 		ens.New(s.rabbitmqChannel, s.employer, s.config),
 		lens.New(s.config),
 		mirror.New(s.config),
-		eip1577.New(s.config),
+		eip1577.New(s.config, s.employer),
+		farcaster.New(),
 	}
 
 	return nil

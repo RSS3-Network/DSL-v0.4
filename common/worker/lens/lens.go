@@ -64,10 +64,10 @@ const (
 )
 
 var SupportLensPlatform = map[string]bool{
-	protocol.PlatformLens:          true,
-	protocol.PlatformLenster:       true,
-	protocol.PlatformLenstube:      true,
-	protocol.PlatformLenstubeBytes: true,
+	protocol.PlatformLens:              true,
+	protocol.PlatformLensLenster:       true,
+	protocol.PlatformLensLenstube:      true,
+	protocol.PlatformLensLenstubeBytes: true,
 }
 
 func (c *Client) GetProfile(address string) (*social.Profile, error) {
@@ -419,10 +419,13 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 	case Share:
 		// get the correct type on Lens
 		if len(lensContent.Attributes) > 0 {
-			post.TypeOnPlatform = []string{lensContent.Attributes[0].Value}
+			post.TypeOnPlatform = []string{c.FormatTypeOnPlatform(lensContent.Attributes[0].Value)}
 		}
 		// get the pub time of the target
-		post.CreatedAt = lensContent.CreatedOn.Format(time.RFC3339)
+
+		if !lensContent.CreatedOn.IsZero() {
+			post.CreatedAt = lensContent.CreatedOn.Format(time.RFC3339)
+		}
 		post.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
 
 		postFinal.Target = post
@@ -446,10 +449,13 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 		postFinal.Target = c.CreatePost(ctx, &targetContent)
 		// get the correct type on Lens
 		if len(targetContent.Attributes) > 0 {
-			postFinal.Target.TypeOnPlatform = []string{targetContent.Attributes[0].Value}
+			postFinal.Target.TypeOnPlatform = []string{c.FormatTypeOnPlatform(targetContent.Attributes[0].Value)}
 		}
+
 		// get the pub time of the target
-		postFinal.Target.CreatedAt = targetContent.CreatedOn.Format(time.RFC3339)
+		if !targetContent.CreatedOn.IsZero() {
+			postFinal.Target.CreatedAt = targetContent.CreatedOn.Format(time.RFC3339)
+		}
 		postFinal.Target.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
 
 	default:
@@ -464,4 +470,13 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 	opt.Transfer.Metadata = rawMetadata
 
 	return nil
+}
+
+func (c *Client) FormatTypeOnPlatform(input string) string {
+	switch input {
+	// treat all these types as post
+	case "post", "image", "text_only", "video":
+		return Post
+	}
+	return input
 }
