@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -14,7 +16,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 func GetEIP1577Transactions(ctx context.Context, message *protocol.Message, name string, endpoint string) ([]model.Transaction, error) {
