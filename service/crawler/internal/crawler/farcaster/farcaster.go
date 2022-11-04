@@ -56,9 +56,11 @@ func (s *service) Run() error {
 	var wg sync.WaitGroup
 	ch := make(chan struct{}, 5)
 	for {
-		loggerx.Global().Info("farcaster_crawler start a new round ", zap.Int("cache user is:", len(farcaster.Global())))
+		farCacheMap := farcaster.Global()
 
-		for address, data := range farcaster.Global() {
+		loggerx.Global().Info("farcaster_crawler start a new round ", zap.Int("cache user is:", len(farCacheMap)))
+
+		for address, data := range farCacheMap {
 			wg.Add(1)
 			go func(faAddress string, cacheData *farcaster.CacheAddress) {
 				defer func() {
@@ -105,11 +107,11 @@ func (s *service) Run() error {
 		}
 		wg.Wait()
 
-		loggerx.Global().Info("farcaster_crawler end a new round ", zap.Int("cache user is:", len(farcaster.Global())))
+		loggerx.Global().Info("farcaster_crawler end a new round ")
 
 		// add new users to cache map
 		s.farClient.UpdateFarcasterCacheMap()
-		loggerx.Global().Info("farcaster_crawler finish update cache map ", zap.Int("cache user is:", len(farcaster.Global())))
+		loggerx.Global().Info("farcaster_crawler finish update cache map ")
 
 		err = s.farClient.SetCurrentMap(ctx, farcaster.Global())
 		if err != nil {

@@ -35,7 +35,12 @@ func Global() map[string]*CacheAddress {
 
 	defer globalLocker.RUnlock()
 
-	return farcasterCacheMap
+	item := make(map[string]*CacheAddress)
+	for key, value := range farcasterCacheMap {
+		item[key] = value
+	}
+
+	return item
 }
 
 func ReplaceGlobal(address string, cacheAddress *CacheAddress) {
