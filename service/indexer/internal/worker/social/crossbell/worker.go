@@ -3,6 +3,7 @@ package crossbell
 import (
 	"context"
 	"encoding/json"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -58,6 +59,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	internalTransactions := make([]model.Transaction, 0)
 	opt := lop.NewOption().WithConcurrency(ethereum.RPCMaxConcurrency)
 
+	var mu sync.Mutex
+
 	lop.ForEach(transactions, func(transaction model.Transaction, i int) {
 		addressTo := common.HexToAddress(transaction.AddressTo)
 
@@ -107,9 +110,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
 		}
 
-		transaction.Owner = transaction.AddressFrom
+		transaction.Owner = message.Address
 
+		mu.Lock()
 		internalTransactions = append(internalTransactions, transaction)
+		mu.Unlock()
 	}, opt)
 
 	return internalTransactions, nil
