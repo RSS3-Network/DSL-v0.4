@@ -161,7 +161,7 @@ func HandleEIP1577(ctx context.Context, domain string, address string) error {
 	}
 
 	// insert db
-	transaction := []*model.Transaction{}
+	var transaction []*model.Transaction
 	for i := range internalTransactions {
 		transaction = append(transaction, &internalTransactions[i])
 	}

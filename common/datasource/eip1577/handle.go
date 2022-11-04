@@ -5,9 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -17,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
+	"net/http"
 )
 
 func GetEIP1577Transactions(ctx context.Context, message *protocol.Message, name string, endpoint string) ([]model.Transaction, error) {
@@ -72,7 +70,7 @@ func GetEIP1577Transactions(ctx context.Context, message *protocol.Message, name
 			Transfers: []model.Transfer{
 				{
 					TransactionHash: hash,
-					Timestamp:       time.Time{},
+					Timestamp:       feed.CreatedAt,
 					BlockNumber:     decimal.Zero.BigInt(),
 					Tag:             filter.TagSocial,
 					Type:            filter.SocialPost,
