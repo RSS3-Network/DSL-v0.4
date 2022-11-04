@@ -13,6 +13,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 
+	_ "time/tzdata"
+
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/eip1577"
@@ -78,6 +80,8 @@ func (s *service) Run() error {
 }
 
 func (job *EIP1577Job) Run(renewal crawler.RenewalFunc) error {
+	loggerx.Global().Info("eip1577: job run")
+
 	ctx := context.Background()
 	file, err := DomainFS.Open("eip1577.csv")
 	if err != nil {
