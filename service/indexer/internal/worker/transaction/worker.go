@@ -468,6 +468,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 		transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 	} else {
 		tokenMetadata, err = s.tokenClient.ERC20ToMetadata(ctx, message.Network, *address)
+
 		if err == nil && tokenMetadata.Symbol != "" {
 			if value == nil {
 				value = big.NewInt(0)
@@ -478,6 +479,10 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 
 			tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
 			tokenMetadata.ValueDisplay = &tokenValueDisplay
+
+			if isBurn(&transfer, tokenMetadata) {
+				transfer.Type = filter.TransactionBurn
+			}
 
 			transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 		} else {
@@ -533,6 +538,10 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 
 			if transfer.AddressTo == strings.ToLower(ens.EnsRegistrarController.String()) || transfer.AddressFrom == strings.ToLower(ens.EnsRegistrarController.String()) {
 				transfer.Platform = protocol.PlatformEns
+			}
+
+			if isBurn(&transfer, tokenMetadata) {
+				transfer.Type = filter.CollectibleBurn
 			}
 
 			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
@@ -669,35 +678,37 @@ func (s *service) buildCostMetadata(ctx context.Context, transaction model.Trans
 }
 
 func (s *service) buildType(transaction model.Transaction, transfer model.Transfer) (model.Transaction, model.Transfer) {
-	switch {
-	case transfer.AddressFrom == ethereum.AddressGenesis.String():
-		transfer.Type = filter.TransactionMint
-		switch transfer.Tag {
-		case filter.TagTransaction:
+	// transfer.Type might not be empty
+	if transfer.Type == "" {
+		switch {
+		case transfer.AddressFrom == ethereum.AddressGenesis.String():
 			transfer.Type = filter.TransactionMint
-		case filter.TagCollectible:
-			transfer.Type = filter.CollectibleMint
-		}
-	case ethereum.IsBlackHoleAddress(common.HexToAddress(transfer.AddressTo)):
-		transfer.Type = filter.TransactionBurn
-		switch transfer.Tag {
-		case filter.TagTransaction:
+			switch transfer.Tag {
+			case filter.TagTransaction:
+				transfer.Type = filter.TransactionMint
+			case filter.TagCollectible:
+				transfer.Type = filter.CollectibleMint
+			}
+		case ethereum.IsBlackHoleAddress(common.HexToAddress(transfer.AddressTo)):
 			transfer.Type = filter.TransactionBurn
-		case filter.TagCollectible:
-			transfer.Type = filter.CollectibleBurn
-		}
-	case transfer.Tag == filter.TagExchange:
-		transaction.Platform = transfer.Platform
-	default:
-		transfer.Type = filter.TransactionTransfer
-		switch transfer.Tag {
-		case filter.TagTransaction:
+			switch transfer.Tag {
+			case filter.TagTransaction:
+				transfer.Type = filter.TransactionBurn
+			case filter.TagCollectible:
+				transfer.Type = filter.CollectibleBurn
+			}
+		case transfer.Tag == filter.TagExchange:
+			transaction.Platform = transfer.Platform
+		default:
 			transfer.Type = filter.TransactionTransfer
-		case filter.TagCollectible:
-			transfer.Type = filter.CollectibleTransfer
+			switch transfer.Tag {
+			case filter.TagTransaction:
+				transfer.Type = filter.TransactionTransfer
+			case filter.TagCollectible:
+				transfer.Type = filter.CollectibleTransfer
+			}
 		}
 	}
-
 	transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
 
 	return transaction, transfer
@@ -764,6 +775,10 @@ func keyOfCheckCexWallet(address string) string {
 
 func isMint(actionTag, actionType string) bool {
 	return (actionTag == filter.TagTransaction && actionType == filter.TransactionMint) || (actionTag == filter.TagCollectible && actionType == filter.CollectibleMint)
+}
+
+func isBurn(transfer *model.Transfer, metadata *metadata.Token) bool {
+	return transfer.AddressTo == metadata.ContractAddress
 }
 
 func New() worker.Worker {
