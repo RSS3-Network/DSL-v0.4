@@ -44,7 +44,12 @@ func Global() map[string]int {
 
 	defer globalLocker.RUnlock()
 
-	return iqwikiCacheMap
+	item := make(map[string]int)
+	for key, value := range iqwikiCacheMap {
+		item[key] = value
+	}
+
+	return item
 }
 
 type Client struct {

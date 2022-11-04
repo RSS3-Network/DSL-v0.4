@@ -62,9 +62,12 @@ func (s *service) Run() error {
 	s.GetAddressCastNumFromDb()
 
 	for {
-		loggerx.Global().Info("iqwiki_crawler start a new round ", zap.Int("cache user is", len(iqwiki.Global())))
 
-		for address, num := range iqwiki.Global() {
+		iqCacheMap := iqwiki.Global()
+
+		loggerx.Global().Info("iqwiki_crawler start a new round ", zap.Int("cache user is", len(iqCacheMap)))
+
+		for address, num := range iqCacheMap {
 			activityList, err := s.iqClient.GetUserActivityList(ctx, address)
 			if err != nil {
 				loggerx.Global().Warn("iqwiki_crawler get cast error", zap.Error(err))
@@ -97,10 +100,10 @@ func (s *service) Run() error {
 			iqwiki.ReplaceGlobal(address, len(activityList))
 		}
 
-		loggerx.Global().Info("iqwiki_crawler end a round ", zap.Int("cache user is", len(iqwiki.Global())))
+		loggerx.Global().Info("iqwiki_crawler end a round")
 
 		s.iqClient.UpdateIqwikiCacheMap()
-		loggerx.Global().Info("iqwiki_crawler finish update cache map", zap.Int("cache user is", len(iqwiki.Global())))
+		loggerx.Global().Info("iqwiki_crawler finish update cache map")
 
 		err = s.iqClient.SetCurrentMap(ctx, iqwiki.Global())
 		if err != nil {
