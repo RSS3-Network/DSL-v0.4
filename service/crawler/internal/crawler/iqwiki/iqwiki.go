@@ -180,9 +180,9 @@ func (s *service) HandleTransactions(ctx context.Context, activityList []graphql
 		var action string
 
 		if activity.Type == graphqlx.StatusCreated {
-			action = filter.SocialProfileCreate
+			action = filter.SocialCreate
 		} else if activity.Type == graphqlx.StatusUpdated {
-			action = filter.SocialProfileUpdate
+			action = filter.SocialUpdate
 		}
 
 		for _, content := range activity.Content {
@@ -335,12 +335,18 @@ func (s *service) HandlePost(ctx context.Context, transfer *model.Transfer) (err
 		CreatedAt:      wiki.Created.Format(time.RFC3339),
 		Author:         []string{wiki.Author.Id},
 		Body:           wikiContent.Content,
+		Action:         transfer.Type,
 		TypeOnPlatform: []string{transfer.Type},
 		Title:          wiki.Title,
 		Summary:        wiki.Summary,
 		TargetURL:      fmt.Sprintf("https://iq.wiki/wiki/%s", wiki.Id),
 		Media:          medias,
 	}
+
+	if transfer.Type == filter.SocialUpdate {
+		post.Action = filter.SocialRevise
+	}
+
 	transfer.Metadata, _ = json.Marshal(post)
 	transfer.RelatedUrls = ethereum.BuildURL(
 		[]string{

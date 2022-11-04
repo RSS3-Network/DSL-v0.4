@@ -46,8 +46,8 @@ const (
 	SocialWiki     string = "wiki"
 
 	// sub-types for Social-Profile
-	SocialProfileCreate string = "create"
-	SocialProfileUpdate string = "update"
+	SocialCreate string = "create"
+	SocialUpdate string = "update"
 
 	// Governance types
 	GovernancePropose string = "propose"
