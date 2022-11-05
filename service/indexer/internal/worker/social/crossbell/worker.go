@@ -19,7 +19,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/handler"
 	lop "github.com/samber/lo/parallel"
+
 	"go.opentelemetry.io/otel"
+
 	"go.uber.org/zap"
 )
 
@@ -116,7 +118,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
 		}
 
-		transaction.Owner = transaction.AddressFrom
+		transaction.Owner = message.Address
 
 		internalTransactions = append(internalTransactions, transaction)
 	}, opt)

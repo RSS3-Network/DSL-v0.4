@@ -13,6 +13,7 @@ var allowList = map[string]string{
 	"0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f": "Arbitrum Bridge",
 	"0xc4448b71118c9071Bcb9734A0EAc55D18A153949": "Arbitrum Bridge Nova",
 	"0x499a865ac595e6167482d2bd5A224876baB85ab4": "Polygon Bridge",
+	"0x0f588318a494e4508a121a32b6670b5494ca3357": "Crossbell xSync",
 }
 
 var spamList = map[string]string{
