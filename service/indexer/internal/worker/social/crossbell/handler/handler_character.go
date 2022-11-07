@@ -109,7 +109,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
-		Type:     filter.SocialProfileCreate,
+		Type:     filter.SocialCreate,
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
@@ -154,7 +154,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
-		Type:     filter.SocialProfileUpdate,
+		Type:     filter.SocialUpdate,
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
@@ -353,7 +353,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
-		Type:     filter.SocialProfileUpdate,
+		Type:     filter.SocialUpdate,
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
@@ -395,7 +395,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
-		Type:     filter.SocialProfileUpdate,
+		Type:     filter.SocialUpdate,
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {

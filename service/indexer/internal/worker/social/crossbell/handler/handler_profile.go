@@ -76,7 +76,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 		Platform:  protocol.PlatformCrossbell,
 		Network:   transfer.Network,
 		Source:    transfer.Network,
-		Type:      filter.SocialProfileCreate,
+		Type:      filter.SocialCreate,
 		Handle:    event.Handle,
 		CreatedAt: time.Unix(event.Timestamp.Int64(), 0),
 	}
@@ -208,7 +208,7 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
-		Type:     filter.SocialProfileUpdate,
+		Type:     filter.SocialUpdate,
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {

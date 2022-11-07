@@ -20,8 +20,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/farcaster"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/iqwiki"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/lens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/mirror"
+
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -128,6 +130,7 @@ func (s *Server) Initialize() (err error) {
 		mirror.New(s.config),
 		eip1577.New(s.config, s.employer),
 		farcaster.New(),
+		iqwiki.New(),
 	}
 
 	return nil
