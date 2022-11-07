@@ -36,7 +36,7 @@ type characterHandler struct {
 	tokenClient       *token.Client
 }
 
-func (c *characterHandler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+func (c *characterHandler) Handle(ctx context.Context, transaction *model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
 	var log types.Log
 
 	if err := json.Unmarshal(transfer.SourceData, &log); err != nil {
@@ -88,7 +88,7 @@ func (c *characterHandler) Handle(ctx context.Context, transaction model.Transac
 	}
 }
 
-func (c *characterHandler) handleCharacterCreated(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (c *characterHandler) handleCharacterCreated(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleProfileCreated")
@@ -105,8 +105,14 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 		return nil, err
 	}
 
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.CharacterId)
+	if err != nil {
+		return nil, err
+	}
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
 	profile := &social.Profile{
-		Address:  transfer.AddressFrom,
+		Address:  transaction.Owner,
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
@@ -133,7 +139,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 	return &transfer, nil
 }
 
-func (c *characterHandler) handleSetHandle(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (c *characterHandler) handleSetHandle(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleSetHandle")
@@ -150,8 +156,14 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 		return nil, err
 	}
 
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.CharacterId)
+	if err != nil {
+		return nil, err
+	}
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
 	profile := &social.Profile{
-		Address:  transfer.AddressFrom,
+		Address:  transaction.Owner,
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
@@ -175,7 +187,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction mode
 	return &transfer, nil
 }
 
-func (c *characterHandler) handlePostNote(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (c *characterHandler) handlePostNote(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handlePostNote")
@@ -238,6 +250,12 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction model
 		return nil, err
 	}
 
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.CharacterId)
+	if err != nil {
+		return nil, err
+	}
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
 	return &transfer, nil
 }
 
@@ -293,7 +311,7 @@ func (c *characterHandler) buildNoteMetadata(ctx context.Context, characterID, n
 	return &post, &note, &postOriginal, nil
 }
 
-func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleLinkCharacter")
@@ -324,7 +342,9 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 	if err != nil {
 		return nil, err
 	}
-	profile.Address = strings.ToLower(characterOwner.String())
+
+	transaction.Owner = strings.ToLower(characterOwner.String())
+	profile.Address = transaction.Owner
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialFollow, transfer.Type)
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
@@ -332,7 +352,7 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 	return &transfer, nil
 }
 
-func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleUnLinkCharacter")
@@ -366,7 +386,9 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 		return nil, err
 	}
 
-	profile.Address = strings.ToLower(characterOwner.String())
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
+	profile.Address = transaction.Owner
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialUnfollow, transfer.Type)
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
@@ -374,7 +396,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 	return &transfer, nil
 }
 
-func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleSetCharacterUri")
@@ -391,8 +413,15 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		return nil, err
 	}
 
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.CharacterId)
+	if err != nil {
+		return nil, err
+	}
+
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
 	profile := &social.Profile{
-		Address:  transfer.AddressFrom,
+		Address:  transaction.Owner,
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
@@ -416,7 +445,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 	return &transfer, nil
 }
 
-func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleSetNoteUri")
@@ -447,10 +476,17 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction mod
 		return nil, fmt.Errorf("build related urls: %w", err)
 	}
 
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.CharacterId)
+	if err != nil {
+		return nil, err
+	}
+
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
 	return &transfer, nil
 }
 
-func (c *characterHandler) handleMintNote(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (c *characterHandler) handleMintNote(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleMintNote")
@@ -480,6 +516,13 @@ func (c *characterHandler) handleMintNote(ctx context.Context, transaction model
 	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
 		return nil, err
 	}
+
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.CharacterId)
+	if err != nil {
+		return nil, err
+	}
+
+	transaction.Owner = strings.ToLower(characterOwner.String())
 
 	return &transfer, nil
 }

@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -15,14 +14,13 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/profile"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-
 	"github.com/naturalselectionlabs/pregod/internal/token"
 
 	"go.opentelemetry.io/otel"
 )
 
 type Interface interface {
-	Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error)
+	Handle(ctx context.Context, transaction *model.Transaction, transfer model.Transfer) (*model.Transfer, error)
 }
 
 var _ Interface = (*handler)(nil)
@@ -58,17 +56,12 @@ type CrossbellPostStruct struct {
 	Summary      string   `json:"summary"`
 }
 
-func (h *handler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+func (h *handler) Handle(ctx context.Context, transaction *model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handle")
 
 	_, span := tracer.Start(ctx, "worker_crossbell_handle:Handle")
 
 	defer span.End()
-
-	// Transfer type actions should be handled by the transaction worker
-	if transfer.Source != protocol.SourceOrigin {
-		return &transfer, nil
-	}
 
 	var log types.Log
 

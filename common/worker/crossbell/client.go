@@ -135,7 +135,7 @@ func (c *Client) HandleReceipt(ctx context.Context, message *protocol.Message, t
 			}
 		}
 
-		internalTransfer, err := c.handler.Handle(ctx, transaction, transfer)
+		internalTransfer, err := c.handler.Handle(ctx, &transaction, transfer)
 		if err != nil {
 			if !errors.Is(err, crossbell.ErrorUnknownEvent) {
 				loggerx.Global().Warn(

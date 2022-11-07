@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -29,7 +30,7 @@ type profileHandler struct {
 	tokenClient     *token.Client
 }
 
-func (p *profileHandler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+func (p *profileHandler) Handle(ctx context.Context, transaction *model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler_profile")
 
 	ctx, snap := tracer.Start(ctx, "worker_crossbell_handler_profile:Handle")
@@ -54,7 +55,7 @@ func (p *profileHandler) Handle(ctx context.Context, transaction model.Transacti
 	}
 }
 
-func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleProfileCreated")
@@ -72,14 +73,22 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 		return nil, err
 	}
 
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{}, event.ProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
 	profile := &social.Profile{
-		Address:   transfer.AddressFrom,
+		Address:   transaction.Owner,
 		Platform:  protocol.PlatformCrossbell,
 		Network:   transfer.Network,
 		Source:    transfer.Network,
 		Type:      filter.SocialProfileCreate,
 		Handle:    event.Handle,
 		CreatedAt: time.Unix(event.Timestamp.Int64(), 0),
+		URL:       fmt.Sprintf("https://crossbell.io/@%v", event.Handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
@@ -100,7 +109,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	return &transfer, nil
 }
 
-func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleLinkProfile")
@@ -131,7 +140,10 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 	if err != nil {
 		return nil, err
 	}
-	profile.Address = strings.ToLower(characterOwner.String())
+
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
+	profile.Address = transaction.Owner
 
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
@@ -144,7 +156,7 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 	return &transfer, nil
 }
 
-func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleUnLinkProfile")
@@ -175,7 +187,10 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 	if err != nil {
 		return nil, err
 	}
-	profile.Address = strings.ToLower(characterOwner.String())
+
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
+	profile.Address = transaction.Owner
 
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
@@ -187,7 +202,7 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 	return &transfer, nil
 }
 
-func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleSetProfileUri")
@@ -204,8 +219,15 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 		return nil, err
 	}
 
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{}, event.ProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
 	profile := &social.Profile{
-		Address:  transfer.AddressFrom,
+		Address:  transaction.Owner,
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
