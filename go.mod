@@ -18,7 +18,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hasura/go-graphql-client v0.7.1
 	github.com/labstack/echo-contrib v0.13.0
-	github.com/labstack/echo/v4 v4.9.0
+	github.com/labstack/echo/v4 v4.7.2
 	github.com/lib/pq v1.10.6
 	github.com/naturalselectionlabs/kurora/client v0.0.0-20221107071944-18ee0134b6e1
 	github.com/rabbitmq/amqp091-go v1.3.4
@@ -26,10 +26,12 @@ require (
 	github.com/samber/lo v1.31.0
 	github.com/scylladb/go-set v1.0.2
 	github.com/shopspring/decimal v1.3.1
+	github.com/shurcooL/graphql v0.0.0-20220606043923-3cf50f8a0a29
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.0
+	github.com/unstoppabledomains/resolution-go/v2 v2.2.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	github.com/wealdtech/go-ens/v3 v3.5.5
 	go.opentelemetry.io/otel v1.11.1
@@ -106,7 +108,6 @@ require (
 	github.com/rjeczalik/notify v0.9.2 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
-	github.com/shurcooL/graphql v0.0.0-20220606043923-3cf50f8a0a29 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
@@ -115,7 +116,6 @@ require (
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.5.0 // indirect
-	github.com/unstoppabledomains/resolution-go/v2 v2.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/wealdtech/go-multicodec v1.4.0 // indirect
