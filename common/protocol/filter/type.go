@@ -43,10 +43,11 @@ const (
 	SocialUnfollow string = "unfollow"
 	SocialLike     string = "like"
 	SocialMint     string = "mint"
+	SocialWiki     string = "wiki"
 
 	// sub-types for Social-Profile
-	SocialProfileCreate string = "create"
-	SocialProfileUpdate string = "update"
+	SocialCreate string = "create"
+	SocialUpdate string = "update"
 
 	// Governance types
 	GovernancePropose string = "propose"
@@ -61,7 +62,7 @@ var ValidTypeMap = map[string][]string{
 	TagTransaction: {TransactionTransfer, TransactionBridge, TransactionMint, TransactionBurn},
 	TagExchange:    {ExchangeWithdraw, ExchangeDeposit, ExchangeSwap, ExchangeLiquidity},
 	TagCollectible: {CollectibleTransfer, CollectibleMint, CollectibleBurn, CollectiblePoap},
-	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike},
+	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike, SocialWiki},
 	TagDonation:    {DonationLaunch, DonationDonate},
 	TagGovernance:  {GovernancePropose, GovernanceVote},
 }
@@ -77,6 +78,5 @@ func CheckTypeValid(tag string, transferType string) bool {
 			return true
 		}
 	}
-
 	return false
 }
