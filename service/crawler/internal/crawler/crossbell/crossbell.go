@@ -109,8 +109,6 @@ func (s *service) Run() error {
 			continue
 		}
 	}
-
-	return nil
 }
 
 func (s *service) GetKuroraLogs(ctx context.Context) ([]*model.Transaction, error) {
@@ -153,8 +151,8 @@ func (s *service) GetKuroraLogs(ctx context.Context) ([]*model.Transaction, erro
 			}
 		}
 
-		transfers := transactionMap[log.TransactionHash.String()].Transfers
-		transfers = append(transfers, model.Transfer{
+		transaction := transactionMap[log.TransactionHash.String()]
+		transaction.Transfers = append(transaction.Transfers, model.Transfer{
 			Timestamp:   log.Timestamp,
 			BlockNumber: log.BlockNumber.BigInt(),
 			Index:       int64(log.Index),
