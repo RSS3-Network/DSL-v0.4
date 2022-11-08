@@ -90,7 +90,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			return
 		}
 
-		internalTransfers, err := s.crossbellClient.HandleReceipt(ctx, message, transaction, sourceData.Receipt, transferMap)
+		internalTransfers, err := s.crossbellClient.HandleReceipt(ctx, message, &transaction, sourceData.Receipt, transferMap)
 		if err != nil {
 			zap.L().Error("failed to handle receipt", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
 

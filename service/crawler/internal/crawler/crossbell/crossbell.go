@@ -2,12 +2,17 @@ package crossbell
 
 import (
 	"encoding/json"
+	"net/http"
+	"sync"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/kurora/constant"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	contract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -22,9 +27,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
-	"net/http"
-	"sync"
-	"time"
 )
 
 var (
@@ -124,7 +126,9 @@ func (s *service) GetKuroraLogs(ctx context.Context) ([]*model.Transaction, erro
 			contract.AddressCharacter,
 			contract.AddressLinkList,
 		},
+		Cursor: &cursor,
 	}
+
 	if len(cursor) > 0 {
 		query.Cursor = &cursor
 	}
@@ -135,16 +139,34 @@ func (s *service) GetKuroraLogs(ctx context.Context) ([]*model.Transaction, erro
 		return nil, err
 	}
 
+	transactionMap := make(map[string]*model.Transaction)
 	for _, log := range result {
-		internalTransactions = append(internalTransactions, &model.Transaction{
-			BlockNumber: log.BlockNumber.BigInt().Int64(),
-			Hash:        log.TransactionHash.String(),
-			Index:       int64(log.TransactionIndex),
-			Network:     protocol.NetworkCrossbell,
+		if _, exists := transactionMap[log.TransactionHash.String()]; !exists {
+			transactionMap[log.TransactionHash.String()] = &model.Transaction{
+				BlockNumber: log.BlockNumber.BigInt().Int64(),
+				Hash:        log.TransactionHash.String(),
+				Index:       int64(log.TransactionIndex),
+				Network:     s.Network(),
+				Source:      protocol.SourcePregodETL,
+				Platform:    s.Name(),
+				Transfers:   make([]model.Transfer, 0),
+			}
+		}
+
+		transfers := transactionMap[log.TransactionHash.String()].Transfers
+		transfers = append(transfers, model.Transfer{
+			Timestamp:   log.Timestamp,
+			BlockNumber: log.BlockNumber.BigInt(),
+			Index:       int64(log.Index),
+			Metadata:    metadata.Default,
+			Network:     s.Network(),
+			Platform:    s.Name(),
 			Source:      protocol.SourcePregodETL,
-			Platform:    protocol.PlatformCrossbell,
-			Transfers:   make([]model.Transfer, 0),
 		})
+	}
+
+	for _, tx := range transactionMap {
+		internalTransactions = append(internalTransactions, tx)
 	}
 
 	// set cache
@@ -187,7 +209,7 @@ func (s *service) getInternalTransaction(ctx context.Context, transactions []*mo
 			Network: s.Network(),
 		}
 
-		internalTransfers, err := s.crossbellClient.HandleReceipt(ctx, &message, *transaction, sourceData.Receipt, transferMap)
+		internalTransfers, err := s.crossbellClient.HandleReceipt(ctx, &message, transaction, sourceData.Receipt, transferMap)
 		if err != nil {
 			zap.L().Error("failed to handle receipt", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
 

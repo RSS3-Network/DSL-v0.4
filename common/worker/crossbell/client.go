@@ -102,7 +102,7 @@ func (c *Client) GetProfile(address string) ([]social.Profile, error) {
 	return result, nil
 }
 
-func (c *Client) HandleReceipt(ctx context.Context, message *protocol.Message, transaction model.Transaction, receipt *types.Receipt, transferMap map[int64]model.Transfer) ([]model.Transfer, error) {
+func (c *Client) HandleReceipt(ctx context.Context, message *protocol.Message, transaction *model.Transaction, receipt *types.Receipt, transferMap map[int64]model.Transfer) ([]model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell:handleReceipt")
@@ -135,7 +135,7 @@ func (c *Client) HandleReceipt(ctx context.Context, message *protocol.Message, t
 			}
 		}
 
-		internalTransfer, err := c.handler.Handle(ctx, &transaction, transfer)
+		internalTransfer, err := c.handler.Handle(ctx, transaction, transfer)
 		if err != nil {
 			if !errors.Is(err, crossbell.ErrorUnknownEvent) {
 				loggerx.Global().Warn(
