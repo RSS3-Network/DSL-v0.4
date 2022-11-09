@@ -38,7 +38,7 @@ const (
 	PlatformAAVE        = "AAVE"
 	PlatformCurve       = "Curve"
 
-	// game
+	// metaverse
 	PlatformMars4 = "Mars4"
 )
 

@@ -7,7 +7,7 @@ const (
 	TagSocial      string = "social"
 	TagDonation    string = "donation"
 	TagGovernance  string = "governance"
-	TagGame        string = "game"
+	TagMetaverse   string = "metaverse"
 )
 
 var ValidTag = map[string]string{
@@ -17,7 +17,7 @@ var ValidTag = map[string]string{
 	TagSocial:      TagSocial,
 	TagDonation:    TagDonation,
 	TagGovernance:  TagGovernance,
-	TagGame:        TagGame,
+	TagMetaverse:   TagMetaverse,
 }
 
 var TagPriority = map[string]int{
@@ -27,7 +27,7 @@ var TagPriority = map[string]int{
 	TagSocial:      4,
 	TagDonation:    4,
 	TagGovernance:  4,
-	TagGame:        4,
+	TagMetaverse:   4,
 }
 
 func UpdateTagAndType(targetTag string, currentTag string, targetType string, currentType string) (string, string) {
