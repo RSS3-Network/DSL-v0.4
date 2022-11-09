@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -73,7 +74,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction *
 		return nil, err
 	}
 
-	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{}, event.ProfileId)
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ProfileId)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction *mod
 		return nil, err
 	}
 
-	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{}, event.ToProfileId)
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToProfileId)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +184,7 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction *m
 		return nil, err
 	}
 
-	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{}, event.ToProfileId)
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToProfileId)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +220,7 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction *m
 		return nil, err
 	}
 
-	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{}, event.ProfileId)
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ProfileId)
 	if err != nil {
 		return nil, err
 	}

@@ -105,7 +105,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 		return nil, err
 	}
 
-	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.CharacterId)
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.CharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -128,9 +128,11 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 
-	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, nil); err != nil {
+	url, err := c.buildRelatedUrls(transaction.BlockNumber, transfer.Platform, event.CharacterId, nil)
+	if err != nil {
 		return nil, err
 	}
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash), url}
 
 	database.Global().Model(&social.Profile{}).Clauses(clause.OnConflict{
 		UpdateAll: true,
@@ -156,7 +158,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction *mod
 		return nil, err
 	}
 
-	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.CharacterId)
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.CharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -180,9 +182,11 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction *mod
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 
-	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, nil); err != nil {
+	url, err := c.buildRelatedUrls(transaction.BlockNumber, transfer.Platform, event.CharacterId, nil)
+	if err != nil {
 		return nil, err
 	}
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash), url}
 
 	return &transfer, nil
 }
@@ -201,7 +205,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction *mode
 		return nil, fmt.Errorf("failed to parse post note event: %w", err)
 	}
 
-	post, note, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, crossbell.EventNamePostNote)
+	post, note, postOriginal, err := c.buildNoteMetadata(ctx, transaction, event.CharacterId, event.NoteId, crossbell.EventNamePostNote)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build note metadata: %w", err)
 	}
@@ -223,7 +227,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction *mode
 			return nil, fmt.Errorf("failed to get linking note: %w", err)
 		}
 
-		targetPost, targetNote, _, err := c.buildNoteMetadata(ctx, targetNoteStruct.CharacterId, targetNoteStruct.NoteId, crossbell.EventNamePostNote /* It may be a comment of a comment, but we can hardly judge it. */)
+		targetPost, targetNote, _, err := c.buildNoteMetadata(ctx, transaction, targetNoteStruct.CharacterId, targetNoteStruct.NoteId, crossbell.EventNamePostNote /* It may be a comment of a comment, but we can hardly judge it. */)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build target note metadata: %w", err)
 		}
@@ -242,15 +246,17 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction *mode
 		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialComment, transfer.Type)
 	}
 
-	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
+	url, err := c.buildRelatedUrls(transaction.BlockNumber, transfer.Platform, event.CharacterId, event.NoteId)
+	if err != nil {
 		return nil, err
 	}
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash), url}
 
 	if transfer.Metadata, err = json.Marshal(post); err != nil {
 		return nil, err
 	}
 
-	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.CharacterId)
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.CharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -259,8 +265,8 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction *mode
 	return &transfer, nil
 }
 
-func (c *characterHandler) buildNoteMetadata(ctx context.Context, characterID, noteID *big.Int, eventName string) (*metadata.Post, *character.DataTypesNote, *CrossbellPostStruct, error) {
-	note, err := c.characterContract.GetNote(&bind.CallOpts{}, characterID, noteID)
+func (c *characterHandler) buildNoteMetadata(ctx context.Context, transaction *model.Transaction, characterID, noteID *big.Int, eventName string) (*metadata.Post, *character.DataTypesNote, *CrossbellPostStruct, error) {
+	note, err := c.characterContract.GetNote(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, characterID, noteID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -280,7 +286,7 @@ func (c *characterHandler) buildNoteMetadata(ctx context.Context, characterID, n
 		return nil, nil, nil, fmt.Errorf("failed to get character contract: %w", err)
 	}
 
-	handle, err := characterContract.GetHandle(&bind.CallOpts{}, characterID)
+	handle, err := characterContract.GetHandle(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, characterID)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to get character handle: %w", err)
 	}
@@ -338,7 +344,7 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 		return nil, err
 	}
 
-	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.ToCharacterId)
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToCharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +387,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 		return nil, err
 	}
 
-	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.ToCharacterId)
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToCharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -413,7 +419,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		return nil, err
 	}
 
-	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.CharacterId)
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.CharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -438,9 +444,11 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 
-	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, nil); err != nil {
+	url, err := c.buildRelatedUrls(transaction.BlockNumber, transfer.Platform, event.CharacterId, nil)
+	if err != nil {
 		return nil, err
 	}
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash), url}
 
 	return &transfer, nil
 }
@@ -459,7 +467,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction *mo
 		return nil, fmt.Errorf("failed to parse SetNoteUri event: %w", err)
 	}
 
-	post, _, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, crossbell.EventNameSetNoteUri)
+	post, _, postOriginal, err := c.buildNoteMetadata(ctx, transaction, event.CharacterId, event.NoteId, crossbell.EventNameSetNoteUri)
 	if err != nil {
 		return nil, fmt.Errorf("build note metadata: %w", err)
 	}
@@ -472,11 +480,13 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction *mo
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialRevise, transfer.Type)
 
-	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
-		return nil, fmt.Errorf("build related urls: %w", err)
+	url, err := c.buildRelatedUrls(transaction.BlockNumber, transfer.Platform, event.CharacterId, event.NoteId)
+	if err != nil {
+		return nil, err
 	}
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash), url}
 
-	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.CharacterId)
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.CharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -500,7 +510,7 @@ func (c *characterHandler) handleMintNote(ctx context.Context, transaction *mode
 		return nil, fmt.Errorf("failed to parse event: %w", err)
 	}
 
-	post, _, postOriginal, err := c.buildNoteMetadata(ctx, event.CharacterId, event.NoteId, crossbell.EventNameMintNote)
+	post, _, postOriginal, err := c.buildNoteMetadata(ctx, transaction, event.CharacterId, event.NoteId, crossbell.EventNameMintNote)
 	if err != nil {
 		return nil, fmt.Errorf("build note metadata: %w", err)
 	}
@@ -513,11 +523,13 @@ func (c *characterHandler) handleMintNote(ctx context.Context, transaction *mode
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialMint, transfer.Type)
 
-	if transfer.RelatedUrls, err = c.buildRelatedUrls([]string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}, transfer.Platform, event.CharacterId, event.NoteId); err != nil {
+	url, err := c.buildRelatedUrls(transaction.BlockNumber, transfer.Platform, event.CharacterId, event.NoteId)
+	if err != nil {
 		return nil, err
 	}
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash), url}
 
-	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{}, event.CharacterId)
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.CharacterId)
 	if err != nil {
 		return nil, err
 	}
@@ -545,15 +557,15 @@ func (c *characterHandler) buildPlatform(sources []string) string {
 	return strings.Trim(sources[0], `\"`)
 }
 
-func (c *characterHandler) buildRelatedUrls(relatedUrls []string, platform string, characterID, noteID *big.Int) ([]string, error) {
+func (c *characterHandler) buildRelatedUrls(blockNumber int64, platform string, characterID, noteID *big.Int) (string, error) {
 	if noteID == nil {
-		handle, err := c.characterContract.GetHandle(&bind.CallOpts{}, characterID)
+		handle, err := c.characterContract.GetHandle(&bind.CallOpts{BlockNumber: big.NewInt(blockNumber)}, characterID)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 
-		return append(relatedUrls, fmt.Sprintf("https://crossbell.io/@%s", handle)), nil
+		return fmt.Sprintf("https://crossbell.io/@%s", handle), nil
 	}
 
-	return append(relatedUrls, fmt.Sprintf("https://crossbell.io/notes/%d-%d", characterID, noteID)), nil
+	return fmt.Sprintf("https://crossbell.io/notes/%d-%d", characterID, noteID), nil
 }
