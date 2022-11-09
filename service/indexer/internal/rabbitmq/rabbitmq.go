@@ -5,7 +5,9 @@ import (
 
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
+	"go.uber.org/zap"
 )
 
 var (
@@ -50,6 +52,27 @@ func GetRabbitmqAssetQueue() rabbitmq.Queue {
 }
 
 func InitializeMQ(mq *configx.RabbitMQ) (err error) {
+	err = connect(mq)
+
+	go func() {
+		maxRetry := 3
+		for {
+			<-rabbitmqConnection.NotifyClose(make(chan *rabbitmq.Error))
+			loggerx.Global().Error("rabbitmq connection closed, reconnecting...")
+			if err := connect(mq); err != nil {
+				loggerx.Global().Error("connect mq failed", zap.Error(err))
+			}
+			maxRetry--
+			if maxRetry == 0 {
+				panic("rabbitmq reconnect failed")
+			}
+		}
+	}()
+
+	return err
+}
+
+func connect(mq *configx.RabbitMQ) (err error) {
 	rabbitmqConnection, err = rabbitmq.Dial(mq.String())
 	if err != nil {
 		return err

@@ -51,7 +51,7 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 		addressTo := common.HexToAddress(transaction.AddressTo)
 
 		switch addressTo {
-		case opensea.AddressSeaport, opensea.AddressWyvernExchange:
+		case opensea.AddressSeaport, opensea.AddressWyvernExchangeV1, opensea.AddressWyvernExchangeV2:
 			internalTransaction, err := i.handleOpenSea(ctx, message, transaction)
 			if err != nil {
 				zap.L().Error("failed to handle opensea transaction", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
