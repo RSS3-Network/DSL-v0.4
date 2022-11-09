@@ -3,12 +3,14 @@ package service
 import (
 	"context"
 	"strings"
+	"sync"
 
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
+	"github.com/samber/lo"
 )
 
 func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbModel.Transaction, int64, error) {
@@ -91,8 +93,17 @@ func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotes
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		for _, address := range request.Address {
-			s.PublishIndexerMessage(ctx, protocol.Message{Address: address})
+		// limit 10 addresses each time
+		for _, addresses := range lo.Chunk(request.Address, 10) {
+			wg := &sync.WaitGroup{}
+			for _, address := range addresses {
+				wg.Add(1)
+				go func(address string) {
+					defer wg.Done()
+					s.PublishIndexerMessage(ctx, protocol.Message{Address: address})
+				}(address)
+			}
+			wg.Wait()
 		}
 	}
 

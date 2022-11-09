@@ -102,24 +102,22 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		protocol.NetworkEIP1577,
 	}
 
-	go func() {
-		for _, network := range networks {
-			message.Network = network
+	for _, network := range networks {
+		message.Network = network
 
-			messageData, err := json.Marshal(&message)
-			if err != nil {
-				return
-			}
-
-			if err := s.rabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
-				ContentType: protocol.ContentTypeJSON,
-				Body:        messageData,
-			}); err != nil {
-				loggerx.Global().Error("publish indexer message failed", zap.Error(err))
-				return
-			}
+		messageData, err := json.Marshal(&message)
+		if err != nil {
+			return
 		}
-	}()
+
+		if err := s.rabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
+			ContentType: protocol.ContentTypeJSON,
+			Body:        messageData,
+		}); err != nil {
+			loggerx.Global().Error("publish indexer message failed", zap.Error(err))
+			return
+		}
+	}
 }
 
 // publishIndexerAssetMessage create a rabbitmq job to index the latest user data
