@@ -1,10 +1,5 @@
 package iqwiki
 
-import (
-	"context"
-	"testing"
-)
-
 var (
 	client = NewClient()
 )
@@ -20,12 +15,12 @@ var (
 // 	t.Log(len(resp))
 // }
 
-func TestGetUserList(t *testing.T) {
-	resp, err := client.GetUserList(context.Background())
+// func TestGetUserList(t *testing.T) {
+// 	resp, err := client.GetUserList(context.Background())
 
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	t.Log(len(resp))
-}
+// 	t.Log(len(resp))
+// }
