@@ -471,6 +471,10 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 			return nil, fmt.Errorf("unsupported erc20 token: %s", *address)
 		}
 
+		if value == nil {
+			value = big.NewInt(0)
+		}
+
 		tokenMetadata.SetValue(decimal.NewFromBigInt(value, 0))
 
 		transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
@@ -519,6 +523,10 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 
 		transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
 		transfer.RelatedUrls = ethereum.BuildURL(transfer.RelatedUrls, ethereum.BuildTokenURL(message.Network, *address, id.String())...)
+	}
+
+	if isBurn(&transfer, tokenMetadata) {
+		transfer.Type = filter.CollectibleBurn
 	}
 
 	metadataRaw, err := json.Marshal(tokenMetadata)
