@@ -16,7 +16,7 @@ build:
 # fail coverage report under xx percent
 DIR_TEST = .test
 FILE_COVERAGE = $(DIR_TEST)/coverage.txt
-COVERAGE_FAIL_UNDER ?= 38
+COVERAGE_FAIL_UNDER ?= 30
 
 TEST_FLAGS := \
 	-race -failfast -p=1 \

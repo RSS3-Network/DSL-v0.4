@@ -26,16 +26,13 @@ var str_2 = `{"name":"RSS3 Whitepaper v1.0","description":"RSS3 Whitepaper v1.0 
     }}`
 
 func TestUnmarshall(t *testing.T) {
-	var (
-		client   Client
-		metadata Metadata
-	)
+	var metadata Metadata
 
 	assert.NoError(t, json.Unmarshal([]byte(str_1), &metadata))
 
 	t.Log(metadata)
 
-	attributes := client.metadataToAttributes(metadata)
+	attributes := MetadataToAttributes(metadata)
 
 	result, err := json.Marshal(attributes)
 	assert.NoError(t, err)

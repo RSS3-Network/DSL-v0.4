@@ -3,8 +3,12 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"math/big"
 	"strings"
 	"time"
+
+	"github.com/lib/pq"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -12,11 +16,12 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/profile"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/profile"
+
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm/clause"
 )
@@ -28,7 +33,7 @@ type profileHandler struct {
 	tokenClient     *token.Client
 }
 
-func (p *profileHandler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+func (p *profileHandler) Handle(ctx context.Context, transaction *model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler_profile")
 
 	ctx, snap := tracer.Start(ctx, "worker_crossbell_handler_profile:Handle")
@@ -42,18 +47,18 @@ func (p *profileHandler) Handle(ctx context.Context, transaction model.Transacti
 	}
 
 	switch log.Topics[0] {
-	case contract.EventHashProfileCreated:
+	case crossbell.EventHashProfileCreated:
 		return p.handleProfileCreated(ctx, transaction, transfer, log)
-	case contract.EventHashLinkProfile:
+	case crossbell.EventHashLinkProfile:
 		return p.handleLinkProfile(ctx, transaction, transfer, log)
-	case contract.EventHashUnlinkProfile:
+	case crossbell.EventHashUnlinkProfile:
 		return p.handleUnLinkProfile(ctx, transaction, transfer, log)
 	default:
-		return nil, contract.ErrorUnknownEvent
+		return nil, crossbell.ErrorUnknownEvent
 	}
 }
 
-func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleProfileCreated")
@@ -66,25 +71,30 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	}
 
 	// Self-hosted IPFS files may be out of date
-	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ProfileId)
+	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.ProfileId)
 	if err != nil {
 		return nil, err
 	}
 
 	profile := &social.Profile{
-		Address:   transfer.AddressFrom,
+		Address:   strings.ToLower(event.To.String()),
 		Platform:  protocol.PlatformCrossbell,
 		Network:   transfer.Network,
 		Source:    transfer.Network,
-		Type:      filter.SocialProfileCreate,
+		Type:      filter.SocialCreate,
 		Handle:    event.Handle,
 		CreatedAt: time.Unix(event.Timestamp.Int64(), 0),
+		URL:       fmt.Sprintf("https://crossbell.io/@%v", event.Handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
+	// transaction
+	transaction.Owner = strings.ToLower(event.Creator.String())
+
+	// transfer
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
 	}
@@ -99,7 +109,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction m
 	return &transfer, nil
 }
 
-func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleLinkProfile")
@@ -111,27 +121,40 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 		return nil, err
 	}
 
-	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ToProfileId)
+	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.ToProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	// profile address
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	// profile handle
+	handle, err := p.profileContract.GetHandle(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToProfileId)
 	if err != nil {
 		return nil, err
 	}
 
 	profile := &social.Profile{
+		Address:  strings.ToLower(characterOwner.String()),
+		Handle:   handle,
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
+		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
-	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{}, event.ToProfileId)
-	if err != nil {
-		return nil, err
-	}
-	profile.Address = strings.ToLower(characterOwner.String())
+	// transaction
+	transaction.Owner = strings.ToLower(event.Account.String())
 
+	// transfer
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
 	}
@@ -143,7 +166,7 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction mode
 	return &transfer, nil
 }
 
-func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleUnLinkProfile")
@@ -155,26 +178,38 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ToProfileId)
+	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.ToProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	// profile address
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	// profile handle
+	handle, err := p.profileContract.GetHandle(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToProfileId)
 	if err != nil {
 		return nil, err
 	}
 
 	profile := &social.Profile{
+		Address:  strings.ToLower(characterOwner.String()),
+		Handle:   handle,
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
+		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
-	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{}, event.ToProfileId)
-	if err != nil {
-		return nil, err
-	}
-	profile.Address = strings.ToLower(characterOwner.String())
+	// transaction
+	transaction.Owner = strings.ToLower(event.Account.String())
 
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
@@ -186,7 +221,7 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction mo
 	return &transfer, nil
 }
 
-func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
+func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handler")
 
 	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleSetProfileUri")
@@ -198,23 +233,44 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction mo
 		return nil, err
 	}
 
-	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, contract.AddressCharacter.String(), event.ProfileId)
+	erc721Token, err := p.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), event.ProfileId)
 	if err != nil {
 		return nil, err
 	}
 
+	// profile address
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	// profile handle
+	handle, err := p.profileContract.GetHandle(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
 	profile := &social.Profile{
-		Address:  transfer.AddressFrom,
-		Platform: protocol.PlatformCrossbell,
-		Network:  transfer.Network,
-		Source:   transfer.Network,
-		Type:     filter.SocialProfileUpdate,
+		Address:     transaction.Owner,
+		Handle:      handle,
+		Platform:    protocol.PlatformCrossbell,
+		Network:     transfer.Network,
+		Source:      transfer.Network,
+		Type:        filter.SocialUpdate,
+		ProfileUris: pq.StringArray{event.NewUri},
+		URL:         fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
+	// transaction
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
+	// transfer
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
 	}

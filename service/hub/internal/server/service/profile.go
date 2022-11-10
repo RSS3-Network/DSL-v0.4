@@ -131,8 +131,11 @@ func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address s
 		lensClient := lens.New()
 		profile, err = lensClient.GetProfile(address)
 	case protocol.PlatformCrossbell:
-		csbClient := crossbell.New()
-		profiles, err = csbClient.GetProfile(address)
+		var csbClient *crossbell.Client
+		csbClient, err = crossbell.New()
+		if err == nil {
+			profiles, err = csbClient.GetProfile(address)
+		}
 	}
 
 	if err != nil {
