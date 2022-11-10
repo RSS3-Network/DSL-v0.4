@@ -25,7 +25,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
-	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -444,112 +443,90 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 	return &internalTransaction, nil
 }
 
+// For build metadata.Token for native and ERC-20 and ERC-721 and ERC-1155 tokens
 func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *protocol.Message, transaction model.Transaction, transfer model.Transfer, address *string, id *big.Int, value *big.Int) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_token")
 	_, snap := tracer.Start(ctx, "worker_token:buildEthereumTokenMetadata")
 
 	defer snap.End()
 
-	var tokenMetadata *metadata.Token
-	var err error
+	var (
+		tokenMetadata *metadata.Token
+		err           error
+	)
 
-	if address == nil {
-		// Native
+	switch {
+	case address == nil: // Native
 		tokenMetadata, err = s.tokenClient.NatvieToMetadata(ctx, message.Network)
 		if err != nil {
-			return &transfer, nil
+			return nil, fmt.Errorf("native token: %w", err)
 		}
 
-		tokenValue := decimal.NewFromBigInt(value, 0)
-		tokenMetadata.Value = &tokenValue
-		tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
-		tokenMetadata.ValueDisplay = &tokenValueDisplay
+		tokenMetadata.SetValue(decimal.NewFromBigInt(value, 0))
 
 		transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
-	} else {
+	case address != nil && id == nil: // ERC-20
 		tokenMetadata, err = s.tokenClient.ERC20ToMetadata(ctx, message.Network, *address)
-
-		if err == nil && tokenMetadata.Symbol != "" {
-			if value == nil {
-				value = big.NewInt(0)
-			}
-
-			tokenValue := decimal.NewFromBigInt(value, 0)
-			tokenMetadata.Value = &tokenValue
-
-			tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
-			tokenMetadata.ValueDisplay = &tokenValueDisplay
-
-			if isBurn(&transfer, tokenMetadata) {
-				transfer.Type = filter.TransactionBurn
-			}
-
-			transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
-		} else {
-			// Uncommon ERC-20
-			if id == nil {
-				return &transfer, nil
-			}
-
-			// ERC-721 / ERC-1155
-			nft, err := s.tokenClient.NFT(ctx, message.Network, *address, id)
-			if err != nil {
-				return &transfer, nil
-			}
-
-			tokenMetadata = &metadata.Token{
-				Name:            nft.Name,
-				Collection:      nft.Collection,
-				Symbol:          nft.Symbol,
-				Description:     nft.Description,
-				ID:              nft.ID.String(),
-				Image:           nft.Image,
-				ContractAddress: nft.ContractAddress,
-				AnimationURL:    nft.AnimationURL,
-				ExternalLink:    nft.ExternalLink,
-				Standard:        nft.Standard,
-			}
-
-			for _, attribute := range nft.Attributes {
-				tokenMetadata.Attributes = append(tokenMetadata.Attributes, metadata.TokenAttribute{
-					TraitType: attribute.TraitType,
-					Value:     attribute.Value,
-				})
-			}
-
-			if strings.HasPrefix(nft.Image, "ipfs://") {
-				tokenMetadata.Image = ipfs.GetDirectURL(nft.Image)
-			}
-
-			var tokenValue decimal.Decimal
-
-			if value == nil {
-				tokenValue = decimal.NewFromInt(1)
-				tokenMetadata.Standard = protocol.TokenStandardERC721
-			} else {
-				tokenValue = decimal.NewFromBigInt(value, 0)
-				tokenMetadata.Standard = protocol.TokenStandardERC1155
-			}
-
-			tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
-
-			tokenMetadata.Value = &tokenValue
-			tokenMetadata.ValueDisplay = &tokenValueDisplay
-
-			if transfer.AddressTo == strings.ToLower(ens.EnsRegistrarController.String()) || transfer.AddressFrom == strings.ToLower(ens.EnsRegistrarController.String()) {
-				transfer.Platform = protocol.PlatformEns
-			}
-
-			if isBurn(&transfer, tokenMetadata) {
-				transfer.Type = filter.CollectibleBurn
-			}
-
-			transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
-
-			transfer.RelatedUrls = ethereum.BuildURL(transfer.RelatedUrls, ethereum.BuildTokenURL(message.Network, *address, id.String())...)
+		if err != nil || tokenMetadata.Symbol == "" {
+			return nil, fmt.Errorf("unsupported erc20 token %s: %w", *address, err)
 		}
 
-		tokenMetadata.ContractAddress = *address
+		if value == nil {
+			value = big.NewInt(0)
+		}
+
+		tokenMetadata.SetValue(decimal.NewFromBigInt(value, 0))
+
+		transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
+	case address != nil && id != nil && value == nil: // ERC-721
+		erc721, err := s.tokenClient.ERC721(ctx, message.Network, *address, id)
+		if err != nil {
+			return nil, fmt.Errorf("erc721 %s/%d: %w", *address, id, err)
+		}
+
+		nft, err := erc721.ToNFT(id)
+		if err != nil {
+			return nil, fmt.Errorf("erc721 to nft %s/%d: %w", *address, id, err)
+		}
+
+		if tokenMetadata, err = nft.ToMetadata(); err != nil {
+			return nil, fmt.Errorf("erc721 to metadata %s/%d: %w", *address, id, err)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		tokenMetadata.SetValue(decimal.New(1, 0))
+
+		if transfer.AddressTo == strings.ToLower(ens.EnsRegistrarController.String()) || transfer.AddressFrom == strings.ToLower(ens.EnsRegistrarController.String()) {
+			transfer.Platform = protocol.PlatformEns
+		}
+
+		transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
+		transfer.RelatedUrls = ethereum.BuildURL(transfer.RelatedUrls, ethereum.BuildTokenURL(message.Network, *address, id.String())...)
+	case address != nil && id != nil && value != nil: // ERC-1155
+		erc1155, err := s.tokenClient.ERC1155(ctx, message.Network, *address, id)
+		if err != nil {
+			return nil, fmt.Errorf("erc1155 %s/%d: %w", *address, id, err)
+		}
+
+		nft, err := erc1155.ToNFT(id)
+		if err != nil {
+			return nil, fmt.Errorf("erc1155 to nft %s/%d: %w", *address, id, err)
+		}
+
+		if tokenMetadata, err = nft.ToMetadata(); err != nil {
+			return nil, fmt.Errorf("erc1155 to metadata %s/%d: %w", *address, id, err)
+		}
+
+		tokenMetadata.SetValue(decimal.NewFromBigInt(value, 0))
+
+		transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
+		transfer.RelatedUrls = ethereum.BuildURL(transfer.RelatedUrls, ethereum.BuildTokenURL(message.Network, *address, id.String())...)
+	}
+
+	if isBurn(&transfer, tokenMetadata) {
+		transfer.Type = filter.CollectibleBurn
 	}
 
 	metadataRaw, err := json.Marshal(tokenMetadata)
@@ -585,10 +562,7 @@ func (s *service) buildZkSyncTokenMetadata(ctx context.Context, message *protoco
 		return nil, err
 	}
 
-	tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
-
-	tokenMetadata.Value = &tokenValue
-	tokenMetadata.ValueDisplay = &tokenValueDisplay
+	tokenMetadata.SetValue(tokenValue)
 
 	transfer.Tag = filter.UpdateTag(filter.TagTransaction, transfer.Tag)
 

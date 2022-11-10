@@ -13,6 +13,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"go.uber.org/zap"
 )
@@ -43,6 +45,48 @@ type ERC721 struct {
 	URI             string          `json:"uri"`
 }
 
+func (e *ERC721) ToNFT(tokenID *big.Int) (*NFT, error) {
+	var metadata Metadata
+
+	if err := json.Unmarshal(e.Metadata, &metadata); err != nil {
+		loggerx.Global().Named(e.ContractAddress).Warn("Get NFT Metadata Unmarshal error", zap.Error(err))
+		metadata = Metadata{}
+	}
+
+	if metadata.Name == "" {
+		metadata.Name = e.Name
+	}
+
+	nft := NFT{
+		Name:            metadata.Name,
+		Collection:      e.Name,
+		Symbol:          e.Symbol,
+		Description:     metadata.Description,
+		ContractAddress: e.ContractAddress,
+		ID:              tokenID,
+		Image:           metadata.Image,
+		ImageData:       metadata.ImageData,
+		Attributes:      MetadataToAttributes(metadata),
+		Standard:        protocol.TokenStandardERC721,
+		BackgroundColor: metadata.BackgroundColor,
+		AnimationURL:    metadata.AnimationURL,
+		ExternalLink:    metadata.ExternalLink,
+		ExternalURL:     metadata.ExternalURL,
+		YoutubeURL:      metadata.YoutubeURL,
+	}
+
+	if metadata.ExternalLink != "" {
+		metadata.ExternalURL = metadata.ExternalLink
+	}
+
+	// POAP
+	if metadata.ImageURL != "" {
+		nft.Image = metadata.ImageURL
+	}
+
+	return &nft, nil
+}
+
 type ERC1155 struct {
 	Name            string          `json:"name"`
 	Symbol          string          `json:"symbol"`
@@ -50,6 +94,43 @@ type ERC1155 struct {
 	ID              *big.Int        `json:"id"`
 	Metadata        json.RawMessage `json:"metadata"`
 	URI             string          `json:"uri"`
+}
+
+func (e ERC1155) ToNFT(tokenID *big.Int) (*NFT, error) {
+	var metadata Metadata
+
+	if err := json.Unmarshal(e.Metadata, &metadata); err != nil {
+		loggerx.Global().Named(e.ContractAddress).Warn("Get ERC1155 Metadata Unmarshal error", zap.Error(err))
+		metadata = Metadata{}
+	}
+
+	if metadata.Name == "" {
+		metadata.Name = e.Name
+	}
+
+	nft := NFT{
+		Name:            metadata.Name,
+		Collection:      e.Name,
+		Symbol:          e.Symbol,
+		Description:     metadata.Description,
+		ContractAddress: e.ContractAddress,
+		ID:              tokenID,
+		Image:           metadata.Image,
+		ImageData:       metadata.ImageData,
+		Attributes:      MetadataToAttributes(metadata),
+		Standard:        protocol.TokenStandardERC1155,
+		BackgroundColor: metadata.BackgroundColor,
+		AnimationURL:    metadata.AnimationURL,
+		ExternalLink:    metadata.ExternalLink,
+		ExternalURL:     metadata.ExternalURL,
+		YoutubeURL:      metadata.YoutubeURL,
+	}
+
+	if metadata.ExternalLink != "" {
+		metadata.ExternalURL = metadata.ExternalLink
+	}
+
+	return &nft, nil
 }
 
 type NFT struct {
@@ -68,6 +149,34 @@ type NFT struct {
 	ExternalLink    string              `json:"external_link,omitempty"`
 	ExternalURL     string              `json:"external_url,omitempty"`
 	YoutubeURL      string              `json:"youtube_url,omitempty"`
+}
+
+func (n NFT) ToMetadata() (*metadata.Token, error) {
+	result := &metadata.Token{
+		Name:            n.Name,
+		Collection:      n.Collection,
+		Symbol:          n.Symbol,
+		Description:     n.Description,
+		ID:              n.ID.String(),
+		Image:           n.Image,
+		ContractAddress: n.ContractAddress,
+		AnimationURL:    n.AnimationURL,
+		ExternalLink:    n.ExternalLink,
+		Standard:        n.Standard,
+	}
+
+	for _, attribute := range n.Attributes {
+		result.Attributes = append(result.Attributes, metadata.TokenAttribute{
+			TraitType: attribute.TraitType,
+			Value:     attribute.Value,
+		})
+	}
+
+	if strings.HasPrefix(n.Image, "ipfs://") {
+		result.Image = ipfs.GetDirectURL(n.Image)
+	}
+
+	return result, nil
 }
 
 type Metadata struct {
@@ -120,12 +229,12 @@ type DomainsMetadata struct {
 func (c *Client) NFT(ctx context.Context, network, contractAddress string, tokenID *big.Int) (*NFT, error) {
 	erc721, err := c.ERC721(ctx, network, contractAddress, tokenID)
 	if err == nil {
-		return c.erc721ToNFT(erc721, tokenID)
+		return erc721.ToNFT(tokenID)
 	}
 
 	erc1155, err := c.ERC1155(ctx, network, contractAddress, tokenID)
 	if err == nil {
-		return c.erc1155ToNFT(erc1155, tokenID)
+		return erc1155.ToNFT(tokenID)
 	}
 
 	return nil, ErrorTokenNotFound
@@ -166,7 +275,7 @@ func (c *Client) NFTToMetadata(context context.Context, network, contractAddress
 	return tokenMetadata, nil
 }
 
-func (c *Client) metadataToAttributes(metadata Metadata) []MetadataAttribute {
+func MetadataToAttributes(metadata Metadata) []MetadataAttribute {
 	attributeMap := make(map[string]any)
 
 	for _, attribute := range metadata.Attributes {
@@ -181,7 +290,7 @@ func (c *Client) metadataToAttributes(metadata Metadata) []MetadataAttribute {
 		attributeMap[trait.DisplayType] = trait.DisplayType
 	}
 
-	for key, value := range c.propertiesToAttributes(metadata.Properties) {
+	for key, value := range PropertiesToAttributes(metadata.Properties) {
 		attributeMap[key] = value
 	}
 
@@ -199,7 +308,7 @@ func (c *Client) metadataToAttributes(metadata Metadata) []MetadataAttribute {
 	return attributes
 }
 
-func (c *Client) propertiesToAttributes(properties map[string]any) (attributeMap map[string]any) {
+func PropertiesToAttributes(properties map[string]any) (attributeMap map[string]any) {
 	attributeMap = map[string]any{}
 
 	types := reflect.TypeOf(&MetadataProperty{})
