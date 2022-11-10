@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/lib/pq"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -112,16 +114,19 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 	transaction.Owner = strings.ToLower(characterOwner.String())
 
 	profile := &social.Profile{
-		Address:  transaction.Owner,
+		Address:  strings.ToLower(event.Creator.String()),
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
+		Handle:   event.Handle,
 		Type:     filter.SocialCreate,
+		URL:      fmt.Sprintf("https://crossbell.io/@%v", event.Handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
+
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
 	}
@@ -165,11 +170,13 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction *mod
 	transaction.Owner = strings.ToLower(characterOwner.String())
 
 	profile := &social.Profile{
-		Address:  transaction.Owner,
+		Address:  strings.ToLower(event.Account.String()),
 		Platform: protocol.PlatformCrossbell,
+		Handle:   event.NewHandle,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Type:     filter.SocialUpdate,
+		URL:      fmt.Sprintf("https://crossbell.io/@%v", event.NewHandle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
@@ -334,23 +341,39 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 		return nil, err
 	}
 
-	profile := &social.Profile{
-		Platform: protocol.PlatformCrossbell,
-		Network:  transfer.Network,
-		Source:   transfer.Network,
-	}
-
-	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
-		return nil, err
-	}
-
+	// profile address
 	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToCharacterId)
 	if err != nil {
 		return nil, err
 	}
 
-	transaction.Owner = strings.ToLower(characterOwner.String())
-	profile.Address = transaction.Owner
+	// profile handle
+	handle, err := c.characterContract.GetHandle(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToCharacterId)
+	if err != nil {
+		return nil, err
+	}
+
+	profile := &social.Profile{
+		Address:  strings.ToLower(characterOwner.String()),
+		Handle:   handle,
+		Platform: protocol.PlatformCrossbell,
+		Network:  transfer.Network,
+		Source:   transfer.Network,
+		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
+	}
+
+	// erc721 to profile
+	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
+		return nil, err
+	}
+
+	// transaction
+	transaction.Owner = strings.ToLower(event.Account.String())
+
+	// transfer
+	if transfer.Metadata, err = json.Marshal(profile); err != nil {
+		return nil, err
+	}
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialFollow, transfer.Type)
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
@@ -375,26 +398,39 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 		return nil, err
 	}
 
+	// profile address
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToCharacterId)
+	if err != nil {
+		return nil, err
+	}
+
+	// profile handle
+	handle, err := c.characterContract.GetHandle(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToCharacterId)
+	if err != nil {
+		return nil, err
+	}
+
 	profile := &social.Profile{
-		Address:  strings.ToLower(event.Account.String()),
+		Address:  strings.ToLower(characterOwner.String()),
+		Handle:   handle,
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Type:     filter.SocialUpdate,
+		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
-	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToCharacterId)
-	if err != nil {
+	// transaction
+	transaction.Owner = strings.ToLower(event.Account.String())
+
+	// transfer
+	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
 	}
-
-	transaction.Owner = strings.ToLower(characterOwner.String())
-
-	profile.Address = transaction.Owner
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialUnfollow, transfer.Type)
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
@@ -419,25 +455,37 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		return nil, err
 	}
 
+	// profile address
 	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.CharacterId)
 	if err != nil {
 		return nil, err
 	}
 
-	transaction.Owner = strings.ToLower(characterOwner.String())
+	// profile handle
+	handle, err := c.characterContract.GetHandle(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.CharacterId)
+	if err != nil {
+		return nil, err
+	}
 
 	profile := &social.Profile{
-		Address:  transaction.Owner,
-		Platform: protocol.PlatformCrossbell,
-		Network:  transfer.Network,
-		Source:   transfer.Network,
-		Type:     filter.SocialUpdate,
+		Address:     strings.ToLower(characterOwner.String()),
+		Handle:      handle,
+		Platform:    protocol.PlatformCrossbell,
+		Network:     transfer.Network,
+		Source:      transfer.Network,
+		Type:        filter.SocialUpdate,
+		ProfileUris: pq.StringArray{event.NewUri},
+		URL:         fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
+	// transaction
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
+	// transfer
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
 	}

@@ -144,5 +144,6 @@ func BuildProfileMetadata(profileMetadata []byte, profile *social.Profile) error
 			profile.SocialUris = append(profile.SocialUris, avatar)
 		}
 	}
+
 	return nil
 }

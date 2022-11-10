@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -74,15 +76,8 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction *
 		return nil, err
 	}
 
-	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ProfileId)
-	if err != nil {
-		return nil, err
-	}
-
-	transaction.Owner = strings.ToLower(characterOwner.String())
-
 	profile := &social.Profile{
-		Address:   transaction.Owner,
+		Address:   strings.ToLower(event.To.String()),
 		Platform:  protocol.PlatformCrossbell,
 		Network:   transfer.Network,
 		Source:    transfer.Network,
@@ -96,6 +91,10 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction *
 		return nil, err
 	}
 
+	// transaction
+	transaction.Owner = strings.ToLower(event.Creator.String())
+
+	// transfer
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
 	}
@@ -127,25 +126,35 @@ func (p *profileHandler) handleLinkProfile(ctx context.Context, transaction *mod
 		return nil, err
 	}
 
+	// profile address
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	// profile handle
+	handle, err := p.profileContract.GetHandle(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToProfileId)
+	if err != nil {
+		return nil, err
+	}
+
 	profile := &social.Profile{
+		Address:  strings.ToLower(characterOwner.String()),
+		Handle:   handle,
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
+		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
-	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToProfileId)
-	if err != nil {
-		return nil, err
-	}
+	// transaction
+	transaction.Owner = strings.ToLower(event.Account.String())
 
-	transaction.Owner = strings.ToLower(characterOwner.String())
-
-	profile.Address = transaction.Owner
-
+	// transfer
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
 	}
@@ -174,24 +183,33 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction *m
 		return nil, err
 	}
 
+	// profile address
+	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	// profile handle
+	handle, err := p.profileContract.GetHandle(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToProfileId)
+	if err != nil {
+		return nil, err
+	}
+
 	profile := &social.Profile{
+		Address:  strings.ToLower(characterOwner.String()),
+		Handle:   handle,
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
+		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
-	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ToProfileId)
-	if err != nil {
-		return nil, err
-	}
-
-	transaction.Owner = strings.ToLower(characterOwner.String())
-
-	profile.Address = transaction.Owner
+	// transaction
+	transaction.Owner = strings.ToLower(event.Account.String())
 
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
@@ -220,7 +238,14 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction *m
 		return nil, err
 	}
 
+	// profile address
 	characterOwner, err := p.profileContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ProfileId)
+	if err != nil {
+		return nil, err
+	}
+
+	// profile handle
+	handle, err := p.profileContract.GetHandle(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.ProfileId)
 	if err != nil {
 		return nil, err
 	}
@@ -228,17 +253,24 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction *m
 	transaction.Owner = strings.ToLower(characterOwner.String())
 
 	profile := &social.Profile{
-		Address:  transaction.Owner,
-		Platform: protocol.PlatformCrossbell,
-		Network:  transfer.Network,
-		Source:   transfer.Network,
-		Type:     filter.SocialUpdate,
+		Address:     transaction.Owner,
+		Handle:      handle,
+		Platform:    protocol.PlatformCrossbell,
+		Network:     transfer.Network,
+		Source:      transfer.Network,
+		Type:        filter.SocialUpdate,
+		ProfileUris: pq.StringArray{event.NewUri},
+		URL:         fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
 		return nil, err
 	}
 
+	// transaction
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
+	// transfer
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
 		return nil, err
 	}
