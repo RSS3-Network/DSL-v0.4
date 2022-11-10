@@ -312,6 +312,7 @@ func (c *characterHandler) buildNoteMetadata(ctx context.Context, transaction *m
 		Author: []string{
 			fmt.Sprintf("https://crossbell.io/@%s", handle),
 		},
+		OriginNoteID: noteID.String(),
 	}
 
 	for _, attachment := range postOriginal.Attachments {
