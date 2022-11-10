@@ -16,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/character"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	lenscontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid"
@@ -141,7 +142,7 @@ func ResolveCrossbell(input string) (string, error) {
 		return "", fmt.Errorf("failed to connect to crossbell rpc: %s", err)
 	}
 
-	characterContract, err := crossbell.NewCharacter(crossbell.AddressCharacter, ethereumClient)
+	characterContract, err := character.NewCharacter(crossbell.AddressCharacter, ethereumClient)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to crossbell character contracts: %s", err)
 	}
