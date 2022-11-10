@@ -6,21 +6,22 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/character"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/linklist"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/periphery"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/profile"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/token"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/character"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/linklist"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/periphery"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell/contract/profile"
+
 	"go.opentelemetry.io/otel"
 )
 
 type Interface interface {
-	Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error)
+	Handle(ctx context.Context, transaction *model.Transaction, transfer model.Transfer) (*model.Transfer, error)
 }
 
 var _ Interface = (*handler)(nil)
@@ -56,17 +57,12 @@ type CrossbellPostStruct struct {
 	Summary      string   `json:"summary"`
 }
 
-func (h *handler) Handle(ctx context.Context, transaction model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
+func (h *handler) Handle(ctx context.Context, transaction *model.Transaction, transfer model.Transfer) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_crossbell_handle")
 
 	_, span := tracer.Start(ctx, "worker_crossbell_handle:Handle")
 
 	defer span.End()
-
-	// Transfer type actions should be handled by the transaction worker
-	if transfer.Source != protocol.SourceOrigin {
-		return &transfer, nil
-	}
 
 	var log types.Log
 
@@ -75,32 +71,37 @@ func (h *handler) Handle(ctx context.Context, transaction model.Transaction, tra
 	}
 
 	switch common.HexToAddress(transaction.AddressTo) {
-	case contract.AddressCharacter:
+	case crossbell.AddressCharacter:
 		return h.characterHandler.Handle(ctx, transaction, transfer)
-	case contract.AddressLinkList:
+	case crossbell.AddressLinkList:
 		return h.linkListHandler.Handle(ctx, transaction, transfer)
 	default:
-		return nil, contract.ErrorUnknownContractAddress
+		return nil, crossbell.ErrorUnknownContractAddress
 	}
 }
 
-func New(ethereumClient *ethclient.Client) (Interface, error) {
-	profileContract, err := profile.NewProfile(contract.AddressCharacter, ethereumClient)
+func New() (Interface, error) {
+	ethereumClient, err := ethclientx.Global(protocol.NetworkCrossbell)
 	if err != nil {
 		return nil, err
 	}
 
-	characterContract, err := character.NewCharacter(contract.AddressCharacter, ethereumClient)
+	profileContract, err := profile.NewProfile(crossbell.AddressCharacter, ethereumClient)
 	if err != nil {
 		return nil, err
 	}
 
-	peripheryContract, err := periphery.NewPeriphery(contract.AddressPeriphery, ethereumClient)
+	characterContract, err := character.NewCharacter(crossbell.AddressCharacter, ethereumClient)
 	if err != nil {
 		return nil, err
 	}
 
-	linkListContract, err := linklist.NewLinkList(contract.AddressLinkList, ethereumClient)
+	peripheryContract, err := periphery.NewPeriphery(crossbell.AddressPeriphery, ethereumClient)
+	if err != nil {
+		return nil, err
+	}
+
+	linkListContract, err := linklist.NewLinkList(crossbell.AddressLinkList, ethereumClient)
 	if err != nil {
 		return nil, err
 	}
@@ -143,5 +144,6 @@ func BuildProfileMetadata(profileMetadata []byte, profile *social.Profile) error
 			profile.SocialUris = append(profile.SocialUris, avatar)
 		}
 	}
+
 	return nil
 }

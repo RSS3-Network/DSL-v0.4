@@ -128,6 +128,7 @@ type RPCNetwork struct {
 	XDAI              *RPCEndpoint `mapstructure:"xdai"`
 	Crossbell         *RPCEndpoint `mapstructure:"crossbell"`
 	Kurora            *RPCEndpoint `mapstructure:"kurora"`
+	KuroraV2          *RPCEndpoint `mapstructure:"kurora_v2"`
 }
 
 type RPCEndpoint struct {

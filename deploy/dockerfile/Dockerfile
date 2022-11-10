@@ -8,6 +8,11 @@ RUN apk add \
     g++ \
     git
 
+ENV GOPRIVATE="github.com/naturalselectionlabs/kurora"
+ENV GH_USER=$GH_USER
+ENV GH_TOKEN=$GH_TOKEN
+RUN git config --global url."https://${GH_USER}:${GH_TOKEN}@github.com".insteadOf "https://github.com"
+
 RUN go build -o dist/hub ./service/hub/cmd
 RUN go build -o dist/indexer ./service/indexer/cmd
 RUN go build -o dist/crawler ./service/crawler/cmd
