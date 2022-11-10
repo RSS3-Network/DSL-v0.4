@@ -219,6 +219,7 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 		return err
 	}
 
+	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
 	transfer.RelatedUrls = append(transfer.RelatedUrls, c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId))
 
@@ -271,7 +272,7 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 		Platform:    protocol.PlatformLens,
 		Network:     transaction.Network,
 		Source:      transaction.Platform,
-		Type:        filter.SocialProfileCreate,
+		Type:        filter.SocialCreate,
 		URL:         fmt.Sprintf("https://lenster.xyz/u/%v", event.Handle),
 		Handle:      event.Handle,
 		ProfileUris: []string{ipfs.GetDirectURL(event.ImageURI)},
@@ -283,7 +284,7 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 	}
 
 	transfer.Metadata = rawMetadata
-	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfileCreate, transfer.Type)
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialCreate, transfer.Type)
 	transfer.RelatedUrls = []string{
 		fmt.Sprintf("https://lenster.xyz/u/%v", event.Handle),
 		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),

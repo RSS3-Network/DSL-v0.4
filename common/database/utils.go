@@ -19,6 +19,11 @@ func UpsertTransactions(ctx context.Context, transactions []*model.Transaction) 
 	updatedTransactions := []model.Transaction{}
 
 	for _, transaction := range transactions {
+		// ignore empty tag and type
+		if transaction.Type == "" || transaction.Tag == "" {
+			continue
+		}
+
 		// Ignore empty transactions
 		internalTransfers := make([]model.Transfer, 0)
 
@@ -38,6 +43,10 @@ func UpsertTransactions(ctx context.Context, transactions []*model.Transaction) 
 		for _, transfer := range transaction.Transfers {
 			// Ignore empty transfer
 			if bytes.Equal(transfer.Metadata, metadata.Default) {
+				continue
+			}
+
+			if transfer.Type == "" || transfer.Tag == "" {
 				continue
 			}
 
