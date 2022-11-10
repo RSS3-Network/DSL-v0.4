@@ -468,7 +468,7 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 	case address != nil && id == nil: // ERC-20
 		tokenMetadata, err = s.tokenClient.ERC20ToMetadata(ctx, message.Network, *address)
 		if err != nil || tokenMetadata.Symbol == "" {
-			return nil, fmt.Errorf("unsupported erc20 token: %s", *address)
+			return nil, fmt.Errorf("unsupported erc20 token %s: %w", *address, err)
 		}
 
 		if value == nil {
