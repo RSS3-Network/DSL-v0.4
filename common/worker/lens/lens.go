@@ -157,6 +157,7 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 		// common attributes
 		transfer := model.Transfer{
 			TransactionHash: transaction.Hash,
+			Timestamp:       transaction.Timestamp,
 			BlockNumber:     big.NewInt(transaction.BlockNumber),
 			Index:           int64(log.Index),
 			Network:         transaction.Network,
