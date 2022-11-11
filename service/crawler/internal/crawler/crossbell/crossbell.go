@@ -133,9 +133,11 @@ func (s *service) GetKuroraLogs(ctx context.Context) ([]*model.Transaction, erro
 
 	result, err := s.kuroraClient.FetchEthereumLogs(ctx, constant.NetworkCrossbell, query)
 	if err != nil {
-		loggerx.Global().Error("kuroraClient FetchEthereumLogs error", zap.Error(err))
+		loggerx.Global().Error("crossbell: kuroraClient FetchEthereumLogs error", zap.Error(err))
 		return nil, err
 	}
+
+	loggerx.Global().Info("crossbell: kuroraClient FetchEthereumLogs result", zap.Int("len", len(result)), zap.String("cursor", cursor))
 
 	transactionMap := make(map[string]*model.Transaction)
 	for _, log := range result {
