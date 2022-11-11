@@ -467,7 +467,6 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 	}
 
 	profile := &social.Profile{
-<<<<<<< HEAD
 		Address:  strings.ToLower(characterOwner.String()),
 		Handle:   handle,
 		Platform: protocol.PlatformCrossbell,
@@ -475,15 +474,6 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		Source:   transfer.Network,
 		Type:     filter.SocialUpdate,
 		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
-=======
-		Address:     strings.ToLower(characterOwner.String()),
-		Handle:      handle,
-		Platform:    protocol.PlatformCrossbell,
-		Network:     transfer.Network,
-		Source:      transfer.Network,
-		Type:        filter.SocialUpdate,
-		URL:         fmt.Sprintf("https://crossbell.io/@%v", handle),
->>>>>>> 6aa9a6cff2de9c6553ef2ba7ee5d9d069bda6685
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
