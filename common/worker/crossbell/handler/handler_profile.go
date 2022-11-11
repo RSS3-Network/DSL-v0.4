@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lib/pq"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -253,14 +251,13 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction *m
 	transaction.Owner = strings.ToLower(characterOwner.String())
 
 	profile := &social.Profile{
-		Address:     transaction.Owner,
-		Handle:      handle,
-		Platform:    protocol.PlatformCrossbell,
-		Network:     transfer.Network,
-		Source:      transfer.Network,
-		Type:        filter.SocialUpdate,
-		ProfileUris: pq.StringArray{event.NewUri},
-		URL:         fmt.Sprintf("https://crossbell.io/@%v", handle),
+		Address:  transaction.Owner,
+		Handle:   handle,
+		Platform: protocol.PlatformCrossbell,
+		Network:  transfer.Network,
+		Source:   transfer.Network,
+		Type:     filter.SocialUpdate,
+		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
