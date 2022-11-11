@@ -224,6 +224,7 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 		}
 
 		parameter.PageKey = result.PageKey
+		break
 	}
 
 	return internalTransactions, nil

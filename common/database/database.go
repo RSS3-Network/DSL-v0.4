@@ -1,8 +1,6 @@
 package database
 
 import (
-	"log"
-	"os"
 	"sync"
 	"time"
 
@@ -13,7 +11,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/transaction"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 var tables = []any{
@@ -79,14 +76,14 @@ func ReplaceGlobal(db *gorm.DB) {
 func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {
 	var err error
 	client, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.New(
-			log.New(os.Stdout, "\r\n", log.LstdFlags),
-			logger.Config{
-				SlowThreshold:             time.Second * 3,
-				LogLevel:                  logger.Error,
-				IgnoreRecordNotFoundError: true,
-			},
-		),
+		//Logger: logger.New(
+		//	log.New(os.Stdout, "\r\n", log.LstdFlags),
+		//	logger.Config{
+		//		SlowThreshold:             time.Second * 3,
+		//		LogLevel:                  logger.Error,
+		//		IgnoreRecordNotFoundError: true,
+		//	},
+		//),
 	})
 	if err != nil {
 		return nil, err

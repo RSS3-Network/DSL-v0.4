@@ -1,18 +1,9 @@
-mode: development
-
 postgres:
   host: pgm-7gof3s571m2zs50p8o.pg.rds.aliyuncs.com
   port: 5432
   user: postgres
   password: MLjYdMB2jRrWUzwk
   database: pregod11
-
-ethereumetl:
-  host: rss3-etl-debug.rwlb.polardb-pg-public.rds.aliyuncs.com
-  port: 1921
-  user: etl
-  password: DnafKWuKQ5X26BTs
-  database: etl
 
 rabbitmq:
   tls: false
@@ -33,26 +24,26 @@ redis:
   db: 0
   password: 'Pa33WoRD'
 
-moralis:
-  key: "RSLCatYLpPJ2VvO93RG4I1liJBm3id5o7oVEDAfFsWnopQSzOdc85ZEUjpLAHVoY"
-
 coinmarketcap:
-  apikey: 983971af-d4d6-47a0-b93e-bc981a46ec2d
+  apikey: ""
 
 infura:
-  projectid: b884414ab254410b914862108da01ec4
+  projectid: "d10a46c7df9144e1b4ce191b51b118ad"
 
+moralis:
+  key: "RSLCatYLpPJ2VvO93RG4I1liJBm3id5o7oVEDAfFsWnopQSzOdc85ZEUjpLAHVoY"
+  
 rpc:
   general:
     ethereum:
       http: https://shy-newest-brook.quiknode.pro/fac29f542ec6a0b43d53cff4f22be159172d1503/
       websocket: wss://shy-newest-brook.quiknode.pro/fac29f542ec6a0b43d53cff4f22be159172d1503/
     polygon:
-      http: https://old-morning-river.matic.quiknode.pro/bb1652c9f2f943c08823c14e2d64de6f068e1f44/
-      websocket: wss://old-morning-river.matic.quiknode.pro/bb1652c9f2f943c08823c14e2d64de6f068e1f44/
+      http: https://polygon-mainnet.nodereal.io/v1/ba9e925aa24945b88a4807b48b6c4109
+      websocket: wss://polygon-mainnet.nodereal.io/ws/v1/ba9e925aa24945b88a4807b48b6c4109
     bsc:
-      http: https://quick-evocative-bridge.bsc.quiknode.pro/fcbb308ccc611361eb59846246a0c9c393cca88a/
-      websocket: wss://quick-evocative-bridge.bsc.quiknode.pro/fcbb308ccc611361eb59846246a0c9c393cca88a/
+      http: https://lively-fragrant-violet.bsc.quiknode.pro/2982b3556dd63ee0dd702052ca2d72199562eb27/
+      websocket: wss://lively-fragrant-violet.bsc.quiknode.pro/2982b3556dd63ee0dd702052ca2d72199562eb27/
     xdai:
       http: https://proud-red-glade.xdai.quiknode.pro/f9e2b1e7cce270f7c725c564cd68d09b977cc8c2/
       websocket: wss://proud-red-glade.xdai.quiknode.pro/f9e2b1e7cce270f7c725c564cd68d09b977cc8c2/
@@ -60,14 +51,17 @@ rpc:
       http: https://rpc.crossbell.io
       websocket: wss://rpc-ws.crossbell.io
   alchemy:
-    ethereum: pqJajvd9G5dNqlOYdUsVSQlKFjEP2SiD
-    polygon: ewCmqkYDCzktXyUMQYheqIgu4x96JLdy
+    ethereum: zZddJmf2yrayxv19xwbv_OyGvaXh5M9u
+    polygon: 4JOo2QwbCjoGR6GAGnTeXcSWC0l
   pregod_etl:
     polygon:
       http: 47.90.255.21:8000
-  ipfs:
-    io: https://ipfs.rss3.page/ipfs/
-    internal: https://ipfs.rss3.page/ipfs/
-
+    kurora:
+      http: kurora.rss3.dev
+    kurora_v2:
+      http: https://kurora-v2.rss3.dev
+  ipfs: 
+    io: 'https://ipfs.rss3.page/ipfs/'
+    internal: 'https://ipfs.rss3.page/ipfs/'
 eip1577:
   endpoint: http://47.90.255.21:8082

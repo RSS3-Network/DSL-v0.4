@@ -5,10 +5,10 @@ http:
   port: 80
 
 postgres:
-  host: 127.0.0.1
+  host: pgm-7gof3s571m2zs50p8o.pg.rds.aliyuncs.com
   port: 5432
   user: postgres
-  password: password
+  password: MLjYdMB2jRrWUzwk
   database: pregod11
 
 rabbitmq:
@@ -28,31 +28,42 @@ redis:
   tls: false
   addr: 127.0.0.1:6379
   db: 0
-  password: ''
+  password: 'Pa33WoRD'
 
+coinmarketcap:
+  apikey: ""
+
+infura:
+  projectid: "d10a46c7df9144e1b4ce191b51b118ad"
+
+moralis:
+  key: "RSLCatYLpPJ2VvO93RG4I1liJBm3id5o7oVEDAfFsWnopQSzOdc85ZEUjpLAHVoY"
+  
 rpc:
   general:
     ethereum:
-      http: ''
-      websocket: ''
+      http: https://shy-newest-brook.quiknode.pro/fac29f542ec6a0b43d53cff4f22be159172d1503/
+      websocket: wss://shy-newest-brook.quiknode.pro/fac29f542ec6a0b43d53cff4f22be159172d1503/
     polygon:
-      http: ''
-      websocket: ''
+      http: https://polygon-mainnet.nodereal.io/v1/ba9e925aa24945b88a4807b48b6c4109
+      websocket: wss://polygon-mainnet.nodereal.io/ws/v1/ba9e925aa24945b88a4807b48b6c4109
     bsc:
-      http: ''
-      websocket: ''
+      http: https://lively-fragrant-violet.bsc.quiknode.pro/2982b3556dd63ee0dd702052ca2d72199562eb27/
+      websocket: wss://lively-fragrant-violet.bsc.quiknode.pro/2982b3556dd63ee0dd702052ca2d72199562eb27/
     xdai:
-      http: ''
-      websocket: ''
+      http: https://proud-red-glade.xdai.quiknode.pro/f9e2b1e7cce270f7c725c564cd68d09b977cc8c2/
+      websocket: wss://proud-red-glade.xdai.quiknode.pro/f9e2b1e7cce270f7c725c564cd68d09b977cc8c2/
     crossbell:
-      http: ''
-      websocket: ''
+      http: https://rpc.crossbell.io
+      websocket: wss://rpc-ws.crossbell.io
   alchemy:
-    ethereum: ''
-    polygon: ''
+    ethereum: zZddJmf2yrayxv19xwbv_OyGvaXh5M9u
+    polygon: 4JOo2QwbCjoGR6GAGnTeXcSWC0l
   pregod_etl:
     polygon:
-      http: ''
-  ipfs:
-    io: ''
-    internal: ''
+      http: 47.90.255.21:8000
+    kurora:
+      http: kurora.rss3.dev
+  ipfs: 
+    io: 'https://ipfs.rss3.page/ipfs/'
+    internal: 'http://ipfs-cluster.pregod:8080/ipfs/'
