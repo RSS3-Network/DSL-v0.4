@@ -8,6 +8,9 @@ RUN apk add \
     g++ \
     git
 
+ARG GH_USER
+ARG GH_TOKEN
+
 ENV GOPRIVATE="github.com/naturalselectionlabs/kurora"
 ENV GH_USER=$GH_USER
 ENV GH_TOKEN=$GH_TOKEN
