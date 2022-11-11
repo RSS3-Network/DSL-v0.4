@@ -46,6 +46,8 @@ rpc:
       http: ''
     kurora:
       http: ''
+    kurora_v2:
+      http: ''
   ipfs:
     io: ''
     internal: ''
