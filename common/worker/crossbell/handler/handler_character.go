@@ -475,7 +475,6 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		Network:     transfer.Network,
 		Source:      transfer.Network,
 		Type:        filter.SocialUpdate,
-		ProfileUris: pq.StringArray{event.NewUri},
 		URL:         fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 
