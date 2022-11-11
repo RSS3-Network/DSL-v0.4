@@ -7,8 +7,6 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/lib/pq"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -469,13 +467,13 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 	}
 
 	profile := &social.Profile{
-		Address:     strings.ToLower(characterOwner.String()),
-		Handle:      handle,
-		Platform:    protocol.PlatformCrossbell,
-		Network:     transfer.Network,
-		Source:      transfer.Network,
-		Type:        filter.SocialUpdate,
-		URL:         fmt.Sprintf("https://crossbell.io/@%v", handle),
+		Address:  strings.ToLower(characterOwner.String()),
+		Handle:   handle,
+		Platform: protocol.PlatformCrossbell,
+		Network:  transfer.Network,
+		Source:   transfer.Network,
+		Type:     filter.SocialUpdate,
+		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
