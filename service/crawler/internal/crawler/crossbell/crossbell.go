@@ -55,6 +55,8 @@ func (s *service) Network() string {
 }
 
 func (s *service) Run() error {
+	loggerx.Global().Info("crossbell: run")
+
 	var err error
 	ctx := context.Background()
 
@@ -124,7 +126,6 @@ func (s *service) GetKuroraLogs(ctx context.Context) ([]*model.Transaction, erro
 			contract.AddressCharacter,
 			contract.AddressLinkList,
 		},
-		Cursor: &cursor,
 	}
 
 	if len(cursor) > 0 {
