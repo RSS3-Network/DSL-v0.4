@@ -84,11 +84,11 @@ func (s *service) Run() error {
 			continue
 		}
 
-		// deduplicate data
-		transactions, err = database.DeduplicateTransactions(ctx, transactions)
-		if err != nil || len(transactions) == 0 {
-			continue
-		}
+		// // deduplicate data
+		// transactions, err = database.DeduplicateTransactions(ctx, transactions)
+		// if err != nil || len(transactions) == 0 {
+		// 	continue
+		// }
 
 		// build transaction
 		message := &protocol.Message{
