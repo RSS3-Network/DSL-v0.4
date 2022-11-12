@@ -575,12 +575,7 @@ func (c *characterHandler) handleMintNote(ctx context.Context, transaction *mode
 	}
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash), url}
 
-	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, event.CharacterId)
-	if err != nil {
-		return nil, err
-	}
-
-	transaction.Owner = strings.ToLower(characterOwner.String())
+	transaction.Owner = strings.ToLower(event.To.String())
 
 	return &transfer, nil
 }
