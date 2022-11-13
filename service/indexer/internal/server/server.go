@@ -32,10 +32,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/farcaster"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
@@ -48,11 +46,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
-	farcasterWorker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/farcaster"
-	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
-	rabbitmq "github.com/rabbitmq/amqp091-go"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
 	"github.com/samber/lo"
 	"github.com/scylladb/go-set/strset"
 	"go.opentelemetry.io/otel"
@@ -135,21 +131,14 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
-	lensDatasource, err := lens.New(s.config.RPC)
-	if err != nil {
-		return err
-	}
-
 	s.datasources = []datasource.Datasource{
 		alchemyDatasource,
 		moralis.New(s.config.Moralis.Key),
 		arweave.New(),
 		blockscoutDatasource,
 		zksync.New(),
-		lensDatasource,
 		eth_etl.New(),
 		eip1577.New(s.employer),
-		farcaster.New(),
 	}
 
 	swapWorker, err := swap.New(s.employer)
@@ -169,15 +158,14 @@ func (s *Server) Initialize() (err error) {
 	s.workers = []worker.Worker{
 		liquidity.New(),
 		swapWorker,
+		bridge.New(),
 		marketplace.New(),
 		poap.New(),
 		mirror.New(),
 		gitcoin.New(),
 		snapshot.New(),
 		crossbell.New(),
-		lens_worker.New(),
 		transaction.New(),
-		farcasterWorker.New(),
 	}
 
 	s.employer = shedlock.New()
@@ -663,29 +651,6 @@ func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 			"indexing_networks": address.IndexingNetworks,
 		}).Error; err != nil {
 		loggerx.Global().Error("failed to upsert address", zap.Error(err), zap.String("address", address.Address))
-	}
-
-	s.publishRefreshMessage(ctx, address)
-}
-
-func (s *Server) publishRefreshMessage(ctx context.Context, address model.Address) {
-	tracer := otel.Tracer("publishRefreshMessage")
-	_, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")
-
-	defer rabbitmqSnap.End()
-	// refresh or new address
-	address.UpdatedAt = time.Now().Add(-1 * time.Second)
-	messageData, err := json.Marshal(&protocol.RefreshMessage{
-		Address: address,
-	})
-	if err != nil {
-		return
-	}
-	if err := rabbitmqx.GetRabbitmqChannel().Publish(protocol.ExchangeRefresh, "", false, false, rabbitmq.Publishing{
-		ContentType: protocol.ContentTypeJSON,
-		Body:        messageData,
-	}); err != nil {
-		loggerx.Global().Error("failed to publish refresh message to mq", zap.Error(err), zap.String("address", address.Address))
 	}
 }
 

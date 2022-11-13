@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-resty/resty/v2"
@@ -72,7 +71,7 @@ func GetEIP1577Transactions(ctx context.Context, message *protocol.Message, name
 			Transfers: []model.Transfer{
 				{
 					TransactionHash: hash,
-					Timestamp:       time.Time{},
+					Timestamp:       feed.CreatedAt,
 					BlockNumber:     decimal.Zero.BigInt(),
 					Tag:             filter.TagSocial,
 					Type:            filter.SocialPost,

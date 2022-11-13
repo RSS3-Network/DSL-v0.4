@@ -118,7 +118,7 @@ func (s *service) Run() error {
 func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contractAddress common.Address) ([]*model.Transaction, error) {
 	tracer := otel.Tracer("lens")
 	_, trace := tracer.Start(ctx, "len:GetLensLogs")
-	internalTransactions := []*model.Transaction{}
+	var internalTransactions []*model.Transaction
 	var err error
 	defer func() { opentelemetry.Log(trace, nil, internalTransactions, err) }()
 
@@ -151,6 +151,12 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 		if err != nil {
 			logrus.Errorf("[lens] GetLensLogs: getLensAddressById error, %v, profileId: %v", err, profileId)
 
+			continue
+		}
+
+		// when it is an all-zero address, it means the profile no longer exists for whatever reason (deleted, banned)
+		// so we should ignore this transaction, otherwise the transaction owner will be set with an all-zero address
+		if profile == ethereum.AddressGenesis {
 			continue
 		}
 
@@ -211,7 +217,7 @@ func (s *service) getLensOwnerAddressById(ctx context.Context, profileId *big.In
 
 func (s *service) getInternalTransaction(ctx context.Context, transactions []*model.Transaction) []*model.Transaction {
 	var mu sync.Mutex
-	internalTransactions := []*model.Transaction{}
+	var internalTransactions []*model.Transaction
 	opt := lop.NewOption().WithConcurrency(10)
 	lop.ForEach(transactions, func(transaction *model.Transaction, i int) {
 		addressTo := common.HexToAddress(transaction.AddressTo)

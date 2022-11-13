@@ -34,18 +34,44 @@ func New() (s *Service) {
 		WsHub:    websocket.NewHub(),
 	}
 
+	if err := s.connectMQ(); err != nil {
+		loggerx.Global().Fatal("connect mq failed", zap.Error(err))
+	}
+
+	go func() {
+		maxRetry := 3
+		for {
+			<-s.rabbitmqConnection.NotifyClose(make(chan *rabbitmq.Error))
+			loggerx.Global().Error("rabbitmq connection closed, reconnecting...")
+			if err := s.connectMQ(); err != nil {
+				loggerx.Global().Error("connect mq failed", zap.Error(err))
+			}
+			maxRetry--
+			if maxRetry == 0 {
+				panic("rabbitmq reconnect failed")
+			}
+		}
+	}()
+	return s
+}
+
+func (s *Service) connectMQ() error {
 	var err error
 	s.rabbitmqConnection, err = rabbitmq.Dial(config.ConfigHub.RabbitMQ.String())
 	if err != nil {
 		loggerx.Global().Error("rabbitmq dail failed", zap.Error(err))
+		return err
 	}
 
 	s.rabbitmqChannel, err = s.rabbitmqConnection.Channel()
 	if err != nil {
 		loggerx.Global().Error("rabbitmqConnection failed", zap.Error(err))
+		return err
 	}
 
 	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeJob, "direct", true, false, false, false, nil); err != nil {
+		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare failed", zap.Error(err))
+		return err
 		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare Job failed", zap.Error(err))
 	}
 
@@ -65,6 +91,7 @@ func New() (s *Service) {
 		loggerx.Global().Error("rabbitmq QueueBind failed", zap.Error(err))
 	}
 
+
 	deliveryCh, err := s.rabbitmqChannel.Consume(s.rabbitmqQueue.Name, "", true, false, false, false, nil)
 	if err != nil {
 		loggerx.Global().Error("rabbitmq Consume Refresh Msg failed", zap.Error(err))
@@ -72,7 +99,7 @@ func New() (s *Service) {
 	}
 	s.DeliveryCh = deliveryCh
 
-	return s
+	return nil
 }
 
 // publishIndexerMessage create a rabbitmq job to index the latest user data
@@ -103,26 +130,25 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
-		protocol.NetworkEIP1577, protocol.NetworkFarcaster,
+		protocol.NetworkEIP1577,
 	}
 
-	go func() {
-		for _, network := range networks {
-			message.Network = network
+	for _, network := range networks {
+		message.Network = network
 
-			messageData, err := json.Marshal(&message)
-			if err != nil {
-				return
-			}
-
-			if err := s.rabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
-				ContentType: protocol.ContentTypeJSON,
-				Body:        messageData,
-			}); err != nil {
-				return
-			}
+		messageData, err := json.Marshal(&message)
+		if err != nil {
+			return
 		}
-	}()
+
+		if err := s.rabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
+			ContentType: protocol.ContentTypeJSON,
+			Body:        messageData,
+		}); err != nil {
+			loggerx.Global().Error("publish indexer message failed", zap.Error(err))
+			return
+		}
+	}
 }
 
 // publishIndexerAssetMessage create a rabbitmq job to index the latest user data
@@ -151,6 +177,7 @@ func (s *Service) PublishIndexerAssetMessage(ctx context.Context, address string
 			ContentType: protocol.ContentTypeJSON,
 			Body:        messageData,
 		}); err != nil {
+			loggerx.Global().Error("publish indexer asset message failed", zap.Error(err))
 			return
 		}
 	}

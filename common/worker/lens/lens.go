@@ -64,10 +64,10 @@ const (
 )
 
 var SupportLensPlatform = map[string]bool{
-	protocol.PlatformLens:          true,
-	protocol.PlatformLenster:       true,
-	protocol.PlatformLenstube:      true,
-	protocol.PlatformLenstubeBytes: true,
+	protocol.PlatformLens:              true,
+	protocol.PlatformLensLenster:       true,
+	protocol.PlatformLensLenstube:      true,
+	protocol.PlatformLensLenstubeBytes: true,
 }
 
 func (c *Client) GetProfile(address string) (*social.Profile, error) {
@@ -157,6 +157,7 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 		// common attributes
 		transfer := model.Transfer{
 			TransactionHash: transaction.Hash,
+			Timestamp:       transaction.Timestamp,
 			BlockNumber:     big.NewInt(transaction.BlockNumber),
 			Index:           int64(log.Index),
 			Network:         transaction.Network,
@@ -219,6 +220,7 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 		return err
 	}
 
+	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
 	transfer.RelatedUrls = append(transfer.RelatedUrls, c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId))
 
@@ -271,7 +273,7 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 		Platform:    protocol.PlatformLens,
 		Network:     transaction.Network,
 		Source:      transaction.Platform,
-		Type:        filter.SocialProfileCreate,
+		Type:        filter.SocialCreate,
 		URL:         fmt.Sprintf("https://lenster.xyz/u/%v", event.Handle),
 		Handle:      event.Handle,
 		ProfileUris: []string{ipfs.GetDirectURL(event.ImageURI)},
@@ -283,7 +285,7 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 	}
 
 	transfer.Metadata = rawMetadata
-	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfileCreate, transfer.Type)
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialCreate, transfer.Type)
 	transfer.RelatedUrls = []string{
 		fmt.Sprintf("https://lenster.xyz/u/%v", event.Handle),
 		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
@@ -419,10 +421,13 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 	case Share:
 		// get the correct type on Lens
 		if len(lensContent.Attributes) > 0 {
-			post.TypeOnPlatform = []string{lensContent.Attributes[0].Value}
+			post.TypeOnPlatform = []string{c.FormatTypeOnPlatform(lensContent.Attributes[0].Value)}
 		}
 		// get the pub time of the target
-		post.CreatedAt = lensContent.CreatedOn.Format(time.RFC3339)
+
+		if !lensContent.CreatedOn.IsZero() {
+			post.CreatedAt = lensContent.CreatedOn.Format(time.RFC3339)
+		}
 		post.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
 
 		postFinal.Target = post
@@ -446,10 +451,13 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 		postFinal.Target = c.CreatePost(ctx, &targetContent)
 		// get the correct type on Lens
 		if len(targetContent.Attributes) > 0 {
-			postFinal.Target.TypeOnPlatform = []string{targetContent.Attributes[0].Value}
+			postFinal.Target.TypeOnPlatform = []string{c.FormatTypeOnPlatform(targetContent.Attributes[0].Value)}
 		}
+
 		// get the pub time of the target
-		postFinal.Target.CreatedAt = targetContent.CreatedOn.Format(time.RFC3339)
+		if !targetContent.CreatedOn.IsZero() {
+			postFinal.Target.CreatedAt = targetContent.CreatedOn.Format(time.RFC3339)
+		}
 		postFinal.Target.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
 
 	default:
@@ -464,4 +472,13 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 	opt.Transfer.Metadata = rawMetadata
 
 	return nil
+}
+
+func (c *Client) FormatTypeOnPlatform(input string) string {
+	switch input {
+	// treat all these types as post
+	case "post", "image", "text_only", "video":
+		return Post
+	}
+	return input
 }

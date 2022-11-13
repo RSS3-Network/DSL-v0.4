@@ -12,6 +12,9 @@ permissions:
   # Optional: allow read access to pull request. Use with `only-new-issues` option.
   pull-requests: read
 
+env:
+  GOPRIVATE: github.com/naturalselectionlabs/kurora
+
 jobs:
   golangci:
     name: lint
@@ -20,6 +23,10 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: 1.18
+      - name: Configure git for private modules
+        env:
+          TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        run: git config --global url."https://sljeff:${TOKEN}@github.com".insteadOf "https://github.com"
       - uses: actions/checkout@v3
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
@@ -60,6 +67,10 @@ jobs:
         with:
           path: $GOPATH/pkg/mod
           key: ${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Configure git for private modules
+        env:
+          TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        run: git config --global url."https://sljeff:${TOKEN}@github.com".insteadOf "https://github.com"
       - run: |
           mkdir ~/.pregod
           cp deploy/config/* ~/.pregod
