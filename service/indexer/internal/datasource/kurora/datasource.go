@@ -3,6 +3,8 @@ package kurora
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	kurora "github.com/naturalselectionlabs/kurora/client"
@@ -16,7 +18,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
-	"strings"
 
 	"go.opentelemetry.io/otel"
 )
