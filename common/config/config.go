@@ -45,6 +45,16 @@ func (p *PostgresEtl) String() string {
 	)
 }
 
+var _ fmt.Stringer = (*Kurora)(nil)
+
+type Kurora struct {
+	Endpoint string `mapstructure:"endpoint"`
+}
+
+func (k *Kurora) String() string {
+	return k.Endpoint
+}
+
 var _ fmt.Stringer = &RabbitMQ{}
 
 type RabbitMQ struct {

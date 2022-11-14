@@ -14,6 +14,9 @@ ethereumetl:
   password: password
   database: etl
 
+kurora:
+  endpoint: ""
+
 rabbitmq:
   tls: false
   host: 127.0.0.1
