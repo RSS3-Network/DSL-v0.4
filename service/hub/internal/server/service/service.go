@@ -69,33 +69,34 @@ func (s *Service) connectMQ() error {
 		return err
 	}
 
-	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeJob, "direct", true, false, false, false, nil); err != nil {
+	if err = s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeJob, "direct", true, false, false, false, nil); err != nil {
 		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare failed", zap.Error(err))
 		return err
-		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare Job failed", zap.Error(err))
 	}
 
-	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeRefresh, "fanout", true, false, false, false, nil); err != nil {
+	if err = s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeRefresh, "fanout", true, false, false, false, nil); err != nil {
 		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare Refresh failed", zap.Error(err))
+		return err
 	}
 
 	if s.rabbitmqQueue, err = s.rabbitmqChannel.QueueDeclare(
 		"", false, false, true, false, nil,
 	); err != nil {
 		loggerx.Global().Error("rabbitmq QueueDeclare failed", zap.Error(err))
+		return err
 	}
 
-	if err := s.rabbitmqChannel.QueueBind(
+	if err = s.rabbitmqChannel.QueueBind(
 		s.rabbitmqQueue.Name, "", protocol.ExchangeRefresh, false, nil,
 	); err != nil {
 		loggerx.Global().Error("rabbitmq QueueBind failed", zap.Error(err))
+		return err
 	}
-
 
 	deliveryCh, err := s.rabbitmqChannel.Consume(s.rabbitmqQueue.Name, "", true, false, false, false, nil)
 	if err != nil {
 		loggerx.Global().Error("rabbitmq Consume Refresh Msg failed", zap.Error(err))
-		return
+		return err
 	}
 	s.DeliveryCh = deliveryCh
 

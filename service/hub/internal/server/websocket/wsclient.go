@@ -15,7 +15,7 @@ const (
 
 var globalLocker sync.RWMutex
 
-var ClientMaps map[string]*WSClient
+var clientMaps map[string]*WSClient
 
 var once sync.Once
 
@@ -24,14 +24,24 @@ func ReplaceGlobal(clientId string, client *WSClient) {
 
 	defer globalLocker.Unlock()
 
-	ClientMaps[clientId] = client
+	clientMaps[clientId] = client
 }
 
 func GetClientMaps() map[string]*WSClient {
 	once.Do(func() {
-		ClientMaps = make(map[string]*WSClient)
+		clientMaps = make(map[string]*WSClient)
 	})
-	return ClientMaps
+
+	globalLocker.RLock()
+
+	defer globalLocker.RUnlock()
+
+	item := make(map[string]*WSClient)
+	for key, value := range clientMaps {
+		item[key] = value
+	}
+
+	return item
 }
 
 type WSClient struct {
