@@ -215,15 +215,18 @@ func (s *Server) Run() error {
 	defer s.employer.Stop()
 
 	go func() {
-		deliveryCh, err := rabbitmqx.GetRabbitmqChannel().Consume(rabbitmqx.GetRabbitmqQueue().Name, "", true, false, false, false, nil)
-		if err != nil {
-			return
-		}
+		for {
+			delivery := <-rabbitmqx.GetRabbitmqDelivery()
+			if len(delivery.Body) == 0 {
+				loggerx.Global().Info("wait indexer mq reconnected")
+				time.Sleep(3 * time.Second)
 
-		for delivery := range deliveryCh {
+				continue
+			}
+
 			message := protocol.Message{}
 			if err := json.Unmarshal(delivery.Body, &message); err != nil {
-				loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
+				loggerx.Global().Error("failed to unmarshal indexer delivery message", zap.Error(err))
 
 				continue
 			}
@@ -237,15 +240,17 @@ func (s *Server) Run() error {
 	}()
 
 	go func() {
-		deliveryAssetCh, err := rabbitmqx.GetRabbitmqChannel().Consume(rabbitmqx.GetRabbitmqAssetQueue().Name, "", true, false, false, false, nil)
-		if err != nil {
-			return
-		}
+		for {
+			delivery := <-rabbitmqx.GetRabbitmqAssetDelivery()
+			if len(delivery.Body) == 0 {
+				loggerx.Global().Info("wait indexer mq reconnected")
+				time.Sleep(3 * time.Second)
+				continue
+			}
 
-		for delivery := range deliveryAssetCh {
 			message := protocol.Message{}
 			if err := json.Unmarshal(delivery.Body, &message); err != nil {
-				loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
+				loggerx.Global().Error("failed to unmarshal indexer asset delivery message", zap.Error(err))
 
 				continue
 			}

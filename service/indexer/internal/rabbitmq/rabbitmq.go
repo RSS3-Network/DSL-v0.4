@@ -2,6 +2,7 @@ package rabbitmq
 
 import (
 	"sync"
+	"time"
 
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -15,6 +16,8 @@ var (
 	rabbitmqChannel    *rabbitmq.Channel
 	rabbitmqQueue      rabbitmq.Queue
 	rabbitmqAssetQueue rabbitmq.Queue
+	deliveryCh         <-chan rabbitmq.Delivery
+	deliveryAssetCh    <-chan rabbitmq.Delivery
 
 	globalLocker sync.RWMutex
 )
@@ -51,6 +54,22 @@ func GetRabbitmqAssetQueue() rabbitmq.Queue {
 	return rabbitmqAssetQueue
 }
 
+func GetRabbitmqDelivery() <-chan rabbitmq.Delivery {
+	globalLocker.RLock()
+
+	defer globalLocker.RUnlock()
+
+	return deliveryCh
+}
+
+func GetRabbitmqAssetDelivery() <-chan rabbitmq.Delivery {
+	globalLocker.RLock()
+
+	defer globalLocker.RUnlock()
+
+	return deliveryAssetCh
+}
+
 func InitializeMQ(mq *configx.RabbitMQ) (err error) {
 	err = connect(mq)
 
@@ -59,8 +78,11 @@ func InitializeMQ(mq *configx.RabbitMQ) (err error) {
 		for {
 			<-rabbitmqConnection.NotifyClose(make(chan *rabbitmq.Error))
 			loggerx.Global().Error("rabbitmq connection closed, reconnecting...")
+			time.Sleep(10 * time.Second)
 			if err := connect(mq); err != nil {
 				loggerx.Global().Error("connect mq failed", zap.Error(err))
+			} else {
+				loggerx.Global().Info("connect mq success", zap.Error(err))
 			}
 			maxRetry--
 			if maxRetry == 0 {
@@ -101,6 +123,11 @@ func connect(mq *configx.RabbitMQ) (err error) {
 		return err
 	}
 
+	deliveryCh, err = rabbitmqChannel.Consume(rabbitmqQueue.Name, "", true, false, false, false, nil)
+	if err != nil {
+		return err
+	}
+
 	// asset mq
 	if rabbitmqAssetQueue, err = rabbitmqChannel.QueueDeclare(
 		protocol.IndexerAssetQueue, false, false, false, false, nil,
@@ -111,6 +138,11 @@ func connect(mq *configx.RabbitMQ) (err error) {
 	if err := rabbitmqChannel.QueueBind(
 		rabbitmqAssetQueue.Name, protocol.IndexerAssetRoutingKey, protocol.ExchangeJob, false, nil,
 	); err != nil {
+		return err
+	}
+
+	deliveryAssetCh, err = rabbitmqChannel.Consume(rabbitmqAssetQueue.Name, "", true, false, false, false, nil)
+	if err != nil {
 		return err
 	}
 

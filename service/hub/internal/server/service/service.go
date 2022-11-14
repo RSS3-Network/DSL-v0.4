@@ -38,8 +38,11 @@ func New() (s *Service) {
 		for {
 			<-s.rabbitmqConnection.NotifyClose(make(chan *rabbitmq.Error))
 			loggerx.Global().Error("rabbitmq connection closed, reconnecting...")
+			time.Sleep(10 * time.Second)
 			if err := s.connectMQ(); err != nil {
 				loggerx.Global().Error("connect mq failed", zap.Error(err))
+			} else {
+				loggerx.Global().Info("connect mq success", zap.Error(err))
 			}
 			maxRetry--
 			if maxRetry == 0 {
