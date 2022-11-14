@@ -3,8 +3,6 @@ package kurora
 import (
 	"context"
 	"fmt"
-	"strings"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	kurora "github.com/naturalselectionlabs/kurora/client"
@@ -18,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
+	"strings"
 
 	"go.opentelemetry.io/otel"
 )
@@ -51,6 +50,15 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	ethereumReceiptQuery := kurora.EthereumReceiptQuery{
 		From:            lo.ToPtr(common.HexToAddress(message.Address)),
 		BlockNumberFrom: lo.ToPtr(decimal.NewFromInt(message.BlockNumber)),
+	}
+
+	// Increase index by timestamp and block number
+	if !message.Timestamp.IsZero() {
+		ethereumReceiptQuery.TimestampFrom = lo.ToPtr(message.Timestamp)
+	}
+
+	if message.BlockNumber > 0 {
+		ethereumReceiptQuery.BlockNumberTo = lo.ToPtr(decimal.NewFromInt(message.BlockNumber))
 	}
 
 	for first := true; ethereumReceiptQuery.Cursor != nil || first; first = false {
