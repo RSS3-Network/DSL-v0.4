@@ -43,8 +43,11 @@ func New() (s *Service) {
 		for {
 			<-s.rabbitmqConnection.NotifyClose(make(chan *rabbitmq.Error))
 			loggerx.Global().Error("rabbitmq connection closed, reconnecting...")
+			time.Sleep(10 * time.Second)
 			if err := s.connectMQ(); err != nil {
 				loggerx.Global().Error("connect mq failed", zap.Error(err))
+			} else {
+				loggerx.Global().Info("connect mq success", zap.Error(err))
 			}
 			maxRetry--
 			if maxRetry == 0 {
@@ -190,6 +193,11 @@ func (s *Service) SubscribeIndexerRefreshMessage(client *websocket.WSClient) {
 	for {
 		select {
 		case delivery := <-s.DeliveryCh:
+			if len(delivery.Body) == 0 {
+				loggerx.Global().Info("wait mq reconnected")
+				time.Sleep(3 * time.Second)
+				continue
+			}
 			message := protocol.RefreshMessage{}
 			if err := json.Unmarshal(delivery.Body, &message); err != nil {
 				loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
