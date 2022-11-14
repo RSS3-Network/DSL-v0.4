@@ -157,6 +157,7 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 		// common attributes
 		transfer := model.Transfer{
 			TransactionHash: transaction.Hash,
+			Timestamp:       transaction.Timestamp,
 			BlockNumber:     big.NewInt(transaction.BlockNumber),
 			Index:           int64(log.Index),
 			Network:         transaction.Network,
@@ -219,6 +220,7 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 		return err
 	}
 
+	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
 	transfer.RelatedUrls = append(transfer.RelatedUrls, c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId))
 

@@ -13,6 +13,7 @@ type Post struct {
 	Media          []Media  `json:"media,omitempty"`
 	Target         *Post    `json:"target,omitempty"`
 	TargetURL      string   `json:"target_url,omitempty"`
+	OriginNoteID   string   `json:"origin_note_id,omitempty"`
 }
 
 type Media struct {

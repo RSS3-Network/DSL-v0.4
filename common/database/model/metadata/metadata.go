@@ -40,6 +40,13 @@ type Token struct {
 	AnimationURL    string           `json:"animation_url,omitempty"`
 }
 
+func (t *Token) SetValue(value decimal.Decimal) {
+	t.Value = &value
+
+	valueDisplay := t.Value.Shift(-int32(t.Decimals))
+	t.ValueDisplay = &valueDisplay
+}
+
 type TokenAttribute struct {
 	TraitType string `json:"trait_type"`
 	Value     any    `json:"value"`

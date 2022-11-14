@@ -146,7 +146,8 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 
 		transaction.AddressFrom = strings.ToLower(transactionMessage.From().String())
 
-		if transaction.AddressFrom != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) && !allowlist.AllowList.Contains(transaction.AddressFrom) {
+		// crawler message address is nil
+		if transaction.AddressFrom != "" && message.Address != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) && !allowlist.AllowList.Contains(transaction.AddressFrom) {
 			return nil, nil
 		}
 
