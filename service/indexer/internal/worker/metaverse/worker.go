@@ -3,6 +3,8 @@ package metaverse
 import (
 	"context"
 
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
+
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -27,8 +29,12 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) error {
-	for _, contract := range routerMap {
+	for _, contract := range RouterMap {
 		network = append(network, contract.Network)
+	}
+
+	for address, name := range Agent {
+		allowlist.AllowList.Add(address, name)
 	}
 
 	return nil
@@ -40,23 +46,27 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	defer handlerSpan.End()
 
+	internalTransactions := make([]model.Transaction, 0)
+
 	lop.ForEach(transactions, func(transaction model.Transaction, i int) {
 		var contract MetaverseContract
-		if contract = routerMap[transaction.AddressTo]; contract.Network != message.Network {
+		if contract = RouterMap[transaction.AddressTo]; contract.Network != message.Network {
 			return
 		}
 
-		for _, transfer := range transaction.Transfers {
-			transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagMetaverse, transfer.Tag, contract.Type, transfer.Type)
-			transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
+		for index := range transaction.Transfers {
+			transaction.Transfers[index].Tag, transaction.Transfers[index].Type = filter.UpdateTagAndType(filter.TagMetaverse, transaction.Transfers[index].Tag, contract.Type, transaction.Transfers[index].Type)
+			transaction.Tag, transaction.Type = filter.UpdateTagAndType(transaction.Transfers[index].Tag, transaction.Tag, transaction.Transfers[index].Type, transaction.Type)
 
-			if transfer.Tag == filter.TagMetaverse {
-				transfer.Platform, transaction.Platform = contract.Platform, contract.Platform
+			if transaction.Transfers[index].Tag == filter.TagMetaverse {
+				transaction.Transfers[index].Platform, transaction.Platform = contract.Platform, contract.Platform
 			}
 		}
+
+		internalTransactions = append(internalTransactions, transaction)
 	})
 
-	return transactions, nil
+	return internalTransactions, nil
 }
 
 func (s *service) Jobs() []worker.Job {

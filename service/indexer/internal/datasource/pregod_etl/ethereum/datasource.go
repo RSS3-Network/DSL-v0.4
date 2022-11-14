@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -53,7 +55,8 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	for _, transaction := range transactionMap {
 		internalTransaction := transaction
 
-		if internalTransaction.BlockNumber < message.BlockNumber && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) {
+		if internalTransaction.BlockNumber < message.BlockNumber && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) &&
+			!allowlist.AllowList.Contains(internalTransaction.AddressFrom) && !allowlist.AllowList.Contains(internalTransaction.AddressTo) {
 			continue
 		}
 
