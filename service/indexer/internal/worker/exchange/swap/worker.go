@@ -44,6 +44,8 @@ func (s *service) Networks() []string {
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon,
 		protocol.NetworkBinanceSmartChain,
+		protocol.NetworkOptimism,
+		protocol.NetworkAvalanche,
 	}
 }
 

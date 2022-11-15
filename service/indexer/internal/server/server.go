@@ -32,6 +32,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
@@ -133,12 +134,18 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	kuroraDatasource, err := kurora.New(context.Background(), s.config.Kurora.Endpoint)
+	if err != nil {
+		return fmt.Errorf("create kurora datasource: %w", err)
+	}
+
 	lensDatasource, err := lens.New(s.config.RPC)
 	if err != nil {
 		return err
 	}
 
 	s.datasources = []datasource.Datasource{
+		kuroraDatasource,
 		alchemyDatasource,
 		moralis.New(s.config.Moralis.Key),
 		arweave.New(),
@@ -576,7 +583,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 				internalTransactions, err := worker.Handle(ctx, message, transactions)
 
 				// log
-				loggerx.Global().Info("worker completion", zap.String("worker", worker.Name()), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
+				loggerx.Global().Info("worker completion", zap.String("worker", worker.Name()), zap.Int("transactions", len(internalTransactions)), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
 
 				if err != nil {
 					loggerx.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))

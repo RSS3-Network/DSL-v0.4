@@ -71,6 +71,8 @@ func (s *service) Networks() []string {
 		protocol.NetworkCrossbell,
 		protocol.NetworkXDAI,
 		protocol.NetworkZkSync,
+		protocol.NetworkOptimism,
+		protocol.NetworkAvalanche,
 	}
 }
 
@@ -149,7 +151,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	opt := lop.NewOption().WithConcurrency(200)
 
 	switch message.Network {
-	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkCrossbell, protocol.NetworkXDAI:
+	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkCrossbell, protocol.NetworkXDAI, protocol.NetworkOptimism, protocol.NetworkAvalanche:
 		internalTransactions, err = lop.MapWithError(transactions, s.makeEthereumHandlerFunc(ctx, message, transactions), opt)
 	case protocol.NetworkZkSync:
 		internalTransactions, err = lop.MapWithError(transactions, s.makeZkSyncHandlerFunc(ctx, message, transactions), opt)

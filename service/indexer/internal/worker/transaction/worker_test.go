@@ -94,9 +94,12 @@ func Test_service_Networks(t *testing.T) {
 				protocol.NetworkCrossbell,
 				protocol.NetworkXDAI,
 				protocol.NetworkZkSync,
+				protocol.NetworkOptimism,
+				protocol.NetworkAvalanche,
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := tokenWorker

@@ -39,6 +39,8 @@ var EthclientNetworks = []string{
 	NetworkPolygon,
 	NetworkXDAI,
 	NetworkCrossbell,
+	NetworkOptimism,
+	NetworkAvalanche,
 }
 
 func NetworkToID(networkName string) string {
