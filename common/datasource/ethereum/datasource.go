@@ -145,6 +145,7 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 		}
 
 		transaction.AddressFrom = strings.ToLower(transactionMessage.From().String())
+		transaction.AddressTo = strings.ToLower(transactionMessage.To().String())
 
 		// crawler message address is nil
 		if transaction.AddressFrom != "" && message.Address != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) &&
