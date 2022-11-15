@@ -117,7 +117,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Handle:   event.Handle,
-		Type:     filter.SocialCreate,
+		Action:   filter.SocialCreate,
 		URL:      fmt.Sprintf("https://crossbell.io/@%v", event.Handle),
 	}
 
@@ -173,7 +173,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction *mod
 		Handle:   event.NewHandle,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
-		Type:     filter.SocialUpdate,
+		Action:   filter.SocialUpdate,
 		URL:      fmt.Sprintf("https://crossbell.io/@%v", event.NewHandle),
 	}
 
@@ -415,7 +415,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
-		Type:     filter.SocialUpdate,
+		Action:   filter.SocialUpdate,
 		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 
@@ -472,7 +472,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
-		Type:     filter.SocialUpdate,
+		Action:   filter.SocialUpdate,
 		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 

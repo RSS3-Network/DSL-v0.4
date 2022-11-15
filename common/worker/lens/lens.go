@@ -273,7 +273,7 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 		Platform:    protocol.PlatformLens,
 		Network:     transaction.Network,
 		Source:      transaction.Platform,
-		Type:        filter.SocialCreate,
+		Action:      filter.SocialCreate,
 		URL:         fmt.Sprintf("https://lenster.xyz/u/%v", event.Handle),
 		Handle:      event.Handle,
 		ProfileUris: []string{ipfs.GetDirectURL(event.ImageURI)},
