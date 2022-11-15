@@ -65,6 +65,12 @@ rpc:
     crossbell:
       http: ''
       websocket: ''
+    optimism:
+      http: ''
+      websocket: ''
+    avalanche:
+      http: ''
+      websocket: ''
   alchemy:
     ethereum: ''
     polygon: ''
