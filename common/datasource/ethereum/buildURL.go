@@ -18,6 +18,10 @@ func BuildScanURL(network string, transactionHash string) string {
 		return fmt.Sprintf("https://blockscout.com/xdai/mainnet/tx/%s", transactionHash)
 	case protocol.NetworkCrossbell:
 		return fmt.Sprintf("https://scan.crossbell.io/tx/%s", transactionHash)
+	case protocol.NetworkOptimism:
+		return fmt.Sprintf("https://optimistic.etherscan.io/tx/%s", transactionHash)
+	case protocol.NetworkAvalanche:
+		return fmt.Sprintf("https://snowtrace.io/tx/%s", transactionHash)
 	default:
 		return ""
 	}

@@ -85,7 +85,7 @@ func TestKurora_Handle(t *testing.T) {
 			wantError: assert.NoError,
 		},
 		{
-			name: "black hold on Crossbell",
+			name: "black hole on Crossbell",
 			fields: fields{
 				datasource: kuroraDatasource,
 			},

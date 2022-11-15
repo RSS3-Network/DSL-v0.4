@@ -46,6 +46,18 @@ var nativeMap = map[string]Native{
 		Logo:     "https://assets.coingecko.com/coins/images/279/large/ethereum.png",
 		Decimals: 18,
 	},
+	protocol.NetworkOptimism: {
+		Name:     "Ethereum", // https://www.coingecko.com/en/coins/ethereum
+		Symbol:   "ETH",
+		Decimals: 18,
+		Logo:     "https://assets.coingecko.com/coins/images/279/large/ethereum.png",
+	},
+	protocol.NetworkAvalanche: {
+		Name:     "Avalanche", // https://www.coingecko.com/en/coins/avalanche
+		Symbol:   "AVAX",
+		Decimals: 18,
+		Logo:     "https://assets.coingecko.com/coins/images/12559/large/coin-round-red.png",
+	},
 }
 
 func (c *Client) Native(context context.Context, network string) (*Native, error) {

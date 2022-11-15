@@ -62,16 +62,16 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		ethereumReceiptQuery.BlockNumberTo = lo.ToPtr(decimal.NewFromInt(message.BlockNumber))
 	}
 
-	for first := true; ethereumReceiptQuery.Cursor != nil || first; first = false {
-		// When preparing to support the Binance Smart Chain and Gnosis in the future,
-		// there will probably be some errors here.
-		// Binance Smart Chain network should be `binance_smart_chain` instead of `binance`,
-		// and Gnosis is `gnosis` instead of `xdai`.
-		network, err := constant.NetworkString(message.Network)
-		if err != nil {
-			return nil, fmt.Errorf("invalid network: %w", err)
-		}
+	// When preparing to support the Binance Smart Chain and Gnosis in the future,
+	// there will probably be some errors here.
+	// Binance Smart Chain network should be `binance_smart_chain` instead of `binance`,
+	// and Gnosis is `gnosis` instead of `xdai`.
+	network, err := constant.NetworkString(message.Network)
+	if err != nil {
+		return nil, fmt.Errorf("invalid network: %w", err)
+	}
 
+	for first := true; ethereumReceiptQuery.Cursor != nil || first; first = false {
 		// The receipts are obtained here instead of the transactions,
 		// because the receipts do not require additional requests to get the status of the transactions.
 		// Only fetch transaction receipts where the `receipt.from` is `message.Address`.
