@@ -119,7 +119,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		if len(receipts) == 0 {
 			break
 		}
-		
+
 		lastTransaction, _ := lo.Last(receipts)
 		ethereumReceiptQuery.Cursor = lo.ToPtr(lastTransaction.TransactionHash.String())
 	}
