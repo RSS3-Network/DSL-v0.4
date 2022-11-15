@@ -68,10 +68,10 @@ func (s *service) Run() error {
 		}
 
 		// deduplicate data
-		transactions, err = database.DeduplicateTransactions(ctx, transactions)
-		if err != nil || len(transactions) == 0 {
-			continue
-		}
+		// transactions, err = database.DeduplicateTransactions(ctx, transactions)
+		// if err != nil || len(transactions) == 0 {
+		// 	continue
+		// }
 
 		// insert db
 		err = database.UpsertTransactions(ctx, transactions)
@@ -115,15 +115,6 @@ func (s *service) getMirrorTransactions(ctx context.Context) ([]*model.Transacti
 			return nil, err
 		}
 
-		metadata, err := json.Marshal(&metadata.Post{
-			Title: data.Content.Title,
-			Body:  data.Content.Body,
-		})
-		if err != nil {
-			logrus.Errorf("[mirror] getMirrorTransactions: post json marshal error, %v", err)
-			continue
-		}
-
 		source, err := json.Marshal(&transaction)
 		if err != nil {
 			logrus.Errorf("[mirror] getMirrorTransactions: source json marshal error, %v", err)
@@ -144,6 +135,22 @@ func (s *service) getMirrorTransactions(ctx context.Context) ([]*model.Transacti
 		}
 
 		address := strings.ToLower(data.Authorship.Contributor)
+
+		post := &metadata.Post{
+			Title: data.Content.Title,
+			Body:  data.Content.Body,
+			Author: []string{
+				fmt.Sprintf("https://mirror.xyz/%v", address),
+			},
+			OriginNoteID: originDigest,
+		}
+
+		metadata, err := json.Marshal(post)
+		if err != nil {
+			logrus.Errorf("[mirror] getMirrorTransactions: post json marshal error, %v", err)
+			continue
+		}
+
 		internalTransaction := &model.Transaction{
 			BlockNumber: transaction.Height.BigInt().Int64(),
 			Hash:        transaction.ID,

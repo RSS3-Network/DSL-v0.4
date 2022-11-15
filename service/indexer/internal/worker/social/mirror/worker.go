@@ -100,17 +100,24 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				return nil, err
 			}
 
-			rawMetadata, err := json.Marshal(&metadata.Post{
+			post := &metadata.Post{
 				Title: mirrorContent.Content.Title,
 				Body:  mirrorContent.Content.Body,
-			})
+				Author: []string{
+					fmt.Sprintf("https://mirror.xyz/%v", strings.ToLower(string(transactionEdge.Node.Owner.Address))),
+				},
+				OriginNoteID: mirrorMetadata.OriginalContentDigest,
+			}
+
+			metadata, err := json.Marshal(post)
 			if err != nil {
-				return nil, err
+				logrus.Errorf("[mirror] getMirrorTransactions: post json marshal error, %v", err)
+				continue
 			}
 
 			transfer.AddressTo = strings.ToLower(string(transactionEdge.Node.Owner.Address))
 			transfer.AddressFrom = strings.ToLower(mirrorMetadata.Contributor)
-			transfer.Metadata = rawMetadata
+			transfer.Metadata = metadata
 			transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
 			transfer.RelatedUrls = append(
 				transfer.RelatedUrls,

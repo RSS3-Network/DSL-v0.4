@@ -134,6 +134,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
+		protocol.NetworkOptimism, protocol.NetworkAvalanche,
 		protocol.NetworkEIP1577,
 	}
 

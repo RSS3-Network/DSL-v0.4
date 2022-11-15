@@ -13,6 +13,7 @@ type Config struct {
 	RabbitMQ      *configx.RabbitMQ      `mapstructure:"rabbitmq"`
 	Postgres      *configx.Postgres      `mapstructure:"postgres"`
 	EthereumEtl   *configx.PostgresEtl   `mapstructure:"ethereumetl"`
+	Kurora        *configx.Kurora        `mapstructure:"kurora"`
 	OpenTelemetry *configx.OpenTelemetry `mapstructure:"opentelemetry"`
 	Moralis       *configx.Moralis       `mapstructure:"moralis"`
 	Redis         *configx.Redis         `mapstructure:"redis"`
