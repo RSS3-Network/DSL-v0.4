@@ -18,7 +18,8 @@ var (
 	rabbitmqAssetQueue rabbitmq.Queue
 	deliveryCh         <-chan rabbitmq.Delivery
 	deliveryAssetCh    <-chan rabbitmq.Delivery
-	globalLocker       sync.RWMutex
+
+	globalLocker sync.RWMutex
 )
 
 func GetRabbitmqConnection() *rabbitmq.Connection {
@@ -134,14 +135,14 @@ func connect(mq *configx.RabbitMQ) (err error) {
 		return err
 	}
 
-	deliveryAssetCh, err = rabbitmqChannel.Consume(rabbitmqAssetQueue.Name, "", true, false, false, false, nil)
-	if err != nil {
-		return err
-	}
-
 	if err := rabbitmqChannel.QueueBind(
 		rabbitmqAssetQueue.Name, protocol.IndexerAssetRoutingKey, protocol.ExchangeJob, false, nil,
 	); err != nil {
+		return err
+	}
+
+	deliveryAssetCh, err = rabbitmqChannel.Consume(rabbitmqAssetQueue.Name, "", true, false, false, false, nil)
+	if err != nil {
 		return err
 	}
 

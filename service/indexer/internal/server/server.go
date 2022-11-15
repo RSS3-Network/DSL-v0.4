@@ -237,6 +237,7 @@ func (s *Server) Run() error {
 			if len(delivery.Body) == 0 {
 				loggerx.Global().Info("wait indexer mq reconnected")
 				time.Sleep(3 * time.Second)
+
 				continue
 			}
 
@@ -266,7 +267,7 @@ func (s *Server) Run() error {
 
 			message := protocol.Message{}
 			if err := json.Unmarshal(delivery.Body, &message); err != nil {
-				loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
+				loggerx.Global().Error("failed to unmarshal indexer asset delivery message", zap.Error(err))
 
 				continue
 			}
