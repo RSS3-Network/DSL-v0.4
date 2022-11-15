@@ -35,6 +35,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
@@ -47,6 +48,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
+	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
@@ -137,6 +139,11 @@ func (s *Server) Initialize() (err error) {
 		return fmt.Errorf("create kurora datasource: %w", err)
 	}
 
+	lensDatasource, err := lens.New(s.config.RPC)
+	if err != nil {
+		return err
+	}
+
 	s.datasources = []datasource.Datasource{
 		kuroraDatasource,
 		alchemyDatasource,
@@ -146,6 +153,7 @@ func (s *Server) Initialize() (err error) {
 		zksync.New(),
 		eth_etl.New(),
 		eip1577.New(s.employer),
+		lensDatasource,
 	}
 
 	swapWorker, err := swap.New(s.employer)
@@ -172,6 +180,7 @@ func (s *Server) Initialize() (err error) {
 		gitcoin.New(),
 		snapshot.New(),
 		crossbell.New(),
+		lens_worker.New(),
 		transaction.New(),
 	}
 
