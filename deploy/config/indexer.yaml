@@ -70,7 +70,6 @@ rpc:
       websocket: ''
     avalanche:
       http: ''
-      websocket: ''
   alchemy:
     ethereum: ''
     polygon: ''
