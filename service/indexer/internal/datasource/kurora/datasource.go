@@ -80,10 +80,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 			return nil, fmt.Errorf("ethereum transactions: %w", err)
 		}
 
-		if len(receipts) == 0 {
-			break
-		}
-
 		for _, receipt := range receipts {
 			var addressTo string
 
