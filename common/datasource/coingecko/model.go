@@ -1,22 +1,15 @@
 package coingecko
 
 type CoinListParameter struct {
-	IncludePlatform string `url:"include_platform,omitempty"`
+	IncludePlatform bool `url:"include_platform,omitempty"`
 }
 
 type Coin struct {
-	ID        string        `json:"id"`
-	Name      string        `json:"name"`
-	Symbol    string        `json:"symbol"`
-	Platforms CoinPlatforms `json:"platforms,omitempty"`
-	Image     *CoinImage    `json:"image,omitempty"`
-}
-
-type CoinPlatforms struct {
-	Ethereum          *string `json:"ethereum,omitempty"`
-	XDAI              *string `json:"xdai,omitempty"`
-	Polygon           *string `json:"polygon-pos,omitempty"`
-	BinanceSmartChain *string `json:"binance-smart-chain,omitempty"`
+	ID        string            `json:"id"`
+	Name      string            `json:"name"`
+	Symbol    string            `json:"symbol"`
+	Platforms map[string]string `json:"platforms,omitempty"`
+	Image     *CoinImage        `json:"image,omitempty"`
 }
 
 type CoinImage struct {
