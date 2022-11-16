@@ -42,11 +42,11 @@ func (j *Job) Name() string {
 }
 
 func (j *Job) Spec() string {
-	return "@every 10s"
+	return "@every 1m"
 }
 
 func (j *Job) Timeout() time.Duration {
-	return 2 * time.Hour
+	return 5 * time.Hour // ~ (13264 / 50 / 60)
 }
 
 func (j *Job) Run(_ worker.RenewalFunc) error {
