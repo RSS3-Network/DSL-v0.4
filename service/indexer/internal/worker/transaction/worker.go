@@ -33,6 +33,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	tokenjob "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/job/token"
 	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
@@ -691,7 +692,9 @@ func (s *service) buildType(transaction model.Transaction, transfer model.Transf
 }
 
 func (s *service) Jobs() []worker.Job {
-	return nil
+	return []worker.Job{
+		tokenjob.New(),
+	}
 }
 
 // Check address (from / to) is a WalletAddress. If true, update transfer
