@@ -190,6 +190,21 @@ func (j *Job) buildTokenListFromZkSync(ctx context.Context, tokenList zksync.Get
 	tokens := make([]model.Token, 0, len(tokenList))
 
 	for _, token := range tokenList {
+		// zkSync Native ETH
+		if token.ID == 0 {
+			tokens = append(tokens, model.Token{
+				ID:       "eth",
+				Name:     "ETH",
+				Symbol:   "ETH",
+				Logo:     "https://assets.coingecko.com/coins/images/279/large/ethereum.png",
+				Standard: protocol.TokenStandardERC20,
+				Network:  protocol.NetworkZkSync,
+				Decimal:  18,
+			})
+
+			continue
+		}
+
 		coin, exists := lo.Find(coinList, func(coin coingecko.Coin) bool {
 			contractAddress, exists := coin.Platforms[protocol.NetworkEthereum]
 			if !exists {
@@ -202,7 +217,16 @@ func (j *Job) buildTokenListFromZkSync(ctx context.Context, tokenList zksync.Get
 		var logo string
 
 		if exists {
-			logo, _ = j.buildLogoURL(coin)
+			j.rateLimiter.Take()
+
+			coin, err := j.coingeckoClient.Coin(ctx, coin.ID, coingecko.CoinParameter{})
+			if err != nil {
+				zap.L().Warn("fetch token from coingecko", zap.String("job", j.Name()), zap.String("token", token.Symbol), zap.String("contract_address", token.Address), zap.Error(err))
+
+				continue
+			}
+
+			logo, _ = j.buildLogoURL(*coin)
 		}
 
 		ethereumClient, err := ethclientx.Global(protocol.NetworkEthereum)
