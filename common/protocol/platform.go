@@ -37,6 +37,7 @@ const (
 	Platform0x          = "0x"
 	PlatformAAVE        = "AAVE"
 	PlatformCurve       = "Curve"
+	PlatformParaswap    = "Paraswap"
 )
 
 var PlatformList = map[string][]string{
