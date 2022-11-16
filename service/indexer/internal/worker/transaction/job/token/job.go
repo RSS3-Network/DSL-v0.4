@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/coingecko"
@@ -17,6 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/robfig/cron/v3"
 	"github.com/samber/lo"
 
 	"golang.org/x/sync/errgroup"
@@ -35,6 +37,7 @@ type Job struct {
 	zksyncClient    *zksync.Client
 	databaseClient  *gorm.DB
 	rateLimiter     ratelimit.Limiter
+	crontab         *cron.Cron
 }
 
 func (j *Job) Name() string {
@@ -42,17 +45,27 @@ func (j *Job) Name() string {
 }
 
 func (j *Job) Spec() string {
-	return "@every 1m"
+	return "@every 10s"
 }
 
 func (j *Job) Timeout() time.Duration {
-	return 5 * time.Hour // ~ (13264 / 50 / 60)
+	// It takes about ~5 (13264 / 50 / 60) hours in total,
+	// but the lock may not be released properly when the pod is closed,
+	// so the timeout is positioned as the value of a single token
+	return 2 * time.Minute
 }
 
-func (j *Job) Run(_ worker.RenewalFunc) error {
+func (j *Job) Run(renewal worker.RenewalFunc) error {
 	errorGroup := errgroup.Group{}
 
 	ctx := context.Background()
+
+	_, _ = j.crontab.AddFunc("@every 1m", func() {
+		_ = renewal(ctx, j.Timeout())
+	})
+
+	j.crontab.Start()
+	defer j.crontab.Stop()
 
 	errorGroup.Go(func() error {
 		return j.refreshTokenListFromCoinGecko(ctx)
@@ -132,46 +145,19 @@ func (j *Job) buildTokenFromCoinGecko(ctx context.Context, coin coingecko.Coin) 
 			continue
 		}
 
-		zap.L().Debug("build token", zap.String("job", j.Name()), zap.String("token", coin.Name), zap.String("image", logo), zap.String("platform", platform), zap.String("value", value))
+		zap.L().Debug("build token", zap.String("job", j.Name()), zap.String("token", coin.Name), zap.String("image", logo), zap.String("network", network), zap.String("contract_address", value))
 
-		erc20Caller, err := erc20.NewERC20Caller(common.HexToAddress(value), ethereumClient)
+		token, err := j.buildToken(ctx, value, network, ethereumClient)
 		if err != nil {
-			zap.L().Warn("create erc20 caller", zap.String("job", j.Name()), zap.String("network", network), zap.String("contract_address", value), zap.Error(err))
+			zap.L().Warn("build token", zap.String("job", j.Name()), zap.String("token", coin.Name), zap.String("image", logo), zap.String("network", network), zap.String("contract_address", value), zap.Error(err))
 
 			continue
 		}
 
-		name, err := erc20Caller.Name(&bind.CallOpts{})
-		if err != nil {
-			zap.L().Warn("call erc20 name", zap.String("job", j.Name()), zap.String("network", network), zap.String("contract_address", value), zap.Error(err))
+		token.ID = coin.ID
+		token.Logo = logo
 
-			continue
-		}
-
-		symbol, err := erc20Caller.Symbol(&bind.CallOpts{})
-		if err != nil {
-			zap.L().Warn("call erc20 symbol", zap.String("job", j.Name()), zap.String("network", network), zap.String("contract_address", value), zap.Error(err))
-
-			continue
-		}
-
-		decimals, err := erc20Caller.Decimals(&bind.CallOpts{})
-		if err != nil {
-			zap.L().Warn("call erc20 decimals", zap.String("job", j.Name()), zap.String("network", network), zap.String("contract_address", value), zap.Error(err))
-
-			continue
-		}
-
-		tokens = append(tokens, model.Token{
-			ID:              coin.ID,
-			Name:            name,
-			Symbol:          symbol,
-			Decimal:         decimals,
-			Logo:            logo,
-			Standard:        protocol.TokenStandardERC20,
-			Network:         network,
-			ContractAddress: strings.ToLower(value),
-		})
+		tokens = append(tokens, *token)
 	}
 
 	return tokens, nil
@@ -205,7 +191,7 @@ func (j *Job) buildTokenListFromZkSync(ctx context.Context, tokenList zksync.Get
 
 	for _, token := range tokenList {
 		coin, exists := lo.Find(coinList, func(coin coingecko.Coin) bool {
-			contractAddress, exists := coin.Platforms["ethereum"]
+			contractAddress, exists := coin.Platforms[protocol.NetworkEthereum]
 			if !exists {
 				return exists
 			}
@@ -219,19 +205,56 @@ func (j *Job) buildTokenListFromZkSync(ctx context.Context, tokenList zksync.Get
 			logo, _ = j.buildLogoURL(coin)
 		}
 
-		tokens = append(tokens, model.Token{
-			ID:              coin.ID,
-			Name:            coin.Name,
-			Symbol:          coin.Symbol,
-			Decimal:         token.Decimals,
-			Logo:            logo,
-			Standard:        protocol.TokenStandardERC20,
-			Network:         protocol.NetworkZkSync,
-			ContractAddress: strings.ToLower(token.Address),
-		})
+		ethereumClient, err := ethclientx.Global(protocol.NetworkEthereum)
+		if err != nil {
+			return nil, fmt.Errorf("load ethereum client: %w", err)
+		}
+
+		internalToken, err := j.buildToken(ctx, token.Address, protocol.NetworkZkSync, ethereumClient)
+		if err != nil {
+			zap.L().Warn("build token", zap.String("job", j.Name()), zap.String("token", coin.Name), zap.String("image", logo), zap.String("network", protocol.NetworkZkSync), zap.String("contract_address", token.Address), zap.Error(err))
+
+			continue
+		}
+
+		internalToken.ID = coin.ID
+		internalToken.Decimal = token.Decimals
+
+		tokens = append(tokens, *internalToken)
 	}
 
 	return tokens, nil
+}
+
+func (j *Job) buildToken(ctx context.Context, address string, network string, ethereumClient *ethclient.Client) (*model.Token, error) {
+	erc20Caller, err := erc20.NewERC20Caller(common.HexToAddress(address), ethereumClient)
+	if err != nil {
+		return nil, err
+	}
+
+	name, err := erc20Caller.Name(&bind.CallOpts{})
+	if err != nil {
+		return nil, err
+	}
+
+	symbol, err := erc20Caller.Symbol(&bind.CallOpts{})
+	if err != nil {
+		return nil, err
+	}
+
+	decimals, err := erc20Caller.Decimals(&bind.CallOpts{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.Token{
+		Name:            name,
+		Symbol:          symbol,
+		Decimal:         decimals,
+		Standard:        protocol.TokenStandardERC20,
+		Network:         network,
+		ContractAddress: strings.ToLower(address),
+	}, nil
 }
 
 func (j *Job) storeTokens(ctx context.Context, tokens []model.Token) error {
@@ -305,5 +328,6 @@ func New() worker.Job {
 		// https://www.coingecko.com/en/api/documentation
 		// `Our Free API* has a rate limit of 10-50 calls/minute, and doesn't require API key.`
 		rateLimiter: ratelimit.New(50, ratelimit.Per(time.Minute)),
+		crontab:     cron.New(),
 	}
 }
