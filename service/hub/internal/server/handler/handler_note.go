@@ -3,11 +3,14 @@ package handler
 import (
 	"net/http"
 
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
+	ws "github.com/naturalselectionlabs/pregod/service/hub/internal/server/websocket"
 	"go.opentelemetry.io/otel"
 )
 
@@ -132,4 +135,27 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 		Result:        transactions,
 		AddressStatus: addressStatus,
 	})
+}
+
+func (h *Handler) GetNotesWsFunc(c echo.Context) error {
+	ws.GetClientMaps()
+
+	clientId := uuid.New().String()
+
+	conn, err := (&websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024, CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(c.Response(), c.Request(), nil)
+	if err != nil {
+		return err
+	}
+
+	client := &ws.WSClient{Hub: h.service.WsHub, Conn: conn, Send: make(chan []byte, 256), ClientId: []byte(clientId), AddressMap: make(map[string]struct{})}
+
+	client.Hub.Register <- client
+
+	ws.ReplaceGlobal(clientId, client)
+
+	go h.service.SubscribeIndexerRefreshMessage(client)
+	go client.WriteMsg()
+	go client.ReadMsg()
+
+	return nil
 }
