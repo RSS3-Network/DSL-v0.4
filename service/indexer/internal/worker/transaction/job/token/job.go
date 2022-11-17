@@ -49,7 +49,7 @@ func (j *Job) Spec() string {
 }
 
 func (j *Job) Timeout() time.Duration {
-	// It takes about ~5 (13264 / 50 / 60) hours in total,
+	// It takes about ~10 (13264 / 25 / 60) hours in total,
 	// but the lock may not be released properly when the pod is closed,
 	// so the timeout is positioned as the value of a single token
 	return 2 * time.Minute
@@ -367,7 +367,7 @@ func New() worker.Job {
 		databaseClient:  database.Global(),
 		// https://www.coingecko.com/en/api/documentation
 		// `Our Free API* has a rate limit of 10-50 calls/minute, and doesn't require API key.`
-		rateLimiter: ratelimit.New(50, ratelimit.Per(time.Minute)),
+		rateLimiter: ratelimit.New(25, ratelimit.Per(time.Minute)),
 		crontab:     cron.New(),
 	}
 }
