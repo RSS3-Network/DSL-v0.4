@@ -53,6 +53,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
+	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/samber/lo"
 	"github.com/scylladb/go-set/strset"
 	"go.opentelemetry.io/otel"
@@ -674,6 +675,28 @@ func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 			"indexing_networks": address.IndexingNetworks,
 		}).Error; err != nil {
 		loggerx.Global().Error("failed to upsert address", zap.Error(err), zap.String("address", address.Address))
+	}
+	s.publishRefreshMessage(ctx, address)
+}
+
+func (s *Server) publishRefreshMessage(ctx context.Context, address model.Address) {
+	tracer := otel.Tracer("publishRefreshMessage")
+	_, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")
+
+	defer rabbitmqSnap.End()
+	// refresh or new address
+	address.UpdatedAt = time.Now().Add(-1 * time.Second)
+	messageData, err := json.Marshal(&protocol.RefreshMessage{
+		Address: address,
+	})
+	if err != nil {
+		return
+	}
+	if err := rabbitmqx.GetRabbitmqChannel().Publish(protocol.ExchangeRefresh, "", false, false, rabbitmq.Publishing{
+		ContentType: protocol.ContentTypeJSON,
+		Body:        messageData,
+	}); err != nil {
+		loggerx.Global().Error("failed to publish refresh message to mq", zap.Error(err), zap.String("address", address.Address))
 	}
 }
 

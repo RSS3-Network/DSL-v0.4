@@ -34,7 +34,7 @@ jobs:
           version: latest
   tests:
     name: "UnitTest"
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     services:
       pgsql:
         image: "postgres:13.4"
@@ -72,7 +72,8 @@ jobs:
           TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: git config --global url."https://sljeff:${TOKEN}@github.com".insteadOf "https://github.com"
       - run: |
-          mkdir ~/.pregod
+          # When running unit tests, `deploy/config` is read from the relative path of the test file. So you must use the global conf
+          mkdir -p ~/.pregod
           cp deploy/config/* ~/.pregod
       - uses: sljeff/secrets2env@main
         with:

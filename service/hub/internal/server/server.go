@@ -94,6 +94,10 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.POST("/apikey/apply", s.httpHandler.PostAPIKeyFunc)
 	s.httpServer.GET("/apikey", s.httpHandler.GetAPIKeyFunc)
 
+	// WS Initialize
+	go svc.WsHub.Run()
+	s.httpServer.GET("/ws/notes", s.httpHandler.GetNotesWsFunc)
+
 	return nil
 }
 
