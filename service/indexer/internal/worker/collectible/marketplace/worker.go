@@ -12,11 +12,13 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/quix"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/shopspring/decimal"
+
 	"go.uber.org/zap"
 )
 
@@ -36,7 +38,9 @@ func (i *internal) Name() string {
 
 func (i *internal) Networks() []string {
 	return []string{
-		protocol.NetworkEthereum, protocol.NetworkPolygon,
+		protocol.NetworkEthereum,
+		protocol.NetworkPolygon,
+		protocol.NetworkOptimism,
 	}
 }
 
@@ -64,6 +68,15 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			internalTransaction, err := i.handleLooksRare(ctx, message, transaction)
 			if err != nil {
 				zap.L().Error("failed to handle looksrare transaction", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
+
+				continue
+			}
+
+			internalTransactions = append(internalTransactions, *internalTransaction)
+		case quix.AddressWrapperSeaportProxy, quix.AddressSeaport, quix.AddressExchangeV5:
+			internalTransaction, err := i.handleQuix(ctx, message, transaction)
+			if err != nil {
+				zap.L().Error("failed to handle quix transaction", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
 
 				continue
 			}

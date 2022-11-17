@@ -2,6 +2,7 @@ package kurora_test
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,15 +15,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var once sync.Once
+
 func initialize(t *testing.T) {
-	config.Initialize()
+	once.Do(func() {
+		config.Initialize()
 
-	ethereumClientMap, err := ethclientx.Dial(config.ConfigIndexer.RPC, protocol.EthclientNetworks)
-	assert.NoError(t, err)
+		ethereumClientMap, err := ethclientx.Dial(config.ConfigIndexer.RPC, protocol.EthclientNetworks)
+		assert.NoError(t, err)
 
-	for network, ethereumClient := range ethereumClientMap {
-		ethclientx.ReplaceGlobal(network, ethereumClient)
-	}
+		for network, ethereumClient := range ethereumClientMap {
+			ethclientx.ReplaceGlobal(network, ethereumClient)
+		}
+	})
 }
 
 func TestKurora_Handle(t *testing.T) {

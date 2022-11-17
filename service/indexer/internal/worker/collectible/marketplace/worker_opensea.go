@@ -16,12 +16,15 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20/weth"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/quix"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/shopspring/decimal"
+
 	"go.opentelemetry.io/otel"
+
 	"go.uber.org/zap"
 )
 
@@ -72,7 +75,7 @@ func (i *internal) handleOpenSea(ctx context.Context, _ *protocol.Message, trans
 	}
 
 	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
-	internalTransaction.Platform = opensea.Platform
+	internalTransaction.Platform = quix.Platform
 
 	return &internalTransaction, nil
 }
@@ -98,6 +101,10 @@ func (i *internal) handleOpenseaSeaportOrderFulfilled(ctx context.Context, trans
 	for _, item := range event.Consideration {
 		// OpenSea puts ERC20 transfers in Consideration as well
 		if item.ItemType == opensea.ItemTypeERC20 {
+			continue
+		}
+
+		if item.Token == common.HexToAddress("") {
 			continue
 		}
 

@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	ItemTypeERC20 uint8 = 1
+	ItemTypeNative uint8 = 0
+	ItemTypeERC20  uint8 = 1
 
 	Platform = "OpenSea"
 )
