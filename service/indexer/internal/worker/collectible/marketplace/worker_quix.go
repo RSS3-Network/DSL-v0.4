@@ -12,7 +12,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/quix"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -140,7 +139,7 @@ func (i *internal) handleQuickSeaportOrderFulfilled(ctx context.Context, transac
 			}
 		}
 
-		internalTransfer, err := i.buildTradeTransfer(transaction, transferLogIndex, opensea.Platform, event.Recipient, event.Offerer, nft, nft.Cost)
+		internalTransfer, err := i.buildTradeTransfer(transaction, transferLogIndex, quix.Platform, event.Recipient, event.Offerer, nft, nft.Cost)
 		if err != nil {
 			return nil, fmt.Errorf("build trade transfer: %w", err)
 		}
@@ -184,7 +183,7 @@ func (i *internal) handleQuickExchangeV5SellOrderFilled(ctx context.Context, tra
 		return nil, fmt.Errorf("build cost: %w", err)
 	}
 
-	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), opensea.Platform, event.Buyer, event.Seller, nft, nft.Cost)
+	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), quix.Platform, event.Buyer, event.Seller, nft, nft.Cost)
 	if err != nil {
 		return nil, fmt.Errorf("build trade transfer: %w", err)
 	}
