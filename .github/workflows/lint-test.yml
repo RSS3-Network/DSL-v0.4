@@ -34,7 +34,7 @@ jobs:
           version: latest
   tests:
     name: "UnitTest"
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     services:
       pgsql:
         image: "postgres:13.4"
