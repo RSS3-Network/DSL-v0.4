@@ -56,6 +56,10 @@ const (
 	// donation type
 	DonationLaunch string = "launch"
 	DonationDonate string = "donate"
+
+	// metaverse type
+	MetaverseMint     string = "mint"
+	MetaverseTransfer string = "transfer"
 )
 
 var ValidTypeMap = map[string][]string{
@@ -65,6 +69,7 @@ var ValidTypeMap = map[string][]string{
 	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike, SocialWiki},
 	TagDonation:    {DonationLaunch, DonationDonate},
 	TagGovernance:  {GovernancePropose, GovernanceVote},
+	TagMetaverse:   {MetaverseMint, MetaverseTransfer},
 }
 
 func CheckTypeValid(tag string, transferType string) bool {

@@ -37,7 +37,11 @@ const (
 	Platform0x          = "0x"
 	PlatformAAVE        = "AAVE"
 	PlatformCurve       = "Curve"
-	PlatformParaswap    = "Paraswap"
+
+	// metaverse
+	PlatformMars4 = "Mars4"
+
+	PlatformParaswap = "Paraswap"
 )
 
 var PlatformList = map[string][]string{
