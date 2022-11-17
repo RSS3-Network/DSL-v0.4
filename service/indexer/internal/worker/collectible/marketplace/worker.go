@@ -36,7 +36,14 @@ func (i *internal) Name() string {
 
 func (i *internal) Networks() []string {
 	return []string{
-		protocol.NetworkEthereum, protocol.NetworkPolygon,
+		protocol.NetworkEthereum,
+		protocol.NetworkPolygon,
+		protocol.NetworkBinanceSmartChain,
+		protocol.NetworkOptimism,
+		protocol.NetworkAvalanche,
+		protocol.NetworkXDAI,
+		protocol.NetworkCelo,
+		protocol.NetworkFantom,
 	}
 }
 

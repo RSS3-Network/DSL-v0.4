@@ -46,6 +46,9 @@ func (s *service) Networks() []string {
 		protocol.NetworkBinanceSmartChain,
 		protocol.NetworkOptimism,
 		protocol.NetworkAvalanche,
+		protocol.NetworkXDAI,
+		protocol.NetworkCelo,
+		protocol.NetworkFantom,
 	}
 }
 

@@ -208,7 +208,7 @@ func TestJob_updateTokenListFromZySync(t *testing.T) {
 			}
 
 			tokens, err := job.buildTokenListFromZkSync(testcase.arguments.ctx, testcase.arguments.tokenList, testcase.arguments.coinList)
-			if testcase.wantError(t, err, fmt.Sprintf("updateTokenListFromZkSync(%v, %v, %v)", testcase.arguments.ctx, testcase.arguments.tokenList, testcase.arguments.coinList)) {
+			if !testcase.wantError(t, err, fmt.Sprintf("updateTokenListFromZkSync(%v, %v, %v)", testcase.arguments.ctx, testcase.arguments.tokenList, testcase.arguments.coinList)) {
 				return
 			}
 

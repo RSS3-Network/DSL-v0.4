@@ -22,6 +22,10 @@ func BuildScanURL(network string, transactionHash string) string {
 		return fmt.Sprintf("https://optimistic.etherscan.io/tx/%s", transactionHash)
 	case protocol.NetworkAvalanche:
 		return fmt.Sprintf("https://snowtrace.io/tx/%s", transactionHash)
+	case protocol.NetworkCelo:
+		return fmt.Sprintf("https://celoscan.io/tx/%s", transactionHash)
+	case protocol.NetworkFantom:
+		return fmt.Sprintf("https://ftmscan.com/tx/%s", transactionHash)
 	default:
 		return ""
 	}
