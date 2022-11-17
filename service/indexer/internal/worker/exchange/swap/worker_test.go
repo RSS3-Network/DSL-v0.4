@@ -1,207 +1,224 @@
-package swap_test
+package swap
 
 import (
 	"context"
-	"encoding/json"
-	"math/big"
-	"strings"
+	"sync"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	configx "github.com/naturalselectionlabs/pregod/common/config"
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/zerox"
+	"github.com/naturalselectionlabs/pregod/common/cache"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/treaderjoe"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/internal/token"
-	"github.com/shopspring/decimal"
+	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	RouterMap = map[common.Address]string{
-		common.HexToAddress("0x1111111254fb6c44bAC0beD2854e76F90643097d"): "1inch v4",
-		common.HexToAddress("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"): "Uniswap V3",
-		common.HexToAddress("0x4cb18386e5d1f34dc6eea834bf3534a970a3f8e7"): "MEV Bot",
-		common.HexToAddress("0x98c3d3183c4b8a650614ad179a1a98be0a8d6b8e"): "MEV Bot",
-		common.HexToAddress("0x10ed43c718714eb63d5aa57b78b54704e256024e"): "PancakeSwap: Router v2",
-		common.HexToAddress("0x1b02da8cb0d097eb8d57a175b88c7d8b47997506"): "SushiSwap: Router",
-		common.HexToAddress("0x881d40237659c251811cec9c364ef91dc08d300c"): "Metamask: Swap Router",
-		common.HexToAddress("0xdef1c0ded9bec7f1a1670819833240f027b25eff"): "0x: Exchange Proxy",
-	}
-)
+var once sync.Once
 
-func TestBuildTransferMetadata(t *testing.T) {
-	ethereumClientMap, err := ethclientx.Dial(&configx.RPC{
-		General: configx.RPCNetwork{
-			Ethereum: &configx.RPCEndpoint{
-				HTTP: "https://rpc.rss3.dev/networks/ethereum",
+func initialize(t *testing.T) {
+	once.Do(func() {
+		config.Initialize()
+
+		cacheClient, err := cache.Dial(config.ConfigIndexer.Redis)
+		assert.NoError(t, err)
+
+		cache.ReplaceGlobal(cacheClient)
+
+		ethereumClientMap, err := ethclientx.Dial(config.ConfigIndexer.RPC, protocol.EthclientNetworks)
+		assert.NoError(t, err)
+
+		for network, ethereumClient := range ethereumClientMap {
+			ethclientx.ReplaceGlobal(network, ethereumClient)
+		}
+	})
+}
+
+func Test_service_Handle(t *testing.T) {
+	initialize(t)
+
+	type fields struct {
+		employer *shedlock.Employer
+	}
+
+	type arguments struct {
+		ctx          context.Context
+		message      *protocol.Message
+		transactions []model.Transaction
+	}
+
+	testcases := []struct {
+		name      string
+		fields    fields
+		arguments arguments
+		want      assert.ValueAssertionFunc
+		wantErr   assert.ErrorAssertionFunc
+	}{
+		{
+			name: "traderjoe v2 swap",
+			fields: fields{
+				employer: shedlock.New(),
 			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // PreGod developer
+					Network: protocol.NetworkAvalanche,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://snowtrace.io/tx/0x8883c85ae121d7d243b913be99229a866975feca5096c7cfbeeaf691f57d0090
+						Hash:        "0x8883c85ae121d7d243b913be99229a866975feca5096c7cfbeeaf691f57d0090",
+						BlockNumber: 22483181,
+						Network:     protocol.NetworkAvalanche,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, treaderjoe.Platform)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
 		},
-	}, []string{protocol.NetworkEthereum})
-	assert.NoError(t, err, "failed to create ethereum client")
-
-	ethereumClient, exists := ethereumClientMap[protocol.NetworkEthereum]
-	assert.True(t, exists, "failed to find ethereum client")
-
-	ethclientx.ReplaceGlobal(protocol.NetworkEthereum, ethereumClient)
-
-	transaction, _, err := ethereumClient.TransactionByHash(context.Background(), common.HexToHash("0x4b37b3dcb3014a9f09d0ce9ced7385a9662f0464b738c5957a96cd8c4af12160"))
-	assert.NoError(t, err, "failed to get transaction")
-
-	assert.NotNil(t, transaction.To(), "not is a swap transaction")
-
-	router, exist := RouterMap[*transaction.To()]
-	assert.True(t, exist, "not is a swap transaction")
-
-	receipt, err := ethereumClient.TransactionReceipt(context.Background(), transaction.Hash())
-	assert.NoError(t, err, "failed to get transaction receipt")
-
-	tokenMap := map[common.Address]*big.Int{}
-
-	if *transaction.To() == common.HexToAddress("0xdef1c0ded9bec7f1a1670819833240f027b25eff") {
-		for _, log := range receipt.Logs {
-			switch log.Topics[0] {
-			case zerox.EventHashTransformedERC20:
-				zeroXContact, err := zerox.NewZeroX(common.HexToAddress(log.Address.Hex()), ethereumClient)
-				assert.NoError(t, err, "falied to create zerox contract")
-
-				event, err := zeroXContact.ParseTransformedERC20(*log)
-				assert.NoError(t, err, "falied to parse transformed erc20 event")
-
-				token0Value, exist := tokenMap[event.InputToken]
-				if !exist {
-					token0Value = big.NewInt(0)
+		{
+			name: "1inch swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // PreGod developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xb5538f83132b0a0d6ae0dc157c1adee18b3fd6db5e4a3d13cb7e89968084a040
+						Hash:        "0xb5538f83132b0a0d6ae0dc157c1adee18b3fd6db5e4a3d13cb7e89968084a040",
+						BlockNumber: 35711268,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
 				}
 
-				token1Value, exist := tokenMap[event.OutputToken]
-				if !exist {
-					token1Value = big.NewInt(0)
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformUniswap)
 				}
 
-				tokenMap[event.InputToken] = token0Value.Sub(token0Value, event.InputTokenAmount)
-				tokenMap[event.OutputToken] = token1Value.Add(token1Value, event.OutputTokenAmount)
-			default:
-				continue
-			}
-		}
-	} else {
-		for _, log := range receipt.Logs {
-			switch log.Topics[0] {
-			case uniswap.EventHashSwapV2:
-				uniswapPoolContact, err := uniswap.NewPoolV2(common.HexToAddress(log.Address.Hex()), ethereumClient)
-				assert.NoError(t, err, "failed to create uniswap pool contract")
-
-				event, err := uniswapPoolContact.ParseSwap(*log)
-				assert.NoError(t, err, "failed to parse swap event")
-
-				token0, err := uniswapPoolContact.Token0(&bind.CallOpts{})
-				assert.NoError(t, err, "failed to get token0")
-
-				token1, err := uniswapPoolContact.Token1(&bind.CallOpts{})
-				assert.NoError(t, err, "failed to get token1")
-
-				token0Value, exist := tokenMap[token0]
-				if !exist {
-					token0Value = big.NewInt(0)
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "uniswap v2 swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x38b0dc2d8af9f32f72372ba6955e16dc0aa369e1", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.com/tx/0x0f3bd94cf92e3807b7986e2eeecb757488139ca2735f50fdb45e02a189a78d6e
+						Hash:        "0xc798307fdd83d4d052366c2644f74af5c067d95e98d95d152b6e78b19fd6227e",
+						BlockNumber: 15976050,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
 				}
 
-				token1Value, exist := tokenMap[token1]
-				if !exist {
-					token1Value = big.NewInt(0)
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformUniswap)
 				}
 
-				if event.Amount0In.Cmp(big.NewInt(0)) == 1 {
-					// Swap token0 to token1
-					tokenMap[token0] = token0Value.Sub(token0Value, event.Amount0In)
-					tokenMap[token1] = token1Value.Add(token1Value, event.Amount1Out)
-				} else {
-					// Swap token1 to token0
-					tokenMap[token0] = token0Value.Add(token0Value, event.Amount0Out)
-					tokenMap[token1] = token1Value.Sub(token1Value, event.Amount1In)
-				}
-			case uniswap.EventHashSwapV3:
-				uniswapPoolContact, err := uniswap.NewPoolV3(common.HexToAddress(log.Address.Hex()), ethereumClient)
-				assert.NoError(t, err, "failed to create uniswap pool contract")
-
-				event, err := uniswapPoolContact.ParseSwap(*log)
-				assert.NoError(t, err, "failed to parse swap event")
-
-				token0, err := uniswapPoolContact.Token0(&bind.CallOpts{})
-				assert.NoError(t, err, "failed to get token0")
-
-				token1, err := uniswapPoolContact.Token1(&bind.CallOpts{})
-				assert.NoError(t, err, "failed to get token1")
-
-				token0Value, exist := tokenMap[token0]
-				if !exist {
-					token0Value = big.NewInt(0)
-				}
-
-				token1Value, exist := tokenMap[token1]
-				if !exist {
-					token1Value = big.NewInt(0)
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "uniswap v3 swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x000000a52a03835517e9d193b3c27626e1bc96b1", // kallydev.eth
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0x01ffb94195c10106abd060553ff742179f84954ba6a467e559e148a431bccf71
+						Hash:        "0x01ffb94195c10106abd060553ff742179f84954ba6a467e559e148a431bccf71",
+						BlockNumber: 29736278,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
 				}
 
-				t.Logf("token0: %v, token1: %v, amount0: %v, amount1: %v", token0, token1, event.Amount0, event.Amount1)
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformUniswap)
+				}
 
-				tokenMap[token0] = token0Value.Sub(token0Value, event.Amount0)
-				tokenMap[token1] = token1Value.Sub(token1Value, event.Amount1)
-			default:
-				continue
-			}
-		}
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
-	swapMetadata := metadata.Swap{
-		Protocol: router,
-	}
+	for _, testcase := range testcases {
+		t.Run(testcase.name, func(t *testing.T) {
+			worker, err := New(testcase.fields.employer)
+			testcase.wantErr(t, err, "new worker")
 
-	for internalToken, value := range tokenMap {
-		t.Log(internalToken, value)
+			assert.NotEmpty(t, worker.Name(), "worker name")
+			assert.NotEmpty(t, worker.Networks(), "worker networks")
+			assert.NotEmpty(t, worker.Jobs(), "worker jobs")
 
-		tokenClient := token.New()
-		erc20, err := tokenClient.ERC20(context.Background(), protocol.NetworkEthereum, strings.ToLower(internalToken.String()))
-		assert.NoError(t, err, "failed to get erc20 contract")
+			assert.NoError(t, worker.Initialize(testcase.arguments.ctx), "initialize worker")
 
-		tokenValueTo := decimal.NewFromBigInt(value, 0)
-		tokenValueDisplayTo := tokenValueTo.Shift(-int32(erc20.Decimals))
+			filledTransactions, err := ethereum.BuildTransactions(testcase.arguments.ctx, testcase.arguments.message, lo.ToSlicePtr(testcase.arguments.transactions))
+			testcase.wantErr(t, err, "build transactions")
 
-		tokenValueFrom := tokenValueTo.Abs()
-		tokenValueDisplayFrom := tokenValueFrom.Shift(-int32(erc20.Decimals))
+			internalTransactions := make([]model.Transaction, 0, len(filledTransactions))
 
-		switch value.Cmp(big.NewInt(0)) {
-		case -1:
-			swapMetadata.TokenFrom = metadata.Token{
-				Name:            erc20.Name,
-				Image:           erc20.Logo,
-				Symbol:          erc20.Symbol,
-				Decimals:        erc20.Decimals,
-				Standard:        protocol.TokenStandardERC20,
-				ContractAddress: erc20.ContractAddress,
-				Value:           &tokenValueFrom,
-				ValueDisplay:    &tokenValueDisplayFrom,
+			for _, filledTransaction := range filledTransactions {
+				internalTransactions = append(internalTransactions, *filledTransaction)
 			}
-		case 0:
-			continue
-		case 1:
-			swapMetadata.TokenTo = metadata.Token{
-				Name:            erc20.Name,
-				Image:           erc20.Logo,
-				Symbol:          erc20.Symbol,
-				Decimals:        erc20.Decimals,
-				Standard:        protocol.TokenStandardERC20,
-				ContractAddress: erc20.ContractAddress,
-				Value:           &tokenValueTo,
-				ValueDisplay:    &tokenValueDisplayTo,
-			}
-		}
+
+			transactions, err := worker.Handle(testcase.arguments.ctx, testcase.arguments.message, internalTransactions)
+			testcase.wantErr(t, err, "worker handle")
+
+			testcase.want(t, transactions, "worker handle")
+		})
 	}
-
-	data, err := json.MarshalIndent(swapMetadata, "", "\t")
-	assert.NoError(t, err, "failed to marshal swap metadata", err)
-
-	t.Log(string(data))
 }

@@ -59,12 +59,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	defer opentelemetry.Log(trace, transactions, data, err)
 
-	switch message.Network {
-	case protocol.NetworkZkSync:
-		return s.handleZkSync(ctx, message, transactions)
-	default:
-		return s.handleEthereum(ctx, message, transactions)
-	}
+	// Currently only the EVM network needs to be handled
+	return s.handleEthereum(ctx, message, transactions)
 }
 
 func (s *service) handleEthereum(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (data []model.Transaction, err error) {
@@ -249,12 +245,6 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 	}
 
 	return internalTransfers, nil
-}
-
-func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
-	// TODO Not yet supported
-
-	return nil, nil
 }
 
 func (s *service) Jobs() []worker.Job {

@@ -3,6 +3,7 @@ package swap
 import (
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/treaderjoe"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
@@ -72,6 +73,11 @@ var (
 		Protocol: "Paraswap v5",
 	}
 
+	traderJoeV2 = Router{
+		Name:     protocol.PlatformTraderJoe,
+		Protocol: "Joe V2",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -101,9 +107,11 @@ var (
 		// https://docs.0x.org/developer-resources/contract-addresses
 		strings.ToLower("0xDef1C0ded9bec7F1a1670819833240f027b25EfF"): zeroXV4, // 0x Exchange V4
 		strings.ToLower("0x61935CbDd02287B511119DDb11Aeb42F1593b7Ef"): zeroXV3, // 0x Exchange V3
-
 		// Paraswap
 		// https://developers.paraswap.network/smart-contracts
 		strings.ToLower("0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57"): paraswap, // protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkAvalanche, protocol.NetworkFantom, protocol.NetworkArbitrum, protocol.NetworkOptimism
+		// TraderJoe
+		// https://docs.traderjoexyz.com/deployment-addresses/avalanche
+		strings.ToLower(treaderjoe.AddressRouter.String()): traderJoeV2,
 	}
 )
