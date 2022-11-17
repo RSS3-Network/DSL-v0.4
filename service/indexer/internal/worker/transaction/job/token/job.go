@@ -105,6 +105,22 @@ func (j *Job) buildTokenListFromCoinGecko(ctx context.Context, coinList []coinge
 	})
 
 	for _, coin := range coinList {
+		var exists bool
+
+		// Filter unsupported networks to reduce unnecessary third-party API and RPC requests
+		for platform := range coin.Platforms {
+			_, ok := j.platformToNetwork(platform)
+			if ok {
+				exists = ok
+
+				break
+			}
+		}
+
+		if !exists {
+			continue
+		}
+
 		tokens, err := j.buildTokenFromCoinGecko(ctx, coin)
 		if err != nil {
 			return fmt.Errorf("build token from coingecko: %w", err)
