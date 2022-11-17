@@ -89,7 +89,9 @@ var (
 		// SushiSwap
 		// https://docs.sushi.com/docs/Developers/Deployment%20Addresses
 		strings.ToLower("0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F"): routerSushiSwap, // SushiSwap Ethereum
-		strings.ToLower("0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"): routerSushiSwap, // SushiSwap Polygon, BSC
+		strings.ToLower("0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"): routerSushiSwap, // SushiSwap Polygon, Binanace Smart Chain, Avalanche, Gnosis/XDAI
+		strings.ToLower("0xbE811A0D44E2553d25d11CB8DC0d3F0D0E6430E6"): routerSushiSwap, // SushiSwap Optimism
+		strings.ToLower("0x1421bDe4B10e8dd459b3BCb598810B1337D56842"): routerSushiSwap, // SushiSwap Celo
 		// PancakeSwap
 		// https://docs.pancakeswap.finance/code/smart-contracts/pancakeswap-exchange/router-v2
 		strings.ToLower("0x10ED43C718714eb63d5aA57B78B54704E256024E"): pancakeSwap, // PancakeSwap V2

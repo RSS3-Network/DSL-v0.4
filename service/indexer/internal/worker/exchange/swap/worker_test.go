@@ -193,6 +193,40 @@ func Test_service_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "sushiswap swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0x8146a2c177a879adebb54462682ca9077ce0ced0e3a90950f373df97983c387f
+						Hash:        "0x8146a2c177a879adebb54462682ca9077ce0ced0e3a90950f373df97983c387f",
+						BlockNumber: 35714096,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformSushiswap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {
