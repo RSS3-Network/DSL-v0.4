@@ -31,10 +31,7 @@ func GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter
 	blockNum := parameter.FromBlock
 
 	err := database.EthDb().
-		Raw("select 'external' as category,value,block_number,hash,from_address,to_address from ethereum.transactions where block_number >= ? and from_address = ? "+
-			"UNION ALL "+
-			"select '' as category,value,block_number,transaction_hash as hash,from_address,to_address from ethereum.token_transfers where block_number >= ? and to_address = ? order by block_number",
-			blockNum, fromAddress, blockNum, fromAddress).
+		Raw("select 'external' as category,value,block_number,hash,from_address,to_address from ethereum.transactions where block_number >= ? and from_address = ?", blockNum, fromAddress).
 		Scan(&result.Transfers).
 		WithContext(ctx).
 		Error

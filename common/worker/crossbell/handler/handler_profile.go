@@ -79,7 +79,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction *
 		Platform:  protocol.PlatformCrossbell,
 		Network:   transfer.Network,
 		Source:    transfer.Network,
-		Type:      filter.SocialCreate,
+		Action:    filter.SocialCreate,
 		Handle:    event.Handle,
 		CreatedAt: time.Unix(event.Timestamp.Int64(), 0),
 		URL:       fmt.Sprintf("https://crossbell.io/@%v", event.Handle),
@@ -256,7 +256,7 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction *m
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
-		Type:     filter.SocialUpdate,
+		Action:   filter.SocialUpdate,
 		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
 	}
 

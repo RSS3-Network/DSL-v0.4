@@ -67,6 +67,11 @@ var (
 		Protocol: "0x Protocol V3",
 	}
 
+	paraswap = Router{
+		Name:     protocol.PlatformParaswap,
+		Protocol: "Paraswap v5",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -78,8 +83,7 @@ var (
 		// SushiSwap
 		// https://docs.sushi.com/docs/Developers/Deployment%20Addresses
 		strings.ToLower("0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F"): routerSushiSwap, // SushiSwap Ethereum
-		strings.ToLower("0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"): routerSushiSwap, // SushiSwap Polygon
-		strings.ToLower("0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"): routerSushiSwap, // SushiSwap Binance Smart Chain
+		strings.ToLower("0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"): routerSushiSwap, // SushiSwap Polygon, BSC
 		// PancakeSwap
 		// https://docs.pancakeswap.finance/code/smart-contracts/pancakeswap-exchange/router-v2
 		strings.ToLower("0x10ED43C718714eb63d5aA57B78B54704E256024E"): pancakeSwap, // PancakeSwap V2
@@ -97,5 +101,9 @@ var (
 		// https://docs.0x.org/developer-resources/contract-addresses
 		strings.ToLower("0xDef1C0ded9bec7F1a1670819833240f027b25EfF"): zeroXV4, // 0x Exchange V4
 		strings.ToLower("0x61935CbDd02287B511119DDb11Aeb42F1593b7Ef"): zeroXV3, // 0x Exchange V3
+
+		// Paraswap
+		// https://developers.paraswap.network/smart-contracts
+		strings.ToLower("0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57"): paraswap, // protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkAvalanche, protocol.NetworkFantom, protocol.NetworkArbitrum, protocol.NetworkOptimism
 	}
 )

@@ -45,6 +45,16 @@ func (p *PostgresEtl) String() string {
 	)
 }
 
+var _ fmt.Stringer = (*Kurora)(nil)
+
+type Kurora struct {
+	Endpoint string `mapstructure:"endpoint"`
+}
+
+func (k *Kurora) String() string {
+	return k.Endpoint
+}
+
 var _ fmt.Stringer = &RabbitMQ{}
 
 type RabbitMQ struct {
@@ -127,6 +137,8 @@ type RPCNetwork struct {
 	BinanceSmartChain *RPCEndpoint `mapstructure:"bsc"`
 	XDAI              *RPCEndpoint `mapstructure:"xdai"`
 	Crossbell         *RPCEndpoint `mapstructure:"crossbell"`
+	Optimism          *RPCEndpoint `mapstructure:"optimism"`
+	Avalanche         *RPCEndpoint `mapstructure:"avalanche"`
 	Kurora            *RPCEndpoint `mapstructure:"kurora"`
 	KuroraV2          *RPCEndpoint `mapstructure:"kurora_v2"`
 }

@@ -40,6 +40,8 @@ const (
 
 	// metaverse
 	PlatformMars4 = "Mars4"
+
+	PlatformParaswap = "Paraswap"
 )
 
 var PlatformList = map[string][]string{

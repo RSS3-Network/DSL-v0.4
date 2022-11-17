@@ -131,13 +131,11 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 			Network:     message.Network,
 			Source:      d.Name(),
 			Transfers:   make([]model.Transfer, 0),
+			AddressFrom: strings.ToLower(transfer.From.Hex()),
 		}
 
-		if strings.EqualFold(transfer.Category, eth_etl.CategoryExternal) {
-			transaction.AddressFrom = strings.ToLower(transfer.From.Hex())
-			if len(transfer.To) > 0 {
-				transaction.AddressTo = strings.ToLower(common.BytesToAddress(transfer.To).Hex())
-			}
+		if len(transfer.To) > 0 {
+			transaction.AddressTo = strings.ToLower(common.BytesToAddress(transfer.To).Hex())
 		}
 
 		internalTransactions = append(internalTransactions, transaction)

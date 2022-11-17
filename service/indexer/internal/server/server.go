@@ -32,8 +32,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
@@ -47,6 +49,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/metaverse"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
+	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
@@ -132,7 +135,18 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	kuroraDatasource, err := kurora.New(context.Background(), s.config.Kurora.Endpoint)
+	if err != nil {
+		return fmt.Errorf("create kurora datasource: %w", err)
+	}
+
+	lensDatasource, err := lens.New(s.config.RPC)
+	if err != nil {
+		return err
+	}
+
 	s.datasources = []datasource.Datasource{
+		kuroraDatasource,
 		alchemyDatasource,
 		moralis.New(s.config.Moralis.Key),
 		arweave.New(),
@@ -140,6 +154,7 @@ func (s *Server) Initialize() (err error) {
 		zksync.New(),
 		eth_etl.New(),
 		eip1577.New(s.employer),
+		lensDatasource,
 	}
 
 	swapWorker, err := swap.New(s.employer)
@@ -166,6 +181,7 @@ func (s *Server) Initialize() (err error) {
 		gitcoin.New(),
 		snapshot.New(),
 		crossbell.New(),
+		lens_worker.New(),
 		transaction.New(),
 		metaverse.New(),
 	}
@@ -217,15 +233,18 @@ func (s *Server) Run() error {
 	defer s.employer.Stop()
 
 	go func() {
-		deliveryCh, err := rabbitmqx.GetRabbitmqChannel().Consume(rabbitmqx.GetRabbitmqQueue().Name, "", true, false, false, false, nil)
-		if err != nil {
-			return
-		}
+		for {
+			delivery := <-rabbitmqx.GetRabbitmqDelivery()
+			if len(delivery.Body) == 0 {
+				loggerx.Global().Info("wait indexer mq reconnected")
+				time.Sleep(3 * time.Second)
 
-		for delivery := range deliveryCh {
+				continue
+			}
+
 			message := protocol.Message{}
 			if err := json.Unmarshal(delivery.Body, &message); err != nil {
-				loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
+				loggerx.Global().Error("failed to unmarshal indexer delivery message", zap.Error(err))
 
 				continue
 			}
@@ -239,15 +258,17 @@ func (s *Server) Run() error {
 	}()
 
 	go func() {
-		deliveryAssetCh, err := rabbitmqx.GetRabbitmqChannel().Consume(rabbitmqx.GetRabbitmqAssetQueue().Name, "", true, false, false, false, nil)
-		if err != nil {
-			return
-		}
+		for {
+			delivery := <-rabbitmqx.GetRabbitmqAssetDelivery()
+			if len(delivery.Body) == 0 {
+				loggerx.Global().Info("wait indexer mq reconnected")
+				time.Sleep(3 * time.Second)
+				continue
+			}
 
-		for delivery := range deliveryAssetCh {
 			message := protocol.Message{}
 			if err := json.Unmarshal(delivery.Body, &message); err != nil {
-				loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
+				loggerx.Global().Error("failed to unmarshal indexer asset delivery message", zap.Error(err))
 
 				continue
 			}
@@ -569,7 +590,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 				internalTransactions, err := worker.Handle(ctx, message, transactions)
 
 				// log
-				loggerx.Global().Info("worker completion", zap.String("worker", worker.Name()), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
+				loggerx.Global().Info("worker completion", zap.String("worker", worker.Name()), zap.Int("transactions", len(internalTransactions)), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
 
 				if err != nil {
 					loggerx.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
