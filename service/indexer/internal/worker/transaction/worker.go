@@ -74,6 +74,8 @@ func (s *service) Networks() []string {
 		protocol.NetworkZkSync,
 		protocol.NetworkOptimism,
 		protocol.NetworkAvalanche,
+		protocol.NetworkCelo,
+		protocol.NetworkFantom,
 	}
 }
 

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/lib/pq"
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
-	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"reflect"
 	"testing"
 	"time"
@@ -16,6 +14,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
@@ -98,6 +98,8 @@ func Test_service_Networks(t *testing.T) {
 				protocol.NetworkZkSync,
 				protocol.NetworkOptimism,
 				protocol.NetworkAvalanche,
+				protocol.NetworkCelo,
+				protocol.NetworkFantom,
 			},
 		},
 	}

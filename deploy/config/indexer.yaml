@@ -70,6 +70,12 @@ rpc:
       websocket: ''
     avalanche:
       http: ''
+    fantom:
+      http: ''
+      websocket: ''
+    celo:
+      http: ''
+      websocket: ''
   alchemy:
     ethereum: ''
     polygon: ''

@@ -30,11 +30,49 @@ func initialize(t *testing.T) {
 	})
 }
 
+func TestNew(t *testing.T) {
+	initialize(t)
+
+	type arguments struct {
+		ctx      context.Context
+		endpoint string
+	}
+
+	testcases := []struct {
+		name      string
+		arguments arguments
+		want      assert.ValueAssertionFunc
+		wantError assert.ErrorAssertionFunc
+	}{
+		{
+			name: "default",
+			arguments: arguments{
+				ctx:      context.Background(),
+				endpoint: config.ConfigIndexer.Kurora.Endpoint,
+			},
+			want:      assert.NotEmpty,
+			wantError: assert.NoError,
+		},
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.name, func(t *testing.T) {
+			kuroraDatasource, err := kurora.New(testcase.arguments.ctx, testcase.arguments.endpoint)
+			if !testcase.wantError(t, err) {
+				return
+			}
+
+			testcase.want(t, kuroraDatasource.Name(), "Name()")
+			testcase.want(t, kuroraDatasource.Networks(), "Networks()")
+		})
+	}
+}
+
 func TestKurora_Handle(t *testing.T) {
+	initialize(t)
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-
-	initialize(t)
 
 	kuroraDatasource, err := kurora.New(ctx, config.ConfigIndexer.Kurora.Endpoint)
 	assert.NoError(t, err)
@@ -111,7 +149,7 @@ func TestKurora_Handle(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
 			transactions, err := testcase.fields.datasource.Handle(testcase.arguments.ctx, &testcase.arguments.message)
-			if testcase.wantError(t, err, "Handle(%v, %v)", testcase.arguments.ctx, testcase.arguments.message) {
+			if !testcase.wantError(t, err, "Handle(%v, %v)", testcase.arguments.ctx, testcase.arguments.message) {
 				return
 			}
 
