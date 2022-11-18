@@ -22,6 +22,10 @@ func BuildScanURL(network string, transactionHash string) string {
 		return fmt.Sprintf("https://optimistic.etherscan.io/tx/%s", transactionHash)
 	case protocol.NetworkAvalanche:
 		return fmt.Sprintf("https://snowtrace.io/tx/%s", transactionHash)
+	case protocol.NetworkCelo:
+		return fmt.Sprintf("https://celoscan.io/tx/%s", transactionHash)
+	case protocol.NetworkFantom:
+		return fmt.Sprintf("https://ftmscan.com/tx/%s", transactionHash)
 	default:
 		return ""
 	}
@@ -41,6 +45,10 @@ func BuildTokenURL(network, address, id string) []string {
 	case protocol.NetworkBinanceSmartChain:
 		return []string{
 			fmt.Sprintf("https://tofunft.com/nft/bsc/%s/%s", address, id),
+		}
+	case protocol.NetworkOptimism:
+		return []string{
+			fmt.Sprintf("https://qx.app/asset/%s/%s", address, id),
 		}
 	default:
 		return []string{}

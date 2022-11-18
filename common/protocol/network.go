@@ -11,6 +11,7 @@ const (
 	NetworkArbitrum          = "arbitrum"
 	NetworkOptimism          = "optimism"
 	NetworkFantom            = "fantom"
+	NetworkCelo              = "celo"
 	NetworkAvalanche         = "avalanche"
 	NetworkCrossbell         = "crossbell"
 	NetworkEIP1577           = "EIP-1577"
@@ -41,6 +42,8 @@ var EthclientNetworks = []string{
 	NetworkCrossbell,
 	NetworkOptimism,
 	NetworkAvalanche,
+	NetworkCelo,
+	NetworkFantom,
 }
 
 func NetworkToID(networkName string) string {
@@ -61,6 +64,8 @@ func NetworkToID(networkName string) string {
 		return "0xA"
 	case NetworkFantom:
 		return "0xFA"
+	case NetworkCelo:
+		return "0xA4EC"
 	case NetworkAvalanche:
 		return "0xA86A"
 	default:
