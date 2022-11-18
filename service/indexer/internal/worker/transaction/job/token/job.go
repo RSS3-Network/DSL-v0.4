@@ -230,19 +230,23 @@ func (j *Job) buildTokenListFromZkSync(ctx context.Context, tokenList zksync.Get
 			return strings.EqualFold(contractAddress, token.Address)
 		})
 
-		var logo string
+		var logo, id string
 
 		if exists {
 			j.rateLimiter.Take()
 
-			coin, err := j.coingeckoClient.Coin(ctx, coin.ID, coingecko.CoinParameter{})
+			coingeckoCoin, err := j.coingeckoClient.Coin(ctx, coin.ID, coingecko.CoinParameter{})
 			if err != nil {
 				zap.L().Warn("fetch token from coingecko", zap.String("job", j.Name()), zap.String("token", token.Symbol), zap.String("contract_address", token.Address), zap.Error(err))
 
 				continue
 			}
 
-			logo, _ = j.buildLogoURL(*coin)
+			logo, _ = j.buildLogoURL(*coingeckoCoin)
+
+			id = strings.ToLower(coin.ID)
+		} else {
+			id = strings.ToLower(token.Symbol)
 		}
 
 		ethereumClient, err := ethclientx.Global(protocol.NetworkEthereum)
@@ -257,7 +261,7 @@ func (j *Job) buildTokenListFromZkSync(ctx context.Context, tokenList zksync.Get
 			continue
 		}
 
-		internalToken.ID = coin.ID
+		internalToken.ID = id
 		internalToken.Decimal = token.Decimals
 
 		tokens = append(tokens, *internalToken)
