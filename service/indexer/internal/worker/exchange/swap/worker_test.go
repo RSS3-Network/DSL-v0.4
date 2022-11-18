@@ -8,7 +8,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/treaderjoe"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
@@ -84,7 +83,7 @@ func Test_service_Handle(t *testing.T) {
 				}
 
 				for _, transaction := range transactions {
-					assert.Equal(t, transaction.Platform, treaderjoe.Platform)
+					assert.Equal(t, transaction.Platform, protocol.PlatformTraderJoe)
 				}
 
 				return false
