@@ -49,7 +49,7 @@ func (j *Job) Spec() string {
 }
 
 func (j *Job) Timeout() time.Duration {
-	// It takes about ~5 (13264 / 50 / 60) hours in total,
+	// It takes about ~10 (13264 / 25 / 60) hours in total,
 	// but the lock may not be released properly when the pod is closed,
 	// so the timeout is positioned as the value of a single token
 	return 2 * time.Minute
@@ -105,6 +105,22 @@ func (j *Job) buildTokenListFromCoinGecko(ctx context.Context, coinList []coinge
 	})
 
 	for _, coin := range coinList {
+		var exists bool
+
+		// Filter unsupported networks to reduce unnecessary third-party API and RPC requests
+		for platform := range coin.Platforms {
+			_, ok := j.platformToNetwork(platform)
+			if ok {
+				exists = ok
+
+				break
+			}
+		}
+
+		if !exists {
+			continue
+		}
+
 		tokens, err := j.buildTokenFromCoinGecko(ctx, coin)
 		if err != nil {
 			return fmt.Errorf("build token from coingecko: %w", err)
@@ -214,19 +230,23 @@ func (j *Job) buildTokenListFromZkSync(ctx context.Context, tokenList zksync.Get
 			return strings.EqualFold(contractAddress, token.Address)
 		})
 
-		var logo string
+		var logo, id string
 
 		if exists {
 			j.rateLimiter.Take()
 
-			coin, err := j.coingeckoClient.Coin(ctx, coin.ID, coingecko.CoinParameter{})
+			coingeckoCoin, err := j.coingeckoClient.Coin(ctx, coin.ID, coingecko.CoinParameter{})
 			if err != nil {
 				zap.L().Warn("fetch token from coingecko", zap.String("job", j.Name()), zap.String("token", token.Symbol), zap.String("contract_address", token.Address), zap.Error(err))
 
 				continue
 			}
 
-			logo, _ = j.buildLogoURL(*coin)
+			logo, _ = j.buildLogoURL(*coingeckoCoin)
+
+			id = strings.ToLower(coin.ID)
+		} else {
+			id = strings.ToLower(token.Symbol)
 		}
 
 		ethereumClient, err := ethclientx.Global(protocol.NetworkEthereum)
@@ -241,7 +261,7 @@ func (j *Job) buildTokenListFromZkSync(ctx context.Context, tokenList zksync.Get
 			continue
 		}
 
-		internalToken.ID = coin.ID
+		internalToken.ID = id
 		internalToken.Decimal = token.Decimals
 
 		tokens = append(tokens, *internalToken)
@@ -351,7 +371,7 @@ func New() worker.Job {
 		databaseClient:  database.Global(),
 		// https://www.coingecko.com/en/api/documentation
 		// `Our Free API* has a rate limit of 10-50 calls/minute, and doesn't require API key.`
-		rateLimiter: ratelimit.New(50, ratelimit.Per(time.Minute)),
+		rateLimiter: ratelimit.New(25, ratelimit.Per(time.Minute)),
 		crontab:     cron.New(),
 	}
 }

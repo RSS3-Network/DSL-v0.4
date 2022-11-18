@@ -58,6 +58,18 @@ var nativeMap = map[string]Native{
 		Decimals: 18,
 		Logo:     "https://assets.coingecko.com/coins/images/12559/large/coin-round-red.png",
 	},
+	protocol.NetworkCelo: {
+		Name:     "Celo", // https://www.coingecko.com/en/coins/celo
+		Symbol:   "CELO",
+		Decimals: 18,
+		Logo:     "https://assets.coingecko.com/coins/images/4001/large/Fantom.png",
+	},
+	protocol.NetworkFantom: {
+		Name:     "Fantom", // https://www.coingecko.com/en/coins/fantom
+		Symbol:   "FTM",
+		Decimals: 18,
+		Logo:     "https://assets.coingecko.com/coins/images/11090/large/icon-celo-CELO-color-500.png",
+	},
 }
 
 func (c *Client) Native(context context.Context, network string) (*Native, error) {

@@ -3,6 +3,7 @@ package swap
 import (
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/treaderjoe"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
@@ -72,6 +73,11 @@ var (
 		Protocol: "Paraswap v5",
 	}
 
+	traderJoeV2 = Router{
+		Name:     protocol.PlatformTraderJoe,
+		Protocol: "Joe V2",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -83,7 +89,9 @@ var (
 		// SushiSwap
 		// https://docs.sushi.com/docs/Developers/Deployment%20Addresses
 		strings.ToLower("0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F"): routerSushiSwap, // SushiSwap Ethereum
-		strings.ToLower("0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"): routerSushiSwap, // SushiSwap Polygon, BSC
+		strings.ToLower("0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"): routerSushiSwap, // SushiSwap Polygon, Binanace Smart Chain, Avalanche, Gnosis/XDAI
+		strings.ToLower("0xbE811A0D44E2553d25d11CB8DC0d3F0D0E6430E6"): routerSushiSwap, // SushiSwap Optimism
+		strings.ToLower("0x1421bDe4B10e8dd459b3BCb598810B1337D56842"): routerSushiSwap, // SushiSwap Celo
 		// PancakeSwap
 		// https://docs.pancakeswap.finance/code/smart-contracts/pancakeswap-exchange/router-v2
 		strings.ToLower("0x10ED43C718714eb63d5aA57B78B54704E256024E"): pancakeSwap, // PancakeSwap V2
@@ -101,9 +109,11 @@ var (
 		// https://docs.0x.org/developer-resources/contract-addresses
 		strings.ToLower("0xDef1C0ded9bec7F1a1670819833240f027b25EfF"): zeroXV4, // 0x Exchange V4
 		strings.ToLower("0x61935CbDd02287B511119DDb11Aeb42F1593b7Ef"): zeroXV3, // 0x Exchange V3
-
 		// Paraswap
 		// https://developers.paraswap.network/smart-contracts
 		strings.ToLower("0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57"): paraswap, // protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkAvalanche, protocol.NetworkFantom, protocol.NetworkArbitrum, protocol.NetworkOptimism
+		// TraderJoe
+		// https://docs.traderjoexyz.com/deployment-addresses/avalanche
+		strings.ToLower(treaderjoe.AddressRouter.String()): traderJoeV2,
 	}
 )

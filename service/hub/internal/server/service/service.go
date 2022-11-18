@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/websocket"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -22,11 +23,15 @@ type Service struct {
 	employer           *shedlock.Employer
 	rabbitmqConnection *rabbitmq.Connection
 	rabbitmqChannel    *rabbitmq.Channel
+	rabbitmqQueue      rabbitmq.Queue
+	WsHub              *websocket.WSHub
+	DeliveryCh         <-chan rabbitmq.Delivery
 }
 
 func New() (s *Service) {
 	s = &Service{
 		employer: shedlock.New(),
+		WsHub:    websocket.NewHub(),
 	}
 
 	if err := s.connectMQ(); err != nil {
@@ -67,10 +72,37 @@ func (s *Service) connectMQ() error {
 		return err
 	}
 
-	if err := s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeJob, "direct", true, false, false, false, nil); err != nil {
+	if err = s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeJob, "direct", true, false, false, false, nil); err != nil {
 		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare failed", zap.Error(err))
 		return err
 	}
+
+	if err = s.rabbitmqChannel.ExchangeDeclare(protocol.ExchangeRefresh, "fanout", true, false, false, false, nil); err != nil {
+		loggerx.Global().Error("rabbitmqChannel ExchangeDeclare Refresh failed", zap.Error(err))
+		return err
+	}
+
+	if s.rabbitmqQueue, err = s.rabbitmqChannel.QueueDeclare(
+		"", false, false, true, false, nil,
+	); err != nil {
+		loggerx.Global().Error("rabbitmq QueueDeclare failed", zap.Error(err))
+		return err
+	}
+
+	if err = s.rabbitmqChannel.QueueBind(
+		s.rabbitmqQueue.Name, "", protocol.ExchangeRefresh, false, nil,
+	); err != nil {
+		loggerx.Global().Error("rabbitmq QueueBind failed", zap.Error(err))
+		return err
+	}
+
+	deliveryCh, err := s.rabbitmqChannel.Consume(s.rabbitmqQueue.Name, "", true, false, false, false, nil)
+	if err != nil {
+		loggerx.Global().Error("rabbitmq Consume Refresh Msg failed", zap.Error(err))
+		return err
+	}
+	s.DeliveryCh = deliveryCh
+
 	return nil
 }
 
@@ -102,7 +134,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
 		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
-		protocol.NetworkOptimism, protocol.NetworkAvalanche,
+		protocol.NetworkOptimism, protocol.NetworkAvalanche, protocol.NetworkCelo, protocol.NetworkFantom,
 		protocol.NetworkEIP1577,
 	}
 
@@ -152,6 +184,34 @@ func (s *Service) PublishIndexerAssetMessage(ctx context.Context, address string
 		}); err != nil {
 			loggerx.Global().Error("publish indexer asset message failed", zap.Error(err))
 			return
+		}
+	}
+}
+
+func (s *Service) SubscribeIndexerRefreshMessage(client *websocket.WSClient) {
+	ticker := time.NewTicker(10 * time.Second)
+
+	for {
+		select {
+		case delivery := <-s.DeliveryCh:
+			if len(delivery.Body) == 0 {
+				loggerx.Global().Info("wait mq reconnected")
+				time.Sleep(3 * time.Second)
+				continue
+			}
+			message := protocol.RefreshMessage{}
+			if err := json.Unmarshal(delivery.Body, &message); err != nil {
+				loggerx.Global().Error("failed to unmarshal message", zap.Error(err))
+				continue
+			}
+			if _, ok := s.WsHub.Clients[client]; !ok {
+				return
+			}
+			s.WsHub.Broadcast <- delivery.Body
+		case <-ticker.C:
+			if _, ok := s.WsHub.Clients[client]; !ok {
+				return
+			}
 		}
 	}
 }
