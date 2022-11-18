@@ -378,7 +378,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 					internalTransactions, err := datasource.Handle(ctx, message)
 
 					// log
-					loggerx.Global().Info("datasource completion", zap.String("datasource", datasource.Name()), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
+					loggerx.Global().Info("datasource completion", zap.String("datasource", datasource.Name()), zap.String("address", message.Address), zap.Int("transactions", len(transactions)), zap.Duration("duration", time.Since(startTime)))
 
 					// Avoid blocking indexed workers
 					if err != nil {

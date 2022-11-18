@@ -48,3 +48,5 @@ package contract
 //go:generate abigen --abi ./quix/seaport.abi --pkg quix --type SeaPort --out ./quix/seaport.go
 // https://optimistic.etherscan.io/address/0x3f9da045b0f77d707ea4061110339c4ea8ecfa70
 //go:generate abigen --abi ./quix/exchange_v5.abi --pkg quix --type ExchangeV5 --out ./quix/exchange_v5.go
+// https://snowtrace.io/address/0xe3ffc583dc176575eea7fd9df2a7c65f7e23f4c3
+//go:generate abigen --abi ./treaderjoe/router.abi --pkg treaderjoe --type Router --out ./treaderjoe/router.go
