@@ -21,7 +21,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/shopspring/decimal"
+
 	"go.opentelemetry.io/otel"
+
 	"go.uber.org/zap"
 )
 
@@ -98,6 +100,10 @@ func (i *internal) handleOpenseaSeaportOrderFulfilled(ctx context.Context, trans
 	for _, item := range event.Consideration {
 		// OpenSea puts ERC20 transfers in Consideration as well
 		if item.ItemType == opensea.ItemTypeERC20 {
+			continue
+		}
+
+		if item.Token == common.HexToAddress("") {
 			continue
 		}
 

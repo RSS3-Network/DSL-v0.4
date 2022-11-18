@@ -39,6 +39,8 @@ func (d *Datasource) Networks() []string {
 		protocol.NetworkCrossbell,
 		protocol.NetworkOptimism,
 		protocol.NetworkAvalanche,
+		protocol.NetworkFantom,
+		protocol.NetworkCelo,
 	}
 }
 

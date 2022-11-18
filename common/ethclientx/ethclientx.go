@@ -80,5 +80,17 @@ func Dial(config *configx.RPC, networks []string) (ethereumClientMap map[string]
 		}
 	}
 
+	if config.General.Celo != nil && slices.Contains(networks, protocol.NetworkCelo) {
+		if ethereumClientMap[protocol.NetworkCelo], err = ethclient.Dial(config.General.Celo.HTTP); err != nil {
+			return nil, err
+		}
+	}
+
+	if config.General.Fantom != nil && slices.Contains(networks, protocol.NetworkFantom) {
+		if ethereumClientMap[protocol.NetworkFantom], err = ethclient.Dial(config.General.Fantom.HTTP); err != nil {
+			return nil, err
+		}
+	}
+
 	return ethereumClientMap, nil
 }

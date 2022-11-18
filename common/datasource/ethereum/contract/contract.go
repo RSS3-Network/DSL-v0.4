@@ -44,5 +44,9 @@ package contract
 //go:generate abigen --abi ./polygon/predicate_erc20.abi --pkg polygon --type ERC20Predicate --out ./polygon/predicate_erc20.go
 // https://etherscan.io/address/0x9923263fA127b3d1484cFD649df8f1831c2A74e4
 //go:generate abigen --abi ./polygon/predicate_erc20_mintable.abi --pkg polygon --type MintableERC20Predicate --out ./polygon/predicate_erc20_mintable.go
+// https://optimistic.etherscan.io/address/0xa7078e74d1abcc57db40309cf2c680832d7cd1fc
+//go:generate abigen --abi ./quix/seaport.abi --pkg quix --type SeaPort --out ./quix/seaport.go
+// https://optimistic.etherscan.io/address/0x3f9da045b0f77d707ea4061110339c4ea8ecfa70
+//go:generate abigen --abi ./quix/exchange_v5.abi --pkg quix --type ExchangeV5 --out ./quix/exchange_v5.go
 // https://snowtrace.io/address/0xe3ffc583dc176575eea7fd9df2a7c65f7e23f4c3
 //go:generate abigen --abi ./treaderjoe/router.abi --pkg treaderjoe --type Router --out ./treaderjoe/router.go
