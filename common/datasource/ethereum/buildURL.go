@@ -46,6 +46,10 @@ func BuildTokenURL(network, address, id string) []string {
 		return []string{
 			fmt.Sprintf("https://tofunft.com/nft/bsc/%s/%s", address, id),
 		}
+	case protocol.NetworkOptimism:
+		return []string{
+			fmt.Sprintf("https://qx.app/asset/%s/%s", address, id),
+		}
 	default:
 		return []string{}
 	}
