@@ -10,7 +10,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/sirupsen/logrus"
 	goens "github.com/wealdtech/go-ens/v3"
 )
@@ -155,12 +154,21 @@ func Resolve(input string) (string, error) {
 	var result string
 	var err error
 
-	if allowlist.EnsSpecialList.Contains(input) {
-		input = allowlist.EnsSpecialList.Get(input)
-	}
+	/*
+		if allowlist.EnsSpecialList.Contains(input) {
+				input = allowlist.EnsSpecialList.Get(input)
+			}
+	*/
 
 	if strings.HasSuffix(input, ".eth") {
 		result, err = client.GetResolvedAddress(input)
+
+		// TODO If ens subdomain has been registered, the subdomain that is not resolved correctly will be resolved to the address of the parent domain
+		if subDomain := strings.Split(input, "."); err != nil && len(subDomain) > 2 && err.Error() != "unregistered name" {
+			input = subDomain[len(subDomain)-2] + ".eth"
+			result, err = client.GetResolvedAddress(input)
+		}
+
 	} else {
 		result, err = client.GetReverseResolve(input)
 	}
