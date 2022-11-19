@@ -164,9 +164,11 @@ func Resolve(input string) (string, error) {
 		result, err = client.GetResolvedAddress(input)
 
 		// TODO If ens subdomain has been registered, the subdomain that is not resolved correctly will be resolved to the address of the parent domain
-		if subDomain := strings.Split(input, "."); err != nil && len(subDomain) > 2 && err.Error() != "unregistered name" {
-			input = subDomain[len(subDomain)-2] + ".eth"
-			result, err = client.GetResolvedAddress(input)
+		if err != nil && err.Error() != "unregistered name" {
+			if subDomain := strings.Split(input, "."); len(subDomain) > 2 {
+				input = subDomain[len(subDomain)-2] + ".eth"
+				result, err = client.GetResolvedAddress(input)
+			}
 		}
 
 	} else {
