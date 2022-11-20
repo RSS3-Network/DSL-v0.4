@@ -106,7 +106,7 @@ func (s *Service) connectMQ() error {
 	return nil
 }
 
-// publishIndexerMessage create a rabbitmq job to index the latest user data
+// PublishIndexerMessage create a rabbitmq job to index the latest user data
 func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Message) {
 	tracer := otel.Tracer("PublishIndexerMessage")
 	_, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")
@@ -130,13 +130,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		dao.InitializeAddressStatus(ctx, address)
 	}
 
-	networks := []string{
-		protocol.NetworkEthereum,
-		protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain,
-		protocol.NetworkArweave, protocol.NetworkXDAI, protocol.NetworkZkSync, protocol.NetworkCrossbell,
-		protocol.NetworkOptimism, protocol.NetworkAvalanche, protocol.NetworkCelo, protocol.NetworkFantom,
-		protocol.NetworkEIP1577,
-	}
+	networks := protocol.MergeNetworks(message.ValidEVMNetworkList)
 
 	for _, network := range networks {
 		message.Network = network
@@ -156,7 +150,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 	}
 }
 
-// publishIndexerAssetMessage create a rabbitmq job to index the latest user data
+// PublishIndexerAssetMessage create a rabbitmq job to index the latest user data
 func (s *Service) PublishIndexerAssetMessage(ctx context.Context, address string) {
 	tracer := otel.Tracer("PublishIndexerAssetMessage")
 	_, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")

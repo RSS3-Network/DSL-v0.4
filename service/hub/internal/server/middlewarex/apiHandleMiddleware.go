@@ -28,6 +28,18 @@ func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 		}
 
+		validNetworkList := name_service.CheckContractOnEVM(address)
+
+		// if the address is a contract on every EVM network, return error
+		if len(validNetworkList) == 0 {
+			return c.JSON(http.StatusOK, &ErrorResponse{
+				Error: "Contract addresses are not currently supported.",
+			})
+		} else {
+			// VALID-EVM-NETWORK is a list of EVM networks where the address is NOT a contract.
+			c.Set("VALID-EVM-NETWORK", validNetworkList)
+		}
+
 		apiKey := c.Request().Header.Get("X-API-KEY")
 		c.Set("API-KEY", apiKey)
 
@@ -52,6 +64,23 @@ func CheckAPIKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// if err != nil {
 		// 	return err
 		// }
+
+		return next(c)
+	}
+}
+
+func CheckContractMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		address := c.Param("address")
+		if address != "" {
+			if address, err := ResolveAddress(address, false); err != nil {
+				return c.JSON(http.StatusOK, &ErrorResponse{
+					Error: err.Error(),
+				})
+			} else {
+				c.SetParamValues(address)
+			}
+		}
 
 		return next(c)
 	}
@@ -87,12 +116,12 @@ func ResolveAddress(address string, ignoreContract bool) (string, error) {
 	}
 
 	// check contract
-	if !ignoreContract {
-		isContract, _ := name_service.IsEthereumContract(result.Address)
-		if isContract {
-			return "", fmt.Errorf("Contract addresses are not currently supported.")
-		}
-	}
+	//if !ignoreContract {
+	//	isContract, _ := name_service.CheckContractOnEVM(result.Address)
+	//	if isContract {
+	//		return "", fmt.Errorf("Contract addresses are not currently supported.")
+	//	}
+	//}
 
 	return strings.ToLower(result.Address), nil
 }

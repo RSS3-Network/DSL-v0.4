@@ -52,7 +52,7 @@ func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbM
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		s.PublishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
+		s.PublishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex, ValidEVMNetworkList: request.ValidEVMNetworkList})
 	}
 
 	return transactions, total, nil

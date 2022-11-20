@@ -3,12 +3,11 @@ package name_service
 import (
 	"context"
 	"regexp"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
-	"go.uber.org/zap"
 )
 
 func IsValidAddress(address string) bool {
@@ -16,18 +15,35 @@ func IsValidAddress(address string) bool {
 	return re.MatchString(address)
 }
 
-func IsEthereumContract(address string) (bool, error) {
-	ethClient, err := ethclientx.Global(protocol.NetworkEthereum)
+// CheckContractOnEVM returns a list of EVM networks where the address is not a contract.
+func CheckContractOnEVM(address string) []string {
+	var wg sync.WaitGroup
+	var result []string
+	for _, n := range protocol.EVMNetworks {
+		wg.Add(1)
+		network := n
+		go func() {
+			defer wg.Done()
+			if !IsContract(address, network) {
+				result = append(result, network)
+			}
+		}()
+	}
+	wg.Wait()
+
+	return result
+}
+
+func IsContract(address string, network string) bool {
+	ethClient, err := ethclientx.Global(network)
 	if err != nil {
-		return false, err
+		return false
 	}
 
 	bytecode, err := ethClient.CodeAt(context.Background(), common.HexToAddress(address), nil)
 	if err != nil {
-		loggerx.Global().Error("IsEthereumContract: ethclient CodeAt error: %v, address: %v", zap.Error(err), zap.String("address", address))
-
-		return false, err
+		return false
 	}
 
-	return len(bytecode) > 0, nil
+	return len(bytecode) > 0
 }

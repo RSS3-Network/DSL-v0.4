@@ -49,6 +49,8 @@ type GetRequest struct {
 	QueryStatus bool `query:"query_status" json:"query_status"`
 	// returns a count of transactions only
 	CountOnly bool `query:"count_only" json:"count_only"`
+	// a list of EVM networks where the address is NOT deployed as a contract
+	ValidEVMNetworkList []string
 }
 
 type GetAssetRequest struct {

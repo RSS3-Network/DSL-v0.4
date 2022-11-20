@@ -38,6 +38,8 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		go h.filterReport(model.GetNotes, request)
 	}
 
+	// assign ValidEVMNetworkList stored in echo context
+	request.ValidEVMNetworkList = c.Get("VALID-EVM-NETWORK").([]string)
 	transactions, total, err := h.service.GetNotes(ctx, request)
 	if err != nil {
 		return InternalError(c)
