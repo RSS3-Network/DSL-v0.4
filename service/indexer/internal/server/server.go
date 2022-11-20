@@ -163,7 +163,7 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
-	ethereumClientMap, err := ethclientx.Dial(s.config.RPC, protocol.EthclientNetworks)
+	ethereumClientMap, err := ethclientx.Dial(s.config.RPC, protocol.EVMNetworks)
 	if err != nil {
 		return err
 	}
@@ -645,7 +645,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 }
 
 func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
-	for _, network := range protocol.SupportNetworks {
+	for _, network := range protocol.SupportedNetworks {
 		key := fmt.Sprintf("indexer:%v:%v", address.Address, network)
 		n, err := cache.Global().Exists(ctx, key).Result()
 		switch {

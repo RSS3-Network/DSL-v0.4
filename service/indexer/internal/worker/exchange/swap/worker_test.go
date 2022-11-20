@@ -27,7 +27,7 @@ func initialize(t *testing.T) {
 
 		cache.ReplaceGlobal(cacheClient)
 
-		ethereumClientMap, err := ethclientx.Dial(config.ConfigIndexer.RPC, protocol.EthclientNetworks)
+		ethereumClientMap, err := ethclientx.Dial(config.ConfigIndexer.RPC, protocol.EVMNetworks)
 		assert.NoError(t, err)
 
 		for network, ethereumClient := range ethereumClientMap {

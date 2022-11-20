@@ -14,6 +14,8 @@ type Message struct {
 	Reindex     bool      `json:"reindex"`
 	IgnoreNote  bool      `json:"ignore_note"`
 	Retry       int       `json:"retry"`
+	// a list of EVM networks where the address is NOT deployed as a contract
+	ValidEVMNetworkList []string
 }
 
 type RefreshMessage struct {

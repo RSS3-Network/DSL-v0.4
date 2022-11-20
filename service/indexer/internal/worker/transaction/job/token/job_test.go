@@ -33,7 +33,7 @@ func initialize(t *testing.T) {
 
 		zap.ReplaceGlobals(logger)
 
-		ethereumClientMap, err := ethclientx.Dial(config.ConfigIndexer.RPC, protocol.EthclientNetworks)
+		ethereumClientMap, err := ethclientx.Dial(config.ConfigIndexer.RPC, protocol.EVMNetworks)
 		assert.NoError(t, err, "dial ethereum rpc endpoint")
 
 		for network, ethereumClient := range ethereumClientMap {

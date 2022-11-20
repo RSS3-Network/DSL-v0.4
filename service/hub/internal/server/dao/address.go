@@ -24,7 +24,7 @@ func InitializeAddressStatus(ctx context.Context, address dbModel.Address) {
 			"address":           address.Address,
 			"status":            false,
 			"done_networks":     []string{},
-			"indexing_networks": pq.Array(protocol.SupportNetworks),
+			"indexing_networks": pq.Array(protocol.SupportedNetworks),
 			"count":             address.Count + 1,
 		}).Error; err != nil {
 		loggerx.Global().Error("failed to upsert address", zap.Error(err), zap.String("address", address.Address))
