@@ -7,12 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -150,23 +152,47 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 		return nil, fmt.Errorf("failed to unmarshal source data: %w", err)
 	}
 
-	for _, log := range sourceData.Receipt.Logs {
-		for _, topic := range log.Topics {
-			var internalTokenMap map[common.Address]*big.Int
-			switch topic {
-			case uniswap.EventHashSwapV2:
-				internalTokenMap, err = s.handleUniswapV2(ctx, message, *log, tokenMap, ethereumClient)
-			case uniswap.EventHashSwapV3:
-				internalTokenMap, err = s.handleUniswapV3(ctx, message, *log, tokenMap, ethereumClient)
-			default:
-				continue
-			}
+	if router.Name == protocol.PlatformCurve {
+		for _, log := range sourceData.Receipt.Logs {
+			if log.Topics[0] == erc20.EventHashTransfer {
+				filterer, err := erc20.NewERC20Filterer(log.Address, nil)
+				if err != nil {
+					return nil, err
+				}
 
-			if err != nil {
-				return nil, err
-			}
+				event, err := filterer.ParseTransfer(*log)
+				if err != nil {
+					return nil, err
+				}
 
-			tokenMap = internalTokenMap
+				if strings.EqualFold(message.Address, event.From.String()) {
+					tokenMap[log.Address] = event.Value.Not(event.Value)
+				}
+
+				if strings.EqualFold(message.Address, event.To.String()) {
+					tokenMap[log.Address] = event.Value
+				}
+			}
+		}
+	} else {
+		for _, log := range sourceData.Receipt.Logs {
+			for _, topic := range log.Topics {
+				var internalTokenMap map[common.Address]*big.Int
+				switch topic {
+				case uniswap.EventHashSwapV2:
+					internalTokenMap, err = s.handleUniswapV2(ctx, message, *log, tokenMap, ethereumClient)
+				case uniswap.EventHashSwapV3:
+					internalTokenMap, err = s.handleUniswapV3(ctx, message, *log, tokenMap, ethereumClient)
+				default:
+					continue
+				}
+
+				if err != nil {
+					return nil, err
+				}
+
+				tokenMap = internalTokenMap
+			}
 		}
 	}
 

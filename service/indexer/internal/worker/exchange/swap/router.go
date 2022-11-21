@@ -78,6 +78,11 @@ var (
 		Protocol: "Joe V2",
 	}
 
+	curveQuickSwap = Router{
+		Name:     protocol.PlatformCurve,
+		Protocol: "Curve Fi",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -115,5 +120,10 @@ var (
 		// TraderJoe
 		// https://docs.traderjoexyz.com/deployment-addresses/avalanche
 		strings.ToLower(treaderjoe.AddressRouter.String()): traderJoeV2,
+		// Curve QuickSwap
+		// https://curve.fi/#/ethereum/swap
+		strings.ToLower("0x55B916Ce078eA594c10a874ba67eCc3d62e29822"): curveQuickSwap,
+		// https://curve.fi/#/polygon/swap
+		strings.ToLower("0xa522deb6F17853F3a97a65d0972a50bDC3B1AFFF"): curveQuickSwap,
 	}
 )
