@@ -52,11 +52,14 @@ func (h *Handler) filterReport(path string, request interface{}) {
 		report["index"] = model.EsIndex
 		report["path"] = path
 		report["ts"] = time.Now().Format("2006-01-02 15:04:05")
-		for _, address := range report["address"].([]interface{}) {
-			report["address"] = address
 
-			output, _ := json.Marshal(report)
-			fmt.Printf("[DATABEAT]%v\n", string(output))
+		if addresses, ok := report["address"].([]interface{}); ok {
+			for _, address := range addresses {
+				report["address"] = address
+
+				output, _ := json.Marshal(report)
+				fmt.Printf("[DATABEAT]%v\n", string(output))
+			}
 		}
 	}
 }
