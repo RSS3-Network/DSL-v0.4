@@ -116,12 +116,12 @@ func ResolveAddress(address string, ignoreContract bool) (string, error) {
 	}
 
 	// check contract
-	//if !ignoreContract {
+	// if !ignoreContract {
 	//	isContract, _ := name_service.CheckContractOnEVM(result.Address)
 	//	if isContract {
 	//		return "", fmt.Errorf("Contract addresses are not currently supported.")
 	//	}
-	//}
+	// }
 
 	return strings.ToLower(result.Address), nil
 }
