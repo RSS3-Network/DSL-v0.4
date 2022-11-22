@@ -362,6 +362,40 @@ func Test_service_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "spookswap swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkFantom,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://ftmscan.com/tx/0x5b0f1101ad37a5392bbac9d399dcd5572bc3fb91e04b65c2b2163675d5ff4e5d
+						Hash:        "0x5b0f1101ad37a5392bbac9d399dcd5572bc3fb91e04b65c2b2163675d5ff4e5d",
+						BlockNumber: 51285797,
+						Network:     protocol.NetworkFantom,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformSpookySwap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {
