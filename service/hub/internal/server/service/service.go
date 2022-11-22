@@ -140,7 +140,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 
 	// only sent the list of non-contract networks to indexer
 	networks := protocol.MergeNetworks(validNetworkList)
-	
+
 	for _, network := range networks {
 		message.Network = network
 
