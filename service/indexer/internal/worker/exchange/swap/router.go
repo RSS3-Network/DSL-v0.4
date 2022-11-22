@@ -78,6 +78,16 @@ var (
 		Protocol: "Joe V2",
 	}
 
+	quickSwapV2 = Router{
+		Name:     protocol.PlatformQuickSwap,
+		Protocol: "QuickSwap V2",
+	}
+
+	quickSwapV3 = Router{
+		Name:     protocol.PlatformQuickSwap,
+		Protocol: "QuickSwap V3",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -115,5 +125,9 @@ var (
 		// TraderJoe
 		// https://docs.traderjoexyz.com/deployment-addresses/avalanche
 		strings.ToLower(treaderjoe.AddressRouter.String()): traderJoeV2,
+		// QuickSwap
+		// https://docs.quickswap.exchange/reference/smart-contracts/router02
+		strings.ToLower("0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"): quickSwapV2, // Market V2
+		strings.ToLower("0xf5b509bB0909a69B1c207E495f687a596C168E12"): quickSwapV3, // Market V3
 	}
 )
