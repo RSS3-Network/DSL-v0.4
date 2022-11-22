@@ -117,7 +117,7 @@ func Test_service_Handle(t *testing.T) {
 				}
 
 				for _, transaction := range transactions {
-					assert.Equal(t, transaction.Platform, protocol.PlatformUniswap)
+					assert.Equal(t, transaction.Platform, protocol.Platform1inch)
 				}
 
 				return false
