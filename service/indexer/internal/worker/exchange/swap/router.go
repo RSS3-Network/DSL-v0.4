@@ -113,6 +113,11 @@ var (
 		Protocol: "KyberSwap Classic",
 	}
 
+	spookySwap = Router{
+		Name:     protocol.PlatformSpookySwap,
+		Protocol: "Uniswap V2",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -169,5 +174,9 @@ var (
 		strings.ToLower("0x8Efa5A9AD6D594Cf76830267077B78cE0Bc5A5F8"): kyberSwapClassic,    // Classic Avalanche
 		strings.ToLower("0x5d5A5a0a465129848c2549669e12cDC2f8DE039A"): kyberSwapClassic,    // Classic Fantom
 		strings.ToLower("0xEaE47c5D99f7B31165a7f0c5f7E0D6afA25CFd55"): kyberSwapClassic,    // Classic Optimism
+		// SpookySwap
+		// https://docs.spooky.fi/Resources/contracts
+		strings.ToLower("0x31F63A33141fFee63D4B26755430a390ACdD8a4d"): spookySwap, // SpookySwap Liquidity Brewer
+		strings.ToLower("0xF491e7B69E4244ad4002BC14e878a34207E38c29"): spookySwap, // SpookySwap Router
 	}
 )

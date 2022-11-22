@@ -41,6 +41,7 @@ const (
 	PlatformRainbow     = "Rainbow"
 	PlatformQuickSwap   = "QuickSwap"
 	PlatformKyberSwap   = "KyberSwap"
+	PlatformSpookySwap  = "SpookySwap"
 
 	// metaverse
 	PlatformMars4 = "Mars4"
