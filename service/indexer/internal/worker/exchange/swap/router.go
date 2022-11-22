@@ -118,6 +118,11 @@ var (
 		Protocol: "Uniswap V2",
 	}
 
+	dodoV2 = Router{
+		Name:     protocol.PlatformDODO,
+		Protocol: "DODO V2",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -178,5 +183,19 @@ var (
 		// https://docs.spooky.fi/Resources/contracts
 		strings.ToLower("0x31F63A33141fFee63D4B26755430a390ACdD8a4d"): spookySwap, // SpookySwap Liquidity Brewer
 		strings.ToLower("0xF491e7B69E4244ad4002BC14e878a34207E38c29"): spookySwap, // SpookySwap Router
+		// DODO
+		// https://docs.dodoex.io/english/developers/contracts-address/ethereum
+		strings.ToLower("0xa2398842F37465f89540430bDC00219fA9E4D28a"): dodoV2, // DODO V2 RouteProxy Ethereum
+		strings.ToLower("0xa356867fDCEa8e71AEaF87805808803806231FdC"): dodoV2, // DODO V2 RouteProxy Ethereum 2
+		strings.ToLower("0x6B3D817814eABc984d51896b1015C0b89E9737Ca"): dodoV2, // DODO V2 RouteProxy Binance Smart Chain
+		strings.ToLower("0x8F8Dd7DB1bDA5eD3da8C9daf3bfa471c12d58486"): dodoV2, // DODO V2 RouteProxy Binance Smart Chain 2
+		strings.ToLower("0x2fA4334cfD7c56a0E7Ca02BD81455205FcBDc5E9"): dodoV2, // DODO V2 RouteProxy Polygon
+		strings.ToLower("0xa222e6a71D1A1Dd5F279805fbe38d5329C1d0e70"): dodoV2, // DODO V2 RouteProxy Polygon 2
+		strings.ToLower("0x3B6067D4CAa8A14c63fdBE6318F27A0bBc9F9237"): dodoV2, // DODO V2 RouteProxy Arbitrum
+		strings.ToLower("0x88CBf433471A0CD8240D2a12354362988b4593E5"): dodoV2, // DODO V2 RouteProxy Arbitrum 2
+		strings.ToLower("0x409E377A7AfFB1FD3369cfc24880aD58895D1dD9"): dodoV2, // DODO V2 RouteProxy Avalanche
+		strings.ToLower("0x2cD18557E14aF72DAA8090BcAA95b231ffC9ea26"): dodoV2, // DODO V2 RouteProxy Avalanche 2
+		strings.ToLower("0x7950dc01542efe1c03aea610472e3b565b53f64a"): dodoV2, // DODO V2 RouteProxy Optimism
+		strings.ToLower("0xfD9D2827AD469B72B69329dAA325ba7AfbDb3C98"): dodoV2, // DODO V2 RouteProxy Optimism 2
 	}
 )
