@@ -37,6 +37,7 @@ const (
 	Platform0x          = "0x"
 	PlatformAAVE        = "AAVE"
 	PlatformCurve       = "Curve"
+	PlatformTraderJoe   = "TraderJoe"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
@@ -76,5 +77,6 @@ var PlatformList = map[string][]string{
 		Platform0x,
 		PlatformAAVE,
 		PlatformCurve,
+		PlatformTraderJoe,
 	},
 }
