@@ -98,6 +98,21 @@ var (
 		Protocol: "1inch Aggregation Protocol", // V4 or V5
 	}
 
+	kyberSwapAggregator = Router{
+		Name:     protocol.PlatformKyberSwap,
+		Protocol: "Kyberswap Aggregator",
+	}
+
+	kyberSwapElastic = Router{
+		Name:     protocol.PlatformKyberSwap,
+		Protocol: "KyberSwap Elastic",
+	}
+
+	kyberSwapClassic = Router{
+		Name:     protocol.PlatformKyberSwap,
+		Protocol: "KyberSwap Classic",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -143,5 +158,16 @@ var (
 		// Rainbow
 		// https://learn.rainbow.me/swap-with-confidence-with-rainbow
 		strings.ToLower("0x00000000009726632680FB29d3F7A9734E3010E2"): rainbow, // Rainbow
+		// KyberSwap
+		// https://docs.kyberswap.com/
+		strings.ToLower("0x617Dee16B86534a5d792A4d7A62FB491B544111E"): kyberSwapAggregator, // Aggregator
+		strings.ToLower("0xC1e7dFE73E1598E3910EF4C7845B68A9Ab6F4c83"): kyberSwapElastic,    // Elastic
+		strings.ToLower("0x1c87257f5e8609940bc751a07bb085bb7f8cdbe6"): kyberSwapClassic,    // Classic Ethereum
+		strings.ToLower("0xEaE47c5D99f7B31165a7f0c5f7E0D6afA25CFd55"): kyberSwapClassic,    // Classic Arbitrum
+		strings.ToLower("0x546C79662E028B661dFB4767664d0273184E4dD1"): kyberSwapClassic,    // Classic Polygon
+		strings.ToLower("0x78df70615ffc8066cc0887917f2Cd72092C86409"): kyberSwapClassic,    // Classic Binanace Smart Chain
+		strings.ToLower("0x8Efa5A9AD6D594Cf76830267077B78cE0Bc5A5F8"): kyberSwapClassic,    // Classic Avalanche
+		strings.ToLower("0x5d5A5a0a465129848c2549669e12cDC2f8DE039A"): kyberSwapClassic,    // Classic Fantom
+		strings.ToLower("0xEaE47c5D99f7B31165a7f0c5f7E0D6afA25CFd55"): kyberSwapClassic,    // Classic Optimism
 	}
 )
