@@ -38,6 +38,7 @@ const (
 	PlatformAAVE        = "AAVE"
 	PlatformCurve       = "Curve"
 	PlatformTraderJoe   = "TraderJoe"
+	PlatformRainbow     = "Rainbow"
 	PlatformQuickSwap   = "QuickSwap"
 
 	// metaverse

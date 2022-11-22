@@ -88,6 +88,11 @@ var (
 		Protocol: "QuickSwap V3",
 	}
 
+	rainbow = Router{
+		Name:     protocol.PlatformRainbow,
+		Protocol: "1inch Aggregation Protocol", // V4 or V5
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -129,5 +134,8 @@ var (
 		// https://docs.quickswap.exchange/reference/smart-contracts/router02
 		strings.ToLower("0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff"): quickSwapV2, // Market V2
 		strings.ToLower("0xf5b509bB0909a69B1c207E495f687a596C168E12"): quickSwapV3, // Market V3
+		// Rainbow
+		// https://learn.rainbow.me/swap-with-confidence-with-rainbow
+		strings.ToLower("0x00000000009726632680FB29d3F7A9734E3010E2"): rainbow, // Rainbow
 	}
 )
