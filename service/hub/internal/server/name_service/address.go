@@ -18,13 +18,17 @@ func IsValidAddress(address string) bool {
 // CheckContractOnEVM returns a list of EVM networks where the address is not a contract.
 func CheckContractOnEVM(address string) []string {
 	var wg sync.WaitGroup
+	var lock sync.Mutex
 	var result []string
+
 	for _, n := range protocol.EVMNetworks {
 		wg.Add(1)
 		network := n
 		go func() {
 			defer wg.Done()
 			if !IsContract(address, network) {
+				lock.Lock()
+				defer lock.Unlock()
 				result = append(result, network)
 			}
 		}()
@@ -44,6 +48,5 @@ func IsContract(address string, network string) bool {
 	if err != nil {
 		return false
 	}
-
 	return len(bytecode) > 0
 }

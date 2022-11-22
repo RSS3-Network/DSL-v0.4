@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
-	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/name_service"
 	"go.opentelemetry.io/otel"
 )
 

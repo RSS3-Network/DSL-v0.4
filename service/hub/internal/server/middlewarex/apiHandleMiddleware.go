@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/name_service"
 )
 
 type ErrorResponse struct {
@@ -69,23 +69,6 @@ func CheckAPIKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func CheckContractMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		address := c.Param("address")
-		if address != "" {
-			if address, err := ResolveAddress(address, false); err != nil {
-				return c.JSON(http.StatusOK, &ErrorResponse{
-					Error: err.Error(),
-				})
-			} else {
-				c.SetParamValues(address)
-			}
-		}
-
-		return next(c)
-	}
-}
-
 func CheckAPIKey(apiKey string) error {
 	var item model.APIKey
 
@@ -106,13 +89,13 @@ func CheckAPIKey(apiKey string) error {
 func ResolveAddress(address string, ignoreContract bool) (string, error) {
 	result := name_service.ReverseResolveAll(strings.ToLower(address), false)
 	if len(result.Address) == 0 {
-		return "", fmt.Errorf("The address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address.")
+		return "", fmt.Errorf("the address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address")
 	}
 
 	// check valid
 	valid := name_service.IsValidAddress(result.Address)
 	if !valid {
-		return "", fmt.Errorf("The address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address.")
+		return "", fmt.Errorf("the address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address")
 	}
 
 	// check contract
