@@ -28,18 +28,6 @@ func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 		}
 
-		validNetworkList := name_service.CheckContractOnEVM(address)
-
-		// if the address is a contract on every EVM network, return error
-		if len(validNetworkList) == 0 {
-			return c.JSON(http.StatusOK, &ErrorResponse{
-				Error: "Contract addresses are not currently supported.",
-			})
-		} else {
-			// VALID-EVM-NETWORK is a list of EVM networks where the address is NOT a contract.
-			c.Set("VALID-EVM-NETWORK", validNetworkList)
-		}
-
 		apiKey := c.Request().Header.Get("X-API-KEY")
 		c.Set("API-KEY", apiKey)
 

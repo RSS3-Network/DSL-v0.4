@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/name_service"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/websocket"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
@@ -130,8 +131,16 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		dao.InitializeAddressStatus(ctx, address)
 	}
 
-	networks := protocol.MergeNetworks(message.ValidEVMNetworkList)
+	validNetworkList := name_service.CheckContractOnEVM(message.Address)
 
+	// if the address is a contract on every EVM network, return directly
+	if len(validNetworkList) == 0 {
+		return
+	}
+
+	// only sent the list of non-contract networks to indexer
+	networks := protocol.MergeNetworks(validNetworkList)
+	
 	for _, network := range networks {
 		message.Network = network
 
