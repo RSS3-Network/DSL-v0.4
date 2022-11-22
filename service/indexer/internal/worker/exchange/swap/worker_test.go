@@ -341,8 +341,8 @@ func Test_service_Handle(t *testing.T) {
 				},
 				transactions: []model.Transaction{
 					{
-						// https://polygonscan.com/tx/0xb1dc5166f1b99fd69b9eebcd2ccfbdf650b70abfc302e9919c799471de56efe4
-						Hash:        "0xb1dc5166f1b99fd69b9eebcd2ccfbdf650b70abfc302e9919c799471de56efe4",
+						// https://polygonscan.com/tx/0xed0024fcf5b2ad9000f3bb8853fa7bf3da3e7f4e3b36035b0e31530d5394ed87
+						Hash:        "0xed0024fcf5b2ad9000f3bb8853fa7bf3da3e7f4e3b36035b0e31530d5394ed87",
 						BlockNumber: 35913664,
 						Network:     protocol.NetworkPolygon,
 					},
@@ -355,7 +355,7 @@ func Test_service_Handle(t *testing.T) {
 				}
 
 				for _, transaction := range transactions {
-					assert.Equal(t, transaction.Platform, protocol.PlatformKyberSwap)
+					assert.Equal(t, protocol.PlatformKyberSwap, transaction.Platform)
 				}
 
 				return false
