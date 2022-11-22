@@ -53,6 +53,11 @@ var (
 		Protocol: "1inch Aggregation Protocol V4",
 	}
 
+	oneinchV5 = Router{
+		Name:     protocol.Platform1inch,
+		Protocol: "1inch Aggregation Protocol V5",
+	}
+
 	metamask = Router{
 		Name:     protocol.PlatformMetamask,
 		Protocol: "Metamask V1",
@@ -111,6 +116,7 @@ var (
 		strings.ToLower("0x111111125434b319222cdbf8c261674adb56f3ae"): oneinchV2, // 1inch V2
 		strings.ToLower("0x11111112542d85b3ef69ae05771c2dccff4faa26"): oneinchV3, // 1inch V3
 		strings.ToLower("0x1111111254fb6c44bac0bed2854e76f90643097d"): oneinchV4, // 1inch V4
+		strings.ToLower("0x1111111254EEB25477B68fb85Ed929f73A960582"): oneinchV5, // 1inch V5
 		// Metamask
 		// https://etherscan.io/accounts/label/metamask
 		strings.ToLower("0x881d40237659c251811cec9c364ef91dc08d300c"): metamask, // Metamask Ethereum
