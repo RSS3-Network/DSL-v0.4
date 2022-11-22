@@ -21,6 +21,11 @@ var spamList = map[string]string{
 	"0x2953399124f0cbb46d2cbacd8a89cf0599974963": "Digi Mafia",
 }
 
+// ensSpecialList is a list of ENS names that need to be handled specially even though they are not properly registered
+var ensSpecialList = map[string]string{
+	"karl.floersch.eth": "floersch.eth",
+}
+
 func init() {
 	AllowList = New()
 
@@ -33,11 +38,18 @@ func init() {
 	for address, name := range spamList {
 		SpamList.Add(address, name)
 	}
+
+	EnsSpecialList = New()
+
+	for address, name := range ensSpecialList {
+		EnsSpecialList.Add(address, name)
+	}
 }
 
 var (
-	AllowList *List
-	SpamList  *List
+	AllowList      *List
+	SpamList       *List
+	EnsSpecialList *List
 )
 
 type List struct {
@@ -46,6 +58,11 @@ type List struct {
 
 func (l *List) Add(address string, name string) {
 	l.addressMap.Store(strings.ToLower(address), name)
+}
+
+func (l *List) Get(address string) string {
+	val, _ := l.addressMap.Load(strings.ToLower(address))
+	return val.(string)
 }
 
 func (l *List) Contains(address string) bool {
