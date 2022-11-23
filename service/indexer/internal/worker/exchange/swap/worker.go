@@ -15,6 +15,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/aave"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/curve"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/dodo"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -154,6 +155,8 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 				internalTokenMap, err = s.handleUniswapV2(ctx, message, *log, tokenMap, ethereumClient)
 			case uniswap.EventHashSwapV3:
 				internalTokenMap, err = s.handleUniswapV3(ctx, message, *log, tokenMap, ethereumClient)
+			case dodo.EventHashDODOSwap:
+				internalTokenMap, err = s.handleDODO(ctx, message, *log, tokenMap, ethereumClient)
 			case curve.EventHashAddLiquidity:
 				internalTokenMap, err = s.handleCurve3PoolAddLiquidity(ctx, message, *log, sourceData.Receipt.Logs, tokenMap, ethereumClient)
 			case curve.EventHashTokenExchange:

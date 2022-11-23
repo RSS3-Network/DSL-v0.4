@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/sirupsen/logrus"
 	goens "github.com/wealdtech/go-ens/v3"
 )
@@ -151,9 +152,12 @@ func New() *Client {
 
 func Resolve(input string) (string, error) {
 	client := New()
-
 	var result string
 	var err error
+
+	if allowlist.EnsSpecialList.Contains(input) {
+		input = allowlist.EnsSpecialList.Get(input)
+	}
 
 	if strings.HasSuffix(input, ".eth") {
 		result, err = client.GetResolvedAddress(input)

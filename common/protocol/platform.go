@@ -38,6 +38,11 @@ const (
 	PlatformAAVE        = "AAVE"
 	PlatformCurve       = "Curve"
 	PlatformTraderJoe   = "TraderJoe"
+	PlatformRainbow     = "Rainbow"
+	PlatformQuickSwap   = "QuickSwap"
+	PlatformKyberSwap   = "KyberSwap"
+	PlatformSpookySwap  = "SpookySwap"
+	PlatformDODO        = "DODO"
 
 	// metaverse
 	PlatformMars4 = "Mars4"

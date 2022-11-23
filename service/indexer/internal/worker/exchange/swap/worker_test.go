@@ -113,7 +113,7 @@ func Test_service_Handle(t *testing.T) {
 				}
 
 				for _, transaction := range transactions {
-					assert.Equal(t, transaction.Platform, protocol.PlatformUniswap)
+					assert.Equal(t, transaction.Platform, protocol.Platform1inch)
 				}
 
 				return false
@@ -216,6 +216,210 @@ func Test_service_Handle(t *testing.T) {
 
 				for _, transaction := range transactions {
 					assert.Equal(t, transaction.Platform, protocol.PlatformSushiswap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "quickswap v2 swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0x6eb6b493925fa16e3d0f8b595cf4b5c47053d57f11ba4069880889fe1d765293
+						Hash:        "0x6eb6b493925fa16e3d0f8b595cf4b5c47053d57f11ba4069880889fe1d765293",
+						BlockNumber: 35913650,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformQuickSwap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "quickswap v3 swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xb1dc5166f1b99fd69b9eebcd2ccfbdf650b70abfc302e9919c799471de56efe4
+						Hash:        "0xb1dc5166f1b99fd69b9eebcd2ccfbdf650b70abfc302e9919c799471de56efe4",
+						BlockNumber: 35913664,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformQuickSwap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "rainbow swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xa01f6fd8d82f8da3103326fdf45dae9b66d92a3fbe90e390e0fe2aeeeae71a46
+						Hash:        "0xa01f6fd8d82f8da3103326fdf45dae9b66d92a3fbe90e390e0fe2aeeeae71a46",
+						BlockNumber: 35905238,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformRainbow)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "kyberswap swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xed0024fcf5b2ad9000f3bb8853fa7bf3da3e7f4e3b36035b0e31530d5394ed87
+						Hash:        "0xed0024fcf5b2ad9000f3bb8853fa7bf3da3e7f4e3b36035b0e31530d5394ed87",
+						BlockNumber: 35913664,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, protocol.PlatformKyberSwap, transaction.Platform)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "spookswap swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkFantom,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://ftmscan.com/tx/0x5b0f1101ad37a5392bbac9d399dcd5572bc3fb91e04b65c2b2163675d5ff4e5d
+						Hash:        "0x5b0f1101ad37a5392bbac9d399dcd5572bc3fb91e04b65c2b2163675d5ff4e5d",
+						BlockNumber: 51285797,
+						Network:     protocol.NetworkFantom,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformSpookySwap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "dodo swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xd505554308ad1f2912b966b8f04620b7d8b823992209ae34849d7a03df12023c
+						Hash:        "0xd505554308ad1f2912b966b8f04620b7d8b823992209ae34849d7a03df12023c",
+						BlockNumber: 35915422,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformDODO)
 				}
 
 				return false

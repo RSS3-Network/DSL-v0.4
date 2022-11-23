@@ -54,3 +54,5 @@ package contract
 //go:generate abigen --abi ./treaderjoe/router.abi --pkg treaderjoe --type Router --out ./treaderjoe/router.go
 // https://etherscan.io/address/0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7
 //go:generate abigen --abi ./curve/3pool.abi --pkg curve --type ThreePool --out ./curve/3pool.go
+// https://polygonscan.com/address/0x581c7db44f2616781c86c331d31c1f09db87a746#code
+//go:generate abigen --abi ./dodo/machine.abi --pkg dodo --type VendingMachine --out ./dodo/machine.go
