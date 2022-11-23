@@ -121,9 +121,10 @@ var (
 		// https://docs.traderjoexyz.com/deployment-addresses/avalanche
 		strings.ToLower(treaderjoe.AddressRouter.String()): traderJoeV2,
 		// Curve QuickSwap
-		// https://curve.fi/#/ethereum/swap
-		strings.ToLower("0x55B916Ce078eA594c10a874ba67eCc3d62e29822"): curveQuickSwap,
-		// https://curve.fi/#/polygon/swap
-		strings.ToLower("0xa522deb6F17853F3a97a65d0972a50bDC3B1AFFF"): curveQuickSwap,
+		strings.ToLower("0x55B916Ce078eA594c10a874ba67eCc3d62e29822"): curveQuickSwap, // Ethereum
+		strings.ToLower("0xa522deb6F17853F3a97a65d0972a50bDC3B1AFFF"): curveQuickSwap, // Polygon
+		strings.ToLower("0x16243caB3aC4d8eE8df7660a525F7F7539962468"): curveQuickSwap, // Fantom
+		strings.ToLower("0x890f4e345B1dAED0367A877a1612f86A1f86985f"): curveQuickSwap, // Avalanche
+		strings.ToLower("0xE6358f6a45B502477e83CC1CDa759f540E4459ee"): curveQuickSwap, // Gnosis
 	}
 )

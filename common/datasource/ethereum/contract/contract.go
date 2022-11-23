@@ -36,6 +36,8 @@ package contract
 //go:generate abigen --abi ./aave/pool_v2.abi --pkg aave --type PoolV2 --alias DataTypes.ReserveConfigurationMap=DataTypes.ReserveConfigurationMapV2 --out ./aave/pool_v2.go
 // https://polygonscan.com/address/0xdf9e4abdbd94107932265319479643d3b05809dc
 //go:generate abigen --abi ./aave/pool_v3.abi --pkg aave --type PoolV3 --out ./aave/pool_v3.go
+// https://polygonscan.com/address/0x1a13f4ca1d028320a707d99520abfefca3998b7f
+//go:generate abigen --abi ./aave/token.abi --pkg aave --type Token --out ./aave/token.go
 // https://etherscan.io/address/0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1
 //go:generate abigen --abi ./optimism/bridge.abi --pkg optimism --type Bridge --out ./optimism/bridge.go
 // https://etherscan.io/address/0x499a865ac595e6167482d2bd5A224876baB85ab4
@@ -50,3 +52,5 @@ package contract
 //go:generate abigen --abi ./quix/exchange_v5.abi --pkg quix --type ExchangeV5 --out ./quix/exchange_v5.go
 // https://snowtrace.io/address/0xe3ffc583dc176575eea7fd9df2a7c65f7e23f4c3
 //go:generate abigen --abi ./treaderjoe/router.abi --pkg treaderjoe --type Router --out ./treaderjoe/router.go
+// https://etherscan.io/address/0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7
+//go:generate abigen --abi ./curve/3pool.abi --pkg curve --type ThreePool --out ./curve/3pool.go

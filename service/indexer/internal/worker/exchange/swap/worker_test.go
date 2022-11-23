@@ -2,11 +2,12 @@ package swap
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"testing"
 
-	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -21,11 +22,6 @@ var once sync.Once
 func initialize(t *testing.T) {
 	once.Do(func() {
 		config.Initialize()
-
-		cacheClient, err := cache.Dial(config.ConfigIndexer.Redis)
-		assert.NoError(t, err)
-
-		cache.ReplaceGlobal(cacheClient)
 
 		ethereumClientMap, err := ethclientx.Dial(config.ConfigIndexer.RPC, protocol.EthclientNetworks)
 		assert.NoError(t, err)
@@ -220,6 +216,90 @@ func Test_service_Handle(t *testing.T) {
 
 				for _, transaction := range transactions {
 					assert.Equal(t, transaction.Platform, protocol.PlatformSushiswap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "curve swap of frax",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x934B510D4C9103E6a87AEf13b816fb080286D649", // sujiyan.eth
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.com/tx/0x5bc300abde5761d2cadcdccddda433ed01c5fa0328d0248c4b3e601ae382007d
+						Hash:        "0x5bc300abde5761d2cadcdccddda433ed01c5fa0328d0248c4b3e601ae382007d",
+						BlockNumber: 15939262,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "USDT")
+					assert.Equal(t, swap.TokenTo.Symbol, "USDC")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformCurve)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "curve swap of aave pool",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x934B510D4C9103E6a87AEf13b816fb080286D649", // sujiyan.eth
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0x2994f2c7663b3f1dfaef9754ed14852f1e3fbe68fd167ba390e7625d1a5d129f
+						Hash:        "0x2994f2c7663b3f1dfaef9754ed14852f1e3fbe68fd167ba390e7625d1a5d129f",
+						BlockNumber: 35955144,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "USDC")
+					assert.Equal(t, swap.TokenTo.Symbol, "WETH")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformCurve)
 				}
 
 				return false

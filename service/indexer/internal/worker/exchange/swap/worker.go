@@ -7,14 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"strings"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/aave"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/curve"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -26,7 +26,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
+
 	"go.opentelemetry.io/otel"
+
 	"go.uber.org/zap"
 )
 
@@ -139,60 +141,36 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 
 	tokenMap := map[common.Address]*big.Int{}
 
-	for _, transfer := range transaction.Transfers {
-		if transfer.Index == protocol.IndexVirtual {
-			internalTransfers = append(internalTransfers, transfer)
-
-			break
-		}
-	}
-
 	var sourceData ethereum.SourceData
 	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal source data: %w", err)
 	}
 
-	if router.Name == protocol.PlatformCurve {
-		for _, log := range sourceData.Receipt.Logs {
-			if log.Topics[0] == erc20.EventHashTransfer {
-				filterer, err := erc20.NewERC20Filterer(log.Address, nil)
-				if err != nil {
-					return nil, err
-				}
-
-				event, err := filterer.ParseTransfer(*log)
-				if err != nil {
-					return nil, err
-				}
-
-				if strings.EqualFold(message.Address, event.From.String()) {
-					tokenMap[log.Address] = event.Value.Not(event.Value)
-				}
-
-				if strings.EqualFold(message.Address, event.To.String()) {
-					tokenMap[log.Address] = event.Value
-				}
+	for _, log := range sourceData.Receipt.Logs {
+		for _, topic := range log.Topics {
+			var internalTokenMap map[common.Address]*big.Int
+			switch topic {
+			case uniswap.EventHashSwapV2:
+				internalTokenMap, err = s.handleUniswapV2(ctx, message, *log, tokenMap, ethereumClient)
+			case uniswap.EventHashSwapV3:
+				internalTokenMap, err = s.handleUniswapV3(ctx, message, *log, tokenMap, ethereumClient)
+			case curve.EventHashAddLiquidity:
+				internalTokenMap, err = s.handleCurve3PoolAddLiquidity(ctx, message, *log, sourceData.Receipt.Logs, tokenMap, ethereumClient)
+			case curve.EventHashTokenExchange:
+				internalTokenMap, err = s.handleCurve3PoolTokenExchange(ctx, message, *log, tokenMap, ethereumClient)
+			case aave.EventHashMint:
+				internalTokenMap, err = s.handleAAVEMint(ctx, message, *log, tokenMap, ethereumClient)
+			case aave.EventHashBurn:
+				internalTokenMap, err = s.handleAAVEBurn(ctx, message, *log, tokenMap, ethereumClient)
+			default:
+				continue
 			}
-		}
-	} else {
-		for _, log := range sourceData.Receipt.Logs {
-			for _, topic := range log.Topics {
-				var internalTokenMap map[common.Address]*big.Int
-				switch topic {
-				case uniswap.EventHashSwapV2:
-					internalTokenMap, err = s.handleUniswapV2(ctx, message, *log, tokenMap, ethereumClient)
-				case uniswap.EventHashSwapV3:
-					internalTokenMap, err = s.handleUniswapV3(ctx, message, *log, tokenMap, ethereumClient)
-				default:
-					continue
-				}
 
-				if err != nil {
-					return nil, err
-				}
-
-				tokenMap = internalTokenMap
+			if err != nil {
+				return nil, err
 			}
+
+			tokenMap = internalTokenMap
 		}
 	}
 
