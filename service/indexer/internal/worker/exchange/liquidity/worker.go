@@ -106,7 +106,17 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			case aave.EventHashWithdrawV3:
 				internalTransfer, err = i.handleAAVEV3Withdraw(ctx, message, transaction, *log, router)
 			case lido.EventHashSubmitted:
+				if log.Address != lido.AddressETH {
+					continue
+				}
+
 				internalTransfer, err = i.handleLidoSubmitted(ctx, message, transaction, *log, router)
+			case lido.EventHashSubmitEvent:
+				if log.Address != lido.AddressMatic {
+					continue
+				}
+
+				internalTransfer, err = i.handleLidoSubmitEvent(ctx, message, transaction, *log, router)
 			default:
 				continue
 			}

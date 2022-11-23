@@ -3,6 +3,7 @@ package liquidity
 import (
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lido"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
@@ -63,6 +64,7 @@ var (
 		// Curve
 		strings.ToLower("0x1d8b86e3D88cDb2d34688e87E72F388Cb541B7C8"): routerCurve, // Curve Polygon ATriCrypto3 Zap
 		// Lido
-		strings.ToLower("0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"): routerLido, // Lido stETH Proxy
+		strings.ToLower(lido.AddressETH.String()):   routerLido, // Lido stETH Proxy
+		strings.ToLower(lido.AddressMatic.String()): routerLido, // Lido stMATIC Proxy
 	}
 )

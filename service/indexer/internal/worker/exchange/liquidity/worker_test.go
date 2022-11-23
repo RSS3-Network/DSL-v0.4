@@ -2,7 +2,6 @@ package liquidity
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 
@@ -46,7 +45,7 @@ func Test_worker_Handle(t *testing.T) {
 		wantErr   assert.ErrorAssertionFunc
 	}{
 		{
-			name: "lido submit",
+			name: "lido eth",
 			arguments: arguments{
 				ctx: context.Background(),
 				message: &protocol.Message{
@@ -69,9 +68,34 @@ func Test_worker_Handle(t *testing.T) {
 				}
 
 				for _, transaction := range transactions {
-					for _, transfer := range transaction.Transfers {
-						fmt.Println(string(transfer.Metadata))
-					}
+					assert.Equal(t, transaction.Platform, protocol.PlatformLido)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "lido matic",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x55323EA97b170Eb44da6C180D96a1f23874A1eE5", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.com/tx/0xdd89e12327ceb9e46d4daa4e7d862a8cd20d89691cbd5c306addf85287b39627
+						Hash:        "0xdd89e12327ceb9e46d4daa4e7d862a8cd20d89691cbd5c306addf85287b39627",
+						BlockNumber: 16030691,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
 				}
 
 				for _, transaction := range transactions {

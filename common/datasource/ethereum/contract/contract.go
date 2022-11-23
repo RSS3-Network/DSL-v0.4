@@ -53,4 +53,6 @@ package contract
 // https://polygonscan.com/address/0x581c7db44f2616781c86c331d31c1f09db87a746
 //go:generate abigen --abi ./dodo/machine.abi --pkg dodo --type VendingMachine --out ./dodo/machine.go
 // https://etherscan.io/address/0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
-//go:generate abigen --abi ./lido/lido.abi --pkg lido --type Lido --out ./lido/lido.go
+//go:generate abigen --abi ./lido/eth.abi --pkg lido --type ETH --out ./lido/eth.go
+// https://etherscan.io/address/0x9c1563937145865308c8854e82f106775be28a05
+//go:generate abigen --abi ./lido/matic.abi --pkg lido --type Matic --out ./lido/matic.go
