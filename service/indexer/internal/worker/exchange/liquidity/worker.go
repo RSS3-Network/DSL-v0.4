@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/aave"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lido"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/polygon"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -117,6 +118,18 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				}
 
 				internalTransfer, err = i.handleLidoSubmitEvent(ctx, message, transaction, *log, router)
+			case polygon.EventHashShareMinted:
+				if log.Address != polygon.AddressStakingInfo {
+					continue
+				}
+
+				internalTransfer, err = i.handlePolygonStakingShareMinted(ctx, message, transaction, *log, router)
+			case polygon.EventHashDelegatorClaimedRewards:
+				if log.Address != polygon.AddressStakingInfo {
+					continue
+				}
+
+				internalTransfer, err = i.handlePolygonStakingDelegatorClaimedRewards(ctx, message, transaction, *log, router)
 			default:
 				continue
 			}

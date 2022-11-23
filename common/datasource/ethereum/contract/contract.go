@@ -44,6 +44,8 @@ package contract
 //go:generate abigen --abi ./polygon/predicate_erc20.abi --pkg polygon --type ERC20Predicate --out ./polygon/predicate_erc20.go
 // https://etherscan.io/address/0x9923263fA127b3d1484cFD649df8f1831c2A74e4
 //go:generate abigen --abi ./polygon/predicate_erc20_mintable.abi --pkg polygon --type MintableERC20Predicate --out ./polygon/predicate_erc20_mintable.go
+// https://etherscan.io/address/0x11cc04dd962e82d411587c56b815e8f8141eb7d5
+//go:generate abigen --abi ./polygon/staking.abi --pkg polygon --type Staking --out ./polygon/staking.go
 // https://optimistic.etherscan.io/address/0xa7078e74d1abcc57db40309cf2c680832d7cd1fc
 //go:generate abigen --abi ./quix/seaport.abi --pkg quix --type SeaPort --out ./quix/seaport.go
 // https://optimistic.etherscan.io/address/0x3f9da045b0f77d707ea4061110339c4ea8ecfa70
