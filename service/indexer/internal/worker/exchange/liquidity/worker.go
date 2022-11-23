@@ -13,7 +13,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/aave"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lido"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/polygon"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"

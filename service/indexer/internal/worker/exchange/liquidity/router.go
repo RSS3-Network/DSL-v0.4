@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lido"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/polygon"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )

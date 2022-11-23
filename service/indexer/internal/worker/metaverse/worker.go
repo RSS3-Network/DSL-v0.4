@@ -3,11 +3,15 @@ package metaverse
 import (
 	"context"
 
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/metaverse/aavegotchi"
+	"go.uber.org/zap"
+
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	lop "github.com/samber/lo/parallel"
 	"go.opentelemetry.io/otel"
@@ -18,7 +22,9 @@ var (
 	network []string
 )
 
-type service struct{}
+type service struct {
+	aavegotchiHandler aavegotchi.Handler
+}
 
 func (s *service) Name() string {
 	return "metaverse"
@@ -54,8 +60,19 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			return
 		}
 
+		if transaction.AddressTo == AavegotchiContractAddress {
+			if err := s.aavegotchiHandler.Handle(ctx, &transaction); err != nil {
+				loggerx.Global().Error("aavegotchi handler error", zap.Error(err))
+				return
+			}
+		}
+
 		for index := range transaction.Transfers {
-			transaction.Transfers[index].Tag, transaction.Transfers[index].Type = filter.UpdateTagAndType(filter.TagMetaverse, transaction.Transfers[index].Tag, contract.Type, transaction.Transfers[index].Type)
+			// default type
+			if contract.Type != "" {
+				transaction.Transfers[index].Tag, transaction.Transfers[index].Type = filter.UpdateTagAndType(filter.TagMetaverse, transaction.Transfers[index].Tag, contract.Type, transaction.Transfers[index].Type)
+			}
+
 			transaction.Tag, transaction.Type = filter.UpdateTagAndType(transaction.Transfers[index].Tag, transaction.Tag, transaction.Transfers[index].Type, transaction.Type)
 
 			if transaction.Transfers[index].Tag == filter.TagMetaverse {
@@ -74,5 +91,7 @@ func (s *service) Jobs() []worker.Job {
 }
 
 func New() worker.Worker {
-	return &service{}
+	return &service{
+		aavegotchiHandler: aavegotchi.Handler{},
+	}
 }
