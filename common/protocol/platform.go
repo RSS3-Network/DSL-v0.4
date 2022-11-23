@@ -37,6 +37,7 @@ const (
 	Platform0x          = "0x"
 	PlatformAAVE        = "AAVE"
 	PlatformCurve       = "Curve"
+	PlatformLido        = "Lido"
 	PlatformTraderJoe   = "TraderJoe"
 	PlatformRainbow     = "Rainbow"
 	PlatformQuickSwap   = "QuickSwap"

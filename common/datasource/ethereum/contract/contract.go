@@ -50,5 +50,7 @@ package contract
 //go:generate abigen --abi ./quix/exchange_v5.abi --pkg quix --type ExchangeV5 --out ./quix/exchange_v5.go
 // https://snowtrace.io/address/0xe3ffc583dc176575eea7fd9df2a7c65f7e23f4c3
 //go:generate abigen --abi ./treaderjoe/router.abi --pkg treaderjoe --type Router --out ./treaderjoe/router.go
-// https://polygonscan.com/address/0x581c7db44f2616781c86c331d31c1f09db87a746#code
+// https://polygonscan.com/address/0x581c7db44f2616781c86c331d31c1f09db87a746
 //go:generate abigen --abi ./dodo/machine.abi --pkg dodo --type VendingMachine --out ./dodo/machine.go
+// https://etherscan.io/address/0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
+//go:generate abigen --abi ./lido/lido.abi --pkg lido --type Lido --out ./lido/lido.go
