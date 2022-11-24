@@ -71,3 +71,5 @@ package contract
 //go:generate abigen --abi ./lido/eth.abi --pkg lido --type ETH --out ./lido/eth.go
 // https://etherscan.io/address/0x9c1563937145865308c8854e82f106775be28a05
 //go:generate abigen --abi ./lido/matic.abi --pkg lido --type Matic --out ./lido/matic.go
+// https://optimistic.etherscan.io/address/0x9c12939390052919aF3155f41Bf4160Fd3666A6f
+//go:generate abigen --abi ./velodrome/router.abi --pkg velodrome --type Router --out ./velodrome/router.go
