@@ -46,12 +46,15 @@ package contract
 //go:generate abigen --abi ./polygon/predicate_erc20.abi --pkg polygon --type ERC20Predicate --out ./polygon/predicate_erc20.go
 // https://etherscan.io/address/0x9923263fA127b3d1484cFD649df8f1831c2A74e4
 //go:generate abigen --abi ./polygon/predicate_erc20_mintable.abi --pkg polygon --type MintableERC20Predicate --out ./polygon/predicate_erc20_mintable.go
+// https://etherscan.io/address/0x11cc04dd962e82d411587c56b815e8f8141eb7d5
+//go:generate abigen --abi ./polygon/staking.abi --pkg polygon --type Staking --out ./polygon/staking.go
 // https://optimistic.etherscan.io/address/0xa7078e74d1abcc57db40309cf2c680832d7cd1fc
 //go:generate abigen --abi ./quix/seaport.abi --pkg quix --type SeaPort --out ./quix/seaport.go
 // https://optimistic.etherscan.io/address/0x3f9da045b0f77d707ea4061110339c4ea8ecfa70
 //go:generate abigen --abi ./quix/exchange_v5.abi --pkg quix --type ExchangeV5 --out ./quix/exchange_v5.go
 // https://snowtrace.io/address/0xe3ffc583dc176575eea7fd9df2a7c65f7e23f4c3
 //go:generate abigen --abi ./treaderjoe/router.abi --pkg treaderjoe --type Router --out ./treaderjoe/router.go
+// https://polygonscan.com/address/0x581c7db44f2616781c86c331d31c1f09db87a746
 // https://etherscan.io/address/0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7
 //go:generate abigen --abi ./curve/3pool.abi --pkg curve --type ThreePool --out ./curve/3pool.go
 // https://etherscan.io/address/0xd51a44d3fae010294c616388b506acda1bfaae46
@@ -64,3 +67,7 @@ package contract
 //go:generate abigen --abi ./balancer/vault.abi --pkg balancer --type Vault --out ./balancer/vault.go
 // https://polygonscan.com/address/0x581c7db44f2616781c86c331d31c1f09db87a746#code
 //go:generate abigen --abi ./dodo/machine.abi --pkg dodo --type VendingMachine --out ./dodo/machine.go
+// https://etherscan.io/address/0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
+//go:generate abigen --abi ./lido/eth.abi --pkg lido --type ETH --out ./lido/eth.go
+// https://etherscan.io/address/0x9c1563937145865308c8854e82f106775be28a05
+//go:generate abigen --abi ./lido/matic.abi --pkg lido --type Matic --out ./lido/matic.go

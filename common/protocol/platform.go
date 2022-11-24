@@ -29,23 +29,26 @@ const (
 
 	// exchange
 	// dex
-	PlatformUniswap     = "Uniswap"
-	PlatformSushiswap   = "SushiSwap"
-	PlatformPancakeswap = "PancakeSwap"
-	Platform1inch       = "1inch"
-	PlatformMetamask    = "MetaMask"
-	Platform0x          = "0x"
-	PlatformAAVE        = "AAVE"
-	PlatformCurve       = "Curve"
-	PlatformTraderJoe   = "TraderJoe"
-	PlatformRainbow     = "Rainbow"
-	PlatformQuickSwap   = "QuickSwap"
-	PlatformKyberSwap   = "KyberSwap"
-	PlatformSpookySwap  = "SpookySwap"
-	PlatformDODO        = "DODO"
+	PlatformUniswap        = "Uniswap"
+	PlatformSushiswap      = "SushiSwap"
+	PlatformPancakeswap    = "PancakeSwap"
+	Platform1inch          = "1inch"
+	PlatformMetamask       = "MetaMask"
+	Platform0x             = "0x"
+	PlatformAAVE           = "AAVE"
+	PlatformCurve          = "Curve"
+	PlatformLido           = "Lido"
+	PlatformPolygonStaking = "Polygon Staking"
+	PlatformTraderJoe      = "TraderJoe"
+	PlatformRainbow        = "Rainbow"
+	PlatformQuickSwap      = "QuickSwap"
+	PlatformKyberSwap      = "KyberSwap"
+	PlatformSpookySwap     = "SpookySwap"
+	PlatformDODO           = "DODO"
 
 	// metaverse
-	PlatformMars4 = "Mars4"
+	PlatformMars4      = "Mars4"
+	PlatformAavegotchi = "Aavegotchi"
 
 	PlatformParaswap = "Paraswap"
 )
