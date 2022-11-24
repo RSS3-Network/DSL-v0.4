@@ -4,12 +4,15 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity/job/polygonstaking"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,6 +22,11 @@ var once sync.Once
 func initialize(t *testing.T) {
 	once.Do(func() {
 		config.Initialize()
+
+		cacheClient, err := cache.Dial(config.ConfigIndexer.Redis)
+		assert.NoError(t, err)
+
+		cache.ReplaceGlobal(cacheClient)
 
 		ethereumClientMap, err := ethclientx.Dial(config.ConfigIndexer.RPC, protocol.EthclientNetworks)
 		assert.NoError(t, err)
@@ -31,6 +39,13 @@ func initialize(t *testing.T) {
 
 func Test_worker_Handle(t *testing.T) {
 	initialize(t)
+
+	job := polygonstaking.New(cache.Global())
+
+	err := job.Run(func(ctx context.Context, duration time.Duration) error {
+		return nil
+	})
+	assert.NoError(t, err)
 
 	type arguments struct {
 		ctx          context.Context
