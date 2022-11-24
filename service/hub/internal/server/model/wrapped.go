@@ -47,8 +47,8 @@ type NFTResult struct {
 	Bought []metadata.Token `json:"bought"`
 	Sold   []metadata.Token `json:"sold"`
 	Total  int              `json:"total"`
-	First  NFTSingle        `json:"first"`
-	Last   NFTSingle        `json:"last"`
+	First  *NFTSingle       `json:"first"`
+	Last   *NFTSingle       `json:"last"`
 }
 
 type NFT struct {

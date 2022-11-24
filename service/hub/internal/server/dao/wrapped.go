@@ -183,14 +183,14 @@ func GetNFT(c context.Context, request model.GetRequest) (model.NFTResult, error
 		}
 
 		if i == 0 {
-			result.Last = model.NFTSingle{
+			result.Last = &model.NFTSingle{
 				Metadata:  nft,
 				Timestamp: current.Timestamp,
 			}
 		}
 
 		if i == len(list)-1 {
-			result.First = model.NFTSingle{
+			result.First = &model.NFTSingle{
 				Metadata:  nft,
 				Timestamp: current.Timestamp,
 			}
