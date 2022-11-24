@@ -8,6 +8,8 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/go-redis/redis/v8"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -19,6 +21,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity/job/polygonstaking"
 	"github.com/shopspring/decimal"
 
 	"go.uber.org/zap"
@@ -30,6 +33,7 @@ var _ worker.Worker = (*internal)(nil)
 
 type internal struct {
 	tokenClient *token.Client
+	redisClient *redis.Client
 }
 
 func (i *internal) Name() string {
@@ -59,7 +63,16 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	for _, transaction := range transactions {
 		router, exists := routerMap[strings.ToLower(transaction.AddressTo)]
 		if !exists {
-			continue
+			exists, err := i.redisClient.HExists(ctx, polygonstaking.Key, strings.ToLower(transaction.AddressTo)).Result()
+			if err != nil {
+				return nil, fmt.Errorf("hash exists: %w", err)
+			}
+
+			if !exists {
+				continue
+			}
+
+			router = routerPolygon
 		}
 
 		internalTransaction := transaction
@@ -194,11 +207,14 @@ func (i *internal) buildLiquidityMetadata(ctx context.Context, router Router, ac
 }
 
 func (i *internal) Jobs() []worker.Job {
-	return nil
+	return []worker.Job{
+		polygonstaking.New(i.redisClient),
+	}
 }
 
 func New() worker.Worker {
 	return &internal{
 		tokenClient: token.New(),
+		redisClient: cache.Global(),
 	}
 }
