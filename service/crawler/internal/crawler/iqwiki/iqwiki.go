@@ -17,14 +17,14 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/iqwiki"
+	iqwiki_contract "github.com/naturalselectionlabs/pregod/common/datasource/iqwiki/contract"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/datasource/iqwiki/graphql"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/worker/iqwiki"
-	iqwiki_contract "github.com/naturalselectionlabs/pregod/common/worker/iqwiki/contract"
-	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/iqwiki/graphql"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -70,7 +70,7 @@ func (s *service) Run() error {
 		for address, num := range iqCacheMap {
 			activityList, err := s.iqClient.GetUserActivityList(ctx, address)
 			if err != nil {
-				loggerx.Global().Warn("iqwiki_crawler get cast error", zap.Error(err))
+				loggerx.Global().Warn("iqwiki_crawler get activities error", zap.Error(err))
 				continue
 			}
 
