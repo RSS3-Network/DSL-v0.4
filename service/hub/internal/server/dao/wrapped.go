@@ -199,3 +199,26 @@ func GetNFT(c context.Context, request model.GetRequest) (model.NFTResult, error
 
 	return result, nil
 }
+
+func GetDApp(c context.Context, request model.GetRequest) (model.DAppResult, error) {
+	tracer := otel.Tracer("dao.GetNFT")
+	_, postgresSnap := tracer.Start(c, "postgres")
+
+	defer postgresSnap.End()
+
+	request.Address = strings.ToLower(request.Address)
+
+	var result model.DAppResult
+
+	database.Global().Debug().
+		Model(&dbModel.Transaction{}).
+		Select("platform AS name, COUNT(*) AS count").
+		Where("owner = ? ", request.Address).
+		Where("platform != ? ", "").
+		Where("DATE_PART('year', timestamp) = ?", "2022").
+		Group("platform").
+		Order("count DESC").
+		Scan(&result.List)
+
+	return result, nil
+}

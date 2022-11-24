@@ -12,6 +12,7 @@ type WrappedResult struct {
 	Gas         GasResult    `json:"gas"`
 	Transaction TxResult     `json:"transaction"`
 	NFT         NFTResult    `json:"nft"`
+	DApp        DAppResult   `json:"dapp"`
 }
 
 type SocialResult struct {
@@ -60,4 +61,13 @@ type NFT struct {
 type NFTSingle struct {
 	Metadata  metadata.Token `json:"metadata"`
 	Timestamp time.Time      `json:"timestamp"`
+}
+
+type DAppResult struct {
+	List []DApp `json:"list"`
+}
+
+type DApp struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
 }

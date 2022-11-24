@@ -37,5 +37,10 @@ func (s *Service) GetWrapped(c context.Context, request model.GetRequest, wrappe
 		return err
 	}
 
+	wrappedResult.DApp, err = dao.GetDApp(c, request)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
