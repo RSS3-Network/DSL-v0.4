@@ -2,6 +2,7 @@ package model
 
 type WrappedResult struct {
 	Social SocialResult `json:"social"`
+	Search SearchResult `json:"search"`
 }
 
 type SocialResult struct {
@@ -10,4 +11,8 @@ type SocialResult struct {
 	Follow       int64  `json:"follow"`
 	LongestHash  string `json:"longest_hash"`
 	ShortestHash string `json:"shortest_hash"`
+}
+
+type SearchResult struct {
+	Count int64 `json:"count"`
 }
