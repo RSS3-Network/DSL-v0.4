@@ -21,6 +21,7 @@ type SocialResult struct {
 	Follow       int64  `json:"follow"`
 	LongestHash  string `json:"longest_hash"`
 	ShortestHash string `json:"shortest_hash"`
+	List         []DApp `json:"list"`
 }
 
 type SearchResult struct {

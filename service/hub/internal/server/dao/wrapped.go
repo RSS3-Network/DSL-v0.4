@@ -9,6 +9,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"go.opentelemetry.io/otel"
 )
@@ -59,6 +60,17 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
         WHERE sub.body IS NOT NULL
         ORDER BY LENGTH(body::TEXT) ASC
         LIMIT 1) AS shortest_hash;`, condition, condition)).Scan(&result)
+
+	database.Global().
+		Model(&dbModel.Transaction{}).
+		Select("platform AS name, COUNT(*) AS count").
+		Where("owner = ? ", request.Address).
+		Where("tag = ? ", filter.TagSocial).
+		Where("platform != ? ", "").
+		Where("DATE_PART('year', timestamp) = ?", "2022").
+		Group("platform").
+		Order("count DESC").
+		Scan(&result.List)
 
 	return result, nil
 }
