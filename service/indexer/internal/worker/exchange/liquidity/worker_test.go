@@ -106,37 +106,6 @@ func Test_worker_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
-		{
-			name: "polygon staking",
-			arguments: arguments{
-				ctx: context.Background(),
-				message: &protocol.Message{
-					Address: "0xe37C7e8AB0AB2754Cb9b6Ee9F0E5480b1E0d71cA", // Unknown
-					Network: protocol.NetworkEthereum,
-				},
-				transactions: []model.Transaction{
-					{
-						// https://etherscan.com/tx/0xfe7d50eba76369215de756a29419f2569300f9efb7fc2f1f5c74662998b6c7e3
-						Hash:        "0xfe7d50eba76369215de756a29419f2569300f9efb7fc2f1f5c74662998b6c7e3",
-						BlockNumber: 16022915,
-						Network:     protocol.NetworkEthereum,
-					},
-				},
-			},
-			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
-				transactions, ok := i.([]model.Transaction)
-				if !ok {
-					return false
-				}
-
-				for _, transaction := range transactions {
-					assert.Equal(t, transaction.Platform, protocol.PlatformPolygonStaking)
-				}
-
-				return false
-			},
-			wantErr: assert.NoError,
-		},
 	}
 
 	for _, testcase := range testcases {
