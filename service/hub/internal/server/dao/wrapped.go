@@ -80,3 +80,34 @@ func CountSearch(c context.Context, request model.GetRequest) (model.SearchResul
 
 	return result, nil
 }
+
+func CountGas(c context.Context, request model.GetRequest) (model.GasResult, error) {
+	tracer := otel.Tracer("dao.CountSocial")
+	_, postgresSnap := tracer.Start(c, "postgres")
+
+	defer postgresSnap.End()
+
+	request.Address = strings.ToLower(request.Address)
+
+	var result model.GasResult
+
+	// the where condition for all the queries
+	condition := fmt.Sprintf("address_from = '%s' AND DATE_PART('year', timestamp) = '%d' AND fee IS NOT NULL", request.Address, 2022)
+
+	// calculate gas: total and highest
+	database.Global().
+		Model(&dbModel.Transaction{}).
+		Select("SUM(fee::numeric) as total, MAX(fee::NUMERIC) as highest").
+		Where(condition).
+		Scan(&result)
+
+	database.Global().
+		Model(&dbModel.Transaction{}).
+		Select("hash as highest_hash").
+		Where(condition).
+		Order("fee::NUMERIC DESC").
+		Limit(1).
+		Scan(&result)
+
+	return result, nil
+}

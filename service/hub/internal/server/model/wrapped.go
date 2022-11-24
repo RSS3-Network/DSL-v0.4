@@ -3,6 +3,7 @@ package model
 type WrappedResult struct {
 	Social SocialResult `json:"social"`
 	Search SearchResult `json:"search"`
+	Gas    GasResult    `json:"gas"`
 }
 
 type SocialResult struct {
@@ -15,4 +16,10 @@ type SocialResult struct {
 
 type SearchResult struct {
 	Count int64 `json:"count"`
+}
+
+type GasResult struct {
+	Total       string `json:"total"`
+	Highest     string `json:"highest"`
+	HighestHash string `json:"highest_hash"`
 }

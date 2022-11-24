@@ -19,5 +19,13 @@ func (s *Service) GetWrapped(c context.Context, request model.GetRequest, wrappe
 		return err
 	}
 
+	// multiple search counts
+	wrappedResult.Search.Count = wrappedResult.Search.Count * 4
+
+	wrappedResult.Gas, err = dao.CountGas(c, request)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
