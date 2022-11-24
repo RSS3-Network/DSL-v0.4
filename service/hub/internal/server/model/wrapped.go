@@ -2,8 +2,9 @@ package model
 
 import (
 	"encoding/json"
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"time"
+
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 )
 
 type WrappedResult struct {
@@ -22,7 +23,7 @@ type SocialResult struct {
 	Follow       int64  `json:"follow"`
 	LongestHash  string `json:"longest_hash"`
 	ShortestHash string `json:"shortest_hash"`
-	List         []DApp `json:"list"`
+	List         []DApp `json:"list" gorm:"-"`
 }
 
 type SearchResult struct {
@@ -75,5 +76,13 @@ type DApp struct {
 }
 
 type DeFiResult struct {
-	List []DApp `json:"list"`
+	List      []DApp           `json:"list"`
+	SwapPair  []SwapPair       `json:"swap_pair"`
+	Bridge    []metadata.Token `json:"bridge"`
+	Liquidity []metadata.Token `json:"liquidity"`
+}
+
+type SwapPair struct {
+	From string `json:"from"`
+	To   string `json:"to"`
 }

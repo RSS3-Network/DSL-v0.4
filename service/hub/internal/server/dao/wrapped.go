@@ -39,7 +39,7 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 	// get hashes of the longest and the shortest posts
 	database.Global().
 		Raw(fmt.Sprintf(`SELECT (SELECT transaction_hash
-        FROM (SELECT transaction_hash, metadata ::jsonb -> 'body' AS body
+        FROM (SELECT transaction_hash, metadata ::jsonb ->> 'body' AS body
               FROM transfers
               WHERE type = 'post'
                 AND transaction_hash IN
@@ -50,7 +50,7 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
         ORDER BY LENGTH(body::TEXT) DESC
         LIMIT 1) AS longest_hash,
        (SELECT transaction_hash
-        FROM (SELECT transaction_hash, metadata ::jsonb -> 'body' AS body
+        FROM (SELECT transaction_hash, metadata ::jsonb ->> 'body' AS body
               FROM transfers
               WHERE type = 'post'
                 AND transaction_hash IN
@@ -145,7 +145,7 @@ func CountTransaction(c context.Context, request model.GetRequest) (model.TxResu
 		Scan(&result.Initiate)
 
 	// transactions received by the address
-	database.Global().Debug().
+	database.Global().
 		Model(&dbModel.Transaction{}).
 		Select("network, COUNT(*) AS total").
 		Where("address_to = ?", request.Address).
@@ -255,6 +255,19 @@ func GetDeFi(c context.Context, request model.GetRequest) (model.DeFiResult, err
 		Group("platform").
 		Order("count DESC").
 		Scan(&result.List)
+
+	// swap pairs
+	database.Global().
+		Raw(`SELECT metadata::jsonb -> 'from' ->> 'name' AS from,metadata::jsonb -> 'to' ->> 'name' AS to
+			FROM transfers
+			WHERE transaction_hash IN (SELECT hash
+									   FROM "transactions"
+									   WHERE OWNER = ?
+										 AND tag = 'exchange'
+										 AND type = 'swap'
+										 AND DATE_PART('year', TIMESTAMP) = '2022')
+			GROUP BY "from","to"`, request.Address).
+		Scan(&result.SwapPair)
 
 	return result, nil
 }
