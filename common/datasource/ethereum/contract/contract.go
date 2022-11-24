@@ -54,5 +54,13 @@ package contract
 //go:generate abigen --abi ./treaderjoe/router.abi --pkg treaderjoe --type Router --out ./treaderjoe/router.go
 // https://etherscan.io/address/0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7
 //go:generate abigen --abi ./curve/3pool.abi --pkg curve --type ThreePool --out ./curve/3pool.go
+// https://etherscan.io/address/0xd51a44d3fae010294c616388b506acda1bfaae46
+//go:generate abigen --abi ./curve/3pool2.abi --pkg curve --type ThreePool2 --out ./curve/3pool2.go
+// https://etherscan.io/address/0x90E00ACe148ca3b23Ac1bC8C240C2a7Dd9c2d7f5
+//go:generate abigen --abi ./curve/registry.abi --pkg curve --type Registry --out ./curve/registry.go
+// https://etherscan.io/address/0x55B916Ce078eA594c10a874ba67eCc3d62e29822
+//go:generate abigen --abi ./curve/registry_exchange.abi --pkg curve --type RegistryExchange --out ./curve/registry_exchange.go
+// https://etherscan.io/address/0xba12222222228d8ba445958a75a0704d566bf2c8
+//go:generate abigen --abi ./balancer/vault.abi --pkg balancer --type Vault --out ./balancer/vault.go
 // https://polygonscan.com/address/0x581c7db44f2616781c86c331d31c1f09db87a746#code
 //go:generate abigen --abi ./dodo/machine.abi --pkg dodo --type VendingMachine --out ./dodo/machine.go

@@ -14,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/aave"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/balancer"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/curve"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/dodo"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
@@ -159,8 +160,14 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 				internalTokenMap, err = s.handleDODO(ctx, message, *log, tokenMap, ethereumClient)
 			case curve.EventHashAddLiquidity:
 				internalTokenMap, err = s.handleCurve3PoolAddLiquidity(ctx, message, *log, sourceData.Receipt.Logs, tokenMap, ethereumClient)
+			case curve.EventHashRemoveLiquidityOne:
+				internalTokenMap, err = s.handleCurve3PoolRemoveLiquidityOne(ctx, message, *log, sourceData.Receipt.Logs, tokenMap, ethereumClient)
 			case curve.EventHashTokenExchange:
 				internalTokenMap, err = s.handleCurve3PoolTokenExchange(ctx, message, *log, tokenMap, ethereumClient)
+			case curve.EventHashTokenExchange2:
+				internalTokenMap, err = s.handleCurve3PoolTokenExchange2(ctx, message, *log, tokenMap, ethereumClient)
+			case balancer.EventHashSwap:
+				internalTokenMap, err = s.handleBalancerSwap(ctx, message, *log, tokenMap, ethereumClient)
 			case aave.EventHashMint:
 				internalTokenMap, err = s.handleAAVEMint(ctx, message, *log, tokenMap, ethereumClient)
 			case aave.EventHashBurn:
