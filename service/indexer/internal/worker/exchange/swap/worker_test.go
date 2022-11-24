@@ -594,6 +594,50 @@ func Test_service_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "paraswap of curve pool",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x0be55326919f08af4d14a42aafb3b68f95738355", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.com/tx/0x7370e1fc9d69d097cb6775badbe59f3bc523df39cd5e5444aad96423ed11c710
+						Hash:        "0x7370e1fc9d69d097cb6775badbe59f3bc523df39cd5e5444aad96423ed11c710",
+						BlockNumber: 16013952,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Equal(t, len(transactions), 1)
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "3Crv")
+					assert.Equal(t, swap.TokenTo.Symbol, "USDC")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformParaswap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {
@@ -609,6 +653,8 @@ func Test_service_Handle(t *testing.T) {
 
 			filledTransactions, err := ethereum.BuildTransactions(testcase.arguments.ctx, testcase.arguments.message, lo.ToSlicePtr(testcase.arguments.transactions))
 			testcase.wantErr(t, err, "build transactions")
+
+			assert.NotZero(t, len(filledTransactions))
 
 			internalTransactions := make([]model.Transaction, 0, len(filledTransactions))
 
