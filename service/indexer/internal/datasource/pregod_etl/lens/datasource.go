@@ -55,7 +55,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	defer func() { opentelemetry.Log(trace, message, len(internalTransactions), err) }()
 
 	// get profileid by address
-	profileIDList, err := d.lensClient.GetProfiles(ctx, message.Address)
+	profileIDList, err := d.lensClient.BatchGetProfileID(ctx, message.Address)
 	if err != nil {
 		return nil, err
 	}
