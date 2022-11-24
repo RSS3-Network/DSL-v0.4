@@ -13,6 +13,7 @@ type WrappedResult struct {
 	Transaction TxResult     `json:"transaction"`
 	NFT         NFTResult    `json:"nft"`
 	DApp        DAppResult   `json:"dapp"`
+	DeFi        DeFiResult   `json:"defi"`
 }
 
 type SocialResult struct {
@@ -70,5 +71,9 @@ type DAppResult struct {
 
 type DApp struct {
 	Name  string `json:"name"`
-	Count int    `json:"count"`
+	Count int64  `json:"count"`
+}
+
+type DeFiResult struct {
+	List []DApp `json:"list"`
 }

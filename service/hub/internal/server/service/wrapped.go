@@ -41,6 +41,10 @@ func (s *Service) GetWrapped(c context.Context, request model.GetRequest, wrappe
 	if err != nil {
 		return err
 	}
+	wrappedResult.DeFi, err = dao.GetDeFi(c, request)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

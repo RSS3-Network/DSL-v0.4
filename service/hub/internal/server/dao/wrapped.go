@@ -213,7 +213,7 @@ func GetNFT(c context.Context, request model.GetRequest) (model.NFTResult, error
 }
 
 func GetDApp(c context.Context, request model.GetRequest) (model.DAppResult, error) {
-	tracer := otel.Tracer("dao.GetNFT")
+	tracer := otel.Tracer("dao.GetDApp")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
@@ -222,10 +222,34 @@ func GetDApp(c context.Context, request model.GetRequest) (model.DAppResult, err
 
 	var result model.DAppResult
 
-	database.Global().Debug().
+	database.Global().
 		Model(&dbModel.Transaction{}).
 		Select("platform AS name, COUNT(*) AS count").
 		Where("owner = ? ", request.Address).
+		Where("platform != ? ", "").
+		Where("DATE_PART('year', timestamp) = ?", "2022").
+		Group("platform").
+		Order("count DESC").
+		Scan(&result.List)
+
+	return result, nil
+}
+
+func GetDeFi(c context.Context, request model.GetRequest) (model.DeFiResult, error) {
+	tracer := otel.Tracer("dao.GetDeFi")
+	_, postgresSnap := tracer.Start(c, "postgres")
+
+	defer postgresSnap.End()
+
+	request.Address = strings.ToLower(request.Address)
+
+	var result model.DeFiResult
+
+	database.Global().
+		Model(&dbModel.Transaction{}).
+		Select("platform AS name, COUNT(*) AS count").
+		Where("owner = ? ", request.Address).
+		Where("tag = ? ", filter.TagExchange).
 		Where("platform != ? ", "").
 		Where("DATE_PART('year', timestamp) = ?", "2022").
 		Group("platform").
