@@ -2,11 +2,13 @@ package dao
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"go.opentelemetry.io/otel"
 )
@@ -125,7 +127,7 @@ func CountTransaction(c context.Context, request model.GetRequest) (model.TxResu
 	// transactions initiated by the address
 	database.Global().
 		Model(&dbModel.Transaction{}).
-		Select("network, COUNT(*)").
+		Select("network, COUNT(*) as total").
 		Where("address_from = ?", request.Address).
 		Group("network").
 		Scan(&result.Initiate)
@@ -137,6 +139,63 @@ func CountTransaction(c context.Context, request model.GetRequest) (model.TxResu
 		Where("address_to = ?", request.Address).
 		Group("network").
 		Scan(&result.Receive)
+
+	return result, nil
+}
+
+func GetNFT(c context.Context, request model.GetRequest) (model.NFTResult, error) {
+	tracer := otel.Tracer("dao.GetNFT")
+	_, postgresSnap := tracer.Start(c, "postgres")
+
+	defer postgresSnap.End()
+
+	request.Address = strings.ToLower(request.Address)
+	// the where condition for all the queries
+	condition := fmt.Sprintf("WHERE owner = '%s' AND tag = 'collectible' AND type = 'trade' AND DATE_PART('year', timestamp) = '%d'", request.Address, 2022)
+
+	var result model.NFTResult
+
+	var list []model.NFT
+
+	database.Global().
+		Raw(fmt.Sprintf(`SELECT address_from AS from, address_to AS to, metadata, timestamp
+			FROM transfers
+			WHERE transaction_hash IN (SELECT hash
+									   FROM transactions
+									   %s)
+			  AND type = 'trade'
+			  AND address_from = '%s' 
+			ORDER BY timestamp DESC;`, condition, request.Address)).Scan(&list)
+
+	result.Total = len(list)
+
+	for i, current := range list {
+		var nft metadata.Token
+		err := json.Unmarshal(current.Metadata, &nft)
+		if err != nil {
+			continue
+		}
+
+		if current.From == request.Address {
+			result.Sold = append(result.Sold, nft)
+		} else if current.To == request.Address {
+			result.Bought = append(result.Bought, nft)
+		}
+
+		if i == 0 {
+			result.Last = model.NFTSingle{
+				Metadata:  nft,
+				Timestamp: current.Timestamp,
+			}
+		}
+
+		if i == len(list)-1 {
+			result.First = model.NFTSingle{
+				Metadata:  nft,
+				Timestamp: current.Timestamp,
+			}
+		}
+	}
 
 	return result, nil
 }

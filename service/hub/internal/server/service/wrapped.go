@@ -32,5 +32,10 @@ func (s *Service) GetWrapped(c context.Context, request model.GetRequest, wrappe
 		return err
 	}
 
+	wrappedResult.NFT, err = dao.GetNFT(c, request)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

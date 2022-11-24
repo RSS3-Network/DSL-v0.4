@@ -1,10 +1,17 @@
 package model
 
+import (
+	"encoding/json"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"time"
+)
+
 type WrappedResult struct {
 	Social      SocialResult `json:"social"`
 	Search      SearchResult `json:"search"`
 	Gas         GasResult    `json:"gas"`
 	Transaction TxResult     `json:"transaction"`
+	NFT         NFTResult    `json:"nft"`
 }
 
 type SocialResult struct {
@@ -32,5 +39,25 @@ type TxResult struct {
 
 type NetworkCount struct {
 	Network string `json:"network"`
-	Count   int64  `json:"count"`
+	Total   int64  `json:"total"`
+}
+
+type NFTResult struct {
+	Bought []metadata.Token `json:"bought"`
+	Sold   []metadata.Token `json:"sold"`
+	Total  int              `json:"total"`
+	First  NFTSingle        `json:"first"`
+	Last   NFTSingle        `json:"last"`
+}
+
+type NFT struct {
+	Metadata  json.RawMessage `json:"metadata"`
+	From      string          `json:"from"`
+	To        string          `json:"to"`
+	Timestamp time.Time       `json:"timestamp"`
+}
+
+type NFTSingle struct {
+	Metadata  metadata.Token `json:"metadata"`
+	Timestamp time.Time      `json:"timestamp"`
 }
