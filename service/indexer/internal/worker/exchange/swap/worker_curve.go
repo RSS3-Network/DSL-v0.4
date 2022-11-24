@@ -83,6 +83,8 @@ func (s *service) handleCurve3PoolAddLiquidity(ctx context.Context, message *pro
 							zap.Stringer("token_from", tokenFrom), zap.Stringer("token_from_value", amount),
 							zap.Stringer("token_to", tokenTo), zap.Stringer("token_to_value", eventTransfer.Value),
 						)
+
+						break
 					}
 				}
 			}
