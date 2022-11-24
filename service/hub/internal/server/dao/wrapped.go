@@ -127,15 +127,15 @@ func CountTransaction(c context.Context, request model.GetRequest) (model.TxResu
 	// transactions initiated by the address
 	database.Global().
 		Model(&dbModel.Transaction{}).
-		Select("network, COUNT(*) as total").
+		Select("network, COUNT(*) AS total").
 		Where("address_from = ?", request.Address).
 		Group("network").
 		Scan(&result.Initiate)
 
 	// transactions received by the address
-	database.Global().
+	database.Global().Debug().
 		Model(&dbModel.Transaction{}).
-		Select("network, COUNT(*)").
+		Select("network, COUNT(*) AS total").
 		Where("address_to = ?", request.Address).
 		Group("network").
 		Scan(&result.Receive)
