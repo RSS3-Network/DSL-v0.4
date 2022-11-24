@@ -145,7 +145,7 @@ func Test_worker_Handle(t *testing.T) {
 
 			assert.NotEmpty(t, worker.Name(), "worker name")
 			assert.NotEmpty(t, worker.Networks(), "worker networks")
-			assert.Empty(t, worker.Jobs(), "worker jobs")
+			assert.NotEmpty(t, worker.Jobs(), "worker jobs")
 
 			assert.NoError(t, worker.Initialize(testcase.arguments.ctx), "initialize worker")
 
