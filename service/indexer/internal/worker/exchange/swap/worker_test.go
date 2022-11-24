@@ -638,6 +638,50 @@ func Test_service_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "balancer swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 Developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0x20b7cc317ba1a44a83d34aa0258623c598592e025541fafb7efb0295a4799418
+						Hash:        "0x20b7cc317ba1a44a83d34aa0258623c598592e025541fafb7efb0295a4799418",
+						BlockNumber: 36002196,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Equal(t, len(transactions), 1)
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "WMATIC")
+					assert.Equal(t, swap.TokenTo.Symbol, "USDC")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformBalancer)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {

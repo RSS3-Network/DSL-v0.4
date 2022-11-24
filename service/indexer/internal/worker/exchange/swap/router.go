@@ -3,6 +3,7 @@ package swap
 import (
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/balancer"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/treaderjoe"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
@@ -128,6 +129,11 @@ var (
 		Protocol: "Curve Fi",
 	}
 
+	balancerSwap = Router{
+		Name:     protocol.PlatformBalancer,
+		Protocol: "Balancer",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -208,5 +214,7 @@ var (
 		strings.ToLower("0x16243caB3aC4d8eE8df7660a525F7F7539962468"): curveQuickSwap, // Fantom
 		strings.ToLower("0x890f4e345B1dAED0367A877a1612f86A1f86985f"): curveQuickSwap, // Avalanche
 		strings.ToLower("0xE6358f6a45B502477e83CC1CDa759f540E4459ee"): curveQuickSwap, // Gnosis
+		// Balancer
+		strings.ToLower(balancer.AddressVault.String()): balancerSwap,
 	}
 )
