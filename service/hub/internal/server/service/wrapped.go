@@ -27,5 +27,10 @@ func (s *Service) GetWrapped(c context.Context, request model.GetRequest, wrappe
 		return err
 	}
 
+	wrappedResult.Transaction, err = dao.CountTransaction(c, request)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

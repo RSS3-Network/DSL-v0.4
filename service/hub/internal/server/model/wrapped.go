@@ -1,9 +1,10 @@
 package model
 
 type WrappedResult struct {
-	Social SocialResult `json:"social"`
-	Search SearchResult `json:"search"`
-	Gas    GasResult    `json:"gas"`
+	Social      SocialResult `json:"social"`
+	Search      SearchResult `json:"search"`
+	Gas         GasResult    `json:"gas"`
+	Transaction TxResult     `json:"transaction"`
 }
 
 type SocialResult struct {
@@ -22,4 +23,14 @@ type GasResult struct {
 	Total       string `json:"total"`
 	Highest     string `json:"highest"`
 	HighestHash string `json:"highest_hash"`
+}
+
+type TxResult struct {
+	Initiate []NetworkCount `json:"initiated"`
+	Receive  []NetworkCount `json:"received"`
+}
+
+type NetworkCount struct {
+	Network string `json:"network"`
+	Count   int64  `json:"count"`
 }

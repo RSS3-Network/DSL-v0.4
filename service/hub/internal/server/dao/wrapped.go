@@ -62,7 +62,7 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 }
 
 func CountSearch(c context.Context, request model.GetRequest) (model.SearchResult, error) {
-	tracer := otel.Tracer("dao.CountSocial")
+	tracer := otel.Tracer("dao.CountSearch")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
@@ -82,7 +82,7 @@ func CountSearch(c context.Context, request model.GetRequest) (model.SearchResul
 }
 
 func CountGas(c context.Context, request model.GetRequest) (model.GasResult, error) {
-	tracer := otel.Tracer("dao.CountSocial")
+	tracer := otel.Tracer("dao.CountGas")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
@@ -108,6 +108,35 @@ func CountGas(c context.Context, request model.GetRequest) (model.GasResult, err
 		Order("fee::NUMERIC DESC").
 		Limit(1).
 		Scan(&result)
+
+	return result, nil
+}
+
+func CountTransaction(c context.Context, request model.GetRequest) (model.TxResult, error) {
+	tracer := otel.Tracer("dao.CountTransaction")
+	_, postgresSnap := tracer.Start(c, "postgres")
+
+	defer postgresSnap.End()
+
+	request.Address = strings.ToLower(request.Address)
+
+	var result model.TxResult
+
+	// transactions initiated by the address
+	database.Global().
+		Model(&dbModel.Transaction{}).
+		Select("network, COUNT(*)").
+		Where("address_from = ?", request.Address).
+		Group("network").
+		Scan(&result.Initiate)
+
+	// transactions received by the address
+	database.Global().
+		Model(&dbModel.Transaction{}).
+		Select("network, COUNT(*)").
+		Where("address_to = ?", request.Address).
+		Group("network").
+		Scan(&result.Receive)
 
 	return result, nil
 }
