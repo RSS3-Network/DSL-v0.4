@@ -560,7 +560,7 @@ func Test_service_Handle(t *testing.T) {
 			arguments: arguments{
 				ctx: context.Background(),
 				message: &protocol.Message{
-					Address: "0x934B510D4C9103E6a87AEf13b816fb080286D649", // sujiyan.eth
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // Unknown
 					Network: protocol.NetworkPolygon,
 				},
 				transactions: []model.Transaction{
