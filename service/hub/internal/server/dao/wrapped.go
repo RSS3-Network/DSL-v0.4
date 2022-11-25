@@ -269,5 +269,43 @@ func GetDeFi(c context.Context, request model.GetRequest) (model.DeFiResult, err
 			GROUP BY "from","to"`, request.Address).
 		Scan(&result.SwapPair)
 
+	var jsonResult []json.RawMessage
+	// liquidity
+	database.Global().
+		Raw(`select metadata
+			FROM transfers
+			WHERE transaction_hash IN (SELECT hash
+									   FROM "transactions"
+									   WHERE OWNER = ?
+										 AND tag = 'exchange'
+										 AND type = 'liquidity'
+										 AND DATE_PART('year', TIMESTAMP) = '2022')`, request.Address).
+		Scan(&jsonResult)
+
+	for _, m := range jsonResult {
+		var current metadata.Liquidity
+		err := json.Unmarshal(m, &current)
+		if err != nil {
+			continue
+		}
+
+		switch current.Action {
+		case "add":
+			result.Liquidity.Add = append(result.Liquidity.Add, current.Tokens...)
+		case "remove":
+			result.Liquidity.Remove = append(result.Liquidity.Remove, current.Tokens...)
+		case "supply":
+			result.Liquidity.Supply = append(result.Liquidity.Supply, current.Tokens...)
+		case "withdraw":
+			result.Liquidity.Withdraw = append(result.Liquidity.Withdraw, current.Tokens...)
+		case "borrow":
+			result.Liquidity.Borrow = append(result.Liquidity.Borrow, current.Tokens...)
+		case "repay":
+			result.Liquidity.Repay = append(result.Liquidity.Repay, current.Tokens...)
+		case "collect":
+			result.Liquidity.Collect = append(result.Liquidity.Collect, current.Tokens...)
+		}
+	}
+
 	return result, nil
 }

@@ -79,10 +79,20 @@ type DeFiResult struct {
 	List      []DApp           `json:"list"`
 	SwapPair  []SwapPair       `json:"swap_pair"`
 	Bridge    []metadata.Token `json:"bridge"`
-	Liquidity []metadata.Token `json:"liquidity"`
+	Liquidity Liquidity        `json:"liquidity"`
 }
 
 type SwapPair struct {
 	From string `json:"from"`
 	To   string `json:"to"`
+}
+
+type Liquidity struct {
+	Add      []metadata.Token `json:"add"`
+	Remove   []metadata.Token `json:"remove"`
+	Supply   []metadata.Token `json:"supply"`
+	Withdraw []metadata.Token `json:"withdraw"`
+	Borrow   []metadata.Token `json:"borrow"`
+	Repay    []metadata.Token `json:"repay"`
+	Collect  []metadata.Token `json:"collect"`
 }
