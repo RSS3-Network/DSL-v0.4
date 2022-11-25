@@ -10,6 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+
+	"go.uber.org/zap"
 )
 
 func (s *service) handleUniswapV2(ctx context.Context, message *protocol.Message, log types.Log, tokenMap map[common.Address]*big.Int, ethereumClient *ethclient.Client) (map[common.Address]*big.Int, error) {
@@ -47,10 +49,24 @@ func (s *service) handleUniswapV2(ctx context.Context, message *protocol.Message
 		// Swap token0 to token1
 		tokenMap[token0] = token0Value.Sub(token0Value, event.Amount0In)
 		tokenMap[token1] = token1Value.Add(token1Value, event.Amount1Out)
+
+		zap.L().Debug(
+			"swap by swap in uniswap v2",
+			zap.Stringer("transaction_hash", log.TxHash), zap.String("network", message.Network),
+			zap.Stringer("token_from", token0), zap.Stringer("token_from_value", event.Amount0In),
+			zap.Stringer("token_to", token1), zap.Stringer("token_to_value", event.Amount1Out),
+		)
 	} else {
 		// Swap token1 to token0
 		tokenMap[token0] = token0Value.Add(token0Value, event.Amount0Out)
 		tokenMap[token1] = token1Value.Sub(token1Value, event.Amount1In)
+
+		zap.L().Debug(
+			"swap by swap in uniswap v2",
+			zap.Stringer("transaction_hash", log.TxHash), zap.String("network", message.Network),
+			zap.Stringer("token_from", token1), zap.Stringer("token_from_value", event.Amount1In),
+			zap.Stringer("token_to", token0), zap.Stringer("token_to_value", event.Amount0Out),
+		)
 	}
 
 	return tokenMap, nil
@@ -85,6 +101,22 @@ func (s *service) handleUniswapV3(ctx context.Context, message *protocol.Message
 	token1Value, exist := tokenMap[token1]
 	if !exist {
 		token1Value = big.NewInt(0)
+	}
+
+	if event.Amount0.Cmp(big.NewInt(0)) == 1 {
+		zap.L().Debug(
+			"swap by swap in uniswap v3",
+			zap.Stringer("transaction_hash", log.TxHash), zap.String("network", message.Network),
+			zap.Stringer("token_from", token0), zap.Stringer("token_from_value", event.Amount0),
+			zap.Stringer("token_to", token1), zap.Stringer("token_to_value", event.Amount1),
+		)
+	} else {
+		zap.L().Debug(
+			"swap by swap in uniswap v3",
+			zap.Stringer("transaction_hash", log.TxHash), zap.String("network", message.Network),
+			zap.Stringer("token_from", token1), zap.Stringer("token_from_value", event.Amount1),
+			zap.Stringer("token_to", token0), zap.Stringer("token_to_value", event.Amount0),
+		)
 	}
 
 	tokenMap[token0] = token0Value.Sub(token0Value, event.Amount0)

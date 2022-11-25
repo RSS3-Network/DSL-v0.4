@@ -17,4 +17,7 @@ var (
 	EventHashBorrowV3   = common.BytesToHash(crypto.Keccak256([]byte("Borrow(address,address,address,uint256,uint8,uint256,uint16)")))
 	EventHashRepayV3    = common.BytesToHash(crypto.Keccak256([]byte("Repay(address,address,address,uint256,bool)")))
 	EventHashWithdrawV3 = common.BytesToHash(crypto.Keccak256([]byte("Withdraw(address,address,address,uint256)")))
+
+	EventHashMint = crypto.Keccak256Hash([]byte("Mint(address,uint256,uint256)"))
+	EventHashBurn = crypto.Keccak256Hash([]byte("Burn(address,address,uint256,uint256)"))
 )

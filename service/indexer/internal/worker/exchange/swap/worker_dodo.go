@@ -10,6 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/dodo"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+
+	"go.uber.org/zap"
 )
 
 func (s *service) handleDODO(ctx context.Context, message *protocol.Message, log types.Log, tokenMap map[common.Address]*big.Int, ethereumClient *ethclient.Client) (map[common.Address]*big.Int, error) {
@@ -35,6 +37,13 @@ func (s *service) handleDODO(ctx context.Context, message *protocol.Message, log
 
 	tokenMap[event.FromToken] = token0Value.Sub(token0Value, event.FromAmount)
 	tokenMap[event.ToToken] = token1Value.Add(token1Value, event.ToAmount)
+
+	zap.L().Debug(
+		"swap by swap in dodo",
+		zap.Stringer("transaction_hash", log.TxHash), zap.String("network", message.Network),
+		zap.Stringer("token_from", event.FromToken), zap.Stringer("token_from_value", event.FromAmount),
+		zap.Stringer("token_to", event.ToToken), zap.Stringer("token_to_value", event.ToAmount),
+	)
 
 	return tokenMap, nil
 }
