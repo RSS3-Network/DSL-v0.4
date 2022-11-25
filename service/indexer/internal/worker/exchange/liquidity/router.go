@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lido"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/polygon"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
@@ -72,7 +71,5 @@ var (
 		// Lido
 		strings.ToLower(lido.AddressETH.String()):   routerLido, // Lido stETH Proxy
 		strings.ToLower(lido.AddressMatic.String()): routerLido, // Lido stMATIC Proxy
-		// Polygon Staking
-		strings.ToLower(polygon.AddressStakingValidatorShare.String()): routerPolygon, // Polygon Staking Validator Share Proxy
 	}
 )
