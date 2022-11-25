@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
@@ -110,12 +111,15 @@ func (c *Client) BatchGetProfiles(ctx context.Context, address string) ([]*socia
 		return nil, err
 	}
 
-	profiles := lop.Map(profileIDs, func(profileID *big.Int, i int) *social.Profile {
+	var profiles []*social.Profile
+	var mutex sync.Mutex
+
+	lop.ForEach(profileIDs, func(profileID *big.Int, i int) {
 		result, err := lensHubContract.GetProfile(&bind.CallOpts{}, profileID)
 		if err != nil {
 			loggerx.Global().Error("lens hubContract GetProfile error", zap.String("id", profileID.String()), zap.Error(err))
 
-			return nil
+			return
 		}
 
 		profile := &social.Profile{
@@ -129,7 +133,9 @@ func (c *Client) BatchGetProfiles(ctx context.Context, address string) ([]*socia
 			ProfileUris: []string{ipfs.GetDirectURL(result.ImageURI)},
 		}
 
-		return profile
+		mutex.Lock()
+		profiles = append(profiles, profile)
+		mutex.Unlock()
 	})
 
 	return profiles, nil
