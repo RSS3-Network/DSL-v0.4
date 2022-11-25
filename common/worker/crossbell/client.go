@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"sync"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -52,10 +51,7 @@ func (c *Client) GetProfile(address string) ([]*social.Profile, error) {
 		return nil, err
 	}
 
-	var result []*social.Profile
-	var mutex sync.Mutex
-
-	lop.ForEach(profiles.List, func(crossbell ProfileResponse, i int) {
+	result := lop.Map(profiles.List, func(crossbell ProfileResponse, i int) *social.Profile {
 		profile := &social.Profile{
 			Address:  address,
 			Network:  protocol.NetworkCrossbell,
@@ -68,28 +64,28 @@ func (c *Client) GetProfile(address string) ([]*social.Profile, error) {
 		if err != nil {
 			logrus.Errorf("[common] crossbell: ipfs.GetFileByURL err, %v, uri: %v", err, crossbell.URI)
 
-			return
+			return nil
 		}
 
 		var metadata *metadata.Token
 		if err := json.Unmarshal(content, &metadata); err != nil {
 			logrus.Errorf("[common] crossbell: json.Unmarshal err, %v, uri: %v", err, crossbell.URI)
 
-			return
+			return nil
 		}
 
 		if len(metadata.Image) > 0 {
 			profile.Name = metadata.Name
 			profile.ProfileUris = []string{ipfs.GetDirectURL(metadata.Image)}
-			result = append(result, profile)
-			return
+
+			return profile
 		}
 
 		var crossbellProfile *CrossbellProfileStruct
 		if err := json.Unmarshal(content, &crossbellProfile); err != nil {
 			logrus.Errorf("[common] crossbell: json.Unmarshal err, %v, uri: %v", err, crossbell.URI)
 
-			return
+			return nil
 		}
 
 		profile.Name = crossbellProfile.Name
@@ -98,9 +94,7 @@ func (c *Client) GetProfile(address string) ([]*social.Profile, error) {
 			profile.ProfileUris = append(profile.ProfileUris, ipfs.GetDirectURL(avatar))
 		}
 
-		mutex.Lock()
-		result = append(result, profile)
-		mutex.Unlock()
+		return profile
 	})
 
 	return result, nil
