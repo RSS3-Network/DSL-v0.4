@@ -13,13 +13,13 @@ import (
 )
 
 // getProfiles get profile data from database
-func GetProfiles(c context.Context, request model.GetRequest) ([]social.Profile, error) {
+func GetProfiles(c context.Context, request model.GetRequest) ([]*social.Profile, error) {
 	tracer := otel.Tracer("getProfiles")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
-	dbResult := make([]social.Profile, 0)
+	dbResult := make([]*social.Profile, 0)
 
 	sql := database.Global().Model(&social.Profile{}).Where("LOWER(address) = ? ",
 		strings.ToLower(request.Address),
@@ -51,13 +51,13 @@ func GetProfiles(c context.Context, request model.GetRequest) ([]social.Profile,
 }
 
 // batchGetProfiles get profile data from database
-func BatchGetProfiles(c context.Context, request model.BatchGetProfilesRequest) ([]social.Profile, error) {
+func BatchGetProfiles(c context.Context, request model.BatchGetProfilesRequest) ([]*social.Profile, error) {
 	tracer := otel.Tracer("batchGetProfiles")
 	_, postgresSnap := tracer.Start(c, "postgres")
 
 	defer postgresSnap.End()
 
-	dbResult := make([]social.Profile, 0)
+	dbResult := make([]*social.Profile, 0)
 
 	if len(request.Address) > model.DefaultLimit {
 		request.Address = request.Address[:model.DefaultLimit]
@@ -90,7 +90,7 @@ func BatchGetProfiles(c context.Context, request model.BatchGetProfilesRequest) 
 	return dbResult, nil
 }
 
-func UpsertProfiles(c context.Context, profiles []social.Profile) {
+func UpsertProfiles(c context.Context, profiles []*social.Profile) {
 	err := database.Global().Model(&social.Profile{}).
 		Clauses(clause.OnConflict{
 			UpdateAll: true,

@@ -13,9 +13,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/cache"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/datasource/iqwiki/graphql"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
-	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/iqwiki/graphql"
 	"go.uber.org/zap"
 )
 

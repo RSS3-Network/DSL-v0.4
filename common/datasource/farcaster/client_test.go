@@ -2,7 +2,7 @@ package farcaster_test
 
 import (
 	"context"
-	"github.com/naturalselectionlabs/pregod/common/worker/farcaster"
+	"github.com/naturalselectionlabs/pregod/common/datasource/farcaster"
 	"testing"
 )
 
