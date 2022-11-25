@@ -13,6 +13,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/aave"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/balancer"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/curve"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/dodo"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
@@ -140,14 +143,6 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 
 	tokenMap := map[common.Address]*big.Int{}
 
-	for _, transfer := range transaction.Transfers {
-		if transfer.Index == protocol.IndexVirtual {
-			internalTransfers = append(internalTransfers, transfer)
-
-			break
-		}
-	}
-
 	var sourceData ethereum.SourceData
 	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal source data: %w", err)
@@ -163,6 +158,20 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 				internalTokenMap, err = s.handleUniswapV3(ctx, message, *log, tokenMap, ethereumClient)
 			case dodo.EventHashDODOSwap:
 				internalTokenMap, err = s.handleDODO(ctx, message, *log, tokenMap, ethereumClient)
+			case curve.EventHashAddLiquidity:
+				internalTokenMap, err = s.handleCurve3PoolAddLiquidity(ctx, message, *log, sourceData.Receipt.Logs, tokenMap, ethereumClient)
+			case curve.EventHashRemoveLiquidityOne:
+				internalTokenMap, err = s.handleCurve3PoolRemoveLiquidityOne(ctx, message, *log, sourceData.Receipt.Logs, tokenMap, ethereumClient)
+			case curve.EventHashTokenExchange:
+				internalTokenMap, err = s.handleCurve3PoolTokenExchange(ctx, message, *log, tokenMap, ethereumClient)
+			case curve.EventHashTokenExchange2:
+				internalTokenMap, err = s.handleCurve3PoolTokenExchange2(ctx, message, *log, tokenMap, ethereumClient)
+			case balancer.EventHashSwap:
+				internalTokenMap, err = s.handleBalancerSwap(ctx, message, *log, tokenMap, ethereumClient)
+			case aave.EventHashMint:
+				internalTokenMap, err = s.handleAAVEMint(ctx, message, *log, tokenMap, ethereumClient)
+			case aave.EventHashBurn:
+				internalTokenMap, err = s.handleAAVEBurn(ctx, message, *log, tokenMap, ethereumClient)
 			default:
 				continue
 			}
