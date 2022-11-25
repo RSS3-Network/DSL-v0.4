@@ -9,6 +9,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	bridge "github.com/naturalselectionlabs/pregod/common/database/model/transaction"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"go.opentelemetry.io/otel"
@@ -245,6 +246,7 @@ func GetDeFi(c context.Context, request model.GetRequest) (model.DeFiResult, err
 
 	var result model.DeFiResult
 
+	// DeFi platform list
 	database.Global().
 		Model(&dbModel.Transaction{}).
 		Select("platform AS name, COUNT(*) AS count").
@@ -254,7 +256,7 @@ func GetDeFi(c context.Context, request model.GetRequest) (model.DeFiResult, err
 		Where("DATE_PART('year', timestamp) = ?", "2022").
 		Group("platform").
 		Order("count DESC").
-		Scan(&result.List)
+		Scan(&result.PlatformList)
 
 	// swap pairs
 	database.Global().
@@ -269,8 +271,8 @@ func GetDeFi(c context.Context, request model.GetRequest) (model.DeFiResult, err
 			GROUP BY "from","to"`, request.Address).
 		Scan(&result.SwapPair)
 
-	var jsonResult []json.RawMessage
-	// liquidity
+	// liquidity actions
+	var liquidityJson []json.RawMessage
 	database.Global().
 		Raw(`select metadata
 			FROM transfers
@@ -280,9 +282,9 @@ func GetDeFi(c context.Context, request model.GetRequest) (model.DeFiResult, err
 										 AND tag = 'exchange'
 										 AND type = 'liquidity'
 										 AND DATE_PART('year', TIMESTAMP) = '2022')`, request.Address).
-		Scan(&jsonResult)
+		Scan(&liquidityJson)
 
-	for _, m := range jsonResult {
+	for _, m := range liquidityJson {
 		var current metadata.Liquidity
 		err := json.Unmarshal(m, &current)
 		if err != nil {
@@ -305,6 +307,28 @@ func GetDeFi(c context.Context, request model.GetRequest) (model.DeFiResult, err
 		case "collect":
 			result.Liquidity.Collect = append(result.Liquidity.Collect, current.Tokens...)
 		}
+	}
+
+	// bridge actions
+	var bridgeJson []json.RawMessage
+	database.Global().
+		Raw(`select metadata
+			FROM transfers
+			WHERE transaction_hash IN (SELECT hash
+									   FROM "transactions"
+									   WHERE OWNER = ?
+										 AND tag = 'transaction'
+										 AND type = 'bridge'
+										 AND DATE_PART('year', TIMESTAMP) = '2022')`, request.Address).
+		Scan(&bridgeJson)
+
+	for _, m := range bridgeJson {
+		var current bridge.Bridge
+		err := json.Unmarshal(m, &current)
+		if err != nil {
+			continue
+		}
+		result.Bridge = append(result.Bridge, current)
 	}
 
 	return result, nil

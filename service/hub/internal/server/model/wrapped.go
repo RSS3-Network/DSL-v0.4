@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	bridge "github.com/naturalselectionlabs/pregod/common/database/model/transaction"
 )
 
 type WrappedResult struct {
@@ -76,10 +77,10 @@ type DApp struct {
 }
 
 type DeFiResult struct {
-	List      []DApp           `json:"list"`
-	SwapPair  []SwapPair       `json:"swap_pair"`
-	Bridge    []metadata.Token `json:"bridge"`
-	Liquidity Liquidity        `json:"liquidity"`
+	PlatformList []DApp          `json:"platform_list"`
+	SwapPair     []SwapPair      `json:"swap_pair"`
+	Bridge       []bridge.Bridge `json:"bridge"`
+	Liquidity    Liquidity       `json:"liquidity"`
 }
 
 type SwapPair struct {
