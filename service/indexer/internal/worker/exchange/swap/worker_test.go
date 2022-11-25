@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -15,6 +16,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
+
+	"go.uber.org/zap"
 )
 
 var once sync.Once
@@ -22,6 +25,14 @@ var once sync.Once
 func initialize(t *testing.T) {
 	once.Do(func() {
 		config.Initialize()
+
+		cacheClient, err := cache.Dial(config.ConfigIndexer.Redis)
+		assert.NoError(t, err)
+
+		cache.ReplaceGlobal(cacheClient)
+
+		logger, _ := zap.NewDevelopment()
+		zap.ReplaceGlobals(logger)
 
 		ethereumClientMap, err := ethclientx.Dial(config.ConfigIndexer.RPC, protocol.EthclientNetworks)
 		assert.NoError(t, err)
@@ -469,6 +480,50 @@ func Test_service_Handle(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "velodrome swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkOptimism,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://optimistic.etherscan.io/tx/0x0eb28959b6a057e273b0b0797596888fe9d59a041a3061c0cb030b0bae6e0597
+						Hash:        "0x0eb28959b6a057e273b0b0797596888fe9d59a041a3061c0cb030b0bae6e0597",
+						BlockNumber: 41686215,
+						Network:     protocol.NetworkOptimism,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+				transaction := transactions[0]
+
+				assert.Equal(t, transaction.Platform, protocol.PlatformVelodrome)
+
+				assert.Len(t, transaction.Transfers, 1)
+				transfer := transaction.Transfers[0]
+
+				var swap metadata.Swap
+				assert.NoError(t, json.Unmarshal(transfer.Metadata, &swap))
+
+				assert.Equal(t, swap.TokenFrom.Symbol, "OP")
+				assert.Equal(t, swap.TokenTo.Symbol, "VELO")
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "curve swap of frax",
 			fields: fields{
 				employer: shedlock.New(),
@@ -632,6 +687,50 @@ func Test_service_Handle(t *testing.T) {
 					assert.Equal(t, swap.TokenTo.Symbol, "USDC")
 
 					assert.Equal(t, transaction.Platform, protocol.PlatformParaswap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "balancer swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 Developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0x20b7cc317ba1a44a83d34aa0258623c598592e025541fafb7efb0295a4799418
+						Hash:        "0x20b7cc317ba1a44a83d34aa0258623c598592e025541fafb7efb0295a4799418",
+						BlockNumber: 36002196,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Equal(t, len(transactions), 1)
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "WMATIC")
+					assert.Equal(t, swap.TokenTo.Symbol, "USDC")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformBalancer)
 				}
 
 				return false

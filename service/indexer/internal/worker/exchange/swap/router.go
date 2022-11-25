@@ -3,6 +3,7 @@ package swap
 import (
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/balancer"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/treaderjoe"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
@@ -123,9 +124,19 @@ var (
 		Protocol: "DODO V2",
 	}
 
+	velodromeSwap = Router{
+		Name:     protocol.PlatformVelodrome,
+		Protocol: "Velodrome",
+	}
+
 	curveQuickSwap = Router{
 		Name:     protocol.PlatformCurve,
 		Protocol: "Curve Fi",
+	}
+
+	balancerSwap = Router{
+		Name:     protocol.PlatformBalancer,
+		Protocol: "Balancer",
 	}
 
 	routerMap = map[string]Router{
@@ -202,11 +213,16 @@ var (
 		strings.ToLower("0x2cD18557E14aF72DAA8090BcAA95b231ffC9ea26"): dodoV2, // DODO V2 RouteProxy Avalanche 2
 		strings.ToLower("0x7950dc01542efe1c03aea610472e3b565b53f64a"): dodoV2, // DODO V2 RouteProxy Optimism
 		strings.ToLower("0xfD9D2827AD469B72B69329dAA325ba7AfbDb3C98"): dodoV2, // DODO V2 RouteProxy Optimism 2
+		// Velodrome
+		// https://docs.velodrome.finance/security#contract-addresses
+		strings.ToLower("0x9c12939390052919aF3155f41Bf4160Fd3666A6f"): velodromeSwap, // Velodrome Router
 		// Curve QuickSwap
 		strings.ToLower("0x55B916Ce078eA594c10a874ba67eCc3d62e29822"): curveQuickSwap, // Ethereum
 		strings.ToLower("0xa522deb6F17853F3a97a65d0972a50bDC3B1AFFF"): curveQuickSwap, // Polygon
 		strings.ToLower("0x16243caB3aC4d8eE8df7660a525F7F7539962468"): curveQuickSwap, // Fantom
 		strings.ToLower("0x890f4e345B1dAED0367A877a1612f86A1f86985f"): curveQuickSwap, // Avalanche
 		strings.ToLower("0xE6358f6a45B502477e83CC1CDa759f540E4459ee"): curveQuickSwap, // Gnosis
+		// Balancer
+		strings.ToLower(balancer.AddressVault.String()): balancerSwap,
 	}
 )
