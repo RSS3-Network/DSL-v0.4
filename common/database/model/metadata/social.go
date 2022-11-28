@@ -22,3 +22,10 @@ type Media struct {
 	Address  string `json:"address"`
 	MimeType string `json:"mime_type"`
 }
+
+type Curation struct {
+	Article Post   `json:"article"`
+	Reward  Token  `json:"reward"`
+	From    string `json:"from"`
+	To      string `json:"to"`
+}

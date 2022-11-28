@@ -44,6 +44,7 @@ const (
 	SocialLike     string = "like"
 	SocialMint     string = "mint"
 	SocialWiki     string = "wiki"
+	SocialReward   string = "reward"
 
 	// sub-types for Social-Profile
 	SocialCreate string = "create"
@@ -96,6 +97,7 @@ var ValidTypeMap = map[string][]string{
 		SocialUnfollow,
 		SocialLike,
 		SocialWiki,
+		SocialReward,
 	},
 	TagDonation: {
 		DonationLaunch,
