@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
+
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 )
 
 func (s *Service) GetWrapped(c context.Context, request model.GetRequest, wrappedResult *model.WrappedResult) error {
-
 	var err error
 	wrappedResult.Social, err = dao.CountSocial(c, request)
 	if err != nil {
@@ -20,7 +20,7 @@ func (s *Service) GetWrapped(c context.Context, request model.GetRequest, wrappe
 	}
 
 	// multiple search counts
-	wrappedResult.Search.Count = wrappedResult.Search.Count * 4
+	wrappedResult.Search.Count *= wrappedResult.Search.Count
 
 	wrappedResult.Gas, err = dao.CountGas(c, request)
 	if err != nil {

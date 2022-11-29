@@ -1,10 +1,11 @@
 package handler
 
 import (
-	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
+
 	"go.opentelemetry.io/otel"
 )
 
