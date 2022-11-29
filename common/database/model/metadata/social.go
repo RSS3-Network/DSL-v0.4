@@ -14,6 +14,8 @@ type Post struct {
 	Target         *Post    `json:"target,omitempty"`
 	TargetURL      string   `json:"target_url,omitempty"`
 	OriginNoteID   string   `json:"origin_note_id,omitempty"`
+	Categories     []string `json:"categories,omitempty"`
+	Tags           []string `json:"tags,omitempty"`
 }
 
 type Media struct {

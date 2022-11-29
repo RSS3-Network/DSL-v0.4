@@ -60,16 +60,60 @@ const (
 	// metaverse type
 	MetaverseMint     string = "mint"
 	MetaverseTransfer string = "transfer"
+	MetaverseTrade    string = "trade"
+	MetaverseGift     string = "gift"
+	MetaverseList     string = "list"
+	MetaverseUnlist   string = "unlist"
+	MetaverseClaim    string = "claim"
 )
 
 var ValidTypeMap = map[string][]string{
-	TagTransaction: {TransactionTransfer, TransactionBridge, TransactionMint, TransactionBurn},
-	TagExchange:    {ExchangeWithdraw, ExchangeDeposit, ExchangeSwap, ExchangeLiquidity},
-	TagCollectible: {CollectibleTransfer, CollectibleMint, CollectibleBurn, CollectiblePoap},
-	TagSocial:      {SocialPost, SocialRevise, SocialComment, SocialShare, SocialProfile, SocialFollow, SocialUnfollow, SocialLike, SocialWiki},
-	TagDonation:    {DonationLaunch, DonationDonate},
-	TagGovernance:  {GovernancePropose, GovernanceVote},
-	TagMetaverse:   {MetaverseMint, MetaverseTransfer},
+	TagTransaction: {
+		TransactionTransfer,
+		TransactionBridge,
+		TransactionMint,
+		TransactionBurn,
+	},
+	TagExchange: {
+		ExchangeWithdraw,
+		ExchangeDeposit,
+		ExchangeSwap,
+		ExchangeLiquidity,
+	},
+	TagCollectible: {
+		CollectibleTransfer,
+		CollectibleMint,
+		CollectibleBurn,
+		CollectiblePoap,
+	},
+	TagSocial: {
+		SocialPost,
+		SocialRevise,
+		SocialComment,
+		SocialShare,
+		SocialProfile,
+		SocialFollow,
+		SocialUnfollow,
+		SocialLike,
+		SocialWiki,
+	},
+	TagDonation: {
+		DonationLaunch,
+		DonationDonate,
+	},
+	TagGovernance: {
+		GovernancePropose,
+		GovernanceVote,
+	},
+	TagMetaverse: {
+		MetaverseMint,
+		MetaverseTransfer,
+		MetaverseTrade,
+		MetaverseGift,
+		MetaverseList,
+		MetaverseUnlist,
+		MetaverseClaim,
+	},
 }
 
 func CheckTypeValid(tag string, transferType string) bool {

@@ -17,16 +17,17 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/iqwiki"
+	iqwiki_contract "github.com/naturalselectionlabs/pregod/common/datasource/iqwiki/contract"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/datasource/iqwiki/graphql"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	"github.com/naturalselectionlabs/pregod/common/worker/iqwiki"
-	iqwiki_contract "github.com/naturalselectionlabs/pregod/common/worker/iqwiki/contract"
-	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/iqwiki/graphql"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/ratelimit"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -61,6 +62,8 @@ func (s *service) Run() error {
 	loggerx.Global().Info("iqwiki_crawler start to get db data")
 	s.GetAddressCastNumFromDb()
 
+	rl := ratelimit.New(5, ratelimit.Per(time.Minute))
+
 	for {
 
 		iqCacheMap := iqwiki.Global()
@@ -68,9 +71,11 @@ func (s *service) Run() error {
 		loggerx.Global().Info("iqwiki_crawler start a new round ", zap.Int("cache user is", len(iqCacheMap)))
 
 		for address, num := range iqCacheMap {
+			rl.Take()
+			loggerx.Global().Info("iqwiki_crawler start to get activities", zap.String("address", address))
 			activityList, err := s.iqClient.GetUserActivityList(ctx, address)
 			if err != nil {
-				loggerx.Global().Warn("iqwiki_crawler get cast error", zap.Error(err))
+				loggerx.Global().Warn("iqwiki_crawler get activities error", zap.Error(err))
 				continue
 			}
 
@@ -331,6 +336,17 @@ func (s *service) HandlePost(ctx context.Context, transfer *model.Transfer) (err
 
 	medias := s.HandleMedia(wikiContent)
 
+	categories := make([]string, 0)
+	tags := make([]string, 0)
+
+	for _, category := range wiki.Categories {
+		categories = append(categories, category.Title)
+	}
+
+	for _, tag := range wiki.Tags {
+		tags = append(tags, tag.Id)
+	}
+
 	post := &metadata.Post{
 		CreatedAt:      wiki.Created.Format(time.RFC3339),
 		Author:         []string{wiki.Author.Id},
@@ -341,6 +357,9 @@ func (s *service) HandlePost(ctx context.Context, transfer *model.Transfer) (err
 		Summary:        wiki.Summary,
 		TargetURL:      fmt.Sprintf("https://iq.wiki/wiki/%s", wiki.Id),
 		Media:          medias,
+		Categories:     categories,
+		Tags:           tags,
+		OriginNoteID:   wiki.Id,
 	}
 
 	if transfer.Type == filter.SocialUpdate {

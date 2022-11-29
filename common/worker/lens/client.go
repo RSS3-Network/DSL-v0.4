@@ -2,9 +2,20 @@ package lens
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/url"
+	"sync"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/naturalselectionlabs/pregod/common/database/model/social"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
+	lenscontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
+	lop "github.com/samber/lo/parallel"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -44,7 +55,7 @@ type ProfileQueryResponse struct {
 	} `graphql:"profiles(request: $request )"`
 }
 
-func (c *Client) GetProfiles(ctx context.Context, address string) ([]*big.Int, error) {
+func (c *Client) BatchGetProfileID(ctx context.Context, address string) ([]*big.Int, error) {
 	req := map[string]interface{}{
 		"request": ProfileQueryRequest{
 			OwnedBy: []string{address},
@@ -53,6 +64,8 @@ func (c *Client) GetProfiles(ctx context.Context, address string) ([]*big.Int, e
 	resp := &ProfileQueryResponse{}
 
 	if err := c.graphqlClient.Query(ctx, &resp, req); err != nil {
+		loggerx.Global().Error("lens graphql query error", zap.String("address", address), zap.Error(err))
+
 		return nil, err
 	}
 
@@ -65,7 +78,7 @@ func (c *Client) GetProfiles(ctx context.Context, address string) ([]*big.Int, e
 
 		id, err := hexutil.DecodeBig(string(s))
 		if err != nil {
-			loggerx.Global().Warn("lens graphq client, decode response error", zap.String("id", string(item.ID)))
+			loggerx.Global().Error("lens graphq client, decode response error", zap.String("id", string(item.ID)), zap.Error(err))
 
 			continue
 		}
@@ -76,4 +89,54 @@ func (c *Client) GetProfiles(ctx context.Context, address string) ([]*big.Int, e
 	}
 
 	return result, nil
+}
+
+func (c *Client) BatchGetProfiles(ctx context.Context, address string) ([]*social.Profile, error) {
+	ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)
+	if err != nil {
+		loggerx.Global().Error("get ethclientx error", zap.Error(err))
+
+		return nil, err
+	}
+
+	lensHubContract, err := lenscontract.NewHub(lens.HubProxyContractAddress, ethereumClient)
+	if err != nil {
+		loggerx.Global().Error("lens new hub error", zap.Error(err))
+
+		return nil, err
+	}
+
+	profileIDs, err := c.BatchGetProfileID(ctx, address)
+	if err != nil {
+		return nil, err
+	}
+
+	var profiles []*social.Profile
+	var mutex sync.Mutex
+
+	lop.ForEach(profileIDs, func(profileID *big.Int, i int) {
+		result, err := lensHubContract.GetProfile(&bind.CallOpts{}, profileID)
+		if err != nil {
+			loggerx.Global().Error("lens hubContract GetProfile error", zap.String("id", profileID.String()), zap.Error(err))
+
+			return
+		}
+
+		profile := &social.Profile{
+			Address:     address,
+			Network:     protocol.NetworkPolygon,
+			Platform:    protocol.PlatformLens,
+			Source:      protocol.PlatformLens,
+			Name:        result.Handle,
+			Handle:      result.Handle,
+			URL:         fmt.Sprintf("https://lenster.xyz/u/%v", result.Handle),
+			ProfileUris: []string{ipfs.GetDirectURL(result.ImageURI)},
+		}
+
+		mutex.Lock()
+		profiles = append(profiles, profile)
+		mutex.Unlock()
+	})
+
+	return profiles, nil
 }

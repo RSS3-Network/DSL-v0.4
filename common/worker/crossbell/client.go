@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -29,7 +30,7 @@ type Client struct {
 	handler    handler.Interface
 }
 
-func (c *Client) GetProfile(address string) ([]social.Profile, error) {
+func (c *Client) GetProfile(address string) ([]*social.Profile, error) {
 	requestURL := &url.URL{
 		Scheme: "https",
 		Host:   "indexer.crossbell.io",
@@ -51,10 +52,11 @@ func (c *Client) GetProfile(address string) ([]social.Profile, error) {
 		return nil, err
 	}
 
-	var result []social.Profile
+	var result []*social.Profile
+	var mutex sync.Mutex
 
 	lop.ForEach(profiles.List, func(crossbell ProfileResponse, i int) {
-		profile := social.Profile{
+		profile := &social.Profile{
 			Address:  address,
 			Network:  protocol.NetworkCrossbell,
 			Platform: protocol.PlatformCrossbell,
@@ -96,7 +98,9 @@ func (c *Client) GetProfile(address string) ([]social.Profile, error) {
 			profile.ProfileUris = append(profile.ProfileUris, ipfs.GetDirectURL(avatar))
 		}
 
+		mutex.Lock()
 		result = append(result, profile)
+		mutex.Unlock()
 	})
 
 	return result, nil

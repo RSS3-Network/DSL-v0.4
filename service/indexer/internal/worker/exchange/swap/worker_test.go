@@ -2,11 +2,13 @@ package swap
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 	"testing"
 
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -14,6 +16,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
+
+	"go.uber.org/zap"
 )
 
 var once sync.Once
@@ -26,6 +30,9 @@ func initialize(t *testing.T) {
 		assert.NoError(t, err)
 
 		cache.ReplaceGlobal(cacheClient)
+
+		logger, _ := zap.NewDevelopment()
+		zap.ReplaceGlobals(logger)
 
 		ethereumClientMap, err := ethclientx.Dial(config.ConfigIndexer.RPC, protocol.EthclientNetworks)
 		assert.NoError(t, err)
@@ -117,7 +124,7 @@ func Test_service_Handle(t *testing.T) {
 				}
 
 				for _, transaction := range transactions {
-					assert.Equal(t, transaction.Platform, protocol.PlatformUniswap)
+					assert.Equal(t, transaction.Platform, protocol.Platform1inch)
 				}
 
 				return false
@@ -226,6 +233,511 @@ func Test_service_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "quickswap v2 swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0x6eb6b493925fa16e3d0f8b595cf4b5c47053d57f11ba4069880889fe1d765293
+						Hash:        "0x6eb6b493925fa16e3d0f8b595cf4b5c47053d57f11ba4069880889fe1d765293",
+						BlockNumber: 35913650,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformQuickSwap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "quickswap v3 swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xb1dc5166f1b99fd69b9eebcd2ccfbdf650b70abfc302e9919c799471de56efe4
+						Hash:        "0xb1dc5166f1b99fd69b9eebcd2ccfbdf650b70abfc302e9919c799471de56efe4",
+						BlockNumber: 35913664,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformQuickSwap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "rainbow swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xa01f6fd8d82f8da3103326fdf45dae9b66d92a3fbe90e390e0fe2aeeeae71a46
+						Hash:        "0xa01f6fd8d82f8da3103326fdf45dae9b66d92a3fbe90e390e0fe2aeeeae71a46",
+						BlockNumber: 35905238,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformRainbow)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "kyberswap swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xed0024fcf5b2ad9000f3bb8853fa7bf3da3e7f4e3b36035b0e31530d5394ed87
+						Hash:        "0xed0024fcf5b2ad9000f3bb8853fa7bf3da3e7f4e3b36035b0e31530d5394ed87",
+						BlockNumber: 35914497,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, protocol.PlatformKyberSwap, transaction.Platform)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "spookswap swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkFantom,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://ftmscan.com/tx/0x5b0f1101ad37a5392bbac9d399dcd5572bc3fb91e04b65c2b2163675d5ff4e5d
+						Hash:        "0x5b0f1101ad37a5392bbac9d399dcd5572bc3fb91e04b65c2b2163675d5ff4e5d",
+						BlockNumber: 51285797,
+						Network:     protocol.NetworkFantom,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformSpookySwap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "metamask swap of curve",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x443e1f9b1c866e54e914822b7d3d7165edb6e9ea", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.com/tx/0xb82a38b608d67bb345c51186e3536ef70cfe6c7f903ad844db053c8e815236b1
+						Hash:        "0xb82a38b608d67bb345c51186e3536ef70cfe6c7f903ad844db053c8e815236b1",
+						BlockNumber: 16033860,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "rETH")
+					assert.Equal(t, swap.TokenTo.Symbol, "USDC")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformMetamask)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "dodo swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xd505554308ad1f2912b966b8f04620b7d8b823992209ae34849d7a03df12023c
+						Hash:        "0xd505554308ad1f2912b966b8f04620b7d8b823992209ae34849d7a03df12023c",
+						BlockNumber: 35915422,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformDODO)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "velodrome swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 developer
+					Network: protocol.NetworkOptimism,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://optimistic.etherscan.io/tx/0x0eb28959b6a057e273b0b0797596888fe9d59a041a3061c0cb030b0bae6e0597
+						Hash:        "0x0eb28959b6a057e273b0b0797596888fe9d59a041a3061c0cb030b0bae6e0597",
+						BlockNumber: 41686215,
+						Network:     protocol.NetworkOptimism,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+				transaction := transactions[0]
+
+				assert.Equal(t, transaction.Platform, protocol.PlatformVelodrome)
+
+				assert.Len(t, transaction.Transfers, 1)
+				transfer := transaction.Transfers[0]
+
+				var swap metadata.Swap
+				assert.NoError(t, json.Unmarshal(transfer.Metadata, &swap))
+
+				assert.Equal(t, swap.TokenFrom.Symbol, "OP")
+				assert.Equal(t, swap.TokenTo.Symbol, "VELO")
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "curve swap of frax",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x934B510D4C9103E6a87AEf13b816fb080286D649", // sujiyan.eth
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.com/tx/0x5bc300abde5761d2cadcdccddda433ed01c5fa0328d0248c4b3e601ae382007d
+						Hash:        "0x5bc300abde5761d2cadcdccddda433ed01c5fa0328d0248c4b3e601ae382007d",
+						BlockNumber: 15939262,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "USDT")
+					assert.Equal(t, swap.TokenTo.Symbol, "USDC")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformCurve)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "curve swap of frax 2",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x2d75e77729112bffd82e1f4a6b90a04e38159c44", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.com/tx/0x81fb92ac06b7ae7f710cadeff194002eb854760bc047d841d3e8dd8d962b3971
+						Hash:        "0x81fb92ac06b7ae7f710cadeff194002eb854760bc047d841d3e8dd8d962b3971",
+						BlockNumber: 16033963,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "FRAX")
+					assert.Equal(t, swap.TokenTo.Symbol, "WETH")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformCurve)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		// There is currently no way to address the issue of dApp handling fees and native token transfer events.
+		//{
+		//	name: "curve swap of aave pool",
+		//	fields: fields{
+		//		employer: shedlock.New(),
+		//	},
+		//	arguments: arguments{
+		//		ctx: context.Background(),
+		//		message: &protocol.Message{
+		//			Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // Unknown
+		//			Network: protocol.NetworkPolygon,
+		//		},
+		//		transactions: []model.Transaction{
+		//			{
+		//				// https://polygonscan.com/tx/0x2994f2c7663b3f1dfaef9754ed14852f1e3fbe68fd167ba390e7625d1a5d129f
+		//				Hash:        "0x2994f2c7663b3f1dfaef9754ed14852f1e3fbe68fd167ba390e7625d1a5d129f",
+		//				BlockNumber: 35955144,
+		//				Network:     protocol.NetworkPolygon,
+		//			},
+		//		},
+		//	},
+		//	want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+		//		transactions, ok := i.([]model.Transaction)
+		//		if !ok {
+		//			return false
+		//		}
+		//
+		//		for _, transaction := range transactions {
+		//			assert.Equal(t, len(transaction.Transfers), 1)
+		//
+		//			var swap metadata.Swap
+		//			assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+		//
+		//			assert.Equal(t, swap.TokenFrom.Symbol, "USDC")
+		//			assert.Equal(t, swap.TokenTo.Symbol, "WETH")
+		//
+		//			assert.Equal(t, transaction.Platform, protocol.PlatformCurve)
+		//		}
+		//
+		//		return false
+		//	},
+		//	wantErr: assert.NoError,
+		//},
+		{
+			name: "paraswap of curve pool",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x0be55326919f08af4d14a42aafb3b68f95738355", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.com/tx/0x7370e1fc9d69d097cb6775badbe59f3bc523df39cd5e5444aad96423ed11c710
+						Hash:        "0x7370e1fc9d69d097cb6775badbe59f3bc523df39cd5e5444aad96423ed11c710",
+						BlockNumber: 16013952,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Equal(t, len(transactions), 1)
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "3Crv")
+					assert.Equal(t, swap.TokenTo.Symbol, "USDC")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformParaswap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "balancer swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 Developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0x20b7cc317ba1a44a83d34aa0258623c598592e025541fafb7efb0295a4799418
+						Hash:        "0x20b7cc317ba1a44a83d34aa0258623c598592e025541fafb7efb0295a4799418",
+						BlockNumber: 36002196,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Equal(t, len(transactions), 1)
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "WMATIC")
+					assert.Equal(t, swap.TokenTo.Symbol, "USDC")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformBalancer)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {
@@ -241,6 +753,8 @@ func Test_service_Handle(t *testing.T) {
 
 			filledTransactions, err := ethereum.BuildTransactions(testcase.arguments.ctx, testcase.arguments.message, lo.ToSlicePtr(testcase.arguments.transactions))
 			testcase.wantErr(t, err, "build transactions")
+
+			assert.NotZero(t, len(filledTransactions))
 
 			internalTransactions := make([]model.Transaction, 0, len(filledTransactions))
 

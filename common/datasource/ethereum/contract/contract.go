@@ -36,6 +36,8 @@ package contract
 //go:generate abigen --abi ./aave/pool_v2.abi --pkg aave --type PoolV2 --alias DataTypes.ReserveConfigurationMap=DataTypes.ReserveConfigurationMapV2 --out ./aave/pool_v2.go
 // https://polygonscan.com/address/0xdf9e4abdbd94107932265319479643d3b05809dc
 //go:generate abigen --abi ./aave/pool_v3.abi --pkg aave --type PoolV3 --out ./aave/pool_v3.go
+// https://polygonscan.com/address/0x1a13f4ca1d028320a707d99520abfefca3998b7f
+//go:generate abigen --abi ./aave/token.abi --pkg aave --type Token --out ./aave/token.go
 // https://etherscan.io/address/0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1
 //go:generate abigen --abi ./optimism/bridge.abi --pkg optimism --type Bridge --out ./optimism/bridge.go
 // https://etherscan.io/address/0x499a865ac595e6167482d2bd5A224876baB85ab4
@@ -44,9 +46,30 @@ package contract
 //go:generate abigen --abi ./polygon/predicate_erc20.abi --pkg polygon --type ERC20Predicate --out ./polygon/predicate_erc20.go
 // https://etherscan.io/address/0x9923263fA127b3d1484cFD649df8f1831c2A74e4
 //go:generate abigen --abi ./polygon/predicate_erc20_mintable.abi --pkg polygon --type MintableERC20Predicate --out ./polygon/predicate_erc20_mintable.go
+// https://etherscan.io/address/0x11cc04dd962e82d411587c56b815e8f8141eb7d5
+//go:generate abigen --abi ./polygon/staking.abi --pkg polygon --type Staking --out ./polygon/staking.go
 // https://optimistic.etherscan.io/address/0xa7078e74d1abcc57db40309cf2c680832d7cd1fc
 //go:generate abigen --abi ./quix/seaport.abi --pkg quix --type SeaPort --out ./quix/seaport.go
 // https://optimistic.etherscan.io/address/0x3f9da045b0f77d707ea4061110339c4ea8ecfa70
 //go:generate abigen --abi ./quix/exchange_v5.abi --pkg quix --type ExchangeV5 --out ./quix/exchange_v5.go
 // https://snowtrace.io/address/0xe3ffc583dc176575eea7fd9df2a7c65f7e23f4c3
 //go:generate abigen --abi ./treaderjoe/router.abi --pkg treaderjoe --type Router --out ./treaderjoe/router.go
+// https://polygonscan.com/address/0x581c7db44f2616781c86c331d31c1f09db87a746
+// https://etherscan.io/address/0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7
+//go:generate abigen --abi ./curve/3pool.abi --pkg curve --type ThreePool --out ./curve/3pool.go
+// https://etherscan.io/address/0xd51a44d3fae010294c616388b506acda1bfaae46
+//go:generate abigen --abi ./curve/3pool2.abi --pkg curve --type ThreePool2 --out ./curve/3pool2.go
+// https://etherscan.io/address/0x90E00ACe148ca3b23Ac1bC8C240C2a7Dd9c2d7f5
+//go:generate abigen --abi ./curve/registry.abi --pkg curve --type Registry --out ./curve/registry.go
+// https://etherscan.io/address/0x55B916Ce078eA594c10a874ba67eCc3d62e29822
+//go:generate abigen --abi ./curve/registry_exchange.abi --pkg curve --type RegistryExchange --out ./curve/registry_exchange.go
+// https://etherscan.io/address/0xba12222222228d8ba445958a75a0704d566bf2c8
+//go:generate abigen --abi ./balancer/vault.abi --pkg balancer --type Vault --out ./balancer/vault.go
+// https://polygonscan.com/address/0x581c7db44f2616781c86c331d31c1f09db87a746#code
+//go:generate abigen --abi ./dodo/machine.abi --pkg dodo --type VendingMachine --out ./dodo/machine.go
+// https://etherscan.io/address/0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84
+//go:generate abigen --abi ./lido/eth.abi --pkg lido --type ETH --out ./lido/eth.go
+// https://etherscan.io/address/0x9c1563937145865308c8854e82f106775be28a05
+//go:generate abigen --abi ./lido/matic.abi --pkg lido --type Matic --out ./lido/matic.go
+// https://optimistic.etherscan.io/address/0x9c12939390052919aF3155f41Bf4160Fd3666A6f
+//go:generate abigen --abi ./velodrome/router.abi --pkg velodrome --type Router --out ./velodrome/router.go

@@ -24,9 +24,9 @@ var ProfilePlatformList = []string{
 
 var ProfileLockKey = "profile:%v:%v"
 
-func (s *Service) GetProfiles(c context.Context, request model.GetRequest) ([]social.Profile, error) {
-	m := make(map[string]social.Profile)
-	result := make([]social.Profile, 0)
+func (s *Service) GetProfiles(c context.Context, request model.GetRequest) ([]*social.Profile, error) {
+	m := make(map[string]*social.Profile)
+	result := make([]*social.Profile, 0)
 
 	profiles, _ := dao.GetProfiles(c, request)
 
@@ -59,9 +59,9 @@ func (s *Service) GetProfiles(c context.Context, request model.GetRequest) ([]so
 	return result, nil
 }
 
-func (s *Service) BatchGetProfiles(c context.Context, request model.BatchGetProfilesRequest) ([]social.Profile, error) {
-	m := make(map[string]social.Profile)
-	result := make([]social.Profile, 0)
+func (s *Service) BatchGetProfiles(c context.Context, request model.BatchGetProfilesRequest) ([]*social.Profile, error) {
+	m := make(map[string]*social.Profile)
+	result := make([]*social.Profile, 0)
 
 	profiles, _ := dao.BatchGetProfiles(c, request)
 
@@ -98,7 +98,7 @@ func (s *Service) BatchGetProfiles(c context.Context, request model.BatchGetProf
 	return result, nil
 }
 
-func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address string) ([]social.Profile, error) {
+func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address string) ([]*social.Profile, error) {
 	lockKey := fmt.Sprintf(ProfileLockKey, address, platform)
 	if !s.employer.DoLock(lockKey, 2*time.Minute) {
 		return nil, fmt.Errorf("%v lock", lockKey)
@@ -120,7 +120,7 @@ func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address s
 	}()
 
 	var profile *social.Profile
-	var profiles []social.Profile
+	var profiles []*social.Profile
 	var err error
 
 	switch platform {
@@ -129,7 +129,7 @@ func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address s
 		profile, err = ensClient.GetProfile(address)
 	case protocol.PlatformLens:
 		lensClient := lens.New()
-		profile, err = lensClient.GetProfile(address)
+		profiles, err = lensClient.BatchGetProfiles(c, address)
 	case protocol.PlatformCrossbell:
 		var csbClient *crossbell.Client
 		csbClient, err = crossbell.New()
@@ -144,7 +144,7 @@ func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address s
 	}
 
 	if profile != nil {
-		profiles = append(profiles, *profile)
+		profiles = append(profiles, profile)
 	}
 
 	if len(profiles) == 0 {

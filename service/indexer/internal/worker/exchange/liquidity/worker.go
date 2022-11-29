@@ -8,16 +8,22 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/go-redis/redis/v8"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/aave"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lido"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/polygon"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity/job/polygonstaking"
 	"github.com/shopspring/decimal"
+
 	"go.uber.org/zap"
 )
 
@@ -27,6 +33,7 @@ var _ worker.Worker = (*internal)(nil)
 
 type internal struct {
 	tokenClient *token.Client
+	redisClient *redis.Client
 }
 
 func (i *internal) Name() string {
@@ -56,7 +63,16 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	for _, transaction := range transactions {
 		router, exists := routerMap[strings.ToLower(transaction.AddressTo)]
 		if !exists {
-			continue
+			exists, err := i.redisClient.HExists(ctx, polygonstaking.Key, strings.ToLower(transaction.AddressTo)).Result()
+			if err != nil {
+				return nil, fmt.Errorf("hash exists: %w", err)
+			}
+
+			if !exists {
+				continue
+			}
+
+			router = routerPolygon
 		}
 
 		internalTransaction := transaction
@@ -103,6 +119,30 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				internalTransfer, err = i.handleAAVEV3Repay(ctx, message, transaction, *log, router)
 			case aave.EventHashWithdrawV3:
 				internalTransfer, err = i.handleAAVEV3Withdraw(ctx, message, transaction, *log, router)
+			case lido.EventHashSubmitted:
+				if log.Address != lido.AddressETH {
+					continue
+				}
+
+				internalTransfer, err = i.handleLidoSubmitted(ctx, message, transaction, *log, router)
+			case lido.EventHashSubmitEvent:
+				if log.Address != lido.AddressMatic {
+					continue
+				}
+
+				internalTransfer, err = i.handleLidoSubmitEvent(ctx, message, transaction, *log, router)
+			case polygon.EventHashShareMinted:
+				if log.Address != polygon.AddressStakingInfo {
+					continue
+				}
+
+				internalTransfer, err = i.handlePolygonStakingShareMinted(ctx, message, transaction, *log, router)
+			case polygon.EventHashDelegatorClaimedRewards:
+				if log.Address != polygon.AddressStakingInfo {
+					continue
+				}
+
+				internalTransfer, err = i.handlePolygonStakingDelegatorClaimedRewards(ctx, message, transaction, *log, router)
 			default:
 				continue
 			}
@@ -144,12 +184,19 @@ func (i *internal) buildLiquidityMetadata(ctx context.Context, router Router, ac
 
 		internalTokenDisplay := internalTokenValue.Shift(-int32(internalToken.Decimals))
 
+		standard := protocol.TokenStandardERC20
+
+		// Native token structure has an empty contract address
+		if internalToken.ContractAddress == "" {
+			standard = protocol.TokenStandardNative
+		}
+
 		liquidityMetadata.Tokens = append(liquidityMetadata.Tokens, metadata.Token{
 			Name:            internalToken.Name,
 			Symbol:          internalToken.Symbol,
 			Decimals:        internalToken.Decimals,
 			Image:           internalToken.Logo,
-			Standard:        protocol.TokenStandardERC20,
+			Standard:        standard,
 			ContractAddress: internalToken.ContractAddress,
 			Value:           &internalTokenValue,
 			ValueDisplay:    &internalTokenDisplay,
@@ -160,11 +207,14 @@ func (i *internal) buildLiquidityMetadata(ctx context.Context, router Router, ac
 }
 
 func (i *internal) Jobs() []worker.Job {
-	return nil
+	return []worker.Job{
+		polygonstaking.New(i.redisClient),
+	}
 }
 
 func New() worker.Worker {
 	return &internal{
 		tokenClient: token.New(),
+		redisClient: cache.Global(),
 	}
 }
