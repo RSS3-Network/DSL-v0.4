@@ -640,7 +640,7 @@ func Test_service_Handle(t *testing.T) {
 					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
 
 					assert.Equal(t, swap.TokenFrom.Symbol, "USDC")
-					assert.Equal(t, swap.TokenTo.Symbol, "WETH")
+					assert.Equal(t, swap.TokenTo.Symbol, "amWETH")
 
 					assert.Equal(t, transaction.Platform, protocol.PlatformCurve)
 				}
