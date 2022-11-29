@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"math/big"
 	"strings"
 	"time"
@@ -64,13 +65,14 @@ const (
 )
 
 var SupportLensPlatform = map[string]bool{
-	protocol.PlatformLens:              true,
-	protocol.PlatformLensLenster:       true,
-	protocol.PlatformLensLenstube:      true,
-	protocol.PlatformLensLenstubeBytes: true,
+	protocol.PlatformLens:                 true,
+	protocol.PlatformLensLenster:          true,
+	protocol.PlatformLensLenstube:         true,
+	protocol.PlatformLensLenstubeBytes:    true,
+	protocol.PlatformLensLensterCrowdfund: true,
 }
 
-func (c *Client) GetProfile(address string) (*social.Profile, error) {
+func (c *Client) GetProfile(address string, profileID *big.Int) (*social.Profile, error) {
 	ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)
 	if err != nil {
 		logrus.Errorf("[common] lens: ethclientx.Global err, %v", err)
@@ -85,17 +87,19 @@ func (c *Client) GetProfile(address string) (*social.Profile, error) {
 		return nil, err
 	}
 
-	profileID, err := lensHubContract.DefaultProfile(&bind.CallOpts{}, common.HexToAddress(address))
-	if err != nil {
-		logrus.Errorf("[common] lens: Handle DefaultProfile err, %v", err)
+	if profileID == nil {
+		profileID, err = lensHubContract.DefaultProfile(&bind.CallOpts{}, common.HexToAddress(address))
+		if err != nil {
+			logrus.Errorf("[common] lens: Handle DefaultProfile err, %v", err)
 
-		return nil, err
+			return nil, err
+		}
 	}
 
 	if profileID.Int64() == 0 {
 		logrus.Infof("[common] lens: Handle getDefaultProfile is nil, address: %v", address)
 
-		return nil, nil
+		return nil, fmt.Errorf("DefaultProfile is nil")
 	}
 
 	result, err := lensHubContract.GetProfile(&bind.CallOpts{}, profileID)
@@ -182,6 +186,9 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 		case lens.EventHashMirrorCreated:
 			handleErr = c.HandleMirrorCreated(ctx, *lensContract, &transfer, *log)
 			eventType = "handleMirrorCreated"
+		case lens.EventHashFollowNFTTransferred:
+			handleErr = c.HandleFollowNFTTransferred(ctx, *lensContract, transaction, &transfer, *log)
+			eventType = "handleFollow"
 		default:
 			continue
 		}
@@ -285,7 +292,7 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 	}
 
 	transfer.Metadata = rawMetadata
-	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialCreate, transfer.Type)
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 	transfer.RelatedUrls = []string{
 		fmt.Sprintf("https://lenster.xyz/u/%v", event.Handle),
 		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
@@ -324,6 +331,33 @@ func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.
 	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialShare, transfer.Type)
 	transfer.RelatedUrls = append(transfer.RelatedUrls, c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId))
+
+	return nil
+}
+
+func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (err error) {
+	event, err := lensContract.EventsFilterer.ParseFollowNFTTransferred(log)
+	if err != nil {
+		return err
+	}
+
+	profile, err := c.GetProfile(transfer.AddressFrom, event.ProfileId)
+	if err != nil {
+		return err
+	}
+
+	transaction.Owner = strings.ToLower(event.To.String())
+
+	// transfer
+	transfer.AddressFrom = strings.ToLower(event.To.String())
+
+	if transfer.Metadata, err = json.Marshal(profile); err != nil {
+		return err
+	}
+
+	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialFollow, transfer.Type)
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
 
 	return nil
 }
