@@ -60,12 +60,18 @@ func (j *Job) Run(renewal worker.RenewalFunc) error {
 
 	ctx := context.Background()
 
-	_, _ = j.crontab.AddFunc("@every 1m", func() {
+	entryID, err := j.crontab.AddFunc("@every 1m", func() {
 		_ = renewal(ctx, j.Timeout())
 	})
+	if err != nil {
+		return fmt.Errorf("add renewal func to crontab: %w", err)
+	}
 
 	j.crontab.Start()
-	defer j.crontab.Stop()
+	defer func() {
+		j.crontab.Remove(entryID)
+		j.crontab.Stop()
+	}()
 
 	errorGroup.Go(func() error {
 		return j.refreshTokenListFromCoinGecko(ctx)
