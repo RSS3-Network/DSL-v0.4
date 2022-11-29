@@ -164,21 +164,20 @@ func GetNFT(c context.Context, request model.GetRequest) (model.NFTResult, error
 
 	request.Address = strings.ToLower(request.Address)
 	// the where condition for all the queries
-	condition := fmt.Sprintf("WHERE owner = '%s' AND tag = 'collectible' AND type = 'trade' AND DATE_PART('year', timestamp) = '%d'", request.Address, 2022)
+	condition := fmt.Sprintf("WHERE owner = '%s' AND tag = 'collectible' AND (type = 'mint'  OR type = 'trade') AND DATE_PART('year', timestamp) = '%d'", request.Address, 2022)
 
 	var result model.NFTResult
 
 	var list []model.NFT
 
 	database.Global().
-		Raw(fmt.Sprintf(`SELECT address_from AS from, address_to AS to, metadata, timestamp
+		Raw(fmt.Sprintf(`SELECT address_from AS from, address_to AS to, metadata, timestamp, type
 			FROM transfers
 			WHERE transaction_hash IN (SELECT hash
 									   FROM transactions
 									   %s)
-			  AND type = 'trade'
-			  AND address_from = '%s' 
-			ORDER BY timestamp DESC;`, condition, request.Address)).Scan(&list)
+			  AND (type = 'mint'  OR type = 'trade')
+			ORDER BY timestamp DESC;`, condition)).Scan(&list)
 
 	result.Total = len(list)
 
@@ -186,6 +185,11 @@ func GetNFT(c context.Context, request model.GetRequest) (model.NFTResult, error
 		var nft metadata.Token
 		err := json.Unmarshal(current.Metadata, &nft)
 		if err != nil {
+			continue
+		}
+
+		if current.Type == filter.CollectibleMint {
+			result.Mint = append(result.Mint, nft)
 			continue
 		}
 

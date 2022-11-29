@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
-
 	"go.opentelemetry.io/otel"
 )
 
@@ -23,6 +23,12 @@ func (h *Handler) GetWrappedFunc(c echo.Context) error {
 
 	if err := c.Validate(&request); err != nil {
 		return err
+	}
+
+	request.Address = name_service.ReverseResolveAll(request.Address, false).Address
+
+	if len(request.Address) == 0 {
+		return AddressIsInvalid(c)
 	}
 
 	result := model.WrappedResult{}
