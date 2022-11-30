@@ -24,8 +24,8 @@ type Media struct {
 }
 
 type Curation struct {
-	Article Post   `json:"article"`
-	Reward  Token  `json:"reward"`
-	From    string `json:"from"`
-	To      string `json:"to"`
+	Target Post   `json:"target"`
+	Reward Token  `json:"reward"`
+	From   string `json:"from"`
+	To     string `json:"to"`
 }

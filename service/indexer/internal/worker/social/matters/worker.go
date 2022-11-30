@@ -100,11 +100,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				From:   strings.ToLower(entry.From.String()),
 				To:     strings.ToLower(entry.To.String()),
 				Reward: *tokenMetadata,
-				Article: metadata.Post{
-					Title:   entry.Title,
-					Summary: entry.Summary,
-					Body:    entry.ContentMarkdown,
-					Author:  []string{strings.ToLower(entry.To.String())},
+				Target: metadata.Post{
+					Title:          entry.Title,
+					Summary:        entry.Summary,
+					Body:           entry.ContentMarkdown,
+					TypeOnPlatform: []string{"curation"},
+					Author:         []string{strings.ToLower(entry.To.String())},
 				},
 			})
 			if err != nil {
