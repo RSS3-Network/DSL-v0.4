@@ -6,9 +6,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -152,6 +153,10 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 				TopicSecond: hash.String(),
 				TopicFirst:  eventHash.String(),
 				// BlockNumberFrom: message.BlockNumber,
+			}
+
+			if eventHash == lens.EventHashFollowed {
+				parameter.TopicSecond = common.HexToHash(message.Address).String()
 			}
 
 			for {
