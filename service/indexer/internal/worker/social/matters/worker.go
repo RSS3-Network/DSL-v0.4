@@ -96,16 +96,15 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			tokenMetadata.Value = &entry.Amount
 			tokenMetadata.ValueDisplay = &tokenValueDisplayTo
 
-			metadataRaw, err := json.Marshal(metadata.Curation{
-				From:   strings.ToLower(entry.From.String()),
-				To:     strings.ToLower(entry.To.String()),
-				Reward: *tokenMetadata,
-				Target: metadata.Post{
+			metadataRaw, err := json.Marshal(metadata.Post{
+				Reward:         tokenMetadata,
+				TypeOnPlatform: []string{"Curation"},
+				Target: &metadata.Post{
 					Title:          entry.Title,
 					Summary:        entry.Summary,
 					Body:           entry.ContentMarkdown,
-					TypeOnPlatform: []string{"Curation"},
 					Author:         []string{strings.ToLower(entry.To.String())},
+					TypeOnPlatform: []string{"Post"},
 				},
 			})
 			if err != nil {

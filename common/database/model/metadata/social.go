@@ -16,16 +16,10 @@ type Post struct {
 	OriginNoteID   string   `json:"origin_note_id,omitempty"`
 	Categories     []string `json:"categories,omitempty"`
 	Tags           []string `json:"tags,omitempty"`
+	Reward         *Token   `json:"reward,omitempty"`
 }
 
 type Media struct {
 	Address  string `json:"address"`
 	MimeType string `json:"mime_type"`
-}
-
-type Curation struct {
-	Target Post   `json:"target"`
-	Reward Token  `json:"reward"`
-	From   string `json:"from"`
-	To     string `json:"to"`
 }
