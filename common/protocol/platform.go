@@ -16,6 +16,8 @@ const (
 	PlatformLensLenstube      = "Lenstube"
 	PlatformLensLenstubeBytes = "lenstube-bytes"
 
+	PlatformMatters = "Matters"
+
 	// collectible
 	PlatformPOAP   = "POAP"
 	PlatformGalaxy = "Galaxy"
