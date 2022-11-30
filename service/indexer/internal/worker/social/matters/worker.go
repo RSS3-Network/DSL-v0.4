@@ -104,7 +104,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 					Title:          entry.Title,
 					Summary:        entry.Summary,
 					Body:           entry.ContentMarkdown,
-					TypeOnPlatform: []string{"curation"},
+					TypeOnPlatform: []string{"Curation"},
 					Author:         []string{strings.ToLower(entry.To.String())},
 				},
 			})
