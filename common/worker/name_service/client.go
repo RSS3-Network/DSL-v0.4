@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/avvydomains/golang-client/avvy"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -57,6 +59,9 @@ func ReverseResolveAll(input string, resolveAll bool) model.NameServiceResult {
 	case "bit":
 		address, _ = ResolveBit(input)
 		result.Bit = input
+	case "avax":
+		address, _ = ResolveAvvy(input)
+		result.Avvy = input
 	default:
 		if ValidateEthereumAddress(input) {
 			address = input
@@ -405,4 +410,25 @@ func ResolveBit(input string) (string, error) {
 	} else {
 		return bitResult.Result.Data.Account, nil
 	}
+}
+
+func ResolveAvvy(input string) (string, error) {
+	var result string
+
+	chainId, _ := strconv.ParseInt(protocol.NetworkToID(protocol.NetworkAvalanche)[2:], 16, 64)
+
+	client := new(avvy.Client)
+
+	networkUrl, err := ethclientx.GlobalUrl(protocol.NetworkAvalanche)
+	if err != nil {
+		return "", fmt.Errorf("failed to get %s http url: %s", protocol.NetworkAvalanche, err)
+	}
+	client.Init(networkUrl, int(chainId))
+
+	value, success := client.ResolveStandard(input, client.RECORDS["EVM"])
+	if success {
+		result = value
+	}
+
+	return strings.ToLower(result), nil
 }
