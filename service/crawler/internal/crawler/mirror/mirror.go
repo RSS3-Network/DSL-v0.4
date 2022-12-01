@@ -96,7 +96,8 @@ func (s *service) getMirrorTransactions(ctx context.Context) ([]*model.Transacti
 
 	cacheInfo, _ := cache.Global().Get(ctx, mirrorCacheKey).Result()
 	if cacheList := strings.Split(cacheInfo, ":"); len(cacheList) == 2 {
-		parameter.BlockHeightFrom, _ = decimal.NewFromString(cacheList[0])
+		blockHeightFrom, _ := decimal.NewFromString(cacheList[0])
+		parameter.BlockHeightFrom = blockHeightFrom.String()
 		parameter.Cursor = cacheList[1]
 	}
 
@@ -130,6 +131,11 @@ func (s *service) getMirrorTransactions(ctx context.Context) ([]*model.Transacti
 				originDigest = tag.Value
 			}
 		}
+
+		if len(contentDigest) == 0 {
+			continue
+		}
+
 		if len(originDigest) == 0 {
 			originDigest = contentDigest
 		}
@@ -159,7 +165,7 @@ func (s *service) getMirrorTransactions(ctx context.Context) ([]*model.Transacti
 			AddressTo:   strings.ToLower(MirrorAddress),
 			Platform:    protocol.PlatformMirror,
 			Network:     protocol.NetworkArweave,
-			Source:      protocol.SourcePregodETL,
+			Source:      protocol.SourceArweave,
 			Timestamp:   time.Unix(data.Content.Timestamp.BigInt().Int64(), 0),
 			Tag:         filter.TagSocial,
 			Type:        filter.SocialPost,
@@ -173,7 +179,7 @@ func (s *service) getMirrorTransactions(ctx context.Context) ([]*model.Transacti
 					AddressTo:       strings.ToLower(MirrorAddress),
 					Metadata:        metadata,
 					Network:         protocol.NetworkArweave,
-					Source:          protocol.SourcePregodETL,
+					Source:          protocol.SourceArweave,
 					SourceData:      source,
 					Platform:        protocol.PlatformMirror,
 					RelatedUrls:     []string{fmt.Sprintf("https://mirror.xyz/%s/%s", address, originDigest)},
@@ -181,6 +187,11 @@ func (s *service) getMirrorTransactions(ctx context.Context) ([]*model.Transacti
 					Type:            filter.SocialPost,
 				},
 			},
+		}
+
+		if originDigest != contentDigest {
+			internalTransaction.Type = filter.SocialRevise
+			internalTransaction.Transfers[0].Type = filter.SocialRevise
 		}
 
 		internalTransactions = append(internalTransactions, internalTransaction)
