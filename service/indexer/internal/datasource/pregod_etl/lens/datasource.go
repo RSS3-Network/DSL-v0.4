@@ -78,7 +78,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		for _, transaction := range transactionMap {
 			internalTransaction := transaction
 
-			if internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) {
+			if internalTransaction.Source != protocol.SourceKurora && internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) {
 				continue
 			}
 
@@ -151,11 +151,8 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 			query := kurora.DatasetLensEventQuery{
 				TopicFirst:  &eventHash,
 				TopicSecond: &hash,
+				Address:     contractAddress,
 				//BlockNumberFrom: message.BlockNumber,
-			}
-
-			if contractAddress != nil {
-				query.Address = contractAddress
 			}
 
 			if eventHash == lens.EventHashFollowed {
@@ -182,9 +179,9 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 						Hash:        transfer.TransactionHash.String(),
 						Index:       int64(transfer.TransactionIndex),
 						Network:     message.Network,
-						Source:      d.Name(),
 						Transfers:   make([]model.Transfer, 0),
 						Owner:       strings.ToLower(message.Address),
+						Source:      protocol.SourceKurora,
 					})
 				}
 

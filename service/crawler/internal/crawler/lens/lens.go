@@ -2,15 +2,15 @@ package lens
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	kurora "github.com/naturalselectionlabs/kurora/client"
-	"github.com/shopspring/decimal"
 	"math/big"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	kurora "github.com/naturalselectionlabs/kurora/client"
+	"github.com/shopspring/decimal"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -125,10 +125,7 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 
 	query := kurora.DatasetLensEventQuery{
 		TopicFirst: &eventHash,
-	}
-
-	if contractAddress != nil {
-		query.Address = contractAddress
+		Address:    contractAddress,
 	}
 
 	cacheKey := fmt.Sprintf(lensLogsCacheKey, eventHash.String())
@@ -153,6 +150,7 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 			Network:     protocol.NetworkPolygon,
 			Platform:    protocol.PlatformLens,
 			Transfers:   make([]model.Transfer, 0),
+			Source:      protocol.SourceKurora,
 		}
 
 		// owner

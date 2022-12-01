@@ -20,11 +20,11 @@ var (
 	EventHashFollowed             = crypto.Keccak256Hash([]byte("Followed(address,uint256[],bytes[],uint256)"))
 )
 
-var SupportLensEvents = map[common.Hash]common.Address{
-	EventHashCommentCreated:       HubProxyContractAddress,
-	EventHashPostCreated:          HubProxyContractAddress,
-	EventHashProfileCreated:       HubProxyContractAddress,
-	EventHashMirrorCreated:        HubProxyContractAddress,
-	EventHashFollowNFTTransferred: HubProxyContractAddress,
-	EventHashFollowed:             HubProxyContractAddress,
+var SupportLensEvents = map[common.Hash]*common.Address{
+	EventHashCommentCreated:       &HubProxyContractAddress,
+	EventHashPostCreated:          &HubProxyContractAddress,
+	EventHashProfileCreated:       &HubProxyContractAddress,
+	EventHashMirrorCreated:        &HubProxyContractAddress,
+	EventHashFollowed:             &HubProxyContractAddress,
+	EventHashFollowNFTTransferred: &HubProxyContractAddress,
 }

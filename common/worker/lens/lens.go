@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"math/big"
 	"strings"
 	"time"
@@ -71,7 +72,11 @@ var SupportLensPlatform = map[string]bool{
 	protocol.PlatformLensLensterCrowdfund: true,
 }
 
-func (c *Client) GetProfile(address string, profileID *big.Int) (*social.Profile, error) {
+func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big.Int) (*social.Profile, error) {
+	if len(address) == 0 && profileID == nil {
+		return nil, fmt.Errorf("empty profile")
+	}
+
 	ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)
 	if err != nil {
 		logrus.Errorf("[common] lens: ethclientx.Global err, %v", err)
@@ -87,7 +92,7 @@ func (c *Client) GetProfile(address string, profileID *big.Int) (*social.Profile
 	}
 
 	if profileID == nil {
-		profileID, err = lensHubContract.DefaultProfile(&bind.CallOpts{}, common.HexToAddress(address))
+		profileID, err = lensHubContract.DefaultProfile(&bind.CallOpts{BlockNumber: blockNumber}, common.HexToAddress(address))
 		if err != nil {
 			logrus.Errorf("[common] lens: Handle DefaultProfile err, %v", err)
 
@@ -101,7 +106,18 @@ func (c *Client) GetProfile(address string, profileID *big.Int) (*social.Profile
 		return nil, fmt.Errorf("DefaultProfile is nil")
 	}
 
-	result, err := lensHubContract.GetProfile(&bind.CallOpts{}, profileID)
+	if len(address) == 0 {
+		owner, err := lensHubContract.OwnerOf(&bind.CallOpts{BlockNumber: blockNumber}, profileID)
+		if err != nil {
+			logrus.Infof("[common] lens: OwnerOf error: %v", err)
+
+			return nil, err
+		}
+
+		address = owner.String()
+	}
+
+	result, err := lensHubContract.GetProfile(&bind.CallOpts{BlockNumber: blockNumber}, profileID)
 	if err != nil {
 		logrus.Errorf("[common] lens: GetProfile err, %v", err)
 
@@ -109,7 +125,7 @@ func (c *Client) GetProfile(address string, profileID *big.Int) (*social.Profile
 	}
 
 	profile := &social.Profile{
-		Address:     address,
+		Address:     strings.ToLower(address),
 		Network:     protocol.NetworkPolygon,
 		Platform:    protocol.PlatformLens,
 		Source:      protocol.PlatformLens,
@@ -143,6 +159,11 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 
 	// parse log
 	for _, log := range receipt.Logs {
+		// fitler follow - FollowNFTTransferred
+		if log.Topics[0] == lens.EventHashFollowNFTTransferred && transaction.AddressTo == lens.HubProxyContractAddress.String() {
+			continue
+		}
+
 		lensContract, err := contract.NewEvents(log.Address, ethclient)
 		if err != nil {
 			logrus.Errorf("[lens worker] handleReceipt: new events error, %v", err)
@@ -166,7 +187,6 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			Network:         transaction.Network,
 			AddressFrom:     transaction.Owner,
 			SourceData:      sourceData,
-			Source:          protocol.SourcePregodETL,
 			Platform:        protocol.PlatformLens,
 		}
 
@@ -189,6 +209,9 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 		case lens.EventHashFollowed:
 			batchTransfers, handleErr = c.HandleFollowed(ctx, *lensContract, &transfer, *log)
 			eventType = "HandleFollowed"
+		case lens.EventHashFollowNFTTransferred:
+			handleErr = c.HandleFollowNFTTransferred(ctx, *lensContract, transaction, &transfer, *log)
+			eventType = "HandleFollowNFTTransferred"
 		default:
 			continue
 		}
@@ -360,7 +383,7 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialFollow, transfer.Type)
 
 	for index, profileID := range event.ProfileIds {
-		profile, err := c.GetProfileByProfileID(ctx, profileID)
+		profile, err := c.GetProfile(transfer.BlockNumber, "", profileID)
 		if err != nil {
 			loggerx.Global().Error("[lens worker] HandleFollowed: GetProfile error", zap.Error(err))
 			continue
@@ -380,6 +403,41 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 	}
 
 	return transfers, nil
+}
+
+func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (err error) {
+	event, err := lensContract.EventsFilterer.ParseFollowNFTTransferred(log)
+	if err != nil {
+		return err
+	}
+
+	// unfollow: burn
+	if event.To != ethereum.AddressGenesis {
+		return fmt.Errorf("not supported")
+	}
+
+	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
+	if err != nil {
+		return err
+	}
+
+	transaction.Owner = strings.ToLower(event.From.String())
+
+	// transfer
+	transfer.AddressFrom = strings.ToLower(event.From.String())
+
+	if transfer.Metadata, err = json.Marshal(profile); err != nil {
+		return err
+	}
+
+	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialUnfollow, transfer.Type)
+	transfer.RelatedUrls = []string{
+		fmt.Sprintf("https://lenster.xyz/u/%v", profile.Handle),
+		utils.GetTxHashURL(protocol.NetworkPolygon, transfer.TransactionHash),
+	}
+
+	return nil
 }
 
 func (c *Client) GetContentURI(ctx context.Context, profileId *big.Int, pubId *big.Int) (string, error) {

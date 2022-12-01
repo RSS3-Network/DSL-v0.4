@@ -23,8 +23,8 @@ require (
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/lib/pq v1.10.6
-	github.com/naturalselectionlabs/kurora v0.9.12
-	github.com/naturalselectionlabs/kurora/client v0.0.0-20221115080034-1162ba0e23d0
+	github.com/naturalselectionlabs/kurora v0.13.2
+	github.com/naturalselectionlabs/kurora/client v0.0.0-20221201015617-dcae3aefc9c9
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.31.0
@@ -34,7 +34,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.13.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/unstoppabledomains/resolution-go/v2 v2.2.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	github.com/wealdtech/go-ens/v3 v3.5.5
@@ -91,7 +91,7 @@ require (
 	github.com/jgimeno/go-namehash v0.0.0-20180808144722-2773b36cc1f8 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/klauspost/compress v1.10.3 // indirect
+	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/labstack/gommon v0.3.1 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
