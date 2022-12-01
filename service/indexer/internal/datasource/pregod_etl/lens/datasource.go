@@ -2,20 +2,20 @@ package lens
 
 import (
 	"context"
+	"encoding/json"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	kurora "github.com/naturalselectionlabs/kurora/client"
 	"math/big"
+	"net/http"
 	"strings"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
-	"github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -34,8 +34,8 @@ const (
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
-	clientMap  map[string]*pregod_etl.Client // PregodETL
-	lensClient *lens_comm.Client
+	kuroraClient *kurora.Client
+	lensClient   *lens_comm.Client
 }
 
 func (d *Datasource) Name() string {
@@ -145,35 +145,42 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 	var wg sync.WaitGroup
 	for eventHash, contractAddress := range lens.SupportLensEvents {
 		wg.Add(1)
-		go func(eventHash common.Hash, contractAddress common.Address) {
+		go func(eventHash common.Hash, contractAddress *common.Address) {
 			defer wg.Done()
 
-			parameter := pregod_etl.GetLogsRequest{
-				Address:     contractAddress.String(),
-				TopicSecond: hash.String(),
-				TopicFirst:  eventHash.String(),
-				// BlockNumberFrom: message.BlockNumber,
+			query := kurora.DatasetLensEventQuery{
+				TopicFirst:  &eventHash,
+				TopicSecond: &hash,
+				//BlockNumberFrom: message.BlockNumber,
+			}
+
+			if contractAddress != nil {
+				query.Address = contractAddress
 			}
 
 			if eventHash == lens.EventHashFollowed {
-				parameter.TopicSecond = common.HexToHash(message.Address).String()
+				address := common.HexToHash(message.Address)
+				query.TopicSecond = &address
 			}
 
+			input, _ := json.Marshal(query)
+			loggerx.Global().Info("query lens data", zap.String("input", string(input)))
+
 			for {
-				result, err := d.clientMap[message.Network].GetLogs(ctx, "lens", parameter)
+				result, err := d.kuroraClient.FetchDatasetLensEvents(ctx, query)
 				if err != nil {
 					return
 				}
 
-				if len(result.Result) == 0 {
+				if len(result) == 0 {
 					return
 				}
 
-				for _, transfer := range result.Result {
+				for _, transfer := range result {
 					internalTransactions = append(internalTransactions, model.Transaction{
 						BlockNumber: transfer.BlockNumber.BigInt().Int64(),
-						Hash:        transfer.TransactionHash,
-						Index:       transfer.TransactionIndex.BigInt().Int64(),
+						Hash:        transfer.TransactionHash.String(),
+						Index:       int64(transfer.TransactionIndex),
 						Network:     message.Network,
 						Source:      d.Name(),
 						Transfers:   make([]model.Transfer, 0),
@@ -181,7 +188,8 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 					})
 				}
 
-				parameter.Cursor = result.Cursor
+				cursor := kurora.LogCursor(result[len(result)-1].TransactionHash, result[len(result)-1].Index)
+				query.Cursor = &cursor
 			}
 		}(eventHash, contractAddress)
 	}
@@ -194,15 +202,15 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 	return internalTransactionMap, nil
 }
 
-func New(config *configx.RPC) (datasource.Datasource, error) {
+func New(ctx context.Context, endpoint string) (datasource.Datasource, error) {
 	internalDatasource := Datasource{
-		clientMap:  map[string]*pregod_etl.Client{},
 		lensClient: lens_comm.New(),
 	}
 
 	var err error
 
-	if internalDatasource.clientMap[protocol.NetworkPolygon], err = pregod_etl.NewClient(protocol.NetworkPolygon, config.PregodETL.Polygon.HTTP); err != nil {
+	internalDatasource.kuroraClient, err = kurora.Dial(ctx, endpoint, kurora.WithHTTPClient(http.DefaultClient))
+	if err != nil {
 		logrus.Errorf("[datasource_lens] pregod_etl.NewClient error, %v", err)
 		return nil, err
 	}
