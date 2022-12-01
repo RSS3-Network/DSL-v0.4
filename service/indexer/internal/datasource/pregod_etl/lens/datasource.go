@@ -2,13 +2,13 @@ package lens
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	kurora "github.com/naturalselectionlabs/kurora/client"
 	"math/big"
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	kurora "github.com/naturalselectionlabs/kurora/client"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -152,7 +152,7 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 				TopicFirst:  &eventHash,
 				TopicSecond: &hash,
 				Address:     contractAddress,
-				//BlockNumberFrom: message.BlockNumber,
+				// BlockNumberFrom: message.BlockNumber,
 			}
 
 			if eventHash == lens.EventHashFollowed {
@@ -160,12 +160,12 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 				query.TopicSecond = &address
 			}
 
-			input, _ := json.Marshal(query)
-			loggerx.Global().Info("query lens data", zap.String("input", string(input)))
+			loggerx.Global().Info("query kurora FetchDatasetLensEvents", zap.Any("query", query))
 
 			for {
 				result, err := d.kuroraClient.FetchDatasetLensEvents(ctx, query)
 				if err != nil {
+					loggerx.Global().Error("FetchDatasetLensEvents error", zap.Error(err), zap.Any("query", query))
 					return
 				}
 
@@ -208,7 +208,7 @@ func New(ctx context.Context, endpoint string) (datasource.Datasource, error) {
 
 	internalDatasource.kuroraClient, err = kurora.Dial(ctx, endpoint, kurora.WithHTTPClient(http.DefaultClient))
 	if err != nil {
-		logrus.Errorf("[datasource_lens] pregod_etl.NewClient error, %v", err)
+		loggerx.Global().Error(" kurora Dial error", zap.Error(err))
 		return nil, err
 	}
 

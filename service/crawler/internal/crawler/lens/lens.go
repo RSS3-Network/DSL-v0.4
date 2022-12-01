@@ -3,6 +3,8 @@ package lens
 import (
 	"context"
 	"fmt"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"go.uber.org/zap"
 	"math/big"
 	"net/http"
 	"strings"
@@ -74,7 +76,7 @@ func (s *service) Run() error {
 				// get lens logs
 				transactions, err := s.getLensLogs(ctx, eventHash, contractAddress)
 				if err != nil {
-					logrus.Error("[lens] Run: GetLensLogs error, ", err)
+					loggerx.Global().Error("failed to query lens", zap.Error(err))
 
 					return
 				}
@@ -136,9 +138,12 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 		query.Cursor = &cacheList[1]
 	}
 
+	loggerx.Global().Info("FetchDatasetLensEvents request", zap.Any("query", query))
+
 	// get logs from pregod_etl
 	result, err := s.kuroraClient.FetchDatasetLensEvents(ctx, query)
 	if err != nil {
+		loggerx.Global().Error("FetchDatasetLensEvents error", zap.Error(err), zap.Any("query", query))
 		return nil, err
 	}
 

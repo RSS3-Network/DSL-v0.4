@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"math/big"
 	"strings"
 	"time"
+
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"

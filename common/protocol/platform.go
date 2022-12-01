@@ -17,6 +17,8 @@ const (
 	PlatformLensLenstubeBytes    = "lenstube-bytes"
 	PlatformLensLensterCrowdfund = "Lenster Crowdfund"
 
+	PlatformMatters = "Matters"
+
 	// collectible
 	PlatformPOAP   = "POAP"
 	PlatformGalaxy = "Galaxy"

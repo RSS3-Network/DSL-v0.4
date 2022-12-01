@@ -1,0 +1,55 @@
+postgres:
+  host: 127.0.0.1
+  port: 5432
+  user: postgres
+  password: password
+  database: pregod11
+
+rabbitmq:
+  tls: false
+  host: 127.0.0.1
+  port: 5672
+  user: guest
+  password: guest
+
+opentelemetry:
+  enabled: false
+  host: 127.0.0.1
+  port: 14268
+  path: /api/traces
+
+redis:
+  tls: false
+  addr: 127.0.0.1:6379
+  db: 0
+  password: ''
+
+rpc:
+  general:
+    ethereum:
+      http: ''
+      websocket: ''
+    polygon:
+      http: ''
+      websocket: ''
+    bsc:
+      http: ''
+      websocket: ''
+    xdai:
+      http: ''
+      websocket: ''
+    crossbell:
+      http: ''
+      websocket: ''
+  pregod_etl:
+    polygon:
+      http: ''
+    kurora:
+      http: ''
+    kurora_v2:
+      http: ''
+  ipfs:
+    io: ''
+    internal: ''
+eip1577:
+  endpoint: ''
