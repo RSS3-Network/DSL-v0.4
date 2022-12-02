@@ -611,22 +611,20 @@ func (c *characterHandler) handleSetOperator(ctx context.Context, transaction *m
 	}
 	transaction.Owner = strings.ToLower(characterOwner.String())
 
-	var action string
-
-	if event.Operator == ethereum.AddressGenesis {
-		action = filter.SocialRemove
-	} else {
-		action = filter.SocialAppoint
-	}
-
 	profile := &social.Profile{
 		Address:  strings.ToLower(characterOwner.String()),
 		Platform: protocol.PlatformCrossbell,
 		Handle:   handle,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
-		Action:   action,
 		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
+	}
+
+	if event.Operator == ethereum.AddressGenesis {
+		profile.Action = filter.SocialRemove
+	} else {
+		profile.Proxy = strings.ToLower(event.Operator.String())
+		profile.Action = filter.SocialAppoint
 	}
 
 	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
