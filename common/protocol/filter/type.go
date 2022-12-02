@@ -45,10 +45,13 @@ const (
 	SocialMint     string = "mint"
 	SocialWiki     string = "wiki"
 	SocialReward   string = "reward"
+	SocialProxy    string = "proxy"
 
 	// sub-types for Social-Profile
 	SocialCreate string = "create"
 	SocialUpdate string = "update"
+	SocialOpen   string = "open"
+	SocialClose  string = "close"
 
 	// Governance types
 	GovernancePropose string = "propose"
