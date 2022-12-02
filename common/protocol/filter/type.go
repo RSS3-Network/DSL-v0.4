@@ -48,10 +48,10 @@ const (
 	SocialProxy    string = "proxy"
 
 	// sub-types for Social-Profile
-	SocialCreate string = "create"
-	SocialUpdate string = "update"
-	SocialOpen   string = "open"
-	SocialClose  string = "close"
+	SocialCreate  string = "create"
+	SocialUpdate  string = "update"
+	SocialAppoint string = "appoint"
+	SocialRemove  string = "remove"
 
 	// Governance types
 	GovernancePropose string = "propose"

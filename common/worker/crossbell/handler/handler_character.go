@@ -614,9 +614,9 @@ func (c *characterHandler) handleSetOperator(ctx context.Context, transaction *m
 	var action string
 
 	if event.Operator == ethereum.AddressGenesis {
-		action = filter.SocialClose
+		action = filter.SocialRemove
 	} else {
-		action = filter.SocialOpen
+		action = filter.SocialAppoint
 	}
 
 	profile := &social.Profile{
