@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -24,7 +23,10 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ worker.Worker = (*service)(nil)
+var (
+	_               worker.Worker = (*service)(nil)
+	AddressCuration               = strings.ToLower("0x5edebbdae7b5c79a69aacf7873796bb1ec664db8")
+)
 
 const Source = "kurora"
 
@@ -53,17 +55,36 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	defer func() { opentelemetry.Log(trace, transactions, internalTransactions, err) }()
 
-	transactionsMap := make(map[string]model.Transaction)
-
-	for _, t := range transactions {
-		transactionsMap[t.Hash] = t
-	}
-
 	// datasource from kurora
-	mattersQuery := kurora.DatasetMattersEntryQuery{
+	mattersQueryFrom := kurora.DatasetMattersEntryQuery{
 		From:            lo.ToPtr(common.HexToAddress(message.Address)),
 		BlockNumberFrom: lo.ToPtr(decimal.NewFromInt(message.BlockNumber)),
 	}
+
+	txs, err := s.fetchAndHandleTransfer(ctx, message, mattersQueryFrom)
+	if err != nil {
+		return nil, fmt.Errorf("matters query address from error: %w", err)
+	}
+
+	internalTransactions = append(internalTransactions, txs...)
+
+	mattersQueryTo := kurora.DatasetMattersEntryQuery{
+		To:              lo.ToPtr(common.HexToAddress(message.Address)),
+		BlockNumberFrom: lo.ToPtr(decimal.NewFromInt(message.BlockNumber)),
+	}
+
+	txs, err = s.fetchAndHandleTransfer(ctx, message, mattersQueryTo)
+	if err != nil {
+		return nil, fmt.Errorf("matters query address to error: %w", err)
+	}
+
+	internalTransactions = append(internalTransactions, txs...)
+
+	return internalTransactions, nil
+}
+
+func (s *service) fetchAndHandleTransfer(ctx context.Context, message *protocol.Message, mattersQuery kurora.DatasetMattersEntryQuery) (internalTransactions []model.Transaction, err error) {
+	success := true
 
 	for first := true; mattersQuery.Cursor != nil || first; first = false {
 		entries, err := s.kuroraClient.FetchDatasetMattersEntries(ctx, mattersQuery)
@@ -72,16 +93,21 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		}
 
 		for _, entry := range entries {
-			transaction, ok := transactionsMap[strings.ToLower(entry.TransactionHash.String())]
-			if !ok {
-				loggerx.Global().Warn("failed to find curation transaction", zap.Error(err), zap.String("network", message.Network), zap.String("transaction_hash", transaction.Hash), zap.String("address", message.Address))
 
-				continue
+			transaction := model.Transaction{
+				BlockNumber: int64(entry.BlockNumber),
+				Hash:        strings.ToLower(entry.TransactionHash.String()),
+				Timestamp:   entry.Timestamp,
+				Owner:       message.Address,
+				Network:     message.Network,
+				Tag:         filter.TagSocial,
+				Type:        filter.SocialReward,
+				AddressFrom: strings.ToLower(entry.From.String()),
+				AddressTo:   AddressCuration,
+				Success:     &success,
+				Platform:    protocol.PlatformMatters,
+				Source:      Source,
 			}
-
-			transaction.Owner = message.Address
-			transaction.Platform = s.Name()
-			transaction.Source = Source
 
 			// handle transfer
 			tokenMetadata, err := s.tokenClient.ERC20ToMetadata(ctx, message.Network, strings.ToLower(entry.Token.String()))
@@ -103,7 +129,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 					Title:          entry.Title,
 					Summary:        entry.Summary,
 					Body:           entry.ContentMarkdown,
-					Author:         []string{strings.ToLower(entry.To.String())},
+					Author:         []string{fmt.Sprintf("%s%s", "https://matters.news/", entry.Author)},
 					TypeOnPlatform: []string{"Post"},
 				},
 			})
@@ -114,32 +140,27 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			}
 
 			internalTransfer := model.Transfer{
-				TransactionHash: transaction.Hash,
-				Timestamp:       transaction.Timestamp,
-				BlockNumber:     big.NewInt(transaction.BlockNumber),
+				TransactionHash: strings.ToLower(entry.TransactionHash.String()),
+				Timestamp:       entry.Timestamp,
 				Tag:             filter.TagSocial,
 				Type:            filter.SocialReward,
 				Index:           int64(entry.LogIndex),
-				Network:         transaction.Network,
-				AddressFrom:     message.Address,
+				Network:         message.Network,
+				AddressFrom:     strings.ToLower(entry.From.String()),
+				AddressTo:       strings.ToLower(entry.To.String()),
 				Platform:        protocol.PlatformMatters,
 				Source:          Source,
 				Metadata:        metadataRaw,
 				RelatedUrls: []string{
-					ethereum.BuildScanURL(message.Network, transaction.Hash),
+					ethereum.BuildScanURL(message.Network, strings.ToLower(entry.TransactionHash.String())),
 					strings.ReplaceAll(entry.URI, "ipfs://", "https://ipfs.io/ipfs/"),
 				},
 			}
 
 			transaction.Transfers = append(transaction.Transfers, internalTransfer)
 
-			for _, transfer := range transaction.Transfers {
-				if transaction.Tag == "" {
-					transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
-				}
-			}
-
 			internalTransactions = append(internalTransactions, transaction)
+
 		}
 
 		if len(entries) == 0 {

@@ -18,10 +18,6 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-const (
-	Source = "arweave"
-)
-
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
@@ -29,7 +25,7 @@ type Datasource struct {
 }
 
 func (d *Datasource) Name() string {
-	return Source
+	return protocol.SourceArweave
 }
 
 func (d *Datasource) Networks() []string {
@@ -93,7 +89,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 					AddressTo:       addressTo,
 					Metadata:        metadata.Default,
 					Network:         message.Network,
-					Source:          Source,
+					Source:          protocol.SourceArweave,
 					SourceData:      sourceData,
 				},
 			},

@@ -23,7 +23,7 @@ require (
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/lib/pq v1.10.6
-	github.com/naturalselectionlabs/kurora v0.11.0
+	github.com/naturalselectionlabs/kurora v0.13.2
 	github.com/naturalselectionlabs/kurora/client v0.0.0-20221128125215-3799e32e956f
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/robfig/cron/v3 v3.0.1
@@ -34,7 +34,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.13.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/unstoppabledomains/resolution-go/v2 v2.2.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	github.com/wealdtech/go-ens/v3 v3.5.5

@@ -51,14 +51,14 @@ type EthereumLog struct {
 }
 
 type GetArweaveTransactionsRequest struct {
-	BlockHeightFrom decimal.Decimal `url:"block_height_from,omitempty"`
-	BlockHeightTo   decimal.Decimal `url:"block_height_to,omitempty"`
-	Owner           string          `url:"owner,omitempty"`
-	Target          string          `url:"target,omitempty"`
-	Tags            []string        `url:"tags,omitempty"`
-	Cursor          string          `url:"cursor,omitempty"`
-	Order           string          `url:"order,omitempty"`
-	Limit           int             `url:"limit,omitempty"`
+	BlockHeightFrom string   `url:"block_height_from,omitempty"`
+	BlockHeightTo   string   `url:"block_height_to,omitempty"`
+	Owner           string   `url:"owner,omitempty"`
+	Target          string   `url:"target,omitempty"`
+	Tags            []string `url:"tags,omitempty"`
+	Cursor          string   `url:"cursor,omitempty"`
+	Order           string   `url:"order,omitempty"`
+	Limit           int      `url:"limit,omitempty"`
 }
 
 type GetArweaveTransactionsResponse struct {
