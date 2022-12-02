@@ -3,13 +3,14 @@ package lens
 import (
 	"context"
 	"fmt"
-	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
-	"go.uber.org/zap"
 	"math/big"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"go.uber.org/zap"
 
 	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/shopspring/decimal"

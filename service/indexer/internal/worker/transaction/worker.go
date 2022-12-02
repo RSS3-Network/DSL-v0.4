@@ -31,7 +31,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/internal/token"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	tokenjob "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/job/token"
 	"github.com/samber/lo"
@@ -158,7 +157,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		internalTransactions, err = lop.MapWithError(transactions, s.makeEthereumHandlerFunc(ctx, message, transactions), opt)
 	case protocol.NetworkZkSync:
 		internalTransactions, err = lop.MapWithError(transactions, s.makeZkSyncHandlerFunc(ctx, message, transactions), opt)
-	case arweave.Source:
+	case protocol.NetworkArweave:
 		internalTransactions, err = lop.MapWithError(transactions, s.makeArweaveHandlerFunc(ctx, message, transactions), opt)
 	}
 

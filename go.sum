@@ -485,6 +485,8 @@ github.com/naoina/go-stringutil v0.1.0/go.mod h1:XJ2SJL9jCtBh+P9q5btrd/Ylo8XwT/h
 github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416/go.mod h1:NBIhNtsFMo3G2szEBne+bO4gS192HuIYRqfvOWb4i1E=
 github.com/naturalselectionlabs/kurora v0.9.12 h1:F/N4Psl1rFbDJG7dWK7dMIIWAy3m5rvQa5EkbqM41Gw=
 github.com/naturalselectionlabs/kurora v0.9.12/go.mod h1:a8bQ14jL5cnebymDfySqZwwmancVSqFgLU58W/QDX+E=
+github.com/naturalselectionlabs/kurora v0.11.0 h1:l02664pF4kL1fVS0urE/PCaFDTW1cjgKw8tzGL/d5bk=
+github.com/naturalselectionlabs/kurora v0.11.0/go.mod h1:dfcJ2JqvmiGLqSgE0P0NqdHw5yY0yNg55UiSBtUnIpA=
 github.com/naturalselectionlabs/kurora v0.13.2 h1:vgux2oWyKRZYl3LXUZn2292hAULhS+HLfDBgJ3e5icQ=
 github.com/naturalselectionlabs/kurora v0.13.2/go.mod h1:i4zSN2nwrzyMHwlhoNIGGDkMqAPM+EENeTSSyuT9dM0=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20221115080034-1162ba0e23d0 h1:sBh1kmkwdMf5fi+crp+Eav4jdiDPWmuS1T62yqRbzqg=
