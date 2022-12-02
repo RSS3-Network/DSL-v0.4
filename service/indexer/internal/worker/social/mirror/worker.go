@@ -104,7 +104,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 				Title: mirrorContent.Content.Title,
 				Body:  mirrorContent.Content.Body,
 				Author: []string{
-					fmt.Sprintf("https://mirror.xyz/%v", strings.ToLower(string(transactionEdge.Node.Owner.Address))),
+					fmt.Sprintf("https://mirror.xyz/%v", strings.ToLower(mirrorMetadata.Contributor)),
 				},
 				OriginNoteID: mirrorMetadata.OriginalContentDigest,
 			}
