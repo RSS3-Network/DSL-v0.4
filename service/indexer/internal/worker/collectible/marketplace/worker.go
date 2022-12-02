@@ -14,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/quix"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/x2y2"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
@@ -65,7 +66,7 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 
 		platform, exists := platformMap[common.HexToAddress(transaction.AddressTo)]
 		if !exists {
-			zap.L().Debug("unsupported platform", zap.String("address", transaction.AddressTo))
+			zap.L().Debug("unsupported platform", zap.String("address", transaction.AddressTo), zap.String("transaction_hash", transaction.Hash))
 
 			continue
 		}
@@ -90,6 +91,8 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				internalTransfers, err = i.handleLooksRareTakerAsk(ctx, transaction, log)
 			case looksrare.EventHashTakerBid:
 				internalTransfers, err = i.handleLooksRareTakerBid(ctx, transaction, log)
+			case x2y2.EventHashEvInventory:
+				internalTransfers, err = i.handleX2Y2EvInventory(ctx, transaction, log)
 			default:
 				continue
 			}
