@@ -29,6 +29,7 @@ type NameServiceResult struct {
 	Bit                string `json:"bit"`
 	Avvy               string `json:"avvy"`
 	Address            string `json:"address"`
+	Err                error  `json:"-"`
 }
 
 type BitResult struct {

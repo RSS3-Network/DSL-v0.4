@@ -76,21 +76,21 @@ func CheckAPIKey(apiKey string) error {
 // ResolveAddress resolve handles into an address
 func ResolveAddress(address string, ignoreContract bool) (string, error) {
 	result := name_service.ReverseResolveAll(strings.ToLower(address), false)
-	if len(result.Address) == 0 {
-		return "", fmt.Errorf("The address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address.")
+	if len(result.Address) == 0 && result.Err != nil {
+		return "", fmt.Errorf("Error occurred: %s", result.Err)
 	}
 
 	// check valid
 	valid := name_service.IsValidAddress(result.Address)
 	if !valid {
-		return "", fmt.Errorf("The address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address.")
+		return "", fmt.Errorf("%s: %s", name_service.ErrNotEvmAddress, name_service.ReferDoc)
 	}
 
 	// check contract
 	if !ignoreContract {
 		isContract, _ := name_service.IsEthereumContract(result.Address)
 		if isContract {
-			return "", fmt.Errorf("Contract addresses are not currently supported.")
+			return "", fmt.Errorf("%s", name_service.ErrNotSupportContract)
 		}
 	}
 
