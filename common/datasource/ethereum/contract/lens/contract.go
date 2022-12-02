@@ -21,10 +21,11 @@ var (
 )
 
 var SupportLensEvents = map[common.Hash]*common.Address{
-	EventHashCommentCreated:       &HubProxyContractAddress,
-	EventHashPostCreated:          &HubProxyContractAddress,
-	EventHashProfileCreated:       &HubProxyContractAddress,
-	EventHashMirrorCreated:        &HubProxyContractAddress,
-	EventHashFollowed:             &HubProxyContractAddress,
-	EventHashFollowNFTTransferred: &HubProxyContractAddress,
+	EventHashCommentCreated: &HubProxyContractAddress,
+	EventHashPostCreated:    &HubProxyContractAddress,
+	EventHashProfileCreated: &HubProxyContractAddress,
+	EventHashMirrorCreated:  &HubProxyContractAddress,
+	EventHashFollowed:       &HubProxyContractAddress,
 }
+
+// note: kurora cannot query who the user has unfollowed

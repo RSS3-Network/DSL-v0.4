@@ -139,10 +139,10 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 	var err error
 	defer func() { opentelemetry.Log(trace, profileID, internalTransactionMap, err) }()
 
-	var internalTransactions []model.Transaction
 	hash := common.HexToHash(hexutil.EncodeBig(profileID))
 
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 	for eventHash, contractAddress := range lens.SupportLensEvents {
 		wg.Add(1)
 		go func(eventHash common.Hash, contractAddress *common.Address) {
@@ -174,15 +174,16 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 				}
 
 				for _, transfer := range result {
-					internalTransactions = append(internalTransactions, model.Transaction{
+					mu.Lock()
+					internalTransactionMap[transfer.TransactionHash.String()] = model.Transaction{
 						BlockNumber: transfer.BlockNumber.BigInt().Int64(),
 						Hash:        transfer.TransactionHash.String(),
 						Index:       int64(transfer.TransactionIndex),
 						Network:     message.Network,
 						Transfers:   make([]model.Transfer, 0),
-						Owner:       strings.ToLower(message.Address),
 						Source:      protocol.SourceKurora,
-					})
+					}
+					mu.Unlock()
 				}
 
 				cursor := kurora.LogCursor(result[len(result)-1].TransactionHash, result[len(result)-1].Index)
@@ -191,10 +192,6 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 		}(eventHash, contractAddress)
 	}
 	wg.Wait()
-
-	for _, transaction := range internalTransactions {
-		internalTransactionMap[transaction.Hash] = transaction
-	}
 
 	return internalTransactionMap, nil
 }
