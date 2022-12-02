@@ -49,6 +49,10 @@ const (
 	PlatformDODO           = "DODO"
 	PlatformBalancer       = "Balancer"
 	PlatformVelodrome      = "Velodrome"
+	PlatformOpenSea        = "OpenSea"
+	PlatformGem            = "Gem"
+	PlatformQuix           = "Quix"
+	PlatformLooksRare      = "LooksRare"
 
 	// metaverse
 	PlatformMars4      = "Mars4"

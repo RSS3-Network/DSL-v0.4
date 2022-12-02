@@ -2,85 +2,40 @@ package marketplace
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
+	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
-	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/shopspring/decimal"
-	"go.opentelemetry.io/otel"
 )
 
-func (i *internal) handleLooksRare(ctx context.Context, _ *protocol.Message, transaction model.Transaction) (*model.Transaction, error) {
-	tracer := otel.Tracer("worker_marketplace")
-	_, span := tracer.Start(ctx, "worker_marketplace:handleLooksRare")
+func (i *internal) handleLooksRareTakerAsk(ctx context.Context, transaction model.Transaction, log *types.Log) ([]model.Transfer, error) {
+	platform, exists := platformMap[log.Address]
+	if !exists {
+		return nil, UnsupportedPlatform
+	}
 
-	defer opentelemetry.Log(span, transaction, nil, nil)
-
-	ethclient, err := ethclientx.Global(transaction.Network)
+	ethereumClient, err := ethclientx.Global(transaction.Network)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ethclientx global: %w", err)
 	}
 
-	var sourceData ethereum.SourceData
-	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
-		return nil, err
-	}
-
-	internalTransaction := transaction
-	internalTransaction.Transfers = make([]model.Transfer, 0)
-
-	exchangeContract, err := looksrare.NewExchange(common.HexToAddress(transaction.AddressTo), ethclient)
+	filterer, err := looksrare.NewExchangeFilterer(log.Address, ethereumClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new exchange filterer: %w", err)
 	}
 
-	var internalTransfers []model.Transfer
-
-	for _, log := range sourceData.Receipt.Logs {
-		switch log.Topics[0] {
-		case looksrare.EventHashTakerAsk:
-			if internalTransfers, err = i.handleLooksRareTakerAsk(ctx, internalTransaction, *log, exchangeContract); err != nil {
-				return nil, err
-			}
-		case looksrare.EventHashTakerBid:
-			if internalTransfers, err = i.handleLooksRareTakerBid(ctx, internalTransaction, *log, exchangeContract); err != nil {
-				return nil, err
-			}
-		default:
-			continue
-		}
-
-		internalTransaction.Transfers = append(internalTransaction.Transfers, internalTransfers...)
-	}
-
-	if len(internalTransaction.Transfers) == 0 {
-		return nil, errors.New("not found nft trade")
-	}
-
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
-	internalTransaction.Platform = looksrare.Platform
-
-	return &internalTransaction, nil
-}
-
-func (i *internal) handleLooksRareTakerAsk(ctx context.Context, transaction model.Transaction, log types.Log, exchangeContract *looksrare.Exchange) ([]model.Transfer, error) {
-	event, err := exchangeContract.ParseTakerAsk(log)
+	event, err := filterer.ParseTakerAsk(*log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse taker ask: %w", err)
 	}
 
-	nft, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, event.Collection.String(), event.TokenId)
+	nftMetadata, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, event.Collection.String(), event.TokenId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("nft to metadata: %w", err)
 	}
 
 	var cost *metadata.Token
@@ -89,27 +44,44 @@ func (i *internal) handleLooksRareTakerAsk(ctx context.Context, transaction mode
 	}
 
 	nftValue := decimal.NewFromBigInt(event.Amount, 0)
-	nft.Value = &nftValue
+	nftMetadata.Value = &nftValue
 
-	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), looksrare.Platform, event.Maker, event.Taker, nft, cost)
+	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, nftMetadata, cost)
 	if err != nil {
 		return nil, err
 	}
 
-	return []model.Transfer{
+	internalTransfers := []model.Transfer{
 		*tradeTransfer,
-	}, nil
-}
-
-func (i *internal) handleLooksRareTakerBid(ctx context.Context, transaction model.Transaction, log types.Log, exchangeContract *looksrare.Exchange) ([]model.Transfer, error) {
-	event, err := exchangeContract.ParseTakerBid(log)
-	if err != nil {
-		return nil, err
 	}
 
-	nft, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, event.Collection.String(), event.TokenId)
+	return internalTransfers, nil
+}
+
+func (i *internal) handleLooksRareTakerBid(ctx context.Context, transaction model.Transaction, log *types.Log) ([]model.Transfer, error) {
+	platform, exists := platformMap[log.Address]
+	if !exists {
+		return nil, UnsupportedPlatform
+	}
+
+	ethereumClient, err := ethclientx.Global(transaction.Network)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ethclientx global: %w", err)
+	}
+
+	filterer, err := looksrare.NewExchangeFilterer(log.Address, ethereumClient)
+	if err != nil {
+		return nil, fmt.Errorf("new exchange filterer: %w", err)
+	}
+
+	event, err := filterer.ParseTakerBid(*log)
+	if err != nil {
+		return nil, fmt.Errorf("parse taker bid: %w", err)
+	}
+
+	nftMetadata, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, event.Collection.String(), event.TokenId)
+	if err != nil {
+		return nil, fmt.Errorf("nft to metadata: %w", err)
 	}
 
 	var cost *metadata.Token
@@ -118,9 +90,9 @@ func (i *internal) handleLooksRareTakerBid(ctx context.Context, transaction mode
 	}
 
 	nftValue := decimal.NewFromBigInt(event.Amount, 0)
-	nft.Value = &nftValue
+	nftMetadata.Value = &nftValue
 
-	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), looksrare.Platform, event.Maker, event.Taker, nft, cost)
+	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, nftMetadata, cost)
 	if err != nil {
 		return nil, err
 	}
