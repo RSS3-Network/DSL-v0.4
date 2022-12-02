@@ -493,6 +493,8 @@ github.com/naturalselectionlabs/kurora/client v0.0.0-20221115080034-1162ba0e23d0
 github.com/naturalselectionlabs/kurora/client v0.0.0-20221115080034-1162ba0e23d0/go.mod h1:c0A0db3dA/PNPYyQiP++8scUd/69hfbX3oLg68KPmA8=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20221201015617-dcae3aefc9c9 h1:BSPLS14o31TWnhOdHFEL55O9bwzgIBmmwA+asnKEjEQ=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20221201015617-dcae3aefc9c9/go.mod h1:vkbbClg5uh3Ricg596t8MWcD6pFy28docRNwXno4hKU=
+github.com/naturalselectionlabs/kurora/client v0.0.0-20221201091937-f82d0feae2b2 h1:LkY2D2a6S7jc96mv2VsCx85EwPWFifZsy/cGNQSvdjE=
+github.com/naturalselectionlabs/kurora/client v0.0.0-20221201091937-f82d0feae2b2/go.mod h1:vkbbClg5uh3Ricg596t8MWcD6pFy28docRNwXno4hKU=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=

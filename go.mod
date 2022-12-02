@@ -24,7 +24,7 @@ require (
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/lib/pq v1.10.6
 	github.com/naturalselectionlabs/kurora v0.13.2
-	github.com/naturalselectionlabs/kurora/client v0.0.0-20221201015617-dcae3aefc9c9
+	github.com/naturalselectionlabs/kurora/client v0.0.0-20221201091937-f82d0feae2b2
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.31.0
