@@ -19,8 +19,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/shopspring/decimal"
-
-	"go.uber.org/zap"
 )
 
 var _ worker.Worker = (*internal)(nil)
@@ -63,10 +61,9 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			return nil, fmt.Errorf("unmarshal source data: %w", err)
 		}
 
+		// Filter unsupported platforms
 		platform, exists := platformMap[common.HexToAddress(transaction.AddressTo)]
 		if !exists {
-			zap.L().Debug("unsupported platform", zap.String("address", transaction.AddressTo))
-
 			continue
 		}
 
