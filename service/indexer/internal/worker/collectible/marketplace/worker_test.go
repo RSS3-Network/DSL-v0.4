@@ -358,6 +358,45 @@ func Test_internal_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "uniswap",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0xe242ba8cb95b3c52a8b19c830c55a62a7bd03370", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0x442e3fbb366d9aadf01b59acdf8fa1431f798fce0296c6c6633540f038ecb579
+						Hash:        "0x442e3fbb366d9aadf01b59acdf8fa1431f798fce0296c6c6633540f038ecb579",
+						BlockNumber: 16094957,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+
+				for _, transaction := range transactions {
+					assert.Len(t, transaction.Transfers, 8)
+				}
+
+				for _, transaction := range transactions {
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformUniswap) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {
