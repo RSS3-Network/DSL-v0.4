@@ -66,7 +66,7 @@ func ReverseResolveAll(input string, resolveAll bool) model.NameServiceResult {
 		if len(splits) == 1 {
 			address = input
 		} else {
-			err = fmt.Errorf("%s: %s", ErrNotSupportNS, ReferDoc)
+			err = fmt.Errorf(".%s %s, %s", splits[len(splits)-1], ErrNotSupportNS, ReferDoc)
 		}
 	}
 

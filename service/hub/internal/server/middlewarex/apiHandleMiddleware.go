@@ -77,7 +77,7 @@ func CheckAPIKey(apiKey string) error {
 func ResolveAddress(address string, ignoreContract bool) (string, error) {
 	result := name_service.ReverseResolveAll(strings.ToLower(address), false)
 	if len(result.Address) == 0 && result.Err != nil {
-		return "", fmt.Errorf("Error occurred: %s", result.Err)
+		return "", result.Err
 	}
 
 	// check valid
