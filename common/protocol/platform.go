@@ -8,6 +8,7 @@ const (
 	PlatformCrossbell      = "Crossbell"
 	PlatformCrossbellXLog  = "xLog"
 	PlatformCrossbellXCast = "xCast"
+	PlatformCrossbellXSync = "xSync"
 	PlatformFarcaster      = "Farcaster"
 	PlatformIQWiki         = "IQ.Wiki"
 
