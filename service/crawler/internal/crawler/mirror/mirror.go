@@ -3,10 +3,12 @@ package mirror
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -62,14 +64,20 @@ func (s *service) Run() error {
 	for {
 		value, err := cache.Global().Get(ctx, mirrorCacheKey).Result()
 		if err != nil {
-			zap.L().Error("get cursor of mirror crawler from cache", zap.Error(err))
+			if !errors.Is(err, redis.Nil) {
+				zap.L().Error("get cursor of mirror crawler from cache", zap.Error(err))
 
-			return fmt.Errorf("get cursor of mirror crawler from cache: %w", err)
+				return fmt.Errorf("get cursor of mirror crawler from cache: %w", err)
+			}
+
+			value = "592872:" // https://viewblock.io/arweave/tx/lW0AMDN2RgOeqULk-u6Tv0wfZWpx9MfkrmqQQU-Mvuo
 		}
 
-		if splits := strings.Split(value, ":"); len(value) == 2 {
+		if splits := strings.Split(value, ":"); len(splits) == 2 && splits[1] != "" {
 			query.Cursor = lo.ToPtr(splits[1])
 		}
+
+		zap.L().Debug("build transactions", zap.String("cursor", lo.FromPtr(query.Cursor)))
 
 		// Fetch the mirror entries and then build them as transactions
 		transactions, err := s.buildTransactions(ctx, query)
@@ -178,14 +186,12 @@ func (s *service) buildTransactions(ctx context.Context, query kurora.DatasetMir
 	}
 
 	lastEntry, err := lo.Last(entries)
-	if err != nil {
-		// No update or no eligible data
-		return nil, nil
-	}
+	if err == nil {
+		if err := cache.Global().Set(ctx, mirrorCacheKey, fmt.Sprintf("%d:%s", lastEntry.Height.BigInt().Uint64(), lastEntry.TransactionID), 7*24*time.Hour).Err(); err != nil {
+			zap.L().Error("update cursor", zap.Error(err), zap.Stringer("height", lastEntry.Height), zap.String("transaction_id", lastEntry.TransactionID))
 
-	// Set cursor to cache
-	if err := cache.Global().Set(ctx, mirrorCacheKey, fmt.Sprintf("%v:%v", lastEntry.Height, lastEntry.TransactionID), 7*24*time.Hour).Err(); err != nil {
-		return nil, fmt.Errorf("set cursor to cache: %w", err)
+			return nil, fmt.Errorf("update cursor: %w", err)
+		}
 	}
 
 	return transactions, nil
