@@ -136,6 +136,12 @@ func (s *service) buildTransactions(ctx context.Context, query kurora.DatasetMir
 			continue
 		}
 
+		filterType := filter.SocialPost
+
+		if entry.ContentDigital != entry.OriginContentDigital {
+			filterType = filter.SocialRevise
+		}
+
 		transaction := model.Transaction{
 			BlockNumber: entry.Height.BigInt().Int64(),
 			Hash:        entry.TransactionID,
@@ -147,7 +153,7 @@ func (s *service) buildTransactions(ctx context.Context, query kurora.DatasetMir
 			Source:      protocol.SourceKurora,
 			Timestamp:   entry.Timestamp,
 			Tag:         filter.TagSocial,
-			Type:        filter.SocialPost,
+			Type:        filterType,
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{
@@ -163,23 +169,23 @@ func (s *service) buildTransactions(ctx context.Context, query kurora.DatasetMir
 					Platform:    protocol.PlatformMirror,
 					RelatedUrls: []string{fmt.Sprintf("https://mirror.xyz/%s/%s", address, entry.OriginContentDigital)},
 					Tag:         filter.TagSocial,
-					Type:        filter.SocialPost,
+					Type:        filterType,
 				},
 			},
 		}
 
 		transactions = append(transactions, &transaction)
+	}
 
-		lastEntry, err := lo.Last(entries)
-		if err != nil {
-			// No update or no eligible data
-			continue
-		}
+	lastEntry, err := lo.Last(entries)
+	if err != nil {
+		// No update or no eligible data
+		return nil, nil
+	}
 
-		// Set cursor to cache
-		if err := cache.Global().Set(ctx, mirrorCacheKey, fmt.Sprintf("%v:%v", lastEntry.Height, lastEntry.TransactionID), 7*24*time.Hour).Err(); err != nil {
-			return nil, fmt.Errorf("set cursor to cache: %w", err)
-		}
+	// Set cursor to cache
+	if err := cache.Global().Set(ctx, mirrorCacheKey, fmt.Sprintf("%v:%v", lastEntry.Height, lastEntry.TransactionID), 7*24*time.Hour).Err(); err != nil {
+		return nil, fmt.Errorf("set cursor to cache: %w", err)
 	}
 
 	return transactions, nil
