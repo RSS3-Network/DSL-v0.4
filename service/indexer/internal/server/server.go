@@ -51,7 +51,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/matters"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
@@ -184,7 +183,6 @@ func (s *Server) Initialize() (err error) {
 		bridge.New(),
 		marketplace.New(),
 		poap.New(),
-		mirror.New(),
 		gitcoin.New(),
 		snapshot.New(),
 		crossbell.New(),
