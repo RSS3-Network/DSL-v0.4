@@ -43,8 +43,8 @@ func New(config *config.Config) crawler.Crawler {
 		instance service
 	)
 
-	if instance.kuroraClient, err = kurora.Dial(context.Background(), config.RPC.PregodETL.KuroraV2.HTTP); err != nil {
-		zap.L().Error("dial kurora", zap.Error(err), zap.String("endpoint", config.RPC.PregodETL.KuroraV2.HTTP))
+	if instance.kuroraClient, err = kurora.Dial(context.Background(), config.Kurora.Endpoint); err != nil {
+		zap.L().Error("dial kurora", zap.Error(err), zap.String("endpoint", config.Kurora.Endpoint))
 
 		return nil
 	}
