@@ -29,7 +29,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
@@ -150,7 +149,6 @@ func (s *Server) Initialize() (err error) {
 		kuroraDatasource,
 		alchemyDatasource,
 		moralis.New(s.config.Moralis.Key),
-		arweave.New(),
 		blockscoutDatasource,
 		zksync.New(),
 		eth_etl.New(),
