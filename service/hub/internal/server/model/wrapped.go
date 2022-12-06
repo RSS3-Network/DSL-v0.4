@@ -19,13 +19,15 @@ type WrappedResult struct {
 }
 
 type SocialResult struct {
-	Post         int64  `json:"post"`
-	Comment      int64  `json:"comment"`
-	Following    int64  `json:"following"`
-	Follower     int64  `json:"follower"`
-	LongestHash  string `json:"longest_hash"`
-	ShortestHash string `json:"shortest_hash"`
-	List         []DApp `json:"list" gorm:"-"`
+	Post           int64  `json:"post"`
+	Comment        int64  `json:"comment"`
+	Following      int64  `json:"following"`
+	Follower       int64  `json:"follower"`
+	LongestHash    string `json:"longest_hash"`
+	ShortestHash   string `json:"shortest_hash"`
+	TotalWord      uint   `json:"total_word"`
+	WordPercentile uint   `json:"word_percentile"`
+	List           []DApp `json:"list" gorm:"-"`
 }
 
 type SearchResult struct {
