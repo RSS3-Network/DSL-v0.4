@@ -128,6 +128,7 @@ func (s *service) fetchAndHandleTransfer(ctx context.Context, message *protocol.
 			}
 
 			if len(entry.Author) > 0 && len(entry.Summary) > 0 {
+				entry.Author = entry.Author[1:]
 				postOuter.Target = &metadata.Post{
 					Title:          entry.Title,
 					Summary:        entry.Summary,
