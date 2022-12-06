@@ -12,10 +12,11 @@ const (
 	PlatformFarcaster      = "Farcaster"
 	PlatformIQWiki         = "IQ.Wiki"
 
-	PlatformLens              = "Lens"
-	PlatformLensLenster       = "Lenster"
-	PlatformLensLenstube      = "Lenstube"
-	PlatformLensLenstubeBytes = "lenstube-bytes"
+	PlatformLens                 = "Lens"
+	PlatformLensLenster          = "Lenster"
+	PlatformLensLenstube         = "Lenstube"
+	PlatformLensLenstubeBytes    = "lenstube-bytes"
+	PlatformLensLensterCrowdfund = "Lenster Crowdfund"
 
 	PlatformMatters = "Matters"
 
@@ -58,6 +59,7 @@ const (
 	// metaverse
 	PlatformMars4      = "Mars4"
 	PlatformAavegotchi = "Aavegotchi"
+	PlatformCarv       = "Carv"
 
 	PlatformParaswap = "Paraswap"
 )

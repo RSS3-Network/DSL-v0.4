@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -42,17 +43,41 @@ func New() *Client {
 	return client
 }
 
-// profile request
+// profiles request
 type ProfileQueryRequest struct {
 	OwnedBy []string `json:"ownedBy"`
 }
 
 type ProfileQueryResponse struct {
 	Profiles struct {
-		Items []struct {
-			ID graphql.String `json:"id"`
-		} `graphql:"items"`
+		Items []Profile `json:"items"`
 	} `graphql:"profiles(request: $request )"`
+}
+
+// profile request
+type SingleProfileQueryRequest struct {
+	ID string `json:"profileId"`
+}
+
+type SingleProfileQueryResponse struct {
+	Profile Profile `graphql:"profile(request: $request )"`
+}
+
+type Profile struct {
+	ID      graphql.String `json:"id"`
+	Name    graphql.String `json:"name"`
+	Handle  graphql.String `json:"handle"`
+	Bio     graphql.String `json:"bio"`
+	OwnedBy graphql.String `json:"ownedBy"`
+	Picture ProfilePicture `json:"picture"`
+}
+
+type ProfilePicture struct {
+	MediaSet struct {
+		Original struct {
+			URL graphql.String `json:"url"`
+		} `json:"original"`
+	} `graphql:"... on MediaSet"`
 }
 
 func (c *Client) BatchGetProfileID(ctx context.Context, address string) ([]*big.Int, error) {
@@ -61,6 +86,7 @@ func (c *Client) BatchGetProfileID(ctx context.Context, address string) ([]*big.
 			OwnedBy: []string{address},
 		},
 	}
+
 	resp := &ProfileQueryResponse{}
 
 	if err := c.graphqlClient.Query(ctx, &resp, req); err != nil {
@@ -139,4 +165,41 @@ func (c *Client) BatchGetProfiles(ctx context.Context, address string) ([]*socia
 	})
 
 	return profiles, nil
+}
+
+func (c *Client) GetProfileByProfileID(ctx context.Context, profileID *big.Int) (*social.Profile, error) {
+	profileIdHex := []byte(hexutil.EncodeBig(profileID))
+	if len(profileIdHex)%2 == 1 {
+		profileIdHex = append(profileIdHex[:2], append([]byte("0"), profileIdHex[2:]...)...)
+	}
+
+	req := map[string]interface{}{
+		"request": SingleProfileQueryRequest{
+			ID: string(profileIdHex),
+		},
+	}
+
+	resp := &SingleProfileQueryResponse{}
+
+	if err := c.graphqlClient.Query(ctx, &resp, req); err != nil {
+		loggerx.Global().Error("lens graphql profile query error", zap.String("id", string(profileIdHex)), zap.Error(err))
+
+		return nil, err
+	}
+
+	profile := &social.Profile{
+		Address:  strings.ToLower(string(resp.Profile.OwnedBy)),
+		Platform: protocol.PlatformLens,
+		Network:  protocol.NetworkPolygon,
+		Source:   protocol.PlatformLens,
+		URL:      fmt.Sprintf("https://lenster.xyz/u/%v", string(resp.Profile.Handle)),
+		Bio:      string(resp.Profile.Bio),
+		Handle:   string(resp.Profile.Handle),
+	}
+
+	if url := string(resp.Profile.Picture.MediaSet.Original.URL); len(url) > 0 {
+		profile.ProfileUris = append(profile.ProfileUris, ipfs.GetDirectURL(url))
+	}
+
+	return profile, nil
 }

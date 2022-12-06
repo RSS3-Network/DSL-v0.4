@@ -52,7 +52,6 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 	tempTransactions := make([]*model.Transaction, 0)
 
 	for _, ts := range lo.Chunk(transactions, chunkSize) {
-
 		blocks, err := lop.MapWithError(ts, makeBlockHandlerFunc(ctx, message), lop.NewOption().WithConcurrency(MaxConcurrency))
 		if err != nil {
 			loggerx.Global().Error("failed to handle blocks", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
@@ -151,7 +150,7 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 		}
 
 		// crawler message address is nil
-		if transaction.AddressFrom != "" && message.Address != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) &&
+		if transaction.Source != protocol.SourceKurora && transaction.AddressFrom != "" && message.Address != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) &&
 			!allowlist.AllowList.Contains(transaction.AddressFrom) && !allowlist.AllowList.Contains(transaction.AddressTo) {
 			return nil, nil
 		}
@@ -188,8 +187,6 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 		transactionSuccess := receipt.Status == types.ReceiptStatusSuccessful
 		transaction.Success = &transactionSuccess
 
-		transaction.Source = Source
-
 		if transaction.SourceData, err = json.Marshal(&SourceData{
 			Transaction: internalTransaction,
 			Receipt:     receipt,
@@ -212,7 +209,7 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 			AddressTo:       transaction.AddressTo,
 			Metadata:        metadata.Default,
 			Network:         message.Network,
-			Source:          Source,
+			Source:          transaction.Source,
 			SourceData:      transaction.SourceData,
 			RelatedUrls: []string{
 				BuildScanURL(message.Network, transaction.Hash),
@@ -256,7 +253,7 @@ func handleLog(ctx context.Context, message *protocol.Message, transaction *mode
 		Index:           int64(log.Index),
 		Network:         transaction.Network,
 		Metadata:        metadata.Default,
-		Source:          Source,
+		Source:          transaction.Source,
 		RelatedUrls: []string{
 			BuildScanURL(message.Network, transaction.Hash),
 		},

@@ -141,8 +141,6 @@ type RPCNetwork struct {
 	Avalanche         *RPCEndpoint `mapstructure:"avalanche"`
 	Celo              *RPCEndpoint `mapstructure:"celo"`
 	Fantom            *RPCEndpoint `mapstructure:"fantom"`
-	Kurora            *RPCEndpoint `mapstructure:"kurora"`
-	KuroraV2          *RPCEndpoint `mapstructure:"kurora_v2"`
 }
 
 type RPCEndpoint struct {

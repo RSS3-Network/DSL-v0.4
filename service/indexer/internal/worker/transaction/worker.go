@@ -173,7 +173,9 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			continue
 		}
 
-		internalTransaction.Owner = message.Address
+		if len(internalTransaction.Owner) == 0 {
+			internalTransaction.Owner = message.Address
+		}
 
 		transactions = append(transactions, *internalTransaction)
 	}

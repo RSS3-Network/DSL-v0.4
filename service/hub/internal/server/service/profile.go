@@ -7,6 +7,7 @@ import (
 
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/worker/crossbell"
 	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/common/worker/lens"
@@ -14,6 +15,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 var ProfilePlatformList = []string{
@@ -60,42 +62,22 @@ func (s *Service) GetProfiles(c context.Context, request model.GetRequest) ([]*s
 }
 
 func (s *Service) BatchGetProfiles(c context.Context, request model.BatchGetProfilesRequest) ([]*social.Profile, error) {
-	m := make(map[string]*social.Profile)
-	result := make([]*social.Profile, 0)
+	profiles, err := dao.BatchGetProfiles(c, request)
+	if err != nil {
+		loggerx.Global().Error("batch get profiles error", zap.Error(err))
 
-	profiles, _ := dao.BatchGetProfiles(c, request)
-
-	for _, profile := range profiles {
-		key := fmt.Sprintf("%v:%v", profile.Platform, profile.Address)
-		m[key] = profile
-		result = append(result, profile)
+		return nil, err
 	}
 
-	lop.ForEach(request.Address, func(address string, i int) {
-		lop.ForEach(ProfilePlatformList, func(platform string, i int) {
-			key := fmt.Sprintf("%v:%v", platform, address)
-			if profile, ok := m[key]; ok {
-				go func() {
-					if profile.UpdatedAt.After(time.Now().Add(-2 * time.Minute)) {
-						return
-					}
-
-					if _, err := s.GetProfilesFromPlatform(c, platform, address); err != nil {
-						return
-					}
-				}()
-
-				return
-			}
-
-			list, err := s.GetProfilesFromPlatform(c, platform, address)
-			if err == nil && len(list) > 0 {
-				result = append(result, list...)
+	go func() {
+		lop.ForEach(request.Address, func(address string, i int) {
+			for _, platform := range ProfilePlatformList {
+				_, _ = s.GetProfilesFromPlatform(context.Background(), platform, address)
 			}
 		})
-	})
+	}()
 
-	return result, nil
+	return profiles, nil
 }
 
 func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address string) ([]*social.Profile, error) {
@@ -139,7 +121,7 @@ func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address s
 	}
 
 	if err != nil {
-		logrus.Errorf("[profile] getProfilesFromPlatform error, %v", err)
+		loggerx.Global().Error("get profiles error", zap.Error(err))
 		return nil, err
 	}
 

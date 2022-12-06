@@ -60,9 +60,9 @@ func (s *service) Run() error {
 	var err error
 	ctx := context.Background()
 
-	s.kuroraClient, err = kurora.Dial(ctx, s.config.RPC.PregodETL.KuroraV2.HTTP, kurora.WithHTTPClient(http.DefaultClient))
+	s.kuroraClient, err = kurora.Dial(ctx, s.config.Kurora.Endpoint, kurora.WithHTTPClient(http.DefaultClient))
 	if err != nil {
-		loggerx.Global().Error("crossbell: kurora.Dial error", zap.Error(err), zap.String("endpoint", s.config.RPC.PregodETL.KuroraV2.HTTP))
+		loggerx.Global().Error("crossbell: kurora.Dial error", zap.Error(err), zap.String("endpoint", s.config.Kurora.Endpoint))
 
 		return err
 	}
@@ -77,12 +77,14 @@ func (s *service) Run() error {
 	for {
 		transactions, err := s.GetKuroraLogs(ctx)
 		if err != nil {
-			loggerx.Global().Error("crossbell: GetKuroraLogs error", zap.Error(err), zap.String("endpoint", s.config.RPC.PregodETL.KuroraV2.HTTP))
+			loggerx.Global().Error("crossbell: GetKuroraLogs error", zap.Error(err), zap.String("endpoint", s.config.Kurora.Endpoint))
+
 			return err
 		}
 
 		if len(transactions) == 0 {
 			time.Sleep(10 * time.Minute)
+
 			continue
 		}
 
