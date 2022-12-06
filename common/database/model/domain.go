@@ -27,7 +27,9 @@ type NameServiceResult struct {
 	SpaceID            string `json:"spaceid"`
 	UnstoppableDomains string `json:"unstoppable_domains"`
 	Bit                string `json:"bit"`
+	Avvy               string `json:"avvy"`
 	Address            string `json:"address"`
+	Err                error  `json:"-"`
 }
 
 type BitResult struct {

@@ -49,7 +49,7 @@ func (s *Server) Initialize() (err error) {
 
 	ipfs.New(config.ConfigHub.RPC.IPFS.IO)
 
-	ethereumClientMap, err := ethclientx.Dial(config.ConfigHub.RPC, []string{protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkCrossbell, protocol.NetworkBinanceSmartChain})
+	ethereumClientMap, err := ethclientx.Dial(config.ConfigHub.RPC, []string{protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkCrossbell, protocol.NetworkBinanceSmartChain, protocol.NetworkAvalanche})
 	if err != nil {
 		return err
 	}
