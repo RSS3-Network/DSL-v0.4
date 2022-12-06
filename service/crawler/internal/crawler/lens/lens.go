@@ -59,7 +59,7 @@ func (s *service) Run() error {
 	ctx := context.Background()
 
 	var err error
-	s.kuroraClient, err = kurora.Dial(context.Background(), s.config.RPC.PregodETL.KuroraV2.HTTP, kurora.WithHTTPClient(http.DefaultClient))
+	s.kuroraClient, err = kurora.Dial(context.Background(), s.config.Kurora.Endpoint, kurora.WithHTTPClient(http.DefaultClient))
 	if err != nil {
 		logrus.Errorf("[lens] kuroraClient NewClient error, %v", err)
 		return err
