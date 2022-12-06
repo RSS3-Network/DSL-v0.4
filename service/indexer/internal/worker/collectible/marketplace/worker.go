@@ -3,6 +3,7 @@ package marketplace
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -18,8 +19,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/shopspring/decimal"
-
-	"go.uber.org/zap"
 )
 
 var _ worker.Worker = (*internal)(nil)
@@ -57,39 +56,52 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	internalTransactions := make([]model.Transaction, 0)
 
 	for _, transaction := range transactions {
-		addressTo := common.HexToAddress(transaction.AddressTo)
+		var sourceData ethereum.SourceData
+		if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
+			return nil, fmt.Errorf("unmarshal source data: %w", err)
+		}
 
-		switch addressTo {
-		case opensea.AddressSeaport, opensea.AddressWyvernExchangeV1, opensea.AddressWyvernExchangeV2:
-			internalTransaction, err := i.handleOpenSea(ctx, message, transaction)
-			if err != nil {
-				zap.L().Error("failed to handle opensea transaction", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
-
-				continue
-			}
-
-			internalTransactions = append(internalTransactions, *internalTransaction)
-		case looksrare.AddressExchange:
-			internalTransaction, err := i.handleLooksRare(ctx, message, transaction)
-			if err != nil {
-				zap.L().Error("failed to handle looksrare transaction", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
-
-				continue
-			}
-
-			internalTransactions = append(internalTransactions, *internalTransaction)
-		case quix.AddressWrapperSeaportProxy, quix.AddressSeaport, quix.AddressExchangeV5:
-			internalTransaction, err := i.handleQuix(ctx, message, transaction)
-			if err != nil {
-				zap.L().Error("failed to handle quix transaction", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
-
-				continue
-			}
-
-			internalTransactions = append(internalTransactions, *internalTransaction)
-		default:
+		// Filter unsupported platforms
+		platform, exists := platformMap[common.HexToAddress(transaction.AddressTo)]
+		if !exists {
 			continue
 		}
+
+		internalTransaction := transaction
+		internalTransaction.Transfers = make([]model.Transfer, 0)
+
+		for _, log := range sourceData.Receipt.Logs {
+			var (
+				internalTransfers []model.Transfer
+				err               error
+			)
+
+			switch log.Topics[0] {
+			case opensea.EventHashOrderFulfilled:
+				internalTransfers, err = i.handleOpenSeaOrderFulfilled(ctx, transaction, log, sourceData.Receipt.Logs)
+			case opensea.EventHashOrdersMatched:
+				internalTransfers, err = i.handleOpenSeaOrdersMatched(ctx, transaction, log)
+			case quix.EventHashSellOrderFilled:
+				internalTransfers, err = i.handleQuickSellOrderFilled(ctx, transaction, log)
+			case looksrare.EventHashTakerAsk:
+				internalTransfers, err = i.handleLooksRareTakerAsk(ctx, transaction, log)
+			case looksrare.EventHashTakerBid:
+				internalTransfers, err = i.handleLooksRareTakerBid(ctx, transaction, log)
+			default:
+				continue
+			}
+
+			if err != nil {
+				return nil, fmt.Errorf("handle %s: %w", platform, err)
+			}
+
+			internalTransaction.Transfers = append(internalTransaction.Transfers, internalTransfers...)
+		}
+
+		internalTransaction.Platform = platform
+		internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
+
+		internalTransactions = append(internalTransactions, internalTransaction)
 	}
 
 	return internalTransactions, nil

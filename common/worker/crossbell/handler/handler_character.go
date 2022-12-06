@@ -22,6 +22,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
+	"golang.org/x/exp/slices"
 
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm/clause"
@@ -243,7 +244,7 @@ func (c *characterHandler) handlePostNote(ctx context.Context, transaction *mode
 
 	transfer.RelatedUrls = []string{note.ContentUri}
 
-	transfer.Platform = c.buildPlatform(postOriginal.Sources)
+	transfer.Platform = c.buildPlatformAndSource(postOriginal.Sources, &transfer)
 
 	if post.Target == nil {
 		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialPost, transfer.Type)
@@ -518,7 +519,7 @@ func (c *characterHandler) handleSetNoteUri(ctx context.Context, transaction *mo
 		return nil, fmt.Errorf("build note metadata: %w", err)
 	}
 
-	transfer.Platform = c.buildPlatform(postOriginal.Sources)
+	transfer.Platform = c.buildPlatformAndSource(postOriginal.Sources, &transfer)
 
 	if transfer.Metadata, err = json.Marshal(post); err != nil {
 		return nil, fmt.Errorf("marshal post: %w", err)
@@ -561,7 +562,7 @@ func (c *characterHandler) handleMintNote(ctx context.Context, transaction *mode
 		return nil, fmt.Errorf("build note metadata: %w", err)
 	}
 
-	transfer.Platform = c.buildPlatform(postOriginal.Sources)
+	transfer.Platform = c.buildPlatformAndSource(postOriginal.Sources, &transfer)
 
 	if transfer.Metadata, err = json.Marshal(post); err != nil {
 		return nil, fmt.Errorf("failed to marshal post metadata: %w", err)
@@ -580,9 +581,21 @@ func (c *characterHandler) handleMintNote(ctx context.Context, transaction *mode
 	return &transfer, nil
 }
 
-func (c *characterHandler) buildPlatform(sources []string) string {
+func (c *characterHandler) buildPlatformAndSource(sources []string, transfer *model.Transfer) string {
 	if len(sources) == 0 {
-		return protocol.PlatformCrossbell
+		sources = []string{transfer.Network}
+	}
+
+	// special case for xSync
+	if slices.Contains(sources, protocol.PlatformCrossbellXSync) {
+		for _, source := range sources {
+			if source != protocol.PlatformCrossbellXSync {
+				transfer.Source = source
+				break
+			}
+		}
+
+		return protocol.PlatformCrossbellXSync
 	}
 
 	// Rewrite typos in sources

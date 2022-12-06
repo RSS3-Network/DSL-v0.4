@@ -11,6 +11,8 @@ const (
 )
 
 var (
+	AddressUniversalRouter = common.HexToAddress("0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B")
+
 	EventHashTransfer            = common.BytesToHash(crypto.Keccak256([]byte("Transfer(address,address,uint256)")))
 	EventHashSwapV2              = common.BytesToHash(crypto.Keccak256([]byte("Swap(address,uint256,uint256,uint256,uint256,address)")))
 	EventHashSwapV3              = common.BytesToHash(crypto.Keccak256([]byte("Swap(address,address,int256,int256,uint160,uint128,int24)")))

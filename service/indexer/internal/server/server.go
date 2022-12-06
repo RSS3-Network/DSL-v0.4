@@ -142,7 +142,7 @@ func (s *Server) Initialize() (err error) {
 		return fmt.Errorf("create kurora datasource: %w", err)
 	}
 
-	lensDatasource, err := lens.New(s.config.RPC)
+	lensDatasource, err := lens.New(context.Background(), s.config.Kurora.Endpoint)
 	if err != nil {
 		return err
 	}
