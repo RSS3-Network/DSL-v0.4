@@ -59,6 +59,7 @@ const (
 	// metaverse
 	PlatformMars4      = "Mars4"
 	PlatformAavegotchi = "Aavegotchi"
+	PlatformCarv       = "Carv"
 
 	PlatformParaswap = "Paraswap"
 )
