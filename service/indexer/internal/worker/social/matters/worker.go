@@ -129,7 +129,7 @@ func (s *service) fetchAndHandleTransfer(ctx context.Context, message *protocol.
 					Title:          entry.Title,
 					Summary:        entry.Summary,
 					Body:           entry.ContentMarkdown,
-					Author:         []string{fmt.Sprintf("%s%s", "https://matters.news/", entry.Author)},
+					Author:         []string{fmt.Sprintf("%s%s", "https://matters.news/", entry.Author), entry.Author},
 					TypeOnPlatform: []string{"Post"},
 				},
 			})

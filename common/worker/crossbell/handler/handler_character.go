@@ -309,7 +309,7 @@ func (c *characterHandler) buildNoteMetadata(ctx context.Context, transaction *m
 		Title: postOriginal.Title,
 		Body:  postOriginal.Content,
 		Author: []string{
-			fmt.Sprintf("https://crossbell.io/@%s", handle),
+			fmt.Sprintf("https://crossbell.io/@%s", handle), handle,
 		},
 		OriginNoteID: fmt.Sprintf("%v:%v", characterID.Int64(), noteID.Int64()),
 	}
