@@ -11,5 +11,6 @@ type Config struct {
 	OpenTelemetry *configx.OpenTelemetry `mapstructure:"opentelemetry"`
 	Redis         *configx.Redis         `mapstructure:"redis"`
 	RPC           *configx.RPC           `mapstructure:"rpc"`
+	Kurora        *configx.Kurora        `mapstructure:"kurora"`
 	EIP1577       *configx.EIP1577       `mapstructure:"eip1577"`
 }

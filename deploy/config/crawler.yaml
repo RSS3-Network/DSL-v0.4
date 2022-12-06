@@ -24,6 +24,9 @@ redis:
   db: 0
   password: ''
 
+kurora_v2:
+  endpoint: ''
+
 rpc:
   general:
     ethereum:
@@ -43,10 +46,6 @@ rpc:
       websocket: ''
   pregod_etl:
     polygon:
-      http: ''
-    kurora:
-      http: ''
-    kurora_v2:
       http: ''
   ipfs:
     io: ''

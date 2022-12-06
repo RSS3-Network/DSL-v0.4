@@ -262,7 +262,6 @@ github.com/google/go-cmp v0.5.4/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.7/go.mod h1:n+brtR0CgQNWTVd5ZUFpTBC8YFBDLK/h/bpaJ8/DtOE=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
-github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/go-querystring v1.1.0 h1:AnCroh3fv4ZBgVIf1Iwtovgjaw/GiKJo8M8yD/fhyJ8=
 github.com/google/go-querystring v1.1.0/go.mod h1:Kcdr2DB4koayq7X8pmAG4sNG59So17icRSOU623lUBU=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
@@ -398,7 +397,6 @@ github.com/karalabe/usb v0.0.0-20190919080040-51dc0efba356/go.mod h1:Od972xHfMJo
 github.com/kevinmbeaulieu/eq-go v1.0.0/go.mod h1:G3S8ajA56gKBZm4UB9AOyoOS37JO3roToPzKNM8dtdM=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/kkdai/bstream v0.0.0-20161212061736-f391b8402d23/go.mod h1:J+Gs4SYgM6CZQHDETBtE9HaSEkGmuNXF86RwHhHUvq4=
-github.com/klauspost/compress v1.10.3 h1:OP96hzwJVBIHYU52pVTI6CczrxPvrGfgqF9N5eTO0Q8=
 github.com/klauspost/compress v1.10.3/go.mod h1:aoV0uJVorq1K+umq18yTdKaF57EivdYsUV+/s2qKfXs=
 github.com/klauspost/compress v1.13.6 h1:P76CopJELS0TiO2mebmnzgWaajssP/EszplttgQxcgc=
 github.com/klauspost/compress v1.13.6/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=
@@ -483,18 +481,12 @@ github.com/multiformats/go-varint v0.0.6 h1:gk85QWKxh3TazbLxED/NlDVv8+q+ReFJk7Y2
 github.com/multiformats/go-varint v0.0.6/go.mod h1:3Ls8CIEsrijN6+B7PbrXRPxHRPuXSrVKRY101jdMZYE=
 github.com/naoina/go-stringutil v0.1.0/go.mod h1:XJ2SJL9jCtBh+P9q5btrd/Ylo8XwT/h1USek5+NqSA0=
 github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416/go.mod h1:NBIhNtsFMo3G2szEBne+bO4gS192HuIYRqfvOWb4i1E=
-github.com/naturalselectionlabs/kurora v0.9.12 h1:F/N4Psl1rFbDJG7dWK7dMIIWAy3m5rvQa5EkbqM41Gw=
-github.com/naturalselectionlabs/kurora v0.9.12/go.mod h1:a8bQ14jL5cnebymDfySqZwwmancVSqFgLU58W/QDX+E=
-github.com/naturalselectionlabs/kurora v0.11.0 h1:l02664pF4kL1fVS0urE/PCaFDTW1cjgKw8tzGL/d5bk=
-github.com/naturalselectionlabs/kurora v0.11.0/go.mod h1:dfcJ2JqvmiGLqSgE0P0NqdHw5yY0yNg55UiSBtUnIpA=
 github.com/naturalselectionlabs/kurora v0.13.2 h1:vgux2oWyKRZYl3LXUZn2292hAULhS+HLfDBgJ3e5icQ=
 github.com/naturalselectionlabs/kurora v0.13.2/go.mod h1:i4zSN2nwrzyMHwlhoNIGGDkMqAPM+EENeTSSyuT9dM0=
-github.com/naturalselectionlabs/kurora/client v0.0.0-20221115080034-1162ba0e23d0 h1:sBh1kmkwdMf5fi+crp+Eav4jdiDPWmuS1T62yqRbzqg=
-github.com/naturalselectionlabs/kurora/client v0.0.0-20221115080034-1162ba0e23d0/go.mod h1:c0A0db3dA/PNPYyQiP++8scUd/69hfbX3oLg68KPmA8=
-github.com/naturalselectionlabs/kurora/client v0.0.0-20221201015617-dcae3aefc9c9 h1:BSPLS14o31TWnhOdHFEL55O9bwzgIBmmwA+asnKEjEQ=
-github.com/naturalselectionlabs/kurora/client v0.0.0-20221201015617-dcae3aefc9c9/go.mod h1:vkbbClg5uh3Ricg596t8MWcD6pFy28docRNwXno4hKU=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20221201091937-f82d0feae2b2 h1:LkY2D2a6S7jc96mv2VsCx85EwPWFifZsy/cGNQSvdjE=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20221201091937-f82d0feae2b2/go.mod h1:vkbbClg5uh3Ricg596t8MWcD6pFy28docRNwXno4hKU=
+github.com/naturalselectionlabs/kurora/client v0.0.0-20221205071935-87ef1a76a4ec h1:30454qr8P32FW5jk02wAn5zffajft0PDgdLZsdAFTbU=
+github.com/naturalselectionlabs/kurora/client v0.0.0-20221205071935-87ef1a76a4ec/go.mod h1:vkbbClg5uh3Ricg596t8MWcD6pFy28docRNwXno4hKU=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
@@ -596,7 +588,6 @@ github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3/go.mod h1:hpGUW
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.2.0/go.mod h1:qt09Ya8vawLte6SNmTgCsAVtYtaKzEcn8ATUoHMkEqE=
-github.com/stretchr/objx v0.4.0 h1:M2gUjqZET1qApGOWNSnZ49BAIMX4F/1plDv3+l31EJ4=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0 h1:1zr/of2m5FGMsad5YfcqgdqdWrIhu+EBEJRhR1U7z/c=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
@@ -607,7 +598,6 @@ github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PKk=
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
