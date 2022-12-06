@@ -122,17 +122,22 @@ func (s *service) fetchAndHandleTransfer(ctx context.Context, message *protocol.
 			tokenMetadata.Value = &entry.Amount
 			tokenMetadata.ValueDisplay = &tokenValueDisplayTo
 
-			metadataRaw, err := json.Marshal(metadata.Post{
+			postOuter := &metadata.Post{
 				Reward:         tokenMetadata,
 				TypeOnPlatform: []string{"Curation"},
-				Target: &metadata.Post{
+			}
+
+			if len(entry.Author) > 0 && len(entry.Summary) > 0 {
+				postOuter.Target = &metadata.Post{
 					Title:          entry.Title,
 					Summary:        entry.Summary,
 					Body:           entry.ContentMarkdown,
 					Author:         []string{fmt.Sprintf("%s%s", "https://matters.news/", entry.Author), entry.Author},
 					TypeOnPlatform: []string{"Post"},
-				},
-			})
+				}
+			}
+
+			metadataRaw, err := json.Marshal(postOuter)
 			if err != nil {
 				loggerx.Global().Warn("failed to handle marshall", zap.Error(err), zap.String("network", message.Network), zap.String("transaction_hash", transaction.Hash), zap.String("address", message.Address))
 
