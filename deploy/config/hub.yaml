@@ -47,6 +47,9 @@ rpc:
     crossbell:
       http: ''
       websocket: ''
+    avalanche:
+      http: ''
+      websocket: ''
   alchemy:
     ethereum: ''
     polygon: ''
