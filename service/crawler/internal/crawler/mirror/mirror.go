@@ -73,8 +73,12 @@ func (s *service) Run() error {
 			value = "592872:" // https://viewblock.io/arweave/tx/lW0AMDN2RgOeqULk-u6Tv0wfZWpx9MfkrmqQQU-Mvuo
 		}
 
-		if splits := strings.Split(value, ":"); len(splits) == 2 && splits[1] != "" {
-			query.Cursor = lo.ToPtr(splits[1])
+		if splits := strings.Split(value, ":"); len(splits) == 2 {
+			if splits[1] != "" {
+				query.Cursor = lo.ToPtr(splits[1])
+			} else {
+				query.Cursor = nil
+			}
 		}
 
 		zap.L().Debug("build transactions", zap.String("cursor", lo.FromPtr(query.Cursor)))
@@ -88,7 +92,7 @@ func (s *service) Run() error {
 		}
 
 		if len(transactions) == 0 {
-			time.Sleep(5 * time.Minute)
+			time.Sleep(5 * time.Second)
 
 			continue
 		}
