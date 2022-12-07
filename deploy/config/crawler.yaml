@@ -24,7 +24,7 @@ redis:
   db: 0
   password: ''
 
-kurora_v2:
+kurora:
   endpoint: ''
 
 rpc:
