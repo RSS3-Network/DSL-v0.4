@@ -3,18 +3,19 @@ package lens
 import (
 	"context"
 	"math/big"
+	"net/http"
 	"strings"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	kurora "github.com/naturalselectionlabs/kurora/client"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
-	"github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -33,8 +34,8 @@ const (
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
-	clientMap  map[string]*pregod_etl.Client // PregodETL
-	lensClient *lens_comm.Client
+	kuroraClient *kurora.Client
+	lensClient   *lens_comm.Client
 }
 
 func (d *Datasource) Name() string {
@@ -77,7 +78,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		for _, transaction := range transactionMap {
 			internalTransaction := transaction
 
-			if internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) {
+			if internalTransaction.Source != protocol.SourceKurora && internalTransaction.AddressFrom != "" && !strings.EqualFold(internalTransaction.AddressFrom, message.Address) {
 				continue
 			}
 
@@ -138,67 +139,73 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 	var err error
 	defer func() { opentelemetry.Log(trace, profileID, internalTransactionMap, err) }()
 
-	var internalTransactions []model.Transaction
 	hash := common.HexToHash(hexutil.EncodeBig(profileID))
 
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 	for eventHash, contractAddress := range lens.SupportLensEvents {
 		wg.Add(1)
-		go func(eventHash common.Hash, contractAddress common.Address) {
+		go func(eventHash common.Hash, contractAddress *common.Address) {
 			defer wg.Done()
 
-			parameter := pregod_etl.GetLogsRequest{
-				Address:     contractAddress.String(),
-				TopicSecond: hash.String(),
-				TopicFirst:  eventHash.String(),
+			query := kurora.DatasetLensEventQuery{
+				TopicFirst:  &eventHash,
+				TopicSecond: &hash,
+				Address:     contractAddress,
 				// BlockNumberFrom: message.BlockNumber,
 			}
 
+			if eventHash == lens.EventHashFollowed {
+				address := common.HexToHash(message.Address)
+				query.TopicSecond = &address
+			}
+
+			loggerx.Global().Info("query kurora FetchDatasetLensEvents", zap.Any("query", query))
+
 			for {
-				result, err := d.clientMap[message.Network].GetLogs(ctx, "lens", parameter)
+				result, err := d.kuroraClient.FetchDatasetLensEvents(ctx, query)
 				if err != nil {
+					loggerx.Global().Error("FetchDatasetLensEvents error", zap.Error(err), zap.Any("query", query))
 					return
 				}
 
-				if len(result.Result) == 0 {
+				if len(result) == 0 {
 					return
 				}
 
-				for _, transfer := range result.Result {
-					internalTransactions = append(internalTransactions, model.Transaction{
+				for _, transfer := range result {
+					mu.Lock()
+					internalTransactionMap[transfer.TransactionHash.String()] = model.Transaction{
 						BlockNumber: transfer.BlockNumber.BigInt().Int64(),
-						Hash:        transfer.TransactionHash,
-						Index:       transfer.TransactionIndex.BigInt().Int64(),
+						Hash:        transfer.TransactionHash.String(),
+						Index:       int64(transfer.TransactionIndex),
 						Network:     message.Network,
-						Source:      d.Name(),
 						Transfers:   make([]model.Transfer, 0),
-						Owner:       strings.ToLower(message.Address),
-					})
+						Source:      protocol.SourceKurora,
+					}
+					mu.Unlock()
 				}
 
-				parameter.Cursor = result.Cursor
+				cursor := kurora.LogCursor(result[len(result)-1].TransactionHash, result[len(result)-1].Index)
+				query.Cursor = &cursor
 			}
 		}(eventHash, contractAddress)
 	}
 	wg.Wait()
 
-	for _, transaction := range internalTransactions {
-		internalTransactionMap[transaction.Hash] = transaction
-	}
-
 	return internalTransactionMap, nil
 }
 
-func New(config *configx.RPC) (datasource.Datasource, error) {
+func New(ctx context.Context, endpoint string) (datasource.Datasource, error) {
 	internalDatasource := Datasource{
-		clientMap:  map[string]*pregod_etl.Client{},
 		lensClient: lens_comm.New(),
 	}
 
 	var err error
 
-	if internalDatasource.clientMap[protocol.NetworkPolygon], err = pregod_etl.NewClient(protocol.NetworkPolygon, config.PregodETL.Polygon.HTTP); err != nil {
-		logrus.Errorf("[datasource_lens] pregod_etl.NewClient error, %v", err)
+	internalDatasource.kuroraClient, err = kurora.Dial(ctx, endpoint, kurora.WithHTTPClient(http.DefaultClient))
+	if err != nil {
+		loggerx.Global().Error(" kurora Dial error", zap.Error(err))
 		return nil, err
 	}
 

@@ -12,6 +12,4 @@ var (
 
 	EventHashOrderFulfilled  = crypto.Keccak256Hash([]byte("OrderFulfilled(bytes32,address,address,address,(uint8,address,uint256,uint256)[],(uint8,address,uint256,uint256,address)[])"))
 	EventHashSellOrderFilled = crypto.Keccak256Hash([]byte("SellOrderFilled(address,address,address,uint256,uint256)"))
-
-	Platform = "Quix"
 )

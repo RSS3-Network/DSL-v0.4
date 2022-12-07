@@ -3,22 +3,22 @@ package lens
 import (
 	"context"
 	"fmt"
-	"math/big"
-	"strconv"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/cache"
+	"github.com/shopspring/decimal"
+
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"go.uber.org/zap"
+
+	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
-	"github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl"
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -33,26 +33,20 @@ import (
 var (
 	_ crawler.Crawler = (*service)(nil)
 
-	lensLogsCacheKey = "crawler:lens:%v" // eventHash -> blocknumber:cursor
+	lensLogsCacheKey = "crawler:lens"
 )
 
 type service struct {
 	config           *config.Config
-	etlClient        *pregod_etl.Client
+	kuroraClient     *kurora.Client
 	commWorkerClient *lens_comm.Client
 }
 
 func New(config *config.Config) crawler.Crawler {
-	var err error
-
-	crawler := &service{config: config}
-
-	if crawler.etlClient, err = pregod_etl.NewClient(protocol.NetworkPolygon, config.RPC.PregodETL.Polygon.HTTP); err != nil {
-		logrus.Error("[lens] pregod_etl.NewClient error, ", err)
-		return nil
+	crawler := &service{
+		config:           config,
+		commWorkerClient: lens_comm.New(),
 	}
-
-	crawler.commWorkerClient = lens_comm.New()
 
 	return crawler
 }
@@ -63,156 +57,112 @@ func (s *service) Name() string {
 
 func (s *service) Run() error {
 	ctx := context.Background()
-	var wg sync.WaitGroup
-	for eventHash, contractAddress := range lens.SupportLensEvents {
-		wg.Add(1)
-		go func(eventHash common.Hash, contractAddress common.Address) {
-			defer wg.Done()
 
-			for {
-				// get lens logs
-				transactions, err := s.getLensLogs(ctx, eventHash, contractAddress)
-				if err != nil {
-					logrus.Error("[lens] Run: GetLensLogs error, ", err)
-
-					return
-				}
-
-				if len(transactions) == 0 {
-					time.Sleep(10 * time.Minute)
-
-					continue
-				}
-
-				// deduplicate data
-				transactions, err = database.DeduplicateTransactions(ctx, transactions)
-				if err != nil || len(transactions) == 0 {
-					continue
-				}
-
-				// build transaction
-				message := &protocol.Message{
-					Network: protocol.NetworkPolygon,
-				}
-				if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
-					logrus.Error("failed to build transactions, ", err)
-
-					continue
-				}
-
-				// lens worker
-				internalTransactions := s.getInternalTransaction(ctx, transactions)
-
-				// insert db
-				err = database.UpsertTransactions(ctx, internalTransactions)
-				if err != nil {
-					continue
-				}
-			}
-		}(eventHash, contractAddress)
+	var err error
+	s.kuroraClient, err = kurora.Dial(context.Background(), s.config.Kurora.Endpoint, kurora.WithHTTPClient(http.DefaultClient))
+	if err != nil {
+		logrus.Errorf("[lens] kuroraClient NewClient error, %v", err)
+		return err
 	}
-	wg.Wait()
-	return nil
+
+	for {
+		// get lens logs
+		transactions, err := s.getLensLogs(ctx)
+		if err != nil {
+			loggerx.Global().Error("failed to query lens", zap.Error(err))
+
+			return err
+		}
+
+		if len(transactions) == 0 {
+			time.Sleep(10 * time.Minute)
+
+			continue
+		}
+
+		// deduplicate data
+		transactions, err = database.DeduplicateTransactions(ctx, transactions)
+		if err != nil || len(transactions) == 0 {
+			continue
+		}
+
+		// build transaction
+		message := &protocol.Message{
+			Network: protocol.NetworkPolygon,
+		}
+		if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
+			logrus.Error("failed to build transactions, ", err)
+
+			continue
+		}
+
+		// lens worker
+		internalTransactions := s.getInternalTransaction(ctx, transactions)
+
+		// insert db
+		err = database.UpsertTransactions(ctx, internalTransactions)
+		if err != nil {
+			continue
+		}
+	}
 }
 
-func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contractAddress common.Address) ([]*model.Transaction, error) {
+func (s *service) getLensLogs(ctx context.Context) ([]*model.Transaction, error) {
 	tracer := otel.Tracer("lens")
 	_, trace := tracer.Start(ctx, "len:GetLensLogs")
 	var internalTransactions []*model.Transaction
 	var err error
 	defer func() { opentelemetry.Log(trace, nil, internalTransactions, err) }()
 
-	parameter := pregod_etl.GetLogsRequest{
-		Address:    contractAddress.String(),
-		TopicFirst: eventHash.String(),
-		Limit:      100,
-		Order:      "asc",
+	query := kurora.DatasetLensEventQuery{
+		Address: &lens.HubProxyContractAddress,
 	}
 
-	cacheKey := fmt.Sprintf(lensLogsCacheKey, eventHash.String())
-	cacheInfo, _ := cache.Global().Get(ctx, cacheKey).Result()
+	cacheInfo, _ := cache.Global().Get(ctx, lensLogsCacheKey).Result()
 	if cacheList := strings.Split(cacheInfo, ":"); len(cacheList) == 2 {
-		parameter.BlockNumberFrom, _ = strconv.ParseInt(cacheList[0], 10, 64)
-		parameter.Cursor = cacheList[1]
+		blockNumber, _ := decimal.NewFromString(cacheList[0])
+		query.BlockNumberFrom = &blockNumber
+		query.Cursor = &cacheList[1]
 	}
+
+	loggerx.Global().Info("FetchDatasetLensEvents request", zap.Any("query", query))
 
 	// get logs from pregod_etl
-	result, err := s.etlClient.GetLogs(ctx, "lens", parameter)
+	result, err := s.kuroraClient.FetchDatasetLensEvents(ctx, query)
 	if err != nil {
-		logrus.Error("[lens] GetLensLogs: etlClient GetLogs error, ", err)
-
+		loggerx.Global().Error("FetchDatasetLensEvents error", zap.Error(err), zap.Any("query", query))
 		return nil, err
 	}
 
-	for _, transfer := range result.Result {
-		// get profile by profileId
-		profileId := big.NewInt(0).SetBytes(common.FromHex(transfer.TopicSecond))
-		profile, err := s.getLensOwnerAddressById(ctx, profileId)
-		if err != nil {
-			logrus.Errorf("[lens] GetLensLogs: getLensAddressById error, %v, profileId: %v", err, profileId)
-
-			continue
-		}
-
-		// when it is an all-zero address, it means the profile no longer exists for whatever reason (deleted, banned)
-		// so we should ignore this transaction, otherwise the transaction owner will be set with an all-zero address
-		if profile == ethereum.AddressGenesis {
-			continue
-		}
-
+	transactionMap := make(map[string]*model.Transaction)
+	for _, transfer := range result {
 		transaction := &model.Transaction{
 			BlockNumber: transfer.BlockNumber.BigInt().Int64(),
-			Hash:        transfer.TransactionHash,
-			Index:       transfer.TransactionIndex.BigInt().Int64(),
+			Hash:        transfer.TransactionHash.String(),
+			Index:       int64(transfer.TransactionIndex),
 			Network:     protocol.NetworkPolygon,
-			Source:      protocol.SourcePregodETL,
 			Platform:    protocol.PlatformLens,
 			Transfers:   make([]model.Transfer, 0),
-			Owner:       strings.ToLower(profile.String()),
+			Source:      protocol.SourceKurora,
 		}
 
+		transactionMap[transaction.Hash] = transaction
+	}
+
+	for _, transaction := range transactionMap {
 		internalTransactions = append(internalTransactions, transaction)
 	}
 
 	// set cache
-	if len(result.Result) == 0 {
+	if len(result) == 0 {
 		return internalTransactions, nil
 	}
 
-	cacheInfo = fmt.Sprintf("%v:%v", result.Result[len(result.Result)-1].BlockNumber, result.Cursor)
-	cache.Global().Set(ctx, cacheKey, cacheInfo, 7*24*time.Hour)
+	cursor := kurora.LogCursor(result[len(result)-1].TransactionHash, result[len(result)-1].Index)
+	cacheInfo = fmt.Sprintf("%v:%v", result[len(result)-1].BlockNumber, cursor)
+	cache.Global().Set(ctx, lensLogsCacheKey, cacheInfo, 7*24*time.Hour)
 
 	return internalTransactions, nil
-}
-
-func (s *service) getLensOwnerAddressById(ctx context.Context, profileId *big.Int) (common.Address, error) {
-	tracer := otel.Tracer("len")
-	_, trace := tracer.Start(ctx, "len:getLensAddressById")
-	var owner common.Address
-	var err error
-	defer func() { opentelemetry.Log(trace, profileId, owner, err) }()
-
-	// rpc
-	ethclient, err := ethclientx.Global(protocol.NetworkPolygon)
-	if err != nil {
-		return owner, err
-	}
-
-	lensHub, err := contract.NewHub(lens.HubProxyContractAddress, ethclient)
-	if err != nil {
-		logrus.Error("[len] NewILensHub error, ", err)
-
-		return owner, err
-	}
-
-	owner, err = lensHub.OwnerOf(&bind.CallOpts{}, profileId)
-	if err != nil {
-		logrus.Error("[len] iLensHub GetFollowNFT error, ", err)
-
-		return owner, err
-	}
-
-	return owner, nil
 }
 
 func (s *service) getInternalTransaction(ctx context.Context, transactions []*model.Transaction) []*model.Transaction {
@@ -220,11 +170,6 @@ func (s *service) getInternalTransaction(ctx context.Context, transactions []*mo
 	var internalTransactions []*model.Transaction
 	opt := lop.NewOption().WithConcurrency(10)
 	lop.ForEach(transactions, func(transaction *model.Transaction, i int) {
-		addressTo := common.HexToAddress(transaction.AddressTo)
-		if addressTo != lens.HubProxyContractAddress && addressTo != lens.ProfileProxyContractAddress {
-			return
-		}
-
 		transferMap := make(map[int64]model.Transfer)
 		for _, transfer := range transaction.Transfers {
 			transferMap[transfer.Index] = transfer

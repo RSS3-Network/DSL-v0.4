@@ -49,7 +49,7 @@ func (s *Server) Initialize() (err error) {
 
 	ipfs.New(config.ConfigHub.RPC.IPFS.IO)
 
-	ethereumClientMap, err := ethclientx.Dial(config.ConfigHub.RPC, []string{protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkCrossbell, protocol.NetworkBinanceSmartChain})
+	ethereumClientMap, err := ethclientx.Dial(config.ConfigHub.RPC, []string{protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkCrossbell, protocol.NetworkBinanceSmartChain, protocol.NetworkAvalanche})
 	if err != nil {
 		return err
 	}
@@ -89,6 +89,9 @@ func (s *Server) Initialize() (err error) {
 	// POST
 	s.httpServer.POST("/notes", s.httpHandler.BatchGetNotesFunc, middlewarex.CheckAPIKeyMiddleware)
 	s.httpServer.POST("/profiles", s.httpHandler.BatchGetProfilesFunc, middlewarex.CheckAPIKeyMiddleware)
+
+	// End of year Wrapped
+	s.httpServer.GET("/wrapped/:address", s.httpHandler.GetWrappedFunc)
 
 	// API KEY
 	s.httpServer.POST("/apikey/apply", s.httpHandler.PostAPIKeyFunc)

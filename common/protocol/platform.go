@@ -8,13 +8,17 @@ const (
 	PlatformCrossbell      = "Crossbell"
 	PlatformCrossbellXLog  = "xLog"
 	PlatformCrossbellXCast = "xCast"
+	PlatformCrossbellXSync = "xSync"
 	PlatformFarcaster      = "Farcaster"
 	PlatformIQWiki         = "IQ.Wiki"
 
-	PlatformLens              = "Lens"
-	PlatformLensLenster       = "Lenster"
-	PlatformLensLenstube      = "Lenstube"
-	PlatformLensLenstubeBytes = "lenstube-bytes"
+	PlatformLens                 = "Lens"
+	PlatformLensLenster          = "Lenster"
+	PlatformLensLenstube         = "Lenstube"
+	PlatformLensLenstubeBytes    = "lenstube-bytes"
+	PlatformLensLensterCrowdfund = "Lenster Crowdfund"
+
+	PlatformMatters = "Matters"
 
 	// collectible
 	PlatformPOAP   = "POAP"
@@ -47,10 +51,15 @@ const (
 	PlatformDODO           = "DODO"
 	PlatformBalancer       = "Balancer"
 	PlatformVelodrome      = "Velodrome"
+	PlatformOpenSea        = "OpenSea"
+	PlatformGem            = "Gem"
+	PlatformQuix           = "Quix"
+	PlatformLooksRare      = "LooksRare"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
 	PlatformAavegotchi = "Aavegotchi"
+	PlatformCarv       = "Carv"
 
 	PlatformParaswap = "Paraswap"
 )

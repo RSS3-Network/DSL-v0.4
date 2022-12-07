@@ -4,21 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20/weth"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/quix"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/shopspring/decimal"
 
@@ -27,113 +27,66 @@ import (
 	"go.uber.org/zap"
 )
 
-func (i *internal) handleOpenSea(ctx context.Context, _ *protocol.Message, transaction model.Transaction) (*model.Transaction, error) {
+func (i *internal) handleOpenSeaOrderFulfilled(ctx context.Context, transaction model.Transaction, log *types.Log, relatedLogs []*types.Log) ([]model.Transfer, error) {
 	tracer := otel.Tracer("worker_marketplace")
 	_, span := tracer.Start(ctx, "worker_marketplace:handleOpenSea")
 
 	defer opentelemetry.Log(span, transaction, nil, nil)
 
-	var sourceData ethereum.SourceData
-	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
-		return nil, err
+	platform, exists := platformMap[log.Address]
+	if !exists {
+		return nil, UnsupportedPlatform
 	}
 
-	internalTransaction := transaction
-	internalTransaction.Transfers = make([]model.Transfer, 0)
-
-	for _, log := range sourceData.Receipt.Logs {
-		if len(log.Topics) == 0 {
-			return nil, errors.New("invalid length of topics")
-		}
-
-		var (
-			internalTransfers []model.Transfer
-			err               error
-		)
-
-		switch log.Topics[0] {
-		case opensea.EventHashOrderFulfilled:
-			internalTransfers, err = i.handleOpenseaSeaportOrderFulfilled(ctx, transaction, *log)
-			if err != nil {
-				return nil, err
-			}
-		case opensea.EventHashOrdersMatched:
-			internalTransfers, err = i.handleOpenSeaWyvernExchangeOrdersMatched(ctx, transaction, *log)
-			if err != nil {
-				return nil, err
-			}
-		default:
-			continue
-		}
-
-		internalTransaction.Transfers = append(internalTransaction.Transfers, internalTransfers...)
-	}
-
-	if len(internalTransaction.Transfers) == 0 {
-		return nil, errors.New("not found nft trade")
-	}
-
-	internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
-	internalTransaction.Platform = opensea.Platform
-
-	return &internalTransaction, nil
-}
-
-func (i *internal) handleOpenseaSeaportOrderFulfilled(ctx context.Context, transaction model.Transaction, log types.Log) ([]model.Transfer, error) {
 	ethereumClient, err := ethclientx.Global(transaction.Network)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ethclientx global: %w", err)
 	}
 
-	filterer, err := opensea.NewSeaportFilterer(opensea.AddressSeaport, ethereumClient)
+	filterer, err := quix.NewSeaPortFilterer(quix.AddressSeaport, ethereumClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new seaport filterer: %w", err)
 	}
 
-	event, err := filterer.ParseOrderFulfilled(log)
+	event, err := filterer.ParseOrderFulfilled(*log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse order fulfilled: %w", err)
 	}
 
 	internalTransfers := make([]model.Transfer, 0)
 
-	for _, item := range event.Consideration {
-		// OpenSea puts ERC20 transfers in Consideration as well
-		if item.ItemType == opensea.ItemTypeERC20 {
+	for _, spentItem := range event.Offer {
+		if spentItem.ItemType == opensea.ItemTypeNative || spentItem.ItemType == opensea.ItemTypeERC20 {
 			continue
 		}
 
-		if item.Token == common.HexToAddress("") {
-			continue
-		}
-
-		nft, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, item.Token.String(), item.Identifier)
+		nft, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, spentItem.Token.String(), spentItem.Identifier)
 		if err != nil {
-			zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("contract_address", item.Token.String()), zap.Int64("token_id", item.Amount.Int64()))
+			zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("contract_address", spentItem.Token.String()), zap.Int64("token_id", spentItem.Amount.Int64()), zap.Uint64("value", spentItem.Amount.Uint64()))
 
-			return nil, err
+			return nil, fmt.Errorf("nft to metadata: %w", err)
 		}
 
-		tokenValue := decimal.NewFromBigInt(item.Amount, 0)
-		nft.Value = &tokenValue
+		nft.SetValue(decimal.NewFromBigInt(spentItem.Amount, 0))
 
-		var cost *metadata.Token
-		for _, offer := range event.Offer {
-			if cost, err = i.buildCost(ctx, transaction.Network, offer.Token, offer.Amount); err != nil {
-				zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("contract_address", offer.Token.String()), zap.Int64("token_id", offer.Amount.Int64()))
+		for _, receivedItem := range event.Consideration {
+			if receivedItem.Recipient == event.Offerer {
+				if nft.Cost, err = i.buildCost(ctx, transaction.Network, receivedItem.Token, receivedItem.Amount); err != nil {
+					zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("contract_address", receivedItem.Token.String()), zap.Int64("token_id", receivedItem.Amount.Int64()))
 
-				return nil, err
+					return nil, fmt.Errorf("build cost: %w", err)
+				}
+
+				break
 			}
-
-			break
 		}
 
 		var sourceData ethereum.SourceData
 		if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unmarshal source data: %w", err)
 		}
 
-		var transferLogIndex int64
+		var index int64
 		for _, logForIndex := range sourceData.Receipt.Logs {
 			// If a user purchases multiple NFTs in the same transaction,
 			// the log indexes will conflict and need to be matched with their transfer logs separately.
@@ -142,15 +95,15 @@ func (i *internal) handleOpenseaSeaportOrderFulfilled(ctx context.Context, trans
 				strings.EqualFold(common.HexToAddress(logForIndex.Topics[1].Hex()).String(), event.Offerer.String()) &&
 				strings.EqualFold(common.HexToAddress(logForIndex.Topics[2].Hex()).String(), event.Recipient.String()) &&
 				strings.EqualFold(logForIndex.Topics[3].Big().String(), nft.ID) {
-				transferLogIndex = int64(logForIndex.Index)
+				index = int64(logForIndex.Index)
 
 				break
 			}
 		}
 
-		internalTransfer, err := i.buildTradeTransfer(transaction, transferLogIndex, opensea.Platform, event.Recipient, event.Offerer, nft, cost)
+		internalTransfer, err := i.buildTradeTransfer(transaction, index, platform, event.Recipient, event.Offerer, nft, nft.Cost)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("build trade transfer: %w", err)
 		}
 
 		internalTransfers = append(internalTransfers, *internalTransfer)
@@ -159,25 +112,30 @@ func (i *internal) handleOpenseaSeaportOrderFulfilled(ctx context.Context, trans
 	return internalTransfers, nil
 }
 
-func (i *internal) handleOpenSeaWyvernExchangeOrdersMatched(ctx context.Context, transaction model.Transaction, log types.Log) ([]model.Transfer, error) {
+func (i *internal) handleOpenSeaOrdersMatched(ctx context.Context, transaction model.Transaction, log *types.Log) ([]model.Transfer, error) {
+	platform, exists := platformMap[log.Address]
+	if !exists {
+		return nil, UnsupportedPlatform
+	}
+
 	ethereumClient, err := ethclientx.Global(transaction.Network)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create ethereum client: %w", err)
 	}
 
 	filterer, err := opensea.NewWyvernExchangeFilterer(opensea.AddressWyvernExchangeV1, ethereumClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create filterer: %w", err)
 	}
 
-	event, err := filterer.ParseOrdersMatched(log)
+	event, err := filterer.ParseOrdersMatched(*log)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse orders matched event: %w", err)
 	}
 
 	var sourceData ethereum.SourceData
 	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal source data: %w", err)
 	}
 
 	var (
@@ -261,7 +219,7 @@ func (i *internal) handleOpenSeaWyvernExchangeOrdersMatched(ctx context.Context,
 		return nil, err
 	}
 
-	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), opensea.Platform, event.Maker, event.Taker, nft, cost)
+	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, nft, cost)
 	if err != nil {
 		return nil, err
 	}

@@ -6,11 +6,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/avvydomains/golang-client/avvy"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -36,32 +37,41 @@ func ReverseResolveAll(input string, resolveAll bool) model.NameServiceResult {
 	result := model.NameServiceResult{}
 	splits := strings.Split(input, ".")
 	var address string
+	var err error
 
 	switch splits[len(splits)-1] {
 	case "eth":
 		// error here means the address doesn't have a primary ENS, and can be ignored
-		address, _ = ResolveENS(input)
+		address, err = ResolveENS(input)
 		result.ENS = input
 	case "csb":
-		address, _ = ResolveCrossbell(input)
+		address, err = ResolveCrossbell(input)
 		result.Crossbell = input
 	case "lens":
-		address, _ = ResolveLens(input)
+		address, err = ResolveLens(input)
 		result.Lens = input
 	case "bnb":
-		address, _ = ResolveSpaceID(input)
+		address, err = ResolveSpaceID(input)
 		result.SpaceID = input
 	case "crypto", "nft", "blockchain", "bitcoin", "coin", "wallet", "888", "dao", "x", "zil":
-		address, _ = ResolveUnstoppableDomains(input)
+		address, err = ResolveUnstoppableDomains(input)
 		result.UnstoppableDomains = input
 	case "bit":
-		address, _ = ResolveBit(input)
+		address, err = ResolveBit(input)
 		result.Bit = input
+	case "avax":
+		address, err = ResolveAvvy(input)
+		result.Avvy = input
 	default:
-		if ValidateEthereumAddress(input) {
+		if len(splits) == 1 {
 			address = input
+		} else {
+			err = fmt.Errorf(".%s %s, %s", splits[len(splits)-1], ErrNotSupportNS, ReferDoc)
 		}
 	}
+
+	result.Err = err
+
 	if address != "" {
 		result.Address = address
 		if resolveAll {
@@ -70,15 +80,6 @@ func ReverseResolveAll(input string, resolveAll bool) model.NameServiceResult {
 	}
 
 	return result
-}
-
-func ValidateEthereumAddress(address string) bool {
-	if address == "" {
-		return false
-	}
-
-	re := regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
-	return re.MatchString(address)
 }
 
 func ResolveAll(result *model.NameServiceResult) {
@@ -155,7 +156,7 @@ func ResolveCrossbell(input string) (string, error) {
 
 		characterOwner, err := characterContract.OwnerOf(&bind.CallOpts{}, character.CharacterId)
 		if err != nil {
-			return "", fmt.Errorf("failed to get crossbell character owner: %s", err)
+			return "", fmt.Errorf("%s", ErrUnregisterName)
 		}
 		result = characterOwner.String()
 	} else {
@@ -180,7 +181,7 @@ func ResolveCrossbell(input string) (string, error) {
 func ResolveENS(address string) (string, error) {
 	result, err := ens.Resolve(address)
 	if err != nil {
-		return "", fmt.Errorf("failed to resolve ENS for: %s", address)
+		return "", fmt.Errorf("%s", ErrUnregisterName)
 	}
 
 	return strings.ToLower(result), nil
@@ -206,7 +207,7 @@ func ResolveLens(input string) (string, error) {
 
 		profileOwner, err := lensHubContract.OwnerOf(&bind.CallOpts{}, profileID)
 		if err != nil {
-			return "", fmt.Errorf("failed to get lens profile owner: %s", err)
+			return "", fmt.Errorf("%s", ErrUnregisterName)
 		}
 
 		result = profileOwner.String()
@@ -243,7 +244,7 @@ func ResolveSpaceID(input string) (string, error) {
 		}
 
 		if resolver == ethereum.AddressGenesis {
-			return "", fmt.Errorf("the space id does not have a resolver: %s", input)
+			return "", fmt.Errorf("%s", ErrUnregisterName)
 		}
 
 		spaceidResolver, err := spaceidcontract.NewResolver(resolver, ethereumClient)
@@ -314,7 +315,7 @@ func ResolveUnstoppableDomains(input string) (string, error) {
 		if namingServices[namingServiceName] != nil {
 			resolvedAddress, err := namingServices[namingServiceName].Addr(input, "ETH")
 			if err != nil {
-				return "", fmt.Errorf("failed to result %s: %s", namingServiceName, err)
+				return "", fmt.Errorf("%s", ErrUnregisterName)
 			}
 			result = strings.ToLower(resolvedAddress)
 		}
@@ -397,7 +398,7 @@ func ResolveBit(input string) (string, error) {
 	}
 
 	if bitResult.Result.Error != "" {
-		return "", fmt.Errorf(".bit resolver returned an error: %s", bitResult.Result.Error)
+		return "", fmt.Errorf("%s", ErrUnregisterName)
 	}
 
 	if strings.HasSuffix(input, ".bit") {
@@ -405,4 +406,33 @@ func ResolveBit(input string) (string, error) {
 	} else {
 		return bitResult.Result.Data.Account, nil
 	}
+}
+
+func ResolveAvvy(input string) (string, error) {
+	var result string
+
+	chainId, _ := strconv.ParseInt(protocol.NetworkToID(protocol.NetworkAvalanche)[2:], 16, 64)
+
+	client := new(avvy.Client)
+
+	networkUrl, err := ethclientx.GlobalUrl(protocol.NetworkAvalanche)
+	if err != nil {
+		return "", fmt.Errorf("failed to get %s http url: %s", protocol.NetworkAvalanche, err)
+	}
+	client.Init(networkUrl, int(chainId))
+
+	value, success := client.ResolveStandard(input, client.RECORDS["EVM"])
+	if !success {
+		return "", fmt.Errorf("%s", ErrUnregisterName)
+	}
+
+	if len(value) == 0 {
+		return "", fmt.Errorf("%s", ErrNotResolver)
+	}
+
+	result = value
+
+	// todo not implenment reverse resolution in avvy client
+
+	return strings.ToLower(result), nil
 }

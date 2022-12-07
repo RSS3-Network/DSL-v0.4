@@ -3,46 +3,53 @@ package mirror
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/go-redis/redis/v8"
+	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
-	"github.com/shopspring/decimal"
-	"github.com/sirupsen/logrus"
+	"github.com/samber/lo"
+
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/otel"
 )
 
 var (
-	_ crawler.Crawler = (*service)(nil)
-
-	mirrorCacheKey = "crawler:mirror" // mirror -> height:cursor
-	MirrorAddress  = "Ky1c1Kkt-jZ9sY1hvLF5nCf6WWdBhIU5Un_BMYh-t3c"
+	mirrorCacheKey = "crawler:mirror" // height:cursor
+	AddressMirror  = "Ky1c1Kkt-jZ9sY1hvLF5nCf6WWdBhIU5Un_BMYh-t3c"
 )
 
+var _ crawler.Crawler = (*service)(nil)
+
 type service struct {
-	etlClient *pregod_etl.Client
+	kuroraClient *kurora.Client
 }
 
 func New(config *config.Config) crawler.Crawler {
-	var err error
-	crawler := &service{}
+	var (
+		err      error
+		instance service
+	)
 
-	if crawler.etlClient, err = pregod_etl.NewClient(protocol.NetworkArweave, config.RPC.PregodETL.Kurora.HTTP); err != nil {
-		logrus.Error("[lens] pregod_etl.NewClient error, ", err)
+	if instance.kuroraClient, err = kurora.Dial(context.Background(), config.Kurora.Endpoint); err != nil {
+		zap.L().Error("dial kurora", zap.Error(err), zap.String("endpoint", config.Kurora.Endpoint))
+
 		return nil
 	}
 
-	return crawler
+	return &instance
 }
 
 func (s *service) Name() string {
@@ -52,28 +59,41 @@ func (s *service) Name() string {
 func (s *service) Run() error {
 	ctx := context.Background()
 
-	for {
-		// get mirror transactions
-		transactions, err := s.getMirrorTransactions(ctx)
-		if err != nil {
-			logrus.Error("[mirror] Run: getMirrorTransactions error, ", err)
+	var query kurora.DatasetMirrorEntryQuery
 
-			continue
+	for {
+		value, err := cache.Global().Get(ctx, mirrorCacheKey).Result()
+		if err != nil {
+			if !errors.Is(err, redis.Nil) {
+				zap.L().Error("get cursor of mirror crawler from cache", zap.Error(err))
+
+				return fmt.Errorf("get cursor of mirror crawler from cache: %w", err)
+			}
+
+			value = "592872:" // https://viewblock.io/arweave/tx/lW0AMDN2RgOeqULk-u6Tv0wfZWpx9MfkrmqQQU-Mvuo
+		}
+
+		if splits := strings.Split(value, ":"); len(splits) == 2 && splits[1] != "" {
+			query.Cursor = lo.ToPtr(splits[1])
+		}
+
+		zap.L().Debug("build transactions", zap.String("cursor", lo.FromPtr(query.Cursor)))
+
+		// Fetch the mirror entries and then build them as transactions
+		transactions, err := s.buildTransactions(ctx, query)
+		if err != nil {
+			zap.L().Error("build transactions", zap.Error(err), zap.String("cursor", lo.FromPtr(query.Cursor)))
+
+			return fmt.Errorf("build transactions: %w", err)
 		}
 
 		if len(transactions) == 0 {
-			time.Sleep(10 * time.Minute)
+			time.Sleep(5 * time.Minute)
 
 			continue
 		}
 
-		// deduplicate data
-		// transactions, err = database.DeduplicateTransactions(ctx, transactions)
-		// if err != nil || len(transactions) == 0 {
-		// 	continue
-		// }
-
-		// insert db
+		// Store transactions to databse
 		err = database.UpsertTransactions(ctx, transactions)
 		if err != nil {
 			continue
@@ -81,118 +101,98 @@ func (s *service) Run() error {
 	}
 }
 
-func (s *service) getMirrorTransactions(ctx context.Context) ([]*model.Transaction, error) {
-	tracer := otel.Tracer("mirror")
-	_, trace := tracer.Start(ctx, "mirror:GetMirrorTransactions")
-	internalTransactions := []*model.Transaction{}
-	var err error
-	defer func() { opentelemetry.Log(trace, nil, internalTransactions, err) }()
+func (s *service) buildTransactions(ctx context.Context, query kurora.DatasetMirrorEntryQuery) (transactions []*model.Transaction, err error) {
+	ctx, trace := otel.Tracer("crawler").Start(ctx, "mirror:buildTransactions")
+	defer opentelemetry.Log(trace, nil, transactions, err)
 
-	parameter := pregod_etl.GetArweaveTransactionsRequest{
-		Owner: MirrorAddress,
-		Limit: 100,
-		Order: "asc",
-	}
-
-	cacheInfo, _ := cache.Global().Get(ctx, mirrorCacheKey).Result()
-	if cacheList := strings.Split(cacheInfo, ":"); len(cacheList) == 2 {
-		parameter.BlockHeightFrom, _ = decimal.NewFromString(cacheList[0])
-		parameter.Cursor = cacheList[1]
-	}
-
-	// get logs from pregod_etl
-	result, err := s.etlClient.GetArweaveTransactions(ctx, parameter)
+	// Fetch mirror entries from kurora
+	entries, err := s.kuroraClient.FetchDatasetMirrorEntries(ctx, query)
 	if err != nil {
-		logrus.Error("[mirror] getMirrorTransactions: etlClient GetArweaveTransactions error, ", err)
-
-		return nil, err
+		return nil, fmt.Errorf("fetch mirror entries: %w", err)
 	}
 
-	for _, transaction := range result.Result {
-		data := pregod_etl.ArweaveData{}
-		if err := json.Unmarshal([]byte(transaction.Data), &data); err != nil {
-			logrus.Errorf("[mirror] getMirrorTransactions: data json unmarshal error, %v, json = %v", err, transaction.Data)
-			return nil, err
-		}
+	transactions = make([]*model.Transaction, 0, len(entries))
 
-		source, err := json.Marshal(&transaction)
-		if err != nil {
-			logrus.Errorf("[mirror] getMirrorTransactions: source json marshal error, %v", err)
+	for _, entry := range entries {
+		// Invalid entry
+		if len(entry.ContentDigital) == 0 {
+			zap.L().Warn("invalid mirror entry", zap.String("transaction_id", entry.TransactionID))
+
 			continue
 		}
 
-		var contentDigest, originDigest string
-		for _, tag := range transaction.Tags {
-			switch tag.Name {
-			case "Content-Digest":
-				contentDigest = tag.Value
-			case "Original-Content-Digest":
-				originDigest = tag.Value
-			}
-		}
-		if len(originDigest) == 0 {
-			originDigest = contentDigest
+		// Provide a default value for Origin content digital
+		if len(entry.OriginContentDigital) == 0 {
+			entry.OriginContentDigital = entry.ContentDigital
 		}
 
-		address := strings.ToLower(data.Authorship.Contributor)
+		address := strings.ToLower(entry.Contributor.String())
 
-		post := &metadata.Post{
-			Title: data.Content.Title,
-			Body:  data.Content.Body,
+		post := metadata.Post{
+			Title: entry.Title,
+			Body:  entry.Content,
 			Author: []string{
 				fmt.Sprintf("https://mirror.xyz/%v", address),
 			},
-			OriginNoteID: originDigest,
+			OriginNoteID: entry.OriginContentDigital,
 		}
 
-		metadata, err := json.Marshal(post)
+		postMetadata, err := json.Marshal(post)
 		if err != nil {
-			logrus.Errorf("[mirror] getMirrorTransactions: post json marshal error, %v", err)
+			zap.L().Warn("marshal post metadata", zap.Error(err), zap.Any("post", post))
+
 			continue
 		}
 
-		internalTransaction := &model.Transaction{
-			BlockNumber: transaction.Height.BigInt().Int64(),
-			Hash:        transaction.ID,
-			Owner:       address,
+		filterType := filter.SocialPost
+
+		if entry.ContentDigital != entry.OriginContentDigital {
+			filterType = filter.SocialRevise
+		}
+
+		transaction := model.Transaction{
+			BlockNumber: entry.Height.BigInt().Int64(),
+			Hash:        entry.TransactionID,
+			Owner:       strings.ToLower(entry.Contributor.String()),
 			AddressFrom: address,
-			AddressTo:   strings.ToLower(MirrorAddress),
+			AddressTo:   AddressMirror,
 			Platform:    protocol.PlatformMirror,
 			Network:     protocol.NetworkArweave,
-			Source:      protocol.SourcePregodETL,
-			Timestamp:   time.Unix(data.Content.Timestamp.BigInt().Int64(), 0),
+			Source:      protocol.SourceKurora,
+			Timestamp:   entry.Timestamp,
 			Tag:         filter.TagSocial,
-			Type:        filter.SocialPost,
+			Type:        filterType,
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{
-					TransactionHash: transaction.ID,
-					Timestamp:       time.Unix(data.Content.Timestamp.BigInt().Int64(), 0),
+					TransactionHash: entry.TransactionID,
+					Timestamp:       entry.Timestamp,
 					Index:           protocol.IndexVirtual,
 					AddressFrom:     address,
-					AddressTo:       strings.ToLower(MirrorAddress),
-					Metadata:        metadata,
+					AddressTo:       AddressMirror,
+					Metadata:        postMetadata,
 					Network:         protocol.NetworkArweave,
-					Source:          protocol.SourcePregodETL,
-					SourceData:      source,
-					Platform:        protocol.PlatformMirror,
-					RelatedUrls:     []string{fmt.Sprintf("https://mirror.xyz/%s/%s", address, originDigest)},
-					Tag:             filter.TagSocial,
-					Type:            filter.SocialPost,
+					Source:          protocol.SourceKurora,
+					// SourceData:      source, // Not required
+					Platform:    protocol.PlatformMirror,
+					RelatedUrls: []string{fmt.Sprintf("https://mirror.xyz/%s/%s", address, entry.OriginContentDigital)},
+					Tag:         filter.TagSocial,
+					Type:        filterType,
 				},
 			},
 		}
 
-		internalTransactions = append(internalTransactions, internalTransaction)
+		transactions = append(transactions, &transaction)
 	}
 
-	if len(result.Result) == 0 {
-		return nil, nil
+	lastEntry, err := lo.Last(entries)
+	if err == nil {
+		if err := cache.Global().Set(ctx, mirrorCacheKey, fmt.Sprintf("%d:%s", lastEntry.Height.BigInt().Uint64(), lastEntry.TransactionID), 7*24*time.Hour).Err(); err != nil {
+			zap.L().Error("update cursor", zap.Error(err), zap.Stringer("height", lastEntry.Height), zap.String("transaction_id", lastEntry.TransactionID))
+
+			return nil, fmt.Errorf("update cursor: %w", err)
+		}
 	}
 
-	// set cache
-	cacheInfo = fmt.Sprintf("%v:%v", result.Result[len(result.Result)-1].Height, result.Cursor)
-	cache.Global().Set(ctx, mirrorCacheKey, cacheInfo, 7*24*time.Hour)
-
-	return internalTransactions, nil
+	return transactions, nil
 }

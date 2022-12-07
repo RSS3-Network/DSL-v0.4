@@ -29,7 +29,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/arweave"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
@@ -50,7 +49,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/metaverse"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/mirror"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/matters"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
@@ -141,7 +140,7 @@ func (s *Server) Initialize() (err error) {
 		return fmt.Errorf("create kurora datasource: %w", err)
 	}
 
-	lensDatasource, err := lens.New(s.config.RPC)
+	lensDatasource, err := lens.New(context.Background(), s.config.Kurora.Endpoint)
 	if err != nil {
 		return err
 	}
@@ -150,7 +149,6 @@ func (s *Server) Initialize() (err error) {
 		kuroraDatasource,
 		alchemyDatasource,
 		moralis.New(s.config.Moralis.Key),
-		arweave.New(),
 		blockscoutDatasource,
 		zksync.New(),
 		eth_etl.New(),
@@ -159,6 +157,11 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	swapWorker, err := swap.New(s.employer)
+	if err != nil {
+		return err
+	}
+
+	mattersWorker, err := matters.New(context.Background(), s.config.Kurora.Endpoint)
 	if err != nil {
 		return err
 	}
@@ -178,11 +181,11 @@ func (s *Server) Initialize() (err error) {
 		bridge.New(),
 		marketplace.New(),
 		poap.New(),
-		mirror.New(),
 		gitcoin.New(),
 		snapshot.New(),
 		crossbell.New(),
 		lens_worker.New(),
+		mattersWorker,
 		transaction.New(),
 		metaverse.New(),
 	}
