@@ -11,6 +11,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/blur"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/quix"
@@ -87,6 +88,8 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				internalTransfers, err = i.handleLooksRareTakerAsk(ctx, transaction, log)
 			case looksrare.EventHashTakerBid:
 				internalTransfers, err = i.handleLooksRareTakerBid(ctx, transaction, log)
+			case blur.EventOrdersMatched:
+				internalTransfers, err = i.handleBlurOrdersMatched(ctx, transaction, log)
 			default:
 				continue
 			}

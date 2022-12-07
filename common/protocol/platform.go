@@ -55,6 +55,7 @@ const (
 	PlatformGem            = "Gem"
 	PlatformQuix           = "Quix"
 	PlatformLooksRare      = "LooksRare"
+	PlatformBlur           = "Blur"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
