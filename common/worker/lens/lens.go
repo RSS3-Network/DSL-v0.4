@@ -506,8 +506,14 @@ func (c *Client) CreatePost(ctx context.Context, lensContent *LensContent) *meta
 		Body: lensContent.Content,
 	}
 
+	// handle the target post's author for lenster
 	if lensContent.ExternalURL != "" {
-		post.Author = []string{lensContent.ExternalURL}
+		prefix := strings.Split(lensContent.ExternalURL, "/")
+		if len(prefix) > 4 && prefix[2] == "lenster.xyz" {
+			post.Author = []string{lensContent.ExternalURL, prefix[4]}
+		} else {
+			post.Author = []string{lensContent.ExternalURL}
+		}
 	}
 
 	for _, media := range lensContent.Media {
