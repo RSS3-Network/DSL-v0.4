@@ -74,6 +74,10 @@ package contract
 // https://optimistic.etherscan.io/address/0x9c12939390052919aF3155f41Bf4160Fd3666A6f
 //go:generate abigen --abi ./velodrome/router.abi --pkg velodrome --type Router --out ./velodrome/router.go
 
+// tofuNFT
+// Marketplace https://polygonscan.com/address/0x7bc8b1B5AbA4dF3Be9f9A32daE501214dC0E4f3f
+//go:generate abigen --abi ./tofunft/marketplace.abi --pkg tofunft --type Marketplace --out ./tofunft/marketplace.go
+
 // Blur
 // BlurExchange https://etherscan.io/address/0x000000000000ad05ccc4f10045630fb830b95127
 //go:generate abigen --abi ./blur/exchange.abi --pkg blur --type Exchange --out ./blur/exchange.go --alias execute=execute2
