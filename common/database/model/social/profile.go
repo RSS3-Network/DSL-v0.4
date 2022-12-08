@@ -17,6 +17,7 @@ type Profile struct {
 	Bio         string          `gorm:"column:bio" json:"bio"`
 	URL         string          `gorm:"column:url" json:"url,omitempty"`
 	Action      string          `gorm:"column:action" json:"action,omitempty"`
+	Proxy       string          `gorm:"column:proxy" json:"proxy,omitempty"`
 	ExpireAt    *time.Time      `gorm:"column:expire_at;type:TIMESTAMP NULL" json:"expire_at,omitempty"`
 	ProfileUris pq.StringArray  `gorm:"column:profile_uri;type:text[]" json:"profile_uri,omitempty"`
 	BannerUris  pq.StringArray  `gorm:"column:banner_uri;type:text[]" json:"banner_uri,omitempty"`
