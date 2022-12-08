@@ -18,8 +18,6 @@ package contract
 //go:generate abigen --abi ./uniswap/pool_v3.abi --pkg uniswap --type PoolV3 --out ./uniswap/pool_v3.go
 // https://etherscan.io/address/0xc36442b4a4522e871399cd717abdd847ab11fe88
 //go:generate abigen --abi ./uniswap/position.abi --pkg uniswap --type Position --out ./uniswap/position.go
-// https://etherscan.io/address/0xdef1c0ded9bec7f1a1670819833240f027b25eff
-//go:generate abigen --abi ./zerox/zerox.abi --pkg zerox --type ZeroX --out ./zerox/zerox.go
 // https://etherscan.io/address/0x7d655c57f71464b6f83811c55d84009cd9f5221c
 //go:generate abigen --abi ./gitcoin/gitcoin.abi --pkg gitcoin --type Gitcoin --out ./gitcoin/gitcoin.go
 // https://polygonscan.com/token/0xdb46d1dc155634fbc732f92e853b10b288ad5a1d
@@ -73,3 +71,11 @@ package contract
 //go:generate abigen --abi ./lido/matic.abi --pkg lido --type Matic --out ./lido/matic.go
 // https://optimistic.etherscan.io/address/0x9c12939390052919aF3155f41Bf4160Fd3666A6f
 //go:generate abigen --abi ./velodrome/router.abi --pkg velodrome --type Router --out ./velodrome/router.go
+
+// 0X
+// Exchange https://etherscan.io/address/0xdef1c0ded9bec7f1a1670819833240f027b25eff
+//go:generate abigen --abi ./zerox/exchange.abi --pkg zerox --type Exchange --out ./zerox/exchange.go
+// ERC1155OrdersFeature https://etherscan.io/address/0x4aF649FFde640CEb34b1AfaBa3e0Bb8e9698cb01
+//go:generate abigen --abi ./zerox/erc_721_orders_feature.abi --pkg zerox --type ERC721OrdersFeature --out ./zerox/erc_721_orders_feature.go --alias buyERC721=buyERC7212
+// ERC1155OrdersFeature https://etherscan.io/address/0x6ACAb4C9c4e3a0c78435FDB5Ad1719C95460a668
+//go:generate abigen --abi ./zerox/erc_1155_orders_feature.abi --pkg zerox --type ERC1155OrdersFeature --out ./zerox/erc_1155_orders_feature.go --alias buyERC1155=buyERC11552
