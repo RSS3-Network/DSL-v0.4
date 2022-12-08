@@ -73,3 +73,7 @@ package contract
 //go:generate abigen --abi ./lido/matic.abi --pkg lido --type Matic --out ./lido/matic.go
 // https://optimistic.etherscan.io/address/0x9c12939390052919aF3155f41Bf4160Fd3666A6f
 //go:generate abigen --abi ./velodrome/router.abi --pkg velodrome --type Router --out ./velodrome/router.go
+
+// tofuNFT
+// Marketplace https://polygonscan.com/address/0x7bc8b1B5AbA4dF3Be9f9A32daE501214dC0E4f3f
+//go:generate abigen --abi ./tofunft/marketplace.abi --pkg tofunft --type Marketplace --out ./tofunft/marketplace.go

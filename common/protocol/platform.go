@@ -55,6 +55,7 @@ const (
 	PlatformGem            = "Gem"
 	PlatformQuix           = "Quix"
 	PlatformLooksRare      = "LooksRare"
+	PlatformTofuNFT        = "tofuNFT"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
