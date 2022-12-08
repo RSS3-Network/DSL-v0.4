@@ -398,6 +398,84 @@ func Test_internal_Handle(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "tofunft",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0xe4d8e15066353b8dfd538cd16015103da10f71df", // Unknown
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xd537e26e9e0d8c412cb5ec4fb68a6f346531e1a5a4751cd87690a436d9433459
+						Hash:        "0xd537e26e9e0d8c412cb5ec4fb68a6f346531e1a5a4751cd87690a436d9433459",
+						BlockNumber: 36529583,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+
+				for _, transaction := range transactions {
+					assert.Len(t, transaction.Transfers, 1)
+				}
+
+				for _, transaction := range transactions {
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformTofuNFT) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "blur",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x182f73a479de9e9e093d98487b99e0aa8e92f286", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0x83fabcfe282fd2b58564f8b4cd69ad4b52ae878fe66de7f121906c0c17db0ce3
+						Hash:        "0x83fabcfe282fd2b58564f8b4cd69ad4b52ae878fe66de7f121906c0c17db0ce3",
+						BlockNumber: 16107791,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+
+				for _, transaction := range transactions {
+					assert.Len(t, transaction.Transfers, 4)
+				}
+
+				for _, transaction := range transactions {
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformBlur) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "element erc-721",
 			arguments: arguments{
 				ctx: context.Background(),

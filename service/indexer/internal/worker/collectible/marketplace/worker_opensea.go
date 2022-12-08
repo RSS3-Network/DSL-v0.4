@@ -81,13 +81,8 @@ func (i *internal) handleOpenSeaOrderFulfilled(ctx context.Context, transaction 
 			}
 		}
 
-		var sourceData ethereum.SourceData
-		if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
-			return nil, fmt.Errorf("unmarshal source data: %w", err)
-		}
-
 		var index int64
-		for _, logForIndex := range sourceData.Receipt.Logs {
+		for _, logForIndex := range relatedLogs {
 			// If a user purchases multiple NFTs in the same transaction,
 			// the log indexes will conflict and need to be matched with their transfer logs separately.
 			if len(logForIndex.Topics) == 4 &&
