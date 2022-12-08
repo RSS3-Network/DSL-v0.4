@@ -19,13 +19,14 @@ type WrappedResult struct {
 }
 
 type SocialResult struct {
-	Post         int64  `json:"post"`
-	Comment      int64  `json:"comment"`
-	Following    int64  `json:"following"`
-	Follower     int64  `json:"follower"`
-	LongestHash  string `json:"longest_hash"`
-	ShortestHash string `json:"shortest_hash"`
-	List         []DApp `json:"list" gorm:"-"`
+	Post         int64           `json:"post"`
+	Comment      int64           `json:"comment"`
+	Following    int64           `json:"following"`
+	Follower     int64           `json:"follower"`
+	LongestHash  string          `json:"longest_hash"`
+	ShortestHash string          `json:"shortest_hash"`
+	List         []DApp          `json:"list" gorm:"-"`
+	Heatmap      []HeatmapSingle `json:"heatmap" gorm:"-"`
 }
 
 type SearchResult struct {
@@ -39,8 +40,9 @@ type GasResult struct {
 }
 
 type TxResult struct {
-	Initiate []NetworkCount `json:"initiated"`
-	Receive  []NetworkCount `json:"received"`
+	Initiate []NetworkCount  `json:"initiated"`
+	Receive  []NetworkCount  `json:"received"`
+	Heatmap  []HeatmapSingle `json:"heatmap" gorm:"-"`
 }
 
 type NetworkCount struct {
@@ -84,6 +86,7 @@ type DeFiResult struct {
 	SwapPair     []SwapPair      `json:"swap_pair"`
 	Bridge       []bridge.Bridge `json:"bridge"`
 	Liquidity    Liquidity       `json:"liquidity"`
+	Heatmap      []HeatmapSingle `json:"heatmap" gorm:"-"`
 }
 
 type SwapPair struct {
@@ -99,4 +102,9 @@ type Liquidity struct {
 	Borrow   []metadata.Token `json:"borrow"`
 	Repay    []metadata.Token `json:"repay"`
 	Collect  []metadata.Token `json:"collect"`
+}
+
+type HeatmapSingle struct {
+	Count int64  `json:"count"`
+	Date  string `json:"date"`
 }
