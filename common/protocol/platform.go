@@ -48,6 +48,7 @@ const (
 	PlatformQuickSwap      = "QuickSwap"
 	PlatformKyberSwap      = "KyberSwap"
 	PlatformSpookySwap     = "SpookySwap"
+	PlatformParaswap       = "Paraswap"
 	PlatformDODO           = "DODO"
 	PlatformBalancer       = "Balancer"
 	PlatformVelodrome      = "Velodrome"
@@ -56,13 +57,12 @@ const (
 	PlatformQuix           = "Quix"
 	PlatformLooksRare      = "LooksRare"
 	PlatformTofuNFT        = "tofuNFT"
+	PlatformBlur           = "Blur"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
 	PlatformAavegotchi = "Aavegotchi"
 	PlatformCarv       = "Carv"
-
-	PlatformParaswap = "Paraswap"
 )
 
 var PlatformList = map[string][]string{
