@@ -73,3 +73,9 @@ package contract
 //go:generate abigen --abi ./lido/matic.abi --pkg lido --type Matic --out ./lido/matic.go
 // https://optimistic.etherscan.io/address/0x9c12939390052919aF3155f41Bf4160Fd3666A6f
 //go:generate abigen --abi ./velodrome/router.abi --pkg velodrome --type Router --out ./velodrome/router.go
+
+// Element
+// ERC721OrdersFeature https://polygonscan.com/address/0xE89b615a0824286CE1cFed540f4EdDF40d2b40E3
+//go:generate abigen --abi ./element/erc_721_orders_feature.abi --pkg element --type ERC721OrdersFeature --out ./element/erc_721_orders_feature.go
+// ERC1155OrdersFeature https://polygonscan.com/address/0xA4807EF31298b121eF39Cd423A8Aa05A800B2Bb8
+//go:generate abigen --abi ./element/erc_1155_orders_feature.abi --pkg element --type ERC1155OrdersFeature --out ./element/erc_1155_orders_feature.go

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/element"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/gem"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
@@ -25,4 +26,5 @@ var platformMap = map[common.Address]string{
 	gem.AddressSwap1:                protocol.PlatformGem,
 	gem.AddressSwap2:                protocol.PlatformGem,
 	uniswap.AddressUniversalRouter:  protocol.PlatformUniswap,
+	element.AddressExchange:         protocol.PlatformElement,
 }
