@@ -19,14 +19,13 @@ type WrappedResult struct {
 }
 
 type SocialResult struct {
-	Post         int64           `json:"post"`
-	Comment      int64           `json:"comment"`
-	Following    int64           `json:"following"`
-	Follower     int64           `json:"follower"`
-	LongestHash  string          `json:"longest_hash"`
-	ShortestHash string          `json:"shortest_hash"`
-	List         []DApp          `json:"list" gorm:"-"`
-	Heatmap      []HeatmapSingle `json:"heatmap" gorm:"-"`
+	Post         int64  `json:"post"`
+	Comment      int64  `json:"comment"`
+	Following    int64  `json:"following"`
+	Follower     int64  `json:"follower"`
+	LongestHash  string `json:"longest_hash"`
+	ShortestHash string `json:"shortest_hash"`
+	List         []DApp `json:"list" gorm:"-"`
 }
 
 type SearchResult struct {
@@ -86,7 +85,6 @@ type DeFiResult struct {
 	SwapPair     []SwapPair      `json:"swap_pair"`
 	Bridge       []bridge.Bridge `json:"bridge"`
 	Liquidity    Liquidity       `json:"liquidity"`
-	Heatmap      []HeatmapSingle `json:"heatmap" gorm:"-"`
 }
 
 type SwapPair struct {

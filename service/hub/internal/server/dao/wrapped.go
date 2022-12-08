@@ -84,8 +84,6 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 		Order("count DESC").
 		Scan(&result.List)
 
-	result.Heatmap = generateHeatmap(filter.TagSocial, request.Address)
-
 	return result, nil
 }
 
@@ -166,7 +164,15 @@ func CountTransaction(c context.Context, request model.GetRequest) (model.TxResu
 		Group("network").
 		Scan(&result.Receive)
 
-	result.Heatmap = generateHeatmap(filter.TagTransaction, request.Address)
+	database.Global().Raw(`
+		SELECT COUNT(timestamp), TO_CHAR(timestamp,'MMDD') AS date
+		FROM transfers
+		WHERE transaction_hash IN (SELECT hash
+								   FROM transactions
+								   WHERE owner = ?
+									 AND DATE_PART('year', timestamp) = '2022')
+		GROUP BY date`, request.Address).
+		Scan(&result.Heatmap)
 
 	return result, nil
 }
@@ -350,24 +356,5 @@ func GetDeFi(c context.Context, request model.GetRequest) (model.DeFiResult, err
 		result.Bridge = append(result.Bridge, current)
 	}
 
-	result.Heatmap = generateHeatmap(filter.TagExchange, request.Address)
-
 	return result, nil
-}
-
-func generateHeatmap(tag string, address string) []model.HeatmapSingle {
-	var result []model.HeatmapSingle
-
-	database.Global().Raw(`
-		SELECT COUNT(timestamp), TO_CHAR(timestamp,'MMDD') AS date
-		FROM transfers
-		WHERE transaction_hash IN (SELECT hash
-								   FROM transactions
-								   WHERE owner = ?
-									 AND tag = ?
-									 AND DATE_PART('year', timestamp) = '2022')
-		GROUP BY date`, address, tag).
-		Scan(&result)
-
-	return result
 }
