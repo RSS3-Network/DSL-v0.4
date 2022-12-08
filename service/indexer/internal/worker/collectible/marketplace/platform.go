@@ -4,10 +4,13 @@ import (
 	"errors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/blur"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/element"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/gem"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/quix"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/tofunft"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
@@ -25,4 +28,8 @@ var platformMap = map[common.Address]string{
 	gem.AddressSwap1:                protocol.PlatformGem,
 	gem.AddressSwap2:                protocol.PlatformGem,
 	uniswap.AddressUniversalRouter:  protocol.PlatformUniswap,
+	tofunft.AddressMarketplace:      protocol.PlatformTofuNFT,
+	blur.AddressMarketplace:         protocol.PlatformBlur,
+	blur.AddressMarketplace2:        protocol.PlatformBlur,
+	element.AddressExchange:         protocol.PlatformElement,
 }
