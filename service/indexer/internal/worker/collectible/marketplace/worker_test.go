@@ -475,6 +475,84 @@ func Test_internal_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "element erc-721",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0xb3aA403D0d57C13683B2Fd6f6989FcDfD6b2a731", // Unknown
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xec397b30dd6340eb5c704cc5a722c9385b79d93f37ffd308762e96daa1381696
+						Hash:        "0xec397b30dd6340eb5c704cc5a722c9385b79d93f37ffd308762e96daa1381696",
+						BlockNumber: 36573921,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+
+				for _, transaction := range transactions {
+					assert.Len(t, transaction.Transfers, 1)
+				}
+
+				for _, transaction := range transactions {
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformElement) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "element erc-1155",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0xF09b308d15E45D5dFa6bEad7046721d5FAB5a9C7", // Unknown
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xe07d0d3fa76d7383d84ae59bae77c6ebed29851568570bee97818f7c4abfa728
+						Hash:        "0xe07d0d3fa76d7383d84ae59bae77c6ebed29851568570bee97818f7c4abfa728",
+						BlockNumber: 36567107,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+
+				for _, transaction := range transactions {
+					assert.Len(t, transaction.Transfers, 1)
+				}
+
+				for _, transaction := range transactions {
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformElement) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {

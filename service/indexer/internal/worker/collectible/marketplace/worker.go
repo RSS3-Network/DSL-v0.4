@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/blur"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/element"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/quix"
@@ -93,6 +94,10 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				internalTransfers, err = i.handleTofuNFTEvInventoryUpdate(ctx, transaction, log, sourceData.Receipt.Logs)
 			case blur.EventOrdersMatched:
 				internalTransfers, err = i.handleBlurOrdersMatched(ctx, transaction, log)
+			case element.EventERC721SellOrderFilled:
+				internalTransfers, err = i.handleElementERC721SellOrderFilled(ctx, transaction, log)
+			case element.EventERC1155SellOrderFilled:
+				internalTransfers, err = i.handleElementERC1155SellOrderFilled(ctx, transaction, log)
 			default:
 				continue
 			}
@@ -150,7 +155,7 @@ func (i *internal) buildTradeTransfer(transaction model.Transaction, index int64
 func (i *internal) buildCost(ctx context.Context, network string, address common.Address, value *big.Int) (*metadata.Token, error) {
 	var costToken metadata.Token
 
-	if address == ethereum.AddressGenesis {
+	if address == ethereum.AddressGenesis || address == element.AddressNativeToken {
 		nativeToken, err := i.tokenClient.Native(ctx, network)
 		if err != nil {
 			return nil, err

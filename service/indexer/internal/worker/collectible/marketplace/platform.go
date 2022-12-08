@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/blur"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/element"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/gem"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
@@ -30,4 +31,5 @@ var platformMap = map[common.Address]string{
 	tofunft.AddressMarketplace:      protocol.PlatformTofuNFT,
 	blur.AddressMarketplace:         protocol.PlatformBlur,
 	blur.AddressMarketplace2:        protocol.PlatformBlur,
+	element.AddressExchange:         protocol.PlatformElement,
 }
