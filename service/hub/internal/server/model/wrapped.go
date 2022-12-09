@@ -21,7 +21,8 @@ type WrappedResult struct {
 type SocialResult struct {
 	Post         int64  `json:"post"`
 	Comment      int64  `json:"comment"`
-	Follow       int64  `json:"follow"`
+	Following    int64  `json:"following"`
+	Follower     int64  `json:"follower"`
 	LongestHash  string `json:"longest_hash"`
 	ShortestHash string `json:"shortest_hash"`
 	List         []DApp `json:"list" gorm:"-"`
@@ -38,8 +39,9 @@ type GasResult struct {
 }
 
 type TxResult struct {
-	Initiate []NetworkCount `json:"initiated"`
-	Receive  []NetworkCount `json:"received"`
+	Initiate []NetworkCount  `json:"initiated"`
+	Receive  []NetworkCount  `json:"received"`
+	Heatmap  []HeatmapSingle `json:"heatmap" gorm:"-"`
 }
 
 type NetworkCount struct {
@@ -98,4 +100,9 @@ type Liquidity struct {
 	Borrow   []metadata.Token `json:"borrow"`
 	Repay    []metadata.Token `json:"repay"`
 	Collect  []metadata.Token `json:"collect"`
+}
+
+type HeatmapSingle struct {
+	Count int64  `json:"count"`
+	Date  string `json:"date"`
 }

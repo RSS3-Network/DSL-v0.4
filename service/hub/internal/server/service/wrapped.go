@@ -19,8 +19,8 @@ func (s *Service) GetWrapped(c context.Context, request model.GetRequest, wrappe
 		return err
 	}
 
-	// multiple search counts
-	wrappedResult.Search.Count *= wrappedResult.Search.Count
+	// multiple search counts by 4, as we only started collecting the date in Q4
+	wrappedResult.Search.Count *= 4
 
 	wrappedResult.Gas, err = dao.CountGas(c, request)
 	if err != nil {
