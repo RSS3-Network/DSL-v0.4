@@ -33,20 +33,9 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 		Raw(fmt.Sprintf(`SELECT 
 					COUNT(*) FILTER ( WHERE type = 'post') AS post, 
 					COUNT(*) FILTER ( WHERE type = 'comment') AS comment,
-					COUNT(*) FILTER ( WHERE type = 'follow') AS following
+					COUNT(*) FILTER ( WHERE type = 'follow') AS follow
 				 FROM transactions 
 				 %s`, condition)).Scan(&result)
-
-	// follower
-	database.Global().
-		Raw(`SELECT COUNT(*) as follower
-		FROM transfers
-		WHERE TAG = 'social'
-		  AND TYPE ='follow'
-		  AND DATE_PART('year'
-			, TIMESTAMP) = '2022'
-		  AND metadata->>'address' = ?`, request.Address).
-		Scan(&result)
 
 	// get hashes of the longest and the shortest posts
 	database.Global().
@@ -163,16 +152,6 @@ func CountTransaction(c context.Context, request model.GetRequest) (model.TxResu
 		Where("address_to = ?", request.Address).
 		Group("network").
 		Scan(&result.Receive)
-
-	database.Global().Raw(`
-		SELECT COUNT(timestamp), TO_CHAR(timestamp,'MMDD') AS date
-		FROM transfers
-		WHERE transaction_hash IN (SELECT hash
-								   FROM transactions
-								   WHERE owner = ?
-									 AND DATE_PART('year', timestamp) = '2022')
-		GROUP BY date`, request.Address).
-		Scan(&result.Heatmap)
 
 	return result, nil
 }

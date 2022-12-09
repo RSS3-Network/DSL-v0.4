@@ -10,7 +10,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/character"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/event"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/linklist"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/periphery"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/profile"
@@ -107,18 +106,12 @@ func New() (Interface, error) {
 		return nil, err
 	}
 
-	eventContract, err := event.NewEvent(crossbell.AddressCharacter, ethereumClient)
-	if err != nil {
-		return nil, err
-	}
-
 	tokenClient := token.New()
 
 	return &handler{
 		characterHandler: &characterHandler{
 			characterContract: characterContract,
 			peripheryContract: peripheryContract,
-			eventContract:     eventContract,
 			profileHandler: &profileHandler{
 				profileContract: profileContract,
 				tokenClient:     tokenClient,

@@ -11,7 +11,6 @@ import (
 //go:generate abigen --abi ./character/character.abi --pkg character --type Character --out ./character/character.go
 //go:generate abigen --abi ./periphery/periphery.abi --pkg periphery --type Periphery --out ./periphery/periphery.go
 //go:generate abigen --abi ./linklist/linklist.abi --pkg linklist --type LinkList --out ./linklist/linklist.go
-//go:generate abigen --abi ./event/event.abi --pkg event --type Event --out ./event/event.go
 
 const (
 	// BrokenBlockNumber is the block height of the contract non-compatible upgrade
@@ -33,7 +32,6 @@ var (
 	EventNameSetProfileUri    = "SetProfileUri"
 	EventNameSetCharacterUri  = "SetCharacterUri"
 	EventNameSetNoteUri       = "SetNoteUri"
-	EventNameSetOperator      = "SetOperator"
 
 	EventHashProfileCreated        = common.BytesToHash(crypto.Keccak256([]byte("ProfileCreated(uint256,address,address,string,uint256)")))
 	EventHashCharacterCreated      = common.BytesToHash(crypto.Keccak256([]byte("CharacterCreated(uint256,address,address,string,uint256)")))
@@ -49,9 +47,6 @@ var (
 	EventHashSetCharacterUri       = common.BytesToHash(crypto.Keccak256([]byte("SetCharacterUri(uint256,string)")))
 	EventHashSetNoteUri            = common.BytesToHash(crypto.Keccak256([]byte("SetNoteUri(uint256,uint256,string)")))
 	EventHashMintNote              = common.BytesToHash(crypto.Keccak256([]byte("MintNote(address,uint256,uint256,address,uint256)")))
-	EventHashSetOperator           = common.BytesToHash(crypto.Keccak256([]byte("SetOperator(uint256,address,uint256)")))
-	EventHashAddOperator           = common.BytesToHash(crypto.Keccak256([]byte("AddOperator(uint256,address,uint256)")))
-	EventHashRemoveOperator        = common.BytesToHash(crypto.Keccak256([]byte("RemoveOperator(uint256,address,uint256)")))
 
 	LinkItemTypeCharacter = common.BytesToHash(common.RightPadBytes([]byte("Character"), common.HashLength))
 	LinkItemTypeAddress   = common.BytesToHash(common.RightPadBytes([]byte("Address"), common.HashLength))
