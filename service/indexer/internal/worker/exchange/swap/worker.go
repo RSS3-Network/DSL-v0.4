@@ -113,7 +113,15 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 		}
 
 		transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagExchange, transaction.Tag, filter.ExchangeSwap, transaction.Type)
-		transaction.Owner = transaction.AddressFrom
+
+		switch transaction.Platform {
+		// CoW Swap uses offline signatures to offer gasless orders, aka signed orders.
+		// https://docs.cow.fi/front-end/cowswap
+		case protocol.PlatformCow:
+			transaction.Owner = message.Address
+		default:
+			transaction.Owner = transaction.AddressFrom
+		}
 
 		mu.Lock()
 		internalTransactionMap[transaction.Hash] = transaction
