@@ -98,7 +98,7 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 		return result, err
 	}
 	result.TotalWord = totalWord
-	result.WordPercentile = wordPercentile
+	result.WordPercentile = wordPercentile - 1
 
 	return result, nil
 }
@@ -382,7 +382,10 @@ func GetWordsCountPercentileByAddress(address string) (uint, uint, error) {
 
 	var metadata []string
 
-	if err := db.Model(&dbModel.Transfer{}).Select("metadata").Where("address_from = ? AND tag = 'social' AND type = 'post' AND DATE_PART('year', timestamp) = '2022'", address).Scan(&metadata).Error; err != nil {
+	if err := db.Model(&dbModel.Transfer{}).
+		Select("metadata").
+		Where("address_from = ? AND tag = 'social' AND type = 'post' AND DATE_PART('year', timestamp) = '2022'", address).
+		Scan(&metadata).Error; err != nil {
 		return 0, 0, err
 	}
 
