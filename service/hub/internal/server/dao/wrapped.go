@@ -57,8 +57,7 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 		Scan(&result)
 
 	// get hashes of the longest and the shortest posts
-
-	var hashStruct = struct{ Longest, Shortest string }{}
+	hashStruct := struct{ Longest, Shortest string }{}
 
 	database.Global().
 		Raw(fmt.Sprintf(`SELECT (SELECT transaction_hash
