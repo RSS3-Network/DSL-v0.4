@@ -4,21 +4,16 @@ import (
 	"bytes"
 	"context"
 	"embed"
-	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/naturalselectionlabs/pregod/common/cache"
-	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens"
@@ -29,20 +24,16 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/worker/zksync"
-	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	tokenjob "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/job/token"
 	"github.com/samber/lo"
-	lop "github.com/samber/lo/parallel"
+	"github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
 
 	"go.opentelemetry.io/otel"
 
 	"go.uber.org/zap"
-
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 const (
@@ -79,67 +70,11 @@ func (s *service) Networks() []string {
 }
 
 func (s *service) Initialize(ctx context.Context) error {
-	dir := "asset/cex_wallet"
-	files, err := asseFS.ReadDir(dir)
-	if err != nil {
-		return err
-	}
-
-	for _, path := range files {
-		records, err := readFile(dir + "/" + path.Name())
-		if err != nil {
-			return err
-		}
-
-		walletModels := make([]exchange.CexWallet, 0)
-
-		for i, record := range records {
-			if i == 0 {
-				continue
-			}
-
-			walletModels = append(walletModels, exchange.CexWallet{
-				WalletAddress: record[0],
-				Name:          record[1],
-				Source:        record[2],
-				Network:       record[3],
-			})
-
-			allowlist.AllowList.Add(record[0], record[1])
-		}
-
-		if len(walletModels) == 0 {
-			return nil
-		}
-
-		if err := database.Global().
-			Model((*exchange.CexWallet)(nil)).
-			Clauses(clause.OnConflict{
-				DoNothing: true,
-			}).
-			Create(walletModels).
-			Error; err != nil {
-			return err
-		}
+	if err := s.loadCentralizedExchangeWallets(ctx); err != nil {
+		return fmt.Errorf("initialize centralized exchange wallets: %w", err)
 	}
 
 	return nil
-}
-
-func readFile(path string) ([][]string, error) {
-	file, err := asseFS.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	reader := csv.NewReader(file)
-	records, err := reader.ReadAll()
-	if err != nil {
-		return nil, err
-	}
-
-	return records, nil
 }
 
 func (s *service) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (transaction []model.Transaction, err error) {
@@ -150,15 +85,15 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	var internalTransactions []*model.Transaction
 
-	opt := lop.NewOption().WithConcurrency(200)
+	opt := parallel.NewOption().WithConcurrency(200)
 
 	switch message.Network {
 	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkCrossbell, protocol.NetworkXDAI, protocol.NetworkOptimism, protocol.NetworkAvalanche:
-		internalTransactions, err = lop.MapWithError(transactions, s.makeEthereumHandlerFunc(ctx, message, transactions), opt)
+		internalTransactions, err = parallel.MapWithError(transactions, s.makeEthereumHandlerFunc(ctx, message, transactions), opt)
 	case protocol.NetworkZkSync:
-		internalTransactions, err = lop.MapWithError(transactions, s.makeZkSyncHandlerFunc(ctx, message, transactions), opt)
+		internalTransactions, err = parallel.MapWithError(transactions, s.makeZkSyncHandlerFunc(ctx, message, transactions), opt)
 	case protocol.NetworkArweave:
-		internalTransactions, err = lop.MapWithError(transactions, s.makeArweaveHandlerFunc(ctx, message, transactions), opt)
+		internalTransactions, err = parallel.MapWithError(transactions, s.makeArweaveHandlerFunc(ctx, message, transactions), opt)
 	}
 
 	if err != nil {
@@ -227,10 +162,18 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 		}
 
 		for _, internalTransfer := range internalTransfers {
-			var wallet exchange.CexWallet
+			wallet, err := s.isCentralizedExchangeWallet(ctx, internalTransfer.AddressFrom, internalTransfer.AddressTo)
+			if err != nil {
+				return nil, fmt.Errorf("check centralized exchange wallet: %w", err)
+			}
 
-			if err := s.checkCexWallet(ctx, message.Address, &internalTransaction, &internalTransfer, &wallet); err != nil {
-				return nil, err
+			if wallet != nil {
+				// Build deposit or withdraw transaction
+				if err := s.buildCentralizedExchangeTransfer(ctx, &internalTransfer, lo.FromPtr(wallet), message.Address); err != nil {
+					return nil, fmt.Errorf("build centralized exchange transaction: %w", err)
+				}
+
+				internalTransaction.Platform = internalTransfer.Platform
 			}
 
 			internalTransaction, internalTransfer = s.buildType(internalTransaction, internalTransfer)
@@ -698,61 +641,6 @@ func (s *service) Jobs() []worker.Job {
 	return []worker.Job{
 		tokenjob.New(),
 	}
-}
-
-// Check address (from / to) is a WalletAddress. If true, update transfer
-func (s *service) checkCexWallet(ctx context.Context, address string, transaction *model.Transaction, transfer *model.Transfer, wallet *exchange.CexWallet) error {
-	// get from redis cache (to)
-	exists, err := cache.GetMsgPack(ctx, keyOfCheckCexWallet(strings.ToLower(transfer.AddressTo)), wallet)
-	if err != nil {
-		return err
-	}
-
-	if !exists { // get from redis cache (from)
-		if exists, err = cache.GetMsgPack(ctx, keyOfCheckCexWallet(strings.ToLower(transfer.AddressFrom)), wallet); err != nil {
-			return nil
-		}
-	}
-
-	if !exists {
-		err := database.Global().Model((*exchange.CexWallet)(nil)).Where("wallet_address = ?", strings.ToLower(transfer.AddressTo)).Or("wallet_address = ?", strings.ToLower(transfer.AddressFrom)).First(&wallet).Error
-		switch {
-		case err == nil: // exists, set WalletAddress' cache
-			if err := cache.SetMsgPack(ctx, keyOfCheckCexWallet(wallet.WalletAddress), wallet, 7*24*time.Hour); err != nil {
-				return err
-			}
-		case errors.Is(err, gorm.ErrRecordNotFound): // not exists, set `from` and `to` address' cache (empty)
-			if err := cache.SetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressFrom), wallet, 7*24*time.Hour); err != nil {
-				return err
-			}
-			if err := cache.SetMsgPack(ctx, keyOfCheckCexWallet(transfer.AddressTo), wallet, 7*24*time.Hour); err != nil {
-				return err
-			}
-		default: // other err
-			return err
-		}
-	}
-
-	if len(wallet.Name) == 0 {
-		return nil
-	}
-
-	if transfer.Tag = filter.UpdateTag(filter.TagExchange, transfer.Tag); transfer.Tag == filter.TagExchange {
-		transfer.Platform = wallet.Name
-		transaction.Platform = wallet.Name
-
-		if transfer.AddressTo == address {
-			transfer.Type = filter.ExchangeWithdraw
-		} else if transfer.AddressFrom == address {
-			transfer.Type = filter.ExchangeDeposit
-		}
-	}
-
-	return nil
-}
-
-func keyOfCheckCexWallet(address string) string {
-	return fmt.Sprintf("check_exchange_wallet.%s", address)
 }
 
 func isMint(actionTag, actionType string) bool {
