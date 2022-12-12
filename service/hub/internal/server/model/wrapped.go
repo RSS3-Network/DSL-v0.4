@@ -23,8 +23,8 @@ type SocialResult struct {
 	Comment        int64  `json:"comment"`
 	Following      int64  `json:"following"`
 	Follower       int64  `json:"follower"`
-	LongestPost    *Post  `json:"longest_hash"`
-	ShortestPost   *Post  `json:"shortest_hash"`
+	LongestPost    *Post  `json:"longest_hash" gorm:"-"`
+	ShortestPost   *Post  `json:"shortest_hash" gorm:"-"`
 	TotalWord      uint   `json:"total_word"`
 	WordPercentile uint   `json:"word_percentile"`
 	List           []DApp `json:"list" gorm:"-"`
