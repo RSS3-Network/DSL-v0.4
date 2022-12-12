@@ -23,11 +23,18 @@ type SocialResult struct {
 	Comment        int64  `json:"comment"`
 	Following      int64  `json:"following"`
 	Follower       int64  `json:"follower"`
-	LongestHash    string `json:"longest_hash"`
-	ShortestHash   string `json:"shortest_hash"`
+	LongestPost    *Post  `json:"longest_hash"`
+	ShortestPost   *Post  `json:"shortest_hash"`
 	TotalWord      uint   `json:"total_word"`
 	WordPercentile uint   `json:"word_percentile"`
 	List           []DApp `json:"list" gorm:"-"`
+}
+
+type Post struct {
+	Hash      string          `json:"hash"`
+	Metadata  json.RawMessage `json:"metadata"`
+	Timestamp time.Time       `json:"timestamp"`
+	Platform  string          `json:"platform"`
 }
 
 type SearchResult struct {

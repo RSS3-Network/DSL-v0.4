@@ -57,6 +57,9 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 		Scan(&result)
 
 	// get hashes of the longest and the shortest posts
+
+	var hashStruct = struct{ Longest, Shortest string }{}
+
 	database.Global().
 		Raw(fmt.Sprintf(`SELECT (SELECT transaction_hash
         FROM (SELECT transaction_hash, metadata ::jsonb ->> 'body' AS body
@@ -68,7 +71,7 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
                      %s)) sub
         WHERE sub.body IS NOT NULL
         ORDER BY LENGTH(body::TEXT) DESC
-        LIMIT 1) AS longest_hash,
+        LIMIT 1) AS longest,
        (SELECT transaction_hash
         FROM (SELECT transaction_hash, metadata ::jsonb ->> 'body' AS body
               FROM transfers
@@ -79,7 +82,10 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
                      %s)) sub
         WHERE sub.body IS NOT NULL
         ORDER BY LENGTH(body::TEXT) ASC
-        LIMIT 1) AS shortest_hash;`, condition, condition)).Scan(&result)
+        LIMIT 1) AS shortest;`, condition, condition)).Scan(&hashStruct)
+
+	result.LongestPost = getPost(hashStruct.Longest)
+	result.ShortestPost = getPost(hashStruct.Shortest)
 
 	database.Global().
 		Model(&dbModel.Transaction{}).
@@ -411,6 +417,18 @@ func getWordsCountPercentile(wordsCount uint) uint {
 		}
 	}
 	return 100
+}
+
+func getPost(hash string) *model.Post {
+	// Get post by hash
+	var post model.Post
+
+	database.Global().Model(&dbModel.Transfer{}).
+		Select("transaction_hash as hash, metadata, timestamp, platform").
+		Where("transaction_hash = ? ", hash).
+		First(&post)
+
+	return &post
 }
 
 func count(s string) uint {
