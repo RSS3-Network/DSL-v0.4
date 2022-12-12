@@ -390,7 +390,7 @@ func GetWordsCountPercentileByAddress(address string) (uint, uint, error) {
 
 	if err := db.Model(&dbModel.Transfer{}).
 		Select("metadata").
-		Where("address_from = ? AND tag = 'social' AND type = 'post' AND DATE_PART('year', timestamp) = '2022'", address).
+		Where("address_from = ? AND tag = 'social' AND type in ('post', 'comment') AND DATE_PART('year', timestamp) = '2022'", address).
 		Scan(&metadata).Error; err != nil {
 		return 0, 0, err
 	}
