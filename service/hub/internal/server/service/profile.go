@@ -44,7 +44,7 @@ func (s *Service) GetProfiles(c context.Context, request model.GetRequest) ([]*s
 					return
 				}
 
-				if _, err := s.GetProfilesFromPlatform(c, platform, request.Address); err != nil {
+				if _, err := s.GetProfilesFromPlatform(context.Background(), platform, request.Address); err != nil {
 					logrus.Errorf("[profile] getProfilesFromPlatform error, %v", err)
 				}
 			}()
