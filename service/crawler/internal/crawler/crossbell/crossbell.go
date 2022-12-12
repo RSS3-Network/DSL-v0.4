@@ -150,7 +150,7 @@ func (s *service) GetKuroraLogs(ctx context.Context) ([]*model.Transaction, erro
 				Hash:        log.TransactionHash.String(),
 				Index:       int64(log.TransactionIndex),
 				Network:     s.Network(),
-				Source:      protocol.SourcePregodETL,
+				Source:      protocol.SourceKurora,
 				Platform:    s.Name(),
 				Transfers:   make([]model.Transfer, 0),
 			}
@@ -164,7 +164,7 @@ func (s *service) GetKuroraLogs(ctx context.Context) ([]*model.Transaction, erro
 			Metadata:    metadata.Default,
 			Network:     s.Network(),
 			Platform:    s.Name(),
-			Source:      protocol.SourcePregodETL,
+			Source:      protocol.SourceKurora,
 		})
 	}
 
