@@ -19,6 +19,7 @@ type WrappedResult struct {
 }
 
 type SocialResult struct {
+	SocialScore    int64  `json:"social_score"`
 	Post           int64  `json:"post"`
 	Comment        int64  `json:"comment"`
 	Following      int64  `json:"following"`
