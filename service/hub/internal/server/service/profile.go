@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/naturalselectionlabs/pregod/common/worker/spaceid"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
@@ -22,6 +23,7 @@ var ProfilePlatformList = []string{
 	protocol.PlatformEns,
 	protocol.PlatformLens,
 	protocol.PlatformCrossbell,
+	protocol.PlatformSpaceID,
 }
 
 var ProfileLockKey = "profile:%v:%v"
@@ -118,6 +120,9 @@ func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address s
 		if err == nil {
 			profiles, err = csbClient.GetProfile(address)
 		}
+	case protocol.PlatformSpaceID:
+		spaceidClient := spaceid.New()
+		profile, err = spaceidClient.GetProfile(address)
 	}
 
 	if err != nil {
