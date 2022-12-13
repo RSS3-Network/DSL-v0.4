@@ -247,23 +247,23 @@ func GetNFT(c context.Context, request model.GetRequest) (model.NFTResult, error
 			continue
 		}
 
-		if current.Type == filter.CollectibleMint {
-			result.Mint = append(result.Mint, nft)
-			continue
-		}
-
-		if current.From == request.Address {
-			result.Sold = append(result.Sold, nft)
-		} else if current.To == request.Address {
-			result.Bought = append(result.Bought, nft)
-		}
-
-		if i == 0 {
-			result.Last = &model.NFTSingle{
-				Metadata:  nft,
-				Timestamp: current.Timestamp,
-			}
-		}
+		// if current.Type == filter.CollectibleMint {
+		//	result.Mint = append(result.Mint, nft)
+		//	continue
+		// }
+		//
+		// if current.From == request.Address {
+		//	result.Sold = append(result.Sold, nft)
+		// } else if current.To == request.Address {
+		//	result.Bought = append(result.Bought, nft)
+		// }
+		//
+		// if i == 0 {
+		//	result.Last = &model.NFTSingle{
+		//		Metadata:  nft,
+		//		Timestamp: current.Timestamp,
+		//	}
+		// }
 
 		if i == len(list)-1 {
 			result.First = &model.NFTSingle{

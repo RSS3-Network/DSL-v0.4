@@ -60,12 +60,12 @@ type NetworkCount struct {
 }
 
 type NFTResult struct {
-	Bought []metadata.Token `json:"bought"`
-	Sold   []metadata.Token `json:"sold"`
-	Mint   []metadata.Token `json:"mint"`
-	Total  int              `json:"total"`
-	First  *NFTSingle       `json:"first"`
-	Last   *NFTSingle       `json:"last"`
+	// Bought []metadata.Token `json:"bought"`
+	// Sold   []metadata.Token `json:"sold"`
+	// Mint   []metadata.Token `json:"mint"`
+	Total int        `json:"total"`
+	First *NFTSingle `json:"first"`
+	// Last  *NFTSingle `json:"last"`
 }
 
 type NFT struct {
