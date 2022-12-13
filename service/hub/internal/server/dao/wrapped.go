@@ -97,6 +97,23 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 		Order("count DESC").
 		Scan(&result.List)
 
+	// calculate web3 social score
+
+	scoreStruct := struct{ Platform, Score int64 }{}
+
+	database.Global().Raw(`SELECT COUNT(DISTINCT source) as Platform, COUNT(*) as Score
+			FROM transfers
+			WHERE transaction_hash IN (SELECT hash
+									   FROM transactions
+									   WHERE owner = ?
+										 AND tag = 'social'
+										 AND type IN ('post', 'comment')
+										 AND network = 'crossbell'
+										 AND DATE_PART('year', timestamp) = '2022')
+			  AND platform IN ('xSync', 'OperatorSync');`, request.Address).Scan(&scoreStruct)
+
+	result.SocialScore = scoreStruct.Platform*50 + scoreStruct.Score*5
+
 	// words count percentile
 	totalWord, wordPercentile, err := GetWordsCountPercentileByAddress(request.Address)
 	if err != nil {
