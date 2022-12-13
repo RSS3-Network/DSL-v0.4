@@ -24,8 +24,8 @@ type SocialResult struct {
 	Comment        int64  `json:"comment"`
 	Following      int64  `json:"following"`
 	Follower       int64  `json:"follower"`
-	LongestPost    *Post  `json:"longest_hash" gorm:"-"`
-	ShortestPost   *Post  `json:"shortest_hash" gorm:"-"`
+	LongestPost    *Post  `json:"longest_post" gorm:"-"`
+	ShortestPost   *Post  `json:"shortest_post" gorm:"-"`
 	TotalWord      uint   `json:"total_word"`
 	WordPercentile uint   `json:"word_percentile"`
 	List           []DApp `json:"list" gorm:"-"`
@@ -43,9 +43,10 @@ type SearchResult struct {
 }
 
 type GasResult struct {
-	Total       string `json:"total"`
-	Highest     string `json:"highest"`
-	HighestHash string `json:"highest_hash"`
+	Total       string    `json:"total"`
+	Highest     string    `json:"highest"`
+	HighestHash string    `json:"highest_hash"`
+	HighestDate time.Time `json:"highest_date"`
 }
 
 type TxResult struct {
@@ -60,12 +61,12 @@ type NetworkCount struct {
 }
 
 type NFTResult struct {
-	Bought []metadata.Token `json:"bought"`
-	Sold   []metadata.Token `json:"sold"`
-	Mint   []metadata.Token `json:"mint"`
-	Total  int              `json:"total"`
-	First  *NFTSingle       `json:"first"`
-	Last   *NFTSingle       `json:"last"`
+	// Bought []metadata.Token `json:"bought"`
+	// Sold   []metadata.Token `json:"sold"`
+	// Mint   []metadata.Token `json:"mint"`
+	Total int        `json:"total"`
+	First *NFTSingle `json:"first"`
+	// Last  *NFTSingle `json:"last"`
 }
 
 type NFT struct {
