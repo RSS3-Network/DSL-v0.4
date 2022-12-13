@@ -75,11 +75,13 @@ type NFT struct {
 	To        string          `json:"to"`
 	Timestamp time.Time       `json:"timestamp"`
 	Type      string          `json:"type"`
+	Platform  string          `json:"platform"`
 }
 
 type NFTSingle struct {
 	Metadata  metadata.Token `json:"metadata"`
 	Timestamp time.Time      `json:"timestamp"`
+	Platform  string         `json:"platform,omitempty"`
 }
 
 type DAppResult struct {

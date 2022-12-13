@@ -230,7 +230,7 @@ func GetNFT(c context.Context, request model.GetRequest) (model.NFTResult, error
 	var list []model.NFT
 
 	database.Global().
-		Raw(fmt.Sprintf(`SELECT address_from AS from, address_to AS to, metadata, timestamp, type
+		Raw(fmt.Sprintf(`SELECT address_from AS from, address_to AS to, metadata, timestamp, type, platform
 			FROM transfers
 			WHERE transaction_hash IN (SELECT hash
 									   FROM transactions
@@ -269,6 +269,7 @@ func GetNFT(c context.Context, request model.GetRequest) (model.NFTResult, error
 			result.First = &model.NFTSingle{
 				Metadata:  nft,
 				Timestamp: current.Timestamp,
+				Platform:  current.Platform,
 			}
 		}
 	}
