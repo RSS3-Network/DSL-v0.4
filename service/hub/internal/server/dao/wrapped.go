@@ -156,7 +156,7 @@ func CountGas(c context.Context, request model.GetRequest) (model.GasResult, err
 	var result model.GasResult
 
 	// the where condition for all the queries
-	condition := fmt.Sprintf("address_from = '%s' AND DATE_PART('year', timestamp) = '%d' AND fee IS NOT NULL", request.Address, 2022)
+	condition := fmt.Sprintf("address_from = '%s' AND network = 'ethereum' AND DATE_PART('year', timestamp) = '%d' AND fee IS NOT NULL", request.Address, 2022)
 
 	// calculate gas: total and highest
 	database.Global().
@@ -167,7 +167,7 @@ func CountGas(c context.Context, request model.GetRequest) (model.GasResult, err
 
 	database.Global().
 		Model(&dbModel.Transaction{}).
-		Select("hash as highest_hash").
+		Select("hash as highest_hash, timestamp as highest_date").
 		Where(condition).
 		Order("fee::NUMERIC DESC").
 		Limit(1).

@@ -43,9 +43,10 @@ type SearchResult struct {
 }
 
 type GasResult struct {
-	Total       string `json:"total"`
-	Highest     string `json:"highest"`
-	HighestHash string `json:"highest_hash"`
+	Total       string    `json:"total"`
+	Highest     string    `json:"highest"`
+	HighestHash string    `json:"highest_hash"`
+	HighestDate time.Time `json:"highest_date"`
 }
 
 type TxResult struct {
