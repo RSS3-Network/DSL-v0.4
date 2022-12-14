@@ -3,6 +3,9 @@ package unstoppable
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -14,8 +17,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/httpx"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"go.uber.org/zap"
-	"net/http"
-	"net/url"
 )
 
 type Client struct {

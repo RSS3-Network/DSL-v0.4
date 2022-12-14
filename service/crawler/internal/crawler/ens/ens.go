@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	ens_common "github.com/naturalselectionlabs/pregod/common/worker/name_service/ens"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -18,7 +20,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
-	ens_common "github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens/contract"
