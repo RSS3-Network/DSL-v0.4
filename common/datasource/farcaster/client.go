@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	//	https://guardian.farcaster.xyz/origin/address_activity/0x012D3606bAe7aebF03a04F8802c561330eAce70A
-	BaseUrl  = "https://guardian.farcaster.xyz"
+	// https://www.notion.so/Migration-Guide-Phase-I-f34bf0b713924ba6b9652b6bb4fe44ef
+	BaseUrl  = "https://api.farcaster.xyz"
 	PageSize = 1000
 )
 
