@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -48,8 +50,16 @@ func (i *internal) Initialize(ctx context.Context) error {
 func (i *internal) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	errorGroup, ctx := errgroup.WithContext(ctx)
 
+	contractAddresses := []common.Address{
+		juicebox.AddressETHPaymentTerminal,
+		juicebox.AddressController,
+		juicebox.AddressTiered721DelegateProjectDeployer,
+	}
+
 	transactions = lo.Filter(transactions, func(transaction model.Transaction, _ int) bool {
-		return strings.EqualFold(transaction.AddressTo, juicebox.AddressETHPaymentTerminal.String())
+		return lo.ContainsBy(contractAddresses, func(address common.Address) bool {
+			return strings.EqualFold(transaction.AddressTo, address.String())
+		})
 	})
 
 	for index := range transactions {
@@ -67,6 +77,8 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			for _, transfer := range transaction.Transfers {
 				transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagDonation, transaction.Tag, transfer.Type, transaction.Type)
 			}
+
+			transaction.Platform = protocol.PlatformJuiceBox
 
 			transactions[internalIndex] = transaction
 
@@ -90,9 +102,13 @@ func (i *internal) handle(ctx context.Context, transaction model.Transaction) (t
 	for _, log := range sourceData.Receipt.Logs {
 		var internalTransfers []model.Transfer
 
-		switch log.Topics[0] {
-		case juicebox.EventPay:
+		topic := log.Topics[0]
+
+		switch {
+		case topic == juicebox.EventPay && log.Address == juicebox.AddressETHPaymentTerminal:
 			internalTransfers, err = i.handleEventPay(ctx, transaction, *log)
+		case topic == juicebox.EventLaunchProject && log.Address == juicebox.AddressController:
+			internalTransfers, err = i.handleEventLaunchProject(ctx, transaction, *log)
 		default:
 			continue
 		}
@@ -123,6 +139,66 @@ func (i *internal) handleEventPay(ctx context.Context, transaction model.Transac
 		return nil, fmt.Errorf("parse pay event: %w", err)
 	}
 
+	nativeToken, err := i.tokenClient.NatvieToMetadata(ctx, transaction.Network)
+	if err != nil {
+		return nil, fmt.Errorf("get native token: %w", err)
+	}
+
+	nativeToken.SetValue(decimal.NewFromBigInt(event.Amount, 0))
+
+	donationMetadata, err := i.buildMetadata(ctx, event.ProjectId, ethereumClient)
+	if err != nil {
+		return nil, fmt.Errorf("build metadata: %w", err)
+	}
+
+	donationMetadata.Token = nativeToken
+
+	transfer, err := i.buildTransfer(ctx, transaction, log.Index, lo.FromPtr(donationMetadata), filter.DonationDonate)
+	if err != nil {
+		return nil, fmt.Errorf("build transfer: %w", err)
+	}
+
+	transfers := []model.Transfer{
+		lo.FromPtr(transfer),
+	}
+
+	return transfers, nil
+}
+
+func (i *internal) handleEventLaunchProject(ctx context.Context, transaction model.Transaction, log types.Log) ([]model.Transfer, error) {
+	ethereumClient, err := ethclientx.Global(transaction.Network)
+	if err != nil {
+		return nil, fmt.Errorf("get ethereum client: %w", err)
+	}
+
+	filterer, err := juicebox.NewControllerFilterer(log.Address, ethereumClient)
+	if err != nil {
+		return nil, fmt.Errorf("create filterer: %w", err)
+	}
+
+	event, err := filterer.ParseLaunchProject(log)
+	if err != nil {
+		return nil, fmt.Errorf("parse launch project event: %w", err)
+	}
+
+	donationMetadata, err := i.buildMetadata(ctx, event.ProjectId, ethereumClient)
+	if err != nil {
+		return nil, fmt.Errorf("build metadata: %w", err)
+	}
+
+	transfer, err := i.buildTransfer(ctx, transaction, log.Index, lo.FromPtr(donationMetadata), filter.DonationLaunch)
+	if err != nil {
+		return nil, fmt.Errorf("build transfer: %w", err)
+	}
+
+	transfers := []model.Transfer{
+		lo.FromPtr(transfer),
+	}
+
+	return transfers, nil
+}
+
+func (i *internal) buildMetadata(ctx context.Context, projectID *big.Int, ethereumClient *ethclient.Client) (*metadata.Donation, error) {
 	caller, err := juicebox.NewProjectsCaller(juicebox.AddressProjects, ethereumClient)
 	if err != nil {
 		return nil, fmt.Errorf("create caller: %w", err)
@@ -130,9 +206,9 @@ func (i *internal) handleEventPay(ctx context.Context, transaction model.Transac
 
 	callOptions := &bind.CallOpts{}
 
-	cid, err := caller.MetadataContentOf(callOptions, event.ProjectId, decimal.Zero.BigInt())
+	cid, err := caller.MetadataContentOf(callOptions, projectID, decimal.Zero.BigInt())
 	if err != nil {
-		return nil, fmt.Errorf("get prject %d metadata cid: %w", event.ProjectId, err)
+		return nil, fmt.Errorf("get prject %d metadata cid: %w", projectID, err)
 	}
 
 	ipfsURL := ipfs.BuildURL(cid)
@@ -147,23 +223,19 @@ func (i *internal) handleEventPay(ctx context.Context, transaction model.Transac
 		return nil, fmt.Errorf("unmarshal project: %w", err)
 	}
 
-	nativeToken, err := i.tokenClient.NatvieToMetadata(ctx, transaction.Network)
-	if err != nil {
-		return nil, fmt.Errorf("get native token: %w", err)
-	}
-
-	nativeToken.SetValue(decimal.NewFromBigInt(event.Amount, 0))
-
 	donation := metadata.Donation{
-		ID:          int(event.ProjectId.Int64()),
+		ID:          int(projectID.Int64()),
 		Title:       project.Name,
 		Description: project.Description,
 		Logo:        ipfs.GetDirectURL(project.LogoURI),
 		Platform:    protocol.PlatformJuiceBox,
-		Token:       lo.FromPtr(nativeToken),
 	}
 
-	metadataRaw, err := json.Marshal(donation)
+	return &donation, nil
+}
+
+func (i *internal) buildTransfer(ctx context.Context, transaction model.Transaction, index uint, donationMetadata metadata.Donation, transferType string) (*model.Transfer, error) {
+	metadataRaw, err := json.Marshal(donationMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("marshal metadata: %w", err)
 	}
@@ -173,9 +245,9 @@ func (i *internal) handleEventPay(ctx context.Context, transaction model.Transac
 		Timestamp:       transaction.Timestamp,
 		BlockNumber:     new(big.Int).SetInt64(transaction.BlockNumber),
 		Tag:             filter.TagDonation,
-		Type:            filter.DonationDonate,
-		Index:           int64(log.Index),
-		AddressFrom:     strings.ToLower(event.Payer.String()),
+		Type:            transferType,
+		Index:           int64(index),
+		AddressFrom:     transaction.AddressFrom,
 		AddressTo:       strings.ToLower(juicebox.AddressETHPaymentTerminal.String()),
 		Metadata:        metadataRaw,
 		Network:         transaction.Network,
@@ -183,11 +255,7 @@ func (i *internal) handleEventPay(ctx context.Context, transaction model.Transac
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}
 
-	transfers := []model.Transfer{
-		transfer,
-	}
-
-	return transfers, nil
+	return &transfer, nil
 }
 
 func (i *internal) Jobs() []worker.Job {

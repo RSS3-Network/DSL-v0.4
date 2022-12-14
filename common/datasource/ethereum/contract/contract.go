@@ -93,3 +93,5 @@ package contract
 //go:generate abigen --abi ./juicebox/eth_payment_terminal.abi --pkg juicebox --type ETHPaymentTerminal --out ./juicebox/eth_payment_terminal.go
 // Projects https://etherscan.io/token/0xd8b4359143eda5b2d763e127ed27c77addbc47d3
 //go:generate abigen --abi ./juicebox/projects.abi --pkg juicebox --type Projects --out ./juicebox/projects.go
+// JBController https://etherscan.io/address/0xffdd70c318915879d5192e8a0dcbfcb0285b3c98
+//go:generate abigen --abi ./juicebox/controller.abi --pkg juicebox --type Controller --out ./juicebox/controller.go

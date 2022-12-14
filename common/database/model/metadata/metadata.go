@@ -70,7 +70,7 @@ type Donation struct {
 	Description string `json:"description"`
 	Logo        string `json:"logo"`
 	Platform    string `json:"platform"`
-	Token       Token  `json:"token"`
+	Token       *Token `json:"token,omitempty"`
 }
 
 type POAP struct {

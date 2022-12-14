@@ -221,7 +221,7 @@ func (s *service) handleGitcoinEthereum(ctx context.Context, message *protocol.M
 			Description: project.Description,
 			Logo:        project.Logo,
 			Platform:    protocol.PlatformGitcoin,
-			Token:       *tokenMetadata,
+			Token:       tokenMetadata,
 		})
 		if err != nil {
 			loggerx.Global().Error("marshal metadata error", zap.Error(err))
@@ -313,7 +313,7 @@ func (s *service) handlerGitcoinZkSync(ctx context.Context, message *protocol.Me
 			Description: project.Description,
 			Logo:        project.Logo,
 			Platform:    protocol.PlatformGitcoin,
-			Token:       *tokenMetadata,
+			Token:       tokenMetadata,
 		})
 		if err != nil {
 			loggerx.Global().Error("marshal metadata error", zap.Error(err))
