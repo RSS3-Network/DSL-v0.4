@@ -746,7 +746,7 @@ func Test_service_Handle(t *testing.T) {
 			arguments: arguments{
 				ctx: context.Background(),
 				message: &protocol.Message{
-					Address: "0x79f175703ECE2AbC7BE2e2a603eBBa319FB84Acc", // Unknown
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // RSS3 Developer
 					Network: protocol.NetworkXDAI,
 				},
 				transactions: []model.Transaction{
