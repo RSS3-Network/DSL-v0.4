@@ -635,13 +635,14 @@ func (c *characterHandler) handleOperator(ctx context.Context, transaction *mode
 		}
 		characterId = eventParam.CharacterId
 
-		switch common.BytesToHash(eventParam.PermissionBitMap.Bytes()) {
-		case crossbell.BitMapOff:
-			action = filter.SocialRemove
-		case crossbell.BitMapOn:
-			proxy = strings.ToLower(eventParam.Operator.String())
-			action = filter.SocialAppoint
-		default:
+		if eventParam.Operator == crossbell.AddressXSyncOperator {
+			if eventParam.PermissionBitMap.BitLen() == 0 {
+				action = filter.SocialRemove
+			} else {
+				proxy = strings.ToLower(eventParam.Operator.String())
+				action = filter.SocialAppoint
+			}
+		} else {
 			return nil, crossbell.ErrorUnknownEvent
 		}
 	}
