@@ -738,6 +738,50 @@ func Test_service_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "cow swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x79f175703ECE2AbC7BE2e2a603eBBa319FB84Acc", // Unknown
+					Network: protocol.NetworkXDAI,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://gnosisscan.io/tx/0xe2c7b25de42c95e9f1ab4c6320e9d35f6ab8736ef3a11d4e07a81b67eccd18c9
+						Hash:        "0xe2c7b25de42c95e9f1ab4c6320e9d35f6ab8736ef3a11d4e07a81b67eccd18c9",
+						BlockNumber: 25408287,
+						Network:     protocol.NetworkXDAI,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Equal(t, len(transactions), 1)
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "WXDAI")
+					assert.Equal(t, swap.TokenTo.Symbol, "USDC")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformCow)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {
