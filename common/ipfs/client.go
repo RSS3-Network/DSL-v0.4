@@ -2,6 +2,7 @@ package ipfs
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -27,6 +28,10 @@ func GetDirectURL(url string) string {
 	}
 
 	return strings.Replace(url, "ipfs://", IPFSClient.internalIPFS, 1)
+}
+
+func BuildURL(cid string) string {
+	return fmt.Sprintf("%s/%s", strings.TrimRight(IPFSClient.internalIPFS, "/"), cid)
 }
 
 func GetFileByURL(url string) ([]byte, error) {

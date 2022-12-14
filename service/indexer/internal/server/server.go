@@ -43,6 +43,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/marketplace"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/juicebox"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
@@ -182,6 +183,7 @@ func (s *Server) Initialize() (err error) {
 		marketplace.New(),
 		poap.New(),
 		gitcoin.New(),
+		juicebox.New(),
 		snapshot.New(),
 		crossbell.New(),
 		lens_worker.New(),

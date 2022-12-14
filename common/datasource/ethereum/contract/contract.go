@@ -87,3 +87,9 @@ package contract
 //go:generate abigen --abi ./element/erc_721_orders_feature.abi --pkg element --type ERC721OrdersFeature --out ./element/erc_721_orders_feature.go
 // ERC1155OrdersFeature https://polygonscan.com/address/0xA4807EF31298b121eF39Cd423A8Aa05A800B2Bb8
 //go:generate abigen --abi ./element/erc_1155_orders_feature.abi --pkg element --type ERC1155OrdersFeature --out ./element/erc_1155_orders_feature.go
+
+// JuiceBox
+// JBETHPaymentTerminal https://etherscan.io/address/0x594cb208b5bb48db1bcbc9354d1694998864ec63
+//go:generate abigen --abi ./juicebox/eth_payment_terminal.abi --pkg juicebox --type ETHPaymentTerminal --out ./juicebox/eth_payment_terminal.go
+// Projects https://etherscan.io/token/0xd8b4359143eda5b2d763e127ed27c77addbc47d3
+//go:generate abigen --abi ./juicebox/projects.abi --pkg juicebox --type Projects --out ./juicebox/projects.go
