@@ -2,8 +2,11 @@ package metaverse
 
 import (
 	"context"
+	"encoding/json"
 
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/metaverse/aavegotchi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+
 	"go.uber.org/zap"
 
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
@@ -11,7 +14,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	lop "github.com/samber/lo/parallel"
 	"go.opentelemetry.io/otel"
@@ -22,9 +24,7 @@ var (
 	network []string
 )
 
-type service struct {
-	aavegotchiHandler aavegotchi.Handler
-}
+type service struct{}
 
 func (s *service) Name() string {
 	return "metaverse"
@@ -40,7 +40,7 @@ func (s *service) Initialize(ctx context.Context) error {
 	}
 
 	for address, name := range Agent {
-		allowlist.AllowList.Add(address, name)
+		allowlist.AllowList.Add(address.String(), name)
 	}
 
 	return nil
@@ -56,18 +56,36 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	lop.ForEach(transactions, func(transaction model.Transaction, i int) {
 		var contract MetaverseContract
-		if contract = RouterMap[transaction.AddressTo]; contract.Network != message.Network {
+		if contract = RouterMap[common.HexToAddress(transaction.AddressTo)]; contract.Network != message.Network {
 			return
 		}
 
-		if transaction.AddressTo == AavegotchiContractAddress {
-			if err := s.aavegotchiHandler.Handle(ctx, &transaction); err != nil {
-				loggerx.Global().Error("aavegotchi handler error", zap.Error(err))
+		var action MetaverseContract
+		if events, exist := EventsRouterMap[common.HexToAddress(transaction.AddressTo)]; exist {
+			var sourceData ethereum.SourceData
+			if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
+				zap.L().Error("failed to unmarshal source data", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
+
 				return
+			}
+
+			for _, log := range sourceData.Receipt.Logs {
+				for _, topic := range log.Topics {
+					if _, exist = events[topic]; exist {
+						action = events[topic]
+						goto update
+					}
+				}
 			}
 		}
 
+	update:
 		for index := range transaction.Transfers {
+			if action.Type != "" {
+				transaction.Transfers[index].Tag, transaction.Transfers[index].Type = filter.UpdateTagAndType(filter.TagMetaverse, transaction.Transfers[index].Tag, action.Type, transaction.Transfers[index].Type)
+				transaction.Transfers[index].Platform = action.Platform
+			}
+
 			// default type
 			if contract.Type != "" {
 				transaction.Transfers[index].Tag, transaction.Transfers[index].Type = filter.UpdateTagAndType(filter.TagMetaverse, transaction.Transfers[index].Tag, contract.Type, transaction.Transfers[index].Type)
@@ -91,7 +109,5 @@ func (s *service) Jobs() []worker.Job {
 }
 
 func New() worker.Worker {
-	return &service{
-		aavegotchiHandler: aavegotchi.Handler{},
-	}
+	return &service{}
 }

@@ -65,6 +65,7 @@ const (
 	PlatformMars4      = "Mars4"
 	PlatformAavegotchi = "Aavegotchi"
 	PlatformCarv       = "Carv"
+	PlatformPlanetIX   = "PlanetIX"
 )
 
 var PlatformList = map[string][]string{
