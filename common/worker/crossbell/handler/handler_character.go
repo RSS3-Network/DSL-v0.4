@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -16,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/character"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/event"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/periphery"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
@@ -34,6 +36,7 @@ type characterHandler struct {
 	characterContract *character.Character
 	peripheryContract *periphery.Periphery
 	profileHandler    *profileHandler
+	eventContract     *event.Event
 	tokenClient       *token.Client
 }
 
@@ -84,6 +87,8 @@ func (c *characterHandler) Handle(ctx context.Context, transaction *model.Transa
 		return c.handleSetNoteUri(ctx, transaction, transfer, log)
 	case crossbell.EventHashMintNote:
 		return c.handleMintNote(ctx, transaction, transfer, log)
+	case crossbell.EventHashSetOperator, crossbell.EventHashAddOperator, crossbell.EventHashRemoveOperator:
+		return c.handleOperator(ctx, transaction, transfer, log, log.Topics[0])
 	default:
 		return nil, crossbell.ErrorUnknownEvent
 	}
@@ -577,6 +582,97 @@ func (c *characterHandler) handleMintNote(ctx context.Context, transaction *mode
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash), url}
 
 	transaction.Owner = strings.ToLower(event.To.String())
+
+	return &transfer, nil
+}
+
+func (c *characterHandler) handleOperator(ctx context.Context, transaction *model.Transaction, transfer model.Transfer, log types.Log, eventHash common.Hash) (*model.Transfer, error) {
+	tracer := otel.Tracer("worker_crossbell_handler")
+
+	_, snap := tracer.Start(ctx, "worker_crossbell_handler:handleOperator")
+
+	defer snap.End()
+
+	var (
+		characterId   *big.Int
+		err           error
+		action, proxy string
+	)
+
+	switch eventHash {
+	case crossbell.EventHashSetOperator:
+		eventParam, err := c.eventContract.ParseSetOperator(log)
+		if err != nil {
+			return nil, err
+		}
+		characterId = eventParam.CharacterId
+
+		if eventParam.Operator == ethereum.AddressGenesis {
+			action = filter.SocialRemove
+		} else {
+			proxy = strings.ToLower(eventParam.Operator.String())
+			action = filter.SocialAppoint
+		}
+	case crossbell.EventHashAddOperator:
+		eventParam, err := c.eventContract.ParseAddOperator(log)
+		if err != nil {
+			return nil, err
+		}
+		characterId = eventParam.CharacterId
+		proxy = strings.ToLower(eventParam.Operator.String())
+		action = filter.SocialAppoint
+	case crossbell.EventHashRemoveOperator:
+		eventParam, err := c.eventContract.ParseRemoveOperator(log)
+		if err != nil {
+			return nil, err
+		}
+		characterId = eventParam.CharacterId
+		action = filter.SocialRemove
+	}
+
+	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), characterId)
+	if err != nil {
+		return nil, err
+	}
+
+	// profile handle
+	handle, err := c.characterContract.GetHandle(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, characterId)
+	if err != nil {
+		return nil, err
+	}
+
+	characterOwner, err := c.characterContract.OwnerOf(&bind.CallOpts{BlockNumber: big.NewInt(transaction.BlockNumber)}, characterId)
+	if err != nil {
+		return nil, err
+	}
+	transaction.Owner = strings.ToLower(characterOwner.String())
+
+	profile := &social.Profile{
+		Address:  strings.ToLower(characterOwner.String()),
+		Platform: protocol.PlatformCrossbell,
+		Handle:   handle,
+		Action:   action,
+		Proxy:    proxy,
+		Network:  transfer.Network,
+		Source:   transfer.Network,
+		URL:      fmt.Sprintf("https://crossbell.io/@%v", handle),
+	}
+
+	if err = BuildProfileMetadata(erc721Token.Metadata, profile); err != nil {
+		return nil, err
+	}
+
+	if transfer.Metadata, err = json.Marshal(profile); err != nil {
+		return nil, err
+	}
+
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProxy, transfer.Type)
+
+	url, err := c.buildRelatedUrls(transaction.BlockNumber, transfer.Platform, characterId, nil)
+	if err != nil {
+		return nil, err
+	}
+	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash), url}
 
 	return &transfer, nil
 }

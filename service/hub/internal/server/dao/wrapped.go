@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
@@ -13,6 +15,12 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"go.opentelemetry.io/otel"
+)
+
+var (
+	// https://www.notion.so/rss3/social-x-4ec64be6f03146809c3d3d46abac0264
+	wordsCountPercentiles = []uint{0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 6, 6, 7, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 19, 20, 22, 24, 27, 29, 33, 36, 40, 43, 47, 52, 56, 62, 68, 73, 80, 87, 99, 109, 120, 133, 149, 166, 184, 205, 231, 255, 282, 314, 352, 395, 436, 475, 511, 571, 631, 696, 767, 854, 939, 1034, 1136, 1241, 1369, 1489, 1630, 1777, 1963, 2183, 2420, 2687, 3078, 3468, 3917, 4493, 5103, 5816, 6654, 7901, 10567, 16244, 33439}
+	nonAcsii              = regexp.MustCompile(`([^\x00-\x7F])`)
 )
 
 func CountSocial(c context.Context, request model.GetRequest) (model.SocialResult, error) {
@@ -30,14 +38,27 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 
 	// count post, comment, follow
 	database.Global().
-		Raw(fmt.Sprintf(`SELECT 
-					COUNT(*) FILTER ( WHERE type = 'post') AS post, 
+		Raw(fmt.Sprintf(`SELECT
+					COUNT(*) FILTER ( WHERE type = 'post') AS post,
 					COUNT(*) FILTER ( WHERE type = 'comment') AS comment,
-					COUNT(*) FILTER ( WHERE type = 'follow') AS follow
+					COUNT(*) FILTER ( WHERE type = 'follow') AS following
 				 FROM transactions 
 				 %s`, condition)).Scan(&result)
 
+	// follower
+	database.Global().
+		Raw(`SELECT COUNT(*) as follower
+		FROM transfers
+		WHERE TAG = 'social'
+		  AND TYPE ='follow'
+		  AND DATE_PART('year'
+			, TIMESTAMP) = '2022'
+		  AND metadata->>'address' = ?`, request.Address).
+		Scan(&result)
+
 	// get hashes of the longest and the shortest posts
+	hashStruct := struct{ Longest, Shortest string }{}
+
 	database.Global().
 		Raw(fmt.Sprintf(`SELECT (SELECT transaction_hash
         FROM (SELECT transaction_hash, metadata ::jsonb ->> 'body' AS body
@@ -49,7 +70,7 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
                      %s)) sub
         WHERE sub.body IS NOT NULL
         ORDER BY LENGTH(body::TEXT) DESC
-        LIMIT 1) AS longest_hash,
+        LIMIT 1) AS longest,
        (SELECT transaction_hash
         FROM (SELECT transaction_hash, metadata ::jsonb ->> 'body' AS body
               FROM transfers
@@ -60,7 +81,10 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
                      %s)) sub
         WHERE sub.body IS NOT NULL
         ORDER BY LENGTH(body::TEXT) ASC
-        LIMIT 1) AS shortest_hash;`, condition, condition)).Scan(&result)
+        LIMIT 1) AS shortest;`, condition, condition)).Scan(&hashStruct)
+
+	result.LongestPost = getPost(hashStruct.Longest)
+	result.ShortestPost = getPost(hashStruct.Shortest)
 
 	database.Global().
 		Model(&dbModel.Transaction{}).
@@ -72,6 +96,31 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 		Group("platform").
 		Order("count DESC").
 		Scan(&result.List)
+
+	// calculate web3 social score
+
+	scoreStruct := struct{ Platform, Score int64 }{}
+
+	database.Global().Raw(`SELECT COUNT(DISTINCT source) as Platform, COUNT(*) as Score
+			FROM transfers
+			WHERE transaction_hash IN (SELECT hash
+									   FROM transactions
+									   WHERE owner = ?
+										 AND tag = 'social'
+										 AND type IN ('post', 'comment')
+										 AND network = 'crossbell'
+										 AND DATE_PART('year', timestamp) = '2022')
+			  AND platform IN ('xSync', 'OperatorSync');`, request.Address).Scan(&scoreStruct)
+
+	result.SocialScore = scoreStruct.Platform*50 + scoreStruct.Score*5
+
+	// words count percentile
+	totalWord, wordPercentile, err := GetWordsCountPercentileByAddress(request.Address)
+	if err != nil {
+		return result, err
+	}
+	result.TotalWord = totalWord
+	result.WordPercentile = wordPercentile - 1
 
 	return result, nil
 }
@@ -107,7 +156,7 @@ func CountGas(c context.Context, request model.GetRequest) (model.GasResult, err
 	var result model.GasResult
 
 	// the where condition for all the queries
-	condition := fmt.Sprintf("address_from = '%s' AND DATE_PART('year', timestamp) = '%d' AND fee IS NOT NULL", request.Address, 2022)
+	condition := fmt.Sprintf("address_from = '%s' AND network = 'ethereum' AND DATE_PART('year', timestamp) = '%d' AND fee IS NOT NULL", request.Address, 2022)
 
 	// calculate gas: total and highest
 	database.Global().
@@ -118,7 +167,7 @@ func CountGas(c context.Context, request model.GetRequest) (model.GasResult, err
 
 	database.Global().
 		Model(&dbModel.Transaction{}).
-		Select("hash as highest_hash").
+		Select("hash as highest_hash, timestamp as highest_date").
 		Where(condition).
 		Order("fee::NUMERIC DESC").
 		Limit(1).
@@ -153,6 +202,16 @@ func CountTransaction(c context.Context, request model.GetRequest) (model.TxResu
 		Group("network").
 		Scan(&result.Receive)
 
+	database.Global().Raw(`
+		SELECT COUNT(timestamp), TO_CHAR(timestamp,'MMDD') AS date
+		FROM transfers
+		WHERE transaction_hash IN (SELECT hash
+								   FROM transactions
+								   WHERE owner = ?
+									 AND DATE_PART('year', timestamp) = '2022')
+		GROUP BY date`, request.Address).
+		Scan(&result.Heatmap)
+
 	return result, nil
 }
 
@@ -171,7 +230,7 @@ func GetNFT(c context.Context, request model.GetRequest) (model.NFTResult, error
 	var list []model.NFT
 
 	database.Global().
-		Raw(fmt.Sprintf(`SELECT address_from AS from, address_to AS to, metadata, timestamp, type
+		Raw(fmt.Sprintf(`SELECT address_from AS from, address_to AS to, metadata, timestamp, type, platform
 			FROM transfers
 			WHERE transaction_hash IN (SELECT hash
 									   FROM transactions
@@ -188,28 +247,29 @@ func GetNFT(c context.Context, request model.GetRequest) (model.NFTResult, error
 			continue
 		}
 
-		if current.Type == filter.CollectibleMint {
-			result.Mint = append(result.Mint, nft)
-			continue
-		}
-
-		if current.From == request.Address {
-			result.Sold = append(result.Sold, nft)
-		} else if current.To == request.Address {
-			result.Bought = append(result.Bought, nft)
-		}
-
-		if i == 0 {
-			result.Last = &model.NFTSingle{
-				Metadata:  nft,
-				Timestamp: current.Timestamp,
-			}
-		}
+		// if current.Type == filter.CollectibleMint {
+		//	result.Mint = append(result.Mint, nft)
+		//	continue
+		// }
+		//
+		// if current.From == request.Address {
+		//	result.Sold = append(result.Sold, nft)
+		// } else if current.To == request.Address {
+		//	result.Bought = append(result.Bought, nft)
+		// }
+		//
+		// if i == 0 {
+		//	result.Last = &model.NFTSingle{
+		//		Metadata:  nft,
+		//		Timestamp: current.Timestamp,
+		//	}
+		// }
 
 		if i == len(list)-1 {
 			result.First = &model.NFTSingle{
 				Metadata:  nft,
 				Timestamp: current.Timestamp,
+				Platform:  current.Platform,
 			}
 		}
 	}
@@ -336,4 +396,67 @@ func GetDeFi(c context.Context, request model.GetRequest) (model.DeFiResult, err
 	}
 
 	return result, nil
+}
+
+// Get words count and percentile
+// example: 你提交的内容包含 m 个词，超越了 n% 的用户
+func GetWordsCountPercentileByAddress(address string) (uint, uint, error) {
+	db := database.Global()
+
+	var metadata []string
+
+	if err := db.Model(&dbModel.Transfer{}).
+		Select("metadata").
+		Where("address_from = ? AND tag = 'social' AND type in ('post', 'comment') AND DATE_PART('year', timestamp) = '2022'", address).
+		Scan(&metadata).Error; err != nil {
+		return 0, 0, err
+	}
+
+	var wordsCount uint
+
+	for _, v := range metadata {
+		md := make(map[string]interface{})
+		if err := json.Unmarshal([]byte(v), &md); err != nil {
+			continue
+		}
+		if c, ok := md["body"].(string); ok {
+			wordsCount += count(c)
+		}
+	}
+
+	return wordsCount, getWordsCountPercentile(wordsCount), nil
+}
+
+func getWordsCountPercentile(wordsCount uint) uint {
+	for i, v := range wordsCountPercentiles {
+		if wordsCount < v {
+			return uint(i)
+		}
+	}
+	return 100
+}
+
+func getPost(hash string) *model.Post {
+	// Get post by hash
+	var post model.Post
+
+	database.Global().Model(&dbModel.Transfer{}).
+		Select("transaction_hash as hash, metadata, timestamp, platform").
+		Where("transaction_hash = ? ", hash).
+		First(&post)
+
+	return &post
+}
+
+func count(s string) uint {
+	runeCount := 0
+	res := nonAcsii.ReplaceAllStringFunc(s, func(ss string) string {
+		trimedSs := strings.TrimSpace(ss)
+		if trimedSs != "" {
+			runeCount += utf8.RuneCountInString(trimedSs)
+		}
+		return " "
+	})
+	count := runeCount + len(strings.Fields(res))
+	return uint(count)
 }

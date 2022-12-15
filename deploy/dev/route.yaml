@@ -73,8 +73,9 @@ metadata:
   namespace: pregod
 spec:
   rateLimit:
-    period: 1m
-    average: 600
+    period: 1s
+    average: 2
+    burst: 10
     sourceCriterion:
       ipStrategy:
         depth: 2

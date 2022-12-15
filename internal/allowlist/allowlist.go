@@ -11,9 +11,10 @@ var allowList = map[string]string{
 	"0x57B7bf6f792a6181Ec5aFB88cE7bcE330a9d1b67": "Lens",
 	"0xdb46d1dc155634fbc732f92e853b10b288ad5a1d": "Lens",
 	"0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1": "Optimism Bridge",
-	"0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f": "Arbitrum Bridge",
+	"0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f": "Arbitrum Bridge One",
 	"0xc4448b71118c9071Bcb9734A0EAc55D18A153949": "Arbitrum Bridge Nova",
 	"0x499a865ac595e6167482d2bd5A224876baB85ab4": "Polygon Bridge",
+	"0x9008D19f58AAbD9eD0D60971565AA8510560ab41": "CoW Protocol: Settlement", // https://gnosisscan.io/address/0x9008d19f58aabd9ed0d60971565aa8510560ab41
 }
 
 var spamList = map[string]string{

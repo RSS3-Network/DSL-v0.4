@@ -19,12 +19,23 @@ type WrappedResult struct {
 }
 
 type SocialResult struct {
-	Post         int64  `json:"post"`
-	Comment      int64  `json:"comment"`
-	Follow       int64  `json:"follow"`
-	LongestHash  string `json:"longest_hash"`
-	ShortestHash string `json:"shortest_hash"`
-	List         []DApp `json:"list" gorm:"-"`
+	SocialScore    int64  `json:"social_score"`
+	Post           int64  `json:"post"`
+	Comment        int64  `json:"comment"`
+	Following      int64  `json:"following"`
+	Follower       int64  `json:"follower"`
+	LongestPost    *Post  `json:"longest_post" gorm:"-"`
+	ShortestPost   *Post  `json:"shortest_post" gorm:"-"`
+	TotalWord      uint   `json:"total_word"`
+	WordPercentile uint   `json:"word_percentile"`
+	List           []DApp `json:"list" gorm:"-"`
+}
+
+type Post struct {
+	Hash      string          `json:"hash"`
+	Metadata  json.RawMessage `json:"metadata"`
+	Timestamp time.Time       `json:"timestamp"`
+	Platform  string          `json:"platform"`
 }
 
 type SearchResult struct {
@@ -32,14 +43,16 @@ type SearchResult struct {
 }
 
 type GasResult struct {
-	Total       string `json:"total"`
-	Highest     string `json:"highest"`
-	HighestHash string `json:"highest_hash"`
+	Total       string    `json:"total"`
+	Highest     string    `json:"highest"`
+	HighestHash string    `json:"highest_hash"`
+	HighestDate time.Time `json:"highest_date"`
 }
 
 type TxResult struct {
-	Initiate []NetworkCount `json:"initiated"`
-	Receive  []NetworkCount `json:"received"`
+	Initiate []NetworkCount  `json:"initiated"`
+	Receive  []NetworkCount  `json:"received"`
+	Heatmap  []HeatmapSingle `json:"heatmap" gorm:"-"`
 }
 
 type NetworkCount struct {
@@ -48,12 +61,12 @@ type NetworkCount struct {
 }
 
 type NFTResult struct {
-	Bought []metadata.Token `json:"bought"`
-	Sold   []metadata.Token `json:"sold"`
-	Mint   []metadata.Token `json:"mint"`
-	Total  int              `json:"total"`
-	First  *NFTSingle       `json:"first"`
-	Last   *NFTSingle       `json:"last"`
+	// Bought []metadata.Token `json:"bought"`
+	// Sold   []metadata.Token `json:"sold"`
+	// Mint   []metadata.Token `json:"mint"`
+	Total int        `json:"total"`
+	First *NFTSingle `json:"first"`
+	// Last  *NFTSingle `json:"last"`
 }
 
 type NFT struct {
@@ -62,11 +75,13 @@ type NFT struct {
 	To        string          `json:"to"`
 	Timestamp time.Time       `json:"timestamp"`
 	Type      string          `json:"type"`
+	Platform  string          `json:"platform"`
 }
 
 type NFTSingle struct {
 	Metadata  metadata.Token `json:"metadata"`
 	Timestamp time.Time      `json:"timestamp"`
+	Platform  string         `json:"platform,omitempty"`
 }
 
 type DAppResult struct {
@@ -98,4 +113,9 @@ type Liquidity struct {
 	Borrow   []metadata.Token `json:"borrow"`
 	Repay    []metadata.Token `json:"repay"`
 	Collect  []metadata.Token `json:"collect"`
+}
+
+type HeatmapSingle struct {
+	Count int64  `json:"count"`
+	Date  string `json:"date"`
 }
