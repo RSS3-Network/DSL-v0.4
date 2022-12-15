@@ -9,12 +9,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/naturalselectionlabs/pregod/common/worker/name_service/ens"
-
-	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
-
 	_ "time/tzdata"
 
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -22,6 +16,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service/ens"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
