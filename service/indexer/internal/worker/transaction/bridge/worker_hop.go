@@ -32,7 +32,9 @@ func (w *Worker) handleHopTransferSent(ctx context.Context, transaction model.Tr
 		return nil, fmt.Errorf("new l2 bridge filterer: %w", err)
 	}
 
-	tokenAddress, exists := tokenMap[log.Address]
+	ammWrapperAddress := common.HexToAddress(transaction.AddressTo)
+
+	tokenAddress, exists := tokenMap[ammWrapperAddress]
 	if !exists {
 		return nil, fmt.Errorf("invalid token address: %s", log.Address)
 	}
