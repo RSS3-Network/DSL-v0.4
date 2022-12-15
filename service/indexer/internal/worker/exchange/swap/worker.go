@@ -192,13 +192,22 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 		}
 	}
 
+	var addressTo string
+
+	switch {
+	case router == cowSwap: // Agent
+		addressTo = message.Address
+	default:
+		addressTo = transaction.AddressFrom
+	}
+
 	transfer := model.Transfer{
 		TransactionHash: transaction.Hash,
 		Timestamp:       transaction.Timestamp,
 		BlockNumber:     big.NewInt(transaction.BlockNumber),
 		Index:           0, // TODO
 		AddressFrom:     transaction.AddressFrom,
-		AddressTo:       transaction.AddressFrom,
+		AddressTo:       addressTo,
 		Metadata:        metadata.Default,
 		Network:         message.Network,
 		Source:          protocol.SourceOrigin,
