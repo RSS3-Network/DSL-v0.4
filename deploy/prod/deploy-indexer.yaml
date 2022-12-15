@@ -24,10 +24,10 @@ spec:
             - indexer
           resources:
             requests:
-              memory: "800Mi"
+              memory: "2000Mi"
               cpu: "1"
             limits:
-              memory: "8000Mi"
+              memory: "12000Mi"
               cpu: "3"
       tolerations:
       - key: "rss3.io/usage"
