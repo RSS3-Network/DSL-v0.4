@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -14,35 +13,12 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 )
 
-func (w *Worker) handleArbitrum(ctx context.Context, transaction model.Transaction) (*model.Transaction, error) {
+func (w *Worker) handleArbitrumHashMessageDelivered(ctx context.Context, transaction model.Transaction, log types.Log) (*model.Transfer, error) {
 	var sourceData ethereum.SourceData
 	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal source data: %w", err)
 	}
 
-	internalTransaction := transaction
-	internalTransaction.Transfers = make([]model.Transfer, 0)
-
-	for _, log := range sourceData.Receipt.Logs {
-		if len(log.Topics) == 0 {
-			return nil, fmt.Errorf("invalid topics of log: %v", log)
-		}
-
-		if log.Topics[0] == arbitrum.EventHashMessageDelivered {
-			internalTransfer, err := w.handleArbitrumDeposit(ctx, transaction, *log, sourceData.Transaction.Value())
-			if err != nil {
-				return nil, fmt.Errorf("failed to handle arbitrum deposit: %w", err)
-			}
-
-			internalTransaction = w.fillTransactionMetadata(internalTransaction, *internalTransfer)
-			internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
-		}
-	}
-
-	return &internalTransaction, nil
-}
-
-func (w *Worker) handleArbitrumDeposit(ctx context.Context, transaction model.Transaction, log types.Log, value *big.Int) (*model.Transfer, error) {
 	var (
 		platform string
 		chainID  uint64
@@ -59,5 +35,5 @@ func (w *Worker) handleArbitrumDeposit(ctx context.Context, transaction model.Tr
 		return nil, fmt.Errorf("invalid inbox address: %s", transaction.AddressTo)
 	}
 
-	return w.buildTransfer(ctx, transaction, log, common.HexToAddress(transaction.AddressFrom), common.HexToAddress(transaction.AddressFrom), platform, chainID, nil, value, filter.BridgeDeposit)
+	return w.buildTransfer(ctx, transaction, log, common.HexToAddress(transaction.AddressFrom), common.HexToAddress(transaction.AddressFrom), platform, chainID, nil, sourceData.Transaction.Value(), filter.BridgeDeposit)
 }

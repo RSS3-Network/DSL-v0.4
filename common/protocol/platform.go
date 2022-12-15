@@ -59,6 +59,7 @@ const (
 	PlatformTofuNFT        = "tofuNFT"
 	PlatformBlur           = "Blur"
 	PlatformElement        = "Element"
+	PlatformHop            = "Hop"
 
 	// metaverse
 	PlatformMars4      = "Mars4"

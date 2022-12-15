@@ -87,3 +87,7 @@ package contract
 //go:generate abigen --abi ./element/erc_721_orders_feature.abi --pkg element --type ERC721OrdersFeature --out ./element/erc_721_orders_feature.go
 // ERC1155OrdersFeature https://polygonscan.com/address/0xA4807EF31298b121eF39Cd423A8Aa05A800B2Bb8
 //go:generate abigen --abi ./element/erc_1155_orders_feature.abi --pkg element --type ERC1155OrdersFeature --out ./element/erc_1155_orders_feature.go
+
+// Hop
+// L2 bridge https://polygonscan.com/address/0x9b0c694c6939b5ea9584e9b61c7815e8d97d9c63
+//go:generate abigen --abi ./hop/l2_bridge.abi --pkg hop --type L2Bridge --out ./hop/l2_bridge.go
