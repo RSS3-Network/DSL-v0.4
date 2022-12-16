@@ -139,6 +139,11 @@ var (
 		Protocol: "Balancer",
 	}
 
+	cowSwap = Router{
+		Name:     protocol.PlatformCow,
+		Protocol: "Cow Protocol",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -224,5 +229,7 @@ var (
 		strings.ToLower("0xE6358f6a45B502477e83CC1CDa759f540E4459ee"): curveQuickSwap, // Gnosis
 		// Balancer
 		strings.ToLower(balancer.AddressVault.String()): balancerSwap,
+		// Cow
+		strings.ToLower("0x9008D19f58AAbD9eD0D60971565AA8510560ab41"): cowSwap,
 	}
 )

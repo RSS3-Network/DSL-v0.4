@@ -9,8 +9,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/worker/crossbell"
-	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/naturalselectionlabs/pregod/common/worker/lens"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service/ens"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service/spaceid"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service/unstoppable"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	lop "github.com/samber/lo/parallel"
@@ -22,6 +24,8 @@ var ProfilePlatformList = []string{
 	protocol.PlatformEns,
 	protocol.PlatformLens,
 	protocol.PlatformCrossbell,
+	protocol.PlatformSpaceID,
+	protocol.PlatformUnstoppableDomain,
 }
 
 var ProfileLockKey = "profile:%v:%v"
@@ -44,7 +48,7 @@ func (s *Service) GetProfiles(c context.Context, request model.GetRequest) ([]*s
 					return
 				}
 
-				if _, err := s.GetProfilesFromPlatform(c, platform, request.Address); err != nil {
+				if _, err := s.GetProfilesFromPlatform(context.Background(), platform, request.Address); err != nil {
 					logrus.Errorf("[profile] getProfilesFromPlatform error, %v", err)
 				}
 			}()
@@ -118,6 +122,12 @@ func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address s
 		if err == nil {
 			profiles, err = csbClient.GetProfile(address)
 		}
+	case protocol.PlatformSpaceID:
+		spaceidClient := spaceid.New()
+		profile, err = spaceidClient.GetProfile(address)
+	case protocol.PlatformUnstoppableDomain:
+		unstoppableClient := unstoppable.New()
+		profile, err = unstoppableClient.GetProfile(address)
 	}
 
 	if err != nil {

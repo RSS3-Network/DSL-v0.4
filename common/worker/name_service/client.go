@@ -11,6 +11,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service/ens"
+	spaceid_client "github.com/naturalselectionlabs/pregod/common/worker/name_service/spaceid"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service/unstoppable"
+
 	"github.com/avvydomains/golang-client/avvy"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -20,14 +25,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/character"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	lenscontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid"
 	spaceidcontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid/contracts"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/unstoppable_domains"
-	udcontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/unstoppable_domains/contracts"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/httpx"
-	"github.com/naturalselectionlabs/pregod/common/worker/ens"
 	"github.com/unstoppabledomains/resolution-go/v2"
 	"github.com/unstoppabledomains/resolution-go/v2/namingservice"
 	goens "github.com/wealdtech/go-ens/v3"
@@ -224,7 +225,6 @@ func ResolveLens(input string) (string, error) {
 }
 
 func ResolveSpaceID(input string) (string, error) {
-	var result string
 	ethereumClient, err := ethclientx.Global(protocol.NetworkBinanceSmartChain)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect to bsc rpc: %s", err)
@@ -257,30 +257,16 @@ func ResolveSpaceID(input string) (string, error) {
 			return "", fmt.Errorf("failed to get Space ID by handle: %s", err)
 		}
 
-		result = profileID.String()
-	} else {
-		namehash, _ := goens.NameHash(fmt.Sprintf("%s.addr.reverse", strings.TrimPrefix(input, "0x")))
-
-		resolver, err := spaceidContract.Resolver(&bind.CallOpts{}, namehash)
-		if err != nil {
-			return "", fmt.Errorf("failed to get space id resolver: %w", err)
-		}
-
-		if resolver == ethereum.AddressGenesis {
-			return "", fmt.Errorf("the space id does not have a resolver: %s", input)
-		}
-
-		spaceidResolver, err := spaceidcontract.NewResolver(resolver, ethereumClient)
-		if err != nil {
-			return "", fmt.Errorf("failed to new to space id resolver contract: %w", err)
-		}
-
-		if result, err = spaceidResolver.Name(&bind.CallOpts{}, namehash); err != nil {
-			return "", fmt.Errorf("failed to get space id handle by address: %w", err)
-		}
+		return strings.ToLower(profileID.String()), nil
 	}
 
-	return strings.ToLower(result), nil
+	spaceidClient := spaceid_client.New()
+	profile, err := spaceidClient.GetProfile(input)
+	if err != nil {
+		return "", err
+	}
+
+	return profile.Handle, nil
 }
 
 func ResolveUnstoppableDomains(input string) (string, error) {
@@ -319,35 +305,17 @@ func ResolveUnstoppableDomains(input string) (string, error) {
 			}
 			result = strings.ToLower(resolvedAddress)
 		}
-	} else {
-		// polygon seems to be the most compatible network for unstoppable domains
-		ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)
-		if err != nil {
-			return "", fmt.Errorf("failed to connect to polygon rpc: %s", err)
-		}
-		reverseRegistry, err := udcontract.NewUnstoppableDomains(unstoppable_domains.AddressUDPolygon, ethereumClient)
-		if err != nil {
-			return "", fmt.Errorf("failed to initiate an unstoppable domains reverse registry: %w", err)
-		}
 
-		tokenURI, err := reverseRegistry.ReverseOf(&bind.CallOpts{}, common.HexToAddress(input))
-		if err != nil {
-			return "", fmt.Errorf("not a unstoppable domains user: %w", err)
-		}
-
-		UDResult := &unstoppable_domains.UnstoppableDomain{}
-		UDEndpoint := "metadata.unstoppabledomains.com"
-		request := http.Request{Method: http.MethodGet, URL: &url.URL{Scheme: "https", Host: UDEndpoint, Path: fmt.Sprintf("/metadata/%s", tokenURI)}}
-
-		err = httpx.DoRequest(context.Background(), http.DefaultClient, &request, &UDResult)
-		if err != nil {
-			return "", fmt.Errorf("failed to request unstoppabledomains metadata: %s", err)
-		}
-
-		result = UDResult.Name
+		return result, nil
 	}
 
-	return result, nil
+	unstoppableClient := unstoppable.New()
+	profile, err := unstoppableClient.GetProfile(input)
+	if err != nil {
+		return "", err
+	}
+
+	return profile.Handle, nil
 }
 
 func ResolveBit(input string) (string, error) {

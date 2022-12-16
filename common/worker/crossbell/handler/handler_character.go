@@ -87,7 +87,7 @@ func (c *characterHandler) Handle(ctx context.Context, transaction *model.Transa
 		return c.handleSetNoteUri(ctx, transaction, transfer, log)
 	case crossbell.EventHashMintNote:
 		return c.handleMintNote(ctx, transaction, transfer, log)
-	case crossbell.EventHashSetOperator, crossbell.EventHashAddOperator, crossbell.EventHashRemoveOperator:
+	case crossbell.EventHashSetOperator, crossbell.EventHashAddOperator, crossbell.EventHashRemoveOperator, crossbell.EventHashGrantOperatorPermissions:
 		return c.handleOperator(ctx, transaction, transfer, log, log.Topics[0])
 	default:
 		return nil, crossbell.ErrorUnknownEvent
@@ -628,6 +628,23 @@ func (c *characterHandler) handleOperator(ctx context.Context, transaction *mode
 		}
 		characterId = eventParam.CharacterId
 		action = filter.SocialRemove
+	case crossbell.EventHashGrantOperatorPermissions:
+		eventParam, err := c.eventContract.ParseGrantOperatorPermissions(log)
+		if err != nil {
+			return nil, err
+		}
+		characterId = eventParam.CharacterId
+
+		if eventParam.Operator == crossbell.AddressXSyncOperator {
+			if eventParam.PermissionBitMap.BitLen() == 0 {
+				action = filter.SocialRemove
+			} else {
+				proxy = strings.ToLower(eventParam.Operator.String())
+				action = filter.SocialAppoint
+			}
+		} else {
+			return nil, crossbell.ErrorUnknownEvent
+		}
 	}
 
 	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), characterId)
