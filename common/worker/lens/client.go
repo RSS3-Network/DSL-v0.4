@@ -9,11 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
-	lenscontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
-	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	lop "github.com/samber/lo/parallel"
@@ -118,20 +114,6 @@ func (c *Client) BatchGetProfileID(ctx context.Context, address string) ([]*big.
 }
 
 func (c *Client) BatchGetProfiles(ctx context.Context, address string) ([]*social.Profile, error) {
-	ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)
-	if err != nil {
-		loggerx.Global().Error("get ethclientx error", zap.Error(err))
-
-		return nil, err
-	}
-
-	lensHubContract, err := lenscontract.NewHub(lens.HubProxyContractAddress, ethereumClient)
-	if err != nil {
-		loggerx.Global().Error("lens new hub error", zap.Error(err))
-
-		return nil, err
-	}
-
 	profileIDs, err := c.BatchGetProfileID(ctx, address)
 	if err != nil {
 		return nil, err
@@ -141,22 +123,17 @@ func (c *Client) BatchGetProfiles(ctx context.Context, address string) ([]*socia
 	var mutex sync.Mutex
 
 	lop.ForEach(profileIDs, func(profileID *big.Int, i int) {
-		result, err := lensHubContract.GetProfile(&bind.CallOpts{}, profileID)
+		profile, err := c.GetProfileByProfileID(ctx, profileID)
 		if err != nil {
-			loggerx.Global().Error("lens hubContract GetProfile error", zap.String("id", profileID.String()), zap.Error(err))
+			loggerx.Global().Error("lens graphql query error", zap.String("id", profileID.String()), zap.Error(err))
 
-			return
-		}
+			// contract
+			profile, err = c.GetProfile(nil, "", profileID)
+			if err != nil {
+				loggerx.Global().Error("lens hubContract GetProfile error", zap.String("id", profileID.String()), zap.Error(err))
 
-		profile := &social.Profile{
-			Address:     address,
-			Network:     protocol.NetworkPolygon,
-			Platform:    protocol.PlatformLens,
-			Source:      protocol.PlatformLens,
-			Name:        result.Handle,
-			Handle:      result.Handle,
-			URL:         fmt.Sprintf("https://lenster.xyz/u/%v", result.Handle),
-			ProfileUris: []string{ipfs.GetDirectURL(result.ImageURI)},
+				return
+			}
 		}
 
 		mutex.Lock()
@@ -191,6 +168,7 @@ func (c *Client) GetProfileByProfileID(ctx context.Context, profileID *big.Int) 
 		Address:  strings.ToLower(string(resp.Profile.OwnedBy)),
 		Platform: protocol.PlatformLens,
 		Network:  protocol.NetworkPolygon,
+		Name:     string(resp.Profile.Name),
 		Source:   protocol.PlatformLens,
 		URL:      fmt.Sprintf("https://lenster.xyz/u/%v", string(resp.Profile.Handle)),
 		Bio:      string(resp.Profile.Bio),
