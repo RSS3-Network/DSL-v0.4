@@ -89,5 +89,7 @@ package contract
 //go:generate abigen --abi ./element/erc_1155_orders_feature.abi --pkg element --type ERC1155OrdersFeature --out ./element/erc_1155_orders_feature.go
 
 // Hop
-// L2 bridge https://polygonscan.com/address/0x9b0c694c6939b5ea9584e9b61c7815e8d97d9c63
-//go:generate abigen --abi ./hop/l2_bridge.abi --pkg hop --type L2Bridge --out ./hop/l2_bridge.go
+// L1 bridge https://etherscan.io/address/0x3E4a3a4796d16c0Cd582C382691998f7c06420B6
+//go:generate abigen --abi ./hop/l1_bridge.abi --pkg hop --type L1Bridge --out ./hop/l1_bridge.go
+// L2 AMM Wapper https://polygonscan.com/address/0x9b0c694c6939b5ea9584e9b61c7815e8d97d9c63
+//go:generate abigen --abi ./hop/l2_amm_wrapper.abi --pkg hop --type L2AMMWapper --out ./hop/l2_amm_wrapper.go

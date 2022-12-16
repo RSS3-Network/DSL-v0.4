@@ -14,22 +14,22 @@ import (
 )
 
 func (w *Worker) handleArbitrumHashMessageDelivered(ctx context.Context, transaction model.Transaction, log types.Log) (*model.Transfer, error) {
+	platform, exists := platformMap[log.Address]
+	if !exists {
+		return nil, UnsupportedPlatform
+	}
+
 	var sourceData ethereum.SourceData
 	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
 		return nil, fmt.Errorf("unmarshal source data: %w", err)
 	}
 
-	var (
-		platform string
-		chainID  uint64
-	)
+	var chainID uint64
 
 	switch common.HexToAddress(transaction.AddressTo) {
 	case arbitrum.AddressInboxOne:
-		platform = arbitrum.PlatformInboxOne
 		chainID = ChainIDArbitrumOne
 	case arbitrum.AddressInboxNova:
-		platform = arbitrum.PlatformInboxNova
 		chainID = ChainIDArbitrumNova
 	default:
 		return nil, fmt.Errorf("invalid inbox address: %s", transaction.AddressTo)

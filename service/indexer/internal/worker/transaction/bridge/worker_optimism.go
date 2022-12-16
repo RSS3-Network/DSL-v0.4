@@ -31,6 +31,11 @@ func (w *Worker) handleOptimismETHDepositInitiated(ctx context.Context, transact
 }
 
 func (w *Worker) handleOptimismERC20DepositInitiated(ctx context.Context, transaction model.Transaction, log types.Log) (*model.Transfer, error) {
+	platform, exists := platformMap[log.Address]
+	if !exists {
+		return nil, UnsupportedPlatform
+	}
+
 	ethereumClient, err := ethclientx.Global(transaction.Network)
 	if err != nil {
 		return nil, fmt.Errorf("ethclientx global: %w", err)
@@ -46,10 +51,15 @@ func (w *Worker) handleOptimismERC20DepositInitiated(ctx context.Context, transa
 		return nil, fmt.Errorf("failed to parse ERC20DepositInitiated event: %w", err)
 	}
 
-	return w.buildTransfer(ctx, transaction, log, event.From, event.To, optimism.PlatformBridge, ChainIDOptimism, &event.L1Token, event.Amount, filter.BridgeDeposit)
+	return w.buildTransfer(ctx, transaction, log, event.From, event.To, platform, ChainIDOptimism, &event.L1Token, event.Amount, filter.BridgeDeposit)
 }
 
 func (w *Worker) handleOptimismETHWithdrawalFinalized(ctx context.Context, transaction model.Transaction, log types.Log) (*model.Transfer, error) {
+	platform, exists := platformMap[log.Address]
+	if !exists {
+		return nil, UnsupportedPlatform
+	}
+
 	ethereumClient, err := ethclientx.Global(transaction.Network)
 	if err != nil {
 		return nil, fmt.Errorf("ethclientx global: %w", err)
@@ -65,10 +75,15 @@ func (w *Worker) handleOptimismETHWithdrawalFinalized(ctx context.Context, trans
 		return nil, fmt.Errorf("failed to parse ETHWithdrawalFinalized event: %w", err)
 	}
 
-	return w.buildTransfer(ctx, transaction, log, event.From, event.To, optimism.PlatformBridge, ChainIDOptimism, nil, event.Amount, filter.BridgeWithdraw)
+	return w.buildTransfer(ctx, transaction, log, event.From, event.To, platform, ChainIDOptimism, nil, event.Amount, filter.BridgeWithdraw)
 }
 
 func (w *Worker) handleOptimismERC20WithdrawalFinalized(ctx context.Context, transaction model.Transaction, log types.Log) (*model.Transfer, error) {
+	platform, exists := platformMap[log.Address]
+	if !exists {
+		return nil, UnsupportedPlatform
+	}
+
 	ethereumClient, err := ethclientx.Global(transaction.Network)
 	if err != nil {
 		return nil, fmt.Errorf("ethclientx global: %w", err)
@@ -84,5 +99,5 @@ func (w *Worker) handleOptimismERC20WithdrawalFinalized(ctx context.Context, tra
 		return nil, fmt.Errorf("failed to parse ERC20WithdrawalFinalized event: %w", err)
 	}
 
-	return w.buildTransfer(ctx, transaction, log, event.From, event.To, optimism.PlatformBridge, ChainIDOptimism, &event.L1Token, event.Amount, filter.BridgeWithdraw)
+	return w.buildTransfer(ctx, transaction, log, event.From, event.To, platform, ChainIDOptimism, &event.L1Token, event.Amount, filter.BridgeWithdraw)
 }
