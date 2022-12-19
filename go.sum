@@ -95,6 +95,8 @@ github.com/avast/retry-go/v4 v4.1.0 h1:CwudD9anYv6JMVnDuTRlK6kLo4dBamiL+F3U8YDiy
 github.com/avast/retry-go/v4 v4.1.0/go.mod h1:HqmLvS2VLdStPCGDFjSuZ9pzlTqVRldCI4w2dO4m1Ms=
 github.com/avvydomains/golang-client v0.1.3 h1:FzpYhM6nLdkyAtUjOZe8qbLuhUdmcdS3VpzLiPRMc4w=
 github.com/avvydomains/golang-client v0.1.3/go.mod h1:IUFMzXnHhRW0Tia47qktDD2gJqy5nHXFNidujgublxc=
+github.com/avvydomains/golang-client v0.2.0 h1:/Bv+q784PZX7/t8OmsemE4Y7oTLbmvuaC5Zpbf6RK88=
+github.com/avvydomains/golang-client v0.2.0/go.mod h1:IUFMzXnHhRW0Tia47qktDD2gJqy5nHXFNidujgublxc=
 github.com/aws/aws-sdk-go v1.25.48/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go-v2 v1.2.0/go.mod h1:zEQs02YRBw1DjK0PoJv3ygDYOFTre1ejlJWl8FwAuQo=
 github.com/aws/aws-sdk-go-v2/config v1.1.1/go.mod h1:0XsVy9lBI/BCXm+2Tuvt39YmdHwS5unDQmxZOYe8F5Y=

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid"
+	avvy_client "github.com/naturalselectionlabs/pregod/common/worker/name_service/avvy"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service/ens"
 	spaceid_client "github.com/naturalselectionlabs/pregod/common/worker/name_service/spaceid"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service/unstoppable"
@@ -131,6 +132,14 @@ func ResolveAll(result *model.NameServiceResult) {
 		defer wg.Done()
 		if result.Bit == "" {
 			result.Bit, _ = ResolveBit(result.Address)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if result.Avvy == "" {
+			result.Avvy, _ = ResolveAvvy(result.Address)
 		}
 	}()
 
@@ -377,30 +386,33 @@ func ResolveBit(input string) (string, error) {
 }
 
 func ResolveAvvy(input string) (string, error) {
-	var result string
+	if strings.HasSuffix(input, ".avax") {
+		chainId, _ := strconv.ParseInt(protocol.NetworkToID(protocol.NetworkAvalanche)[2:], 16, 64)
 
-	chainId, _ := strconv.ParseInt(protocol.NetworkToID(protocol.NetworkAvalanche)[2:], 16, 64)
+		client := new(avvy.Client)
 
-	client := new(avvy.Client)
+		networkUrl, err := ethclientx.GlobalUrl(protocol.NetworkAvalanche)
+		if err != nil {
+			return "", fmt.Errorf("failed to get %s http url: %s", protocol.NetworkAvalanche, err)
+		}
+		client.Init(networkUrl, int(chainId))
+		value, success := client.ResolveStandard(input, client.RECORDS["EVM"])
+		if !success {
+			return "", fmt.Errorf("%s", ErrUnregisterName)
+		}
 
-	networkUrl, err := ethclientx.GlobalUrl(protocol.NetworkAvalanche)
+		if len(value) == 0 {
+			return "", fmt.Errorf("%s", ErrNotResolver)
+		}
+
+		return strings.ToLower(value), nil
+	}
+
+	avvyClient := avvy_client.New()
+	profile, err := avvyClient.GetProfile(input)
 	if err != nil {
-		return "", fmt.Errorf("failed to get %s http url: %s", protocol.NetworkAvalanche, err)
-	}
-	client.Init(networkUrl, int(chainId))
-
-	value, success := client.ResolveStandard(input, client.RECORDS["EVM"])
-	if !success {
-		return "", fmt.Errorf("%s", ErrUnregisterName)
+		return "", err
 	}
 
-	if len(value) == 0 {
-		return "", fmt.Errorf("%s", ErrNotResolver)
-	}
-
-	result = value
-
-	// todo not implenment reverse resolution in avvy client
-
-	return strings.ToLower(result), nil
+	return profile.Handle, nil
 }
