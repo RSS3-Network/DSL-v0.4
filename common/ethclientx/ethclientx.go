@@ -58,8 +58,8 @@ func Dial(config *configx.RPC, networks []string) (ethereumClientMap map[string]
 	ethereumClientMap = make(map[string]*ethclient.Client)
 
 	if config.General.Ethereum != nil && slices.Contains(networks, protocol.NetworkEthereum) {
-		globalEthereumUrlMap[protocol.NetworkEthereum] = config.General.Ethereum.HTTP
-		if ethereumClientMap[protocol.NetworkEthereum], err = ethclient.Dial(config.General.Ethereum.HTTP); err != nil {
+		globalEthereumUrlMap[protocol.NetworkEthereum] = config.General.Ethereum.WebSocket
+		if ethereumClientMap[protocol.NetworkEthereum], err = ethclient.Dial(config.General.Ethereum.WebSocket); err != nil {
 			return nil, err
 		}
 	}
