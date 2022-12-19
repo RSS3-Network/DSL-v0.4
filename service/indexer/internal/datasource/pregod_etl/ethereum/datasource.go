@@ -18,16 +18,12 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	Source = protocol.SourcePregodETL
-)
-
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct{}
 
 func (d *Datasource) Name() string {
-	return Source
+	return protocol.SourcePregodETL
 }
 
 func (d *Datasource) Networks() []string {
@@ -124,7 +120,6 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 	}
 
 	for _, transfer := range result.Transfers {
-
 		transaction := model.Transaction{
 			BlockNumber: transfer.BlockNum,
 			Hash:        transfer.Hash.Hex(),
@@ -139,6 +134,10 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 		}
 
 		internalTransactions = append(internalTransactions, transaction)
+
+		if len(internalTransactions) >= protocol.DatasourceLimit {
+			break
+		}
 	}
 
 	return internalTransactions, nil

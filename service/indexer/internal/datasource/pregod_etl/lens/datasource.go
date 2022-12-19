@@ -27,10 +27,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	Source = "pregod_etl"
-)
-
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
@@ -39,7 +35,7 @@ type Datasource struct {
 }
 
 func (d *Datasource) Name() string {
-	return Source
+	return protocol.SourceKurora
 }
 
 func (d *Datasource) Networks() []string {
@@ -184,6 +180,10 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 						Source:      protocol.SourceKurora,
 					}
 					mu.Unlock()
+				}
+
+				if len(internalTransactionMap) >= protocol.DatasourceLimit {
+					break
 				}
 
 				cursor := kurora.LogCursor(result[len(result)-1].TransactionHash, result[len(result)-1].Index)

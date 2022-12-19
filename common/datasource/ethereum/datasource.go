@@ -29,8 +29,6 @@ import (
 )
 
 const (
-	Source = "ethereum"
-
 	MaxConcurrency = 200
 )
 

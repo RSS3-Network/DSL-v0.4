@@ -20,8 +20,7 @@ import (
 var _ datasource.Datasource = (*Datasource)(nil)
 
 const (
-	Source = "zksync"
-	Limit  = 100
+	Limit = 100
 
 	OperationTypeTransfer = "Transfer"
 
@@ -35,7 +34,7 @@ type Datasource struct {
 }
 
 func (d *Datasource) Name() string {
-	return Source
+	return protocol.SourceZksync
 }
 
 func (d *Datasource) Networks() []string {
@@ -132,6 +131,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 
 		// If the condition is met, then all data has been obtained
 		if internalTransactions.Pagination.Count >= len(transactions) {
+			break
+		}
+
+		if len(transactions) >= protocol.DatasourceLimit {
 			break
 		}
 

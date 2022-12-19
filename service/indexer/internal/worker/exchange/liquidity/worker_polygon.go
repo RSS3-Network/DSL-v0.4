@@ -54,7 +54,7 @@ func (i *internal) handlePolygonStakingDelegatorClaimedRewards(ctx context.Conte
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -97,7 +97,7 @@ func (i *internal) handlePolygonStakingShareMinted(ctx context.Context, message 
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
