@@ -15,7 +15,7 @@ func init() {
 	rpcConfig := configx.RPC{
 		General: configx.RPCNetwork{
 			Ethereum: &configx.RPCEndpoint{
-				HTTP: "https://rpc.ankr.com/eth",
+				WebSocket: "https://rpc.ankr.com/eth",
 			},
 			Polygon: &configx.RPCEndpoint{
 				HTTP: "https://rpc.ankr.com/polygon",
