@@ -42,8 +42,11 @@ func (i *internal) handleBalancerPoolBalanceChanged(ctx context.Context, message
 	action := filter.ExchangeLiquidityAdd
 
 	for index, address := range event.Tokens {
-		if event.Deltas[index].Cmp(decimal.Zero.BigInt()) == -1 {
+		switch event.Deltas[index].Cmp(decimal.Zero.BigInt()) {
+		case -1:
 			action = filter.ExchangeLiquidityRemove
+		case 0:
+			continue
 		}
 
 		erc20, err := i.tokenClient.ERC20(ctx, message.Network, address.String())
