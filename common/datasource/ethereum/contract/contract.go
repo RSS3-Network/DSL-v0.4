@@ -87,3 +87,7 @@ package contract
 //go:generate abigen --abi ./element/erc_721_orders_feature.abi --pkg element --type ERC721OrdersFeature --out ./element/erc_721_orders_feature.go
 // ERC1155OrdersFeature https://polygonscan.com/address/0xA4807EF31298b121eF39Cd423A8Aa05A800B2Bb8
 //go:generate abigen --abi ./element/erc_1155_orders_feature.abi --pkg element --type ERC1155OrdersFeature --out ./element/erc_1155_orders_feature.go
+
+// Mask Network
+// HappyTokenPool https://polygonscan.com/address/0xf9f7c1496c21bc0180f4b64dabe0754ebfc8a8c0
+//go:generate abigen --abi ./masknetwork/happy_token_pool.abi --pkg masknetwork --type HappyTokenPool --out ./masknetwork/happy_token_pool.go

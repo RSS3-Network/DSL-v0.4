@@ -782,6 +782,50 @@ func Test_service_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "mask network swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x790116d0685eb197b886dacad9c247f785987a4a", // Unknown
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0xd18dc543bdaceda3c83727e529538f472e58c98981f0b97a0c2f20576f839951
+						Hash:        "0xd18dc543bdaceda3c83727e529538f472e58c98981f0b97a0c2f20576f839951",
+						BlockNumber: 36003655,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Equal(t, len(transactions), 1)
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "MASK")
+					assert.Equal(t, swap.TokenTo.Symbol, "TITAN")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformMaskNetwork)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {
