@@ -158,6 +158,7 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagExchange, transfer.Tag, filter.ExchangeLiquidity, transfer.Type)
 
 				transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagExchange, transaction.Tag, filter.ExchangeLiquidity, transaction.Type)
+				transaction.Owner = transaction.AddressFrom
 				transaction.Transfers = append(transaction.Transfers, *transfer)
 			}
 

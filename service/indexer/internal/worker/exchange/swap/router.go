@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/balancer"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spookyswap"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/treaderjoe"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
@@ -202,8 +203,8 @@ var (
 		strings.ToLower("0xEaE47c5D99f7B31165a7f0c5f7E0D6afA25CFd55"): kyberSwapClassic,    // Classic Optimism
 		// SpookySwap
 		// https://docs.spooky.fi/Resources/contracts
-		strings.ToLower("0x31F63A33141fFee63D4B26755430a390ACdD8a4d"): spookySwap, // SpookySwap Liquidity Brewer
-		strings.ToLower("0xF491e7B69E4244ad4002BC14e878a34207E38c29"): spookySwap, // SpookySwap Router
+		strings.ToLower(spookyswap.AddressLiquidityBrewer.String()): spookySwap, // SpookySwap Liquidity Brewer
+		strings.ToLower(spookyswap.AddressRouter.String()):          spookySwap, // SpookySwap Router
 		// DODO
 		// https://docs.dodoex.io/english/developers/contracts-address/ethereum
 		strings.ToLower("0xa2398842F37465f89540430bDC00219fA9E4D28a"): dodoV2, // DODO V2 RouteProxy Ethereum
