@@ -45,16 +45,26 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 				 FROM transactions 
 				 %s`, condition)).Scan(&result)
 
-	// follower
-	database.Global().
-		Raw(`SELECT COUNT(*) as follower
-		FROM transfers
-		WHERE TAG = 'social'
-		  AND TYPE ='follow'
-		  AND DATE_PART('year'
-			, TIMESTAMP) = '2022'
-		  AND metadata->>'address' = ?`, request.Address).
-		Scan(&result)
+	// followers and followings from farcaster
+	countStruct := struct{ Follower, Following int64 }{}
+
+	database.EthDb().
+		Raw(fmt.Sprintf(`SELECT follower_count as follower, following_count as following
+				FROM dataset_farcaster.profiles
+				WHERE '%s' = ANY (signer_address);`, "0xc930D0367984E6df5F271252e8675aEC1A3Bb662")).Scan(&countStruct)
+
+	result.Following += countStruct.Following
+	result.Follower += countStruct.Follower
+
+	// database.Global().
+	//	Raw(`SELECT COUNT(*) as follower
+	//	FROM transfers
+	//	WHERE TAG = 'social'
+	//	  AND TYPE ='follow'
+	//	  AND DATE_PART('year'
+	//		, TIMESTAMP) = '2022'
+	//	  AND metadata->>'address' = ?`, request.Address).
+	//	Scan(&result)
 
 	// get hashes of the longest and the shortest posts
 	hashStruct := struct{ Longest, Shortest string }{}
