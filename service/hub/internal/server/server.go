@@ -34,6 +34,13 @@ type Server struct {
 func (s *Server) Initialize() (err error) {
 	s.logger, _ = zap.NewProduction()
 
+	ethDbClient, err := database.Dial(config.ConfigHub.EthereumEtl.String(), false)
+	if err != nil {
+		return err
+	}
+
+	database.ReplaceEthDb(ethDbClient)
+
 	databaseClient, err := database.Dial(config.ConfigHub.Postgres.String(), false)
 	if err != nil {
 		panic(err)
