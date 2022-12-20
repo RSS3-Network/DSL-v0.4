@@ -62,7 +62,7 @@ func (i *internal) handleLidoSubmitted(ctx context.Context, message *protocol.Me
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -106,7 +106,7 @@ func (i *internal) handleLidoSubmitEvent(ctx context.Context, message *protocol.
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }

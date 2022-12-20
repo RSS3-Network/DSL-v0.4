@@ -53,7 +53,7 @@ func (i *internal) handleAAVEV2Deposit(ctx context.Context, message *protocol.Me
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -96,7 +96,7 @@ func (i *internal) handleAAVEV2Borrow(ctx context.Context, message *protocol.Mes
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -139,7 +139,7 @@ func (i *internal) handleAAVEV2Repay(ctx context.Context, message *protocol.Mess
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -182,7 +182,7 @@ func (i *internal) handleAAVEV2Withdraw(ctx context.Context, message *protocol.M
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -225,7 +225,7 @@ func (i *internal) handleAAVEV3Supply(ctx context.Context, message *protocol.Mes
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -268,7 +268,7 @@ func (i *internal) handleAAVEV3Borrow(ctx context.Context, message *protocol.Mes
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -311,7 +311,7 @@ func (i *internal) handleAAVEV3Repay(ctx context.Context, message *protocol.Mess
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -354,7 +354,7 @@ func (i *internal) handleAAVEV3Withdraw(ctx context.Context, message *protocol.M
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }

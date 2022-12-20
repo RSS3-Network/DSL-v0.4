@@ -58,7 +58,7 @@ func (i *internal) handleUniswapV2Mint(ctx context.Context, message *protocol.Me
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -102,7 +102,7 @@ func (i *internal) handleUniswapV2Burn(ctx context.Context, message *protocol.Me
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -146,7 +146,7 @@ func (i *internal) handleUniswapV3Mint(ctx context.Context, message *protocol.Me
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -194,7 +194,7 @@ func (i *internal) handleUniswapV3Burn(ctx context.Context, message *protocol.Me
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -248,7 +248,7 @@ func (i *internal) handleUniswapV3Collect(ctx context.Context, message *protocol
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        router.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
