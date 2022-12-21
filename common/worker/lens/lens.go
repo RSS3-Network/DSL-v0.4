@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"net/url"
 	"strings"
 	"time"
 
@@ -508,11 +509,19 @@ func (c *Client) CreatePost(ctx context.Context, lensContent *LensContent) *meta
 
 	// handle the target post's author for lenster
 	if lensContent.ExternalURL != "" {
-		prefix := strings.Split(lensContent.ExternalURL, "/")
-		if len(prefix) > 4 && prefix[2] == "lenster.xyz" {
-			post.Author = []string{lensContent.ExternalURL, prefix[4]}
-		} else {
-			post.Author = []string{lensContent.ExternalURL}
+		externalUrl, err := url.Parse(lensContent.ExternalURL)
+		if err == nil {
+			path := strings.Split(externalUrl.Path, "/")
+
+			switch externalUrl.Host {
+			case "lenster.xyz":
+				// lenster url example: https://lenster.xyz/u/username.lens
+				post.Author = []string{lensContent.ExternalURL, path[2]}
+			case "orb.ac":
+				// orb.ac url example: https://orb.ac/@@username
+				post.Author = []string{lensContent.ExternalURL, strings.ReplaceAll(path[1], "@", "")}
+			}
+
 		}
 	}
 
