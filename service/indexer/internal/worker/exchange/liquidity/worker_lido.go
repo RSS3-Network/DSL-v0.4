@@ -16,7 +16,11 @@ import (
 	"github.com/naturalselectionlabs/pregod/internal/token"
 )
 
-func (i *internal) handleLidoSubmitted(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleLidoSubmitted(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
+	if log.Address != lido.AddressETH {
+		return nil, fmt.Errorf("unexpected address: %s", log.Address)
+	}
+
 	ethereumClient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, fmt.Errorf("get ethereum client: %w", err)
@@ -45,7 +49,7 @@ func (i *internal) handleLidoSubmitted(ctx context.Context, message *protocol.Me
 	}
 
 	// Temporary conversion
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityAdd, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityAdd, map[*token.ERC20]*big.Int{
 		&tokenFromERC20: event.Amount,
 	})
 	if err != nil {
@@ -61,13 +65,17 @@ func (i *internal) handleLidoSubmitted(ctx context.Context, message *protocol.Me
 		AddressTo:       strings.ToLower(log.Address.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
+		Platform:        platform.Name,
 		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
-func (i *internal) handleLidoSubmitEvent(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleLidoSubmitEvent(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
+	if log.Address != lido.AddressMatic {
+		return nil, fmt.Errorf("unexpected address: %s", log.Address)
+	}
+
 	ethereumClient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, fmt.Errorf("get ethereum client: %w", err)
@@ -89,7 +97,7 @@ func (i *internal) handleLidoSubmitEvent(ctx context.Context, message *protocol.
 	}
 
 	// Temporary conversion
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityAdd, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityAdd, map[*token.ERC20]*big.Int{
 		tokenFrom: event.Amount,
 	})
 	if err != nil {
@@ -105,7 +113,7 @@ func (i *internal) handleLidoSubmitEvent(ctx context.Context, message *protocol.
 		AddressTo:       strings.ToLower(log.Address.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
+		Platform:        platform.Name,
 		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil

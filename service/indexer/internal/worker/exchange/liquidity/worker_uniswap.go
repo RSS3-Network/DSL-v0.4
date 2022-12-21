@@ -19,7 +19,7 @@ import (
 
 var ErrorInvalidNumberOfToken = errors.New("invalid number of token")
 
-func (i *internal) handleUniswapV2Mint(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleUniswapV2Mint(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (i *internal) handleUniswapV2Mint(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityAdd, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityAdd, map[*token.ERC20]*big.Int{
 		tokenLeft:  event.Amount0,
 		tokenRight: event.Amount1,
 	})
@@ -57,13 +57,13 @@ func (i *internal) handleUniswapV2Mint(ctx context.Context, message *protocol.Me
 		AddressTo:       strings.ToLower(log.Address.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
+		Platform:        platform.Name,
 		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
-func (i *internal) handleUniswapV2Burn(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleUniswapV2Burn(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (i *internal) handleUniswapV2Burn(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityRemove, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityRemove, map[*token.ERC20]*big.Int{
 		tokenLeft:  event.Amount0,
 		tokenRight: event.Amount1,
 	})
@@ -101,13 +101,13 @@ func (i *internal) handleUniswapV2Burn(ctx context.Context, message *protocol.Me
 		AddressTo:       strings.ToLower(event.To.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
 		Source:          transaction.Source,
+		Platform:        platform.Name,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
-func (i *internal) handleUniswapV3Mint(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleUniswapV3Mint(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func (i *internal) handleUniswapV3Mint(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityAdd, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityAdd, map[*token.ERC20]*big.Int{
 		tokenLeft:  event.Amount0,
 		tokenRight: event.Amount1,
 	})
@@ -145,13 +145,13 @@ func (i *internal) handleUniswapV3Mint(ctx context.Context, message *protocol.Me
 		AddressTo:       strings.ToLower(log.Address.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
 		Source:          transaction.Source,
+		Platform:        platform.Name,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
-func (i *internal) handleUniswapV3Burn(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleUniswapV3Burn(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func (i *internal) handleUniswapV3Burn(ctx context.Context, message *protocol.Me
 		return nil, ErrorInvalidNumberOfToken
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityRemove, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityRemove, map[*token.ERC20]*big.Int{
 		tokenLeft:  event.Amount0,
 		tokenRight: event.Amount1,
 	})
@@ -193,13 +193,13 @@ func (i *internal) handleUniswapV3Burn(ctx context.Context, message *protocol.Me
 		AddressTo:       strings.ToLower(event.Owner.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
 		Source:          transaction.Source,
+		Platform:        platform.Name,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
-func (i *internal) handleUniswapV3Collect(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleUniswapV3Collect(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -230,7 +230,7 @@ func (i *internal) handleUniswapV3Collect(ctx context.Context, message *protocol
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityCollect, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityCollect, map[*token.ERC20]*big.Int{
 		tokenLeft:  event.Amount0,
 		tokenRight: event.Amount1,
 	})
@@ -247,8 +247,8 @@ func (i *internal) handleUniswapV3Collect(ctx context.Context, message *protocol
 		AddressTo:       strings.ToLower(event.Recipient.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
 		Source:          transaction.Source,
+		Platform:        platform.Name,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }

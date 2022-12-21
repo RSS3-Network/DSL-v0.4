@@ -15,7 +15,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/internal/token"
 )
 
-func (i *internal) handleAAVEV2Deposit(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleAAVEV2Deposit(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func (i *internal) handleAAVEV2Deposit(ctx context.Context, message *protocol.Me
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquiditySupply, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquiditySupply, map[*token.ERC20]*big.Int{
 		tokenSingle: event.Amount,
 	})
 	if err != nil {
@@ -52,13 +52,13 @@ func (i *internal) handleAAVEV2Deposit(ctx context.Context, message *protocol.Me
 		AddressTo:       strings.ToLower(event.User.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
+		Platform:        platform.Name,
 		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
-func (i *internal) handleAAVEV2Borrow(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleAAVEV2Borrow(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (i *internal) handleAAVEV2Borrow(ctx context.Context, message *protocol.Mes
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityBorrow, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityBorrow, map[*token.ERC20]*big.Int{
 		tokenSingle: event.Amount,
 	})
 	if err != nil {
@@ -95,13 +95,13 @@ func (i *internal) handleAAVEV2Borrow(ctx context.Context, message *protocol.Mes
 		AddressTo:       strings.ToLower(event.User.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
+		Platform:        platform.Name,
 		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
-func (i *internal) handleAAVEV2Repay(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleAAVEV2Repay(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (i *internal) handleAAVEV2Repay(ctx context.Context, message *protocol.Mess
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityRepay, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityRepay, map[*token.ERC20]*big.Int{
 		tokenSingle: event.Amount,
 	})
 	if err != nil {
@@ -138,13 +138,13 @@ func (i *internal) handleAAVEV2Repay(ctx context.Context, message *protocol.Mess
 		AddressTo:       strings.ToLower(event.User.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
+		Platform:        platform.Name,
 		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
-func (i *internal) handleAAVEV2Withdraw(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleAAVEV2Withdraw(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -165,7 +165,7 @@ func (i *internal) handleAAVEV2Withdraw(ctx context.Context, message *protocol.M
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityWithdraw, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityWithdraw, map[*token.ERC20]*big.Int{
 		tokenSingle: event.Amount,
 	})
 	if err != nil {
@@ -181,13 +181,13 @@ func (i *internal) handleAAVEV2Withdraw(ctx context.Context, message *protocol.M
 		AddressTo:       strings.ToLower(event.User.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
+		Platform:        platform.Name,
 		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
-func (i *internal) handleAAVEV3Supply(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleAAVEV3Supply(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -208,7 +208,7 @@ func (i *internal) handleAAVEV3Supply(ctx context.Context, message *protocol.Mes
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquiditySupply, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquiditySupply, map[*token.ERC20]*big.Int{
 		tokenSingle: event.Amount,
 	})
 	if err != nil {
@@ -224,13 +224,13 @@ func (i *internal) handleAAVEV3Supply(ctx context.Context, message *protocol.Mes
 		AddressTo:       strings.ToLower(event.User.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
+		Platform:        platform.Name,
 		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
-func (i *internal) handleAAVEV3Borrow(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleAAVEV3Borrow(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -251,7 +251,7 @@ func (i *internal) handleAAVEV3Borrow(ctx context.Context, message *protocol.Mes
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityBorrow, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityBorrow, map[*token.ERC20]*big.Int{
 		tokenSingle: event.Amount,
 	})
 	if err != nil {
@@ -267,13 +267,13 @@ func (i *internal) handleAAVEV3Borrow(ctx context.Context, message *protocol.Mes
 		AddressTo:       strings.ToLower(event.User.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
+		Platform:        platform.Name,
 		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
-func (i *internal) handleAAVEV3Repay(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleAAVEV3Repay(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -294,7 +294,7 @@ func (i *internal) handleAAVEV3Repay(ctx context.Context, message *protocol.Mess
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityRepay, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityRepay, map[*token.ERC20]*big.Int{
 		tokenSingle: event.Amount,
 	})
 	if err != nil {
@@ -310,13 +310,13 @@ func (i *internal) handleAAVEV3Repay(ctx context.Context, message *protocol.Mess
 		AddressTo:       strings.ToLower(event.User.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
+		Platform:        platform.Name,
 		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
-func (i *internal) handleAAVEV3Withdraw(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, router Router) (*model.Transfer, error) {
+func (i *internal) handleAAVEV3Withdraw(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform Platform) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {
 		return nil, err
@@ -337,7 +337,7 @@ func (i *internal) handleAAVEV3Withdraw(ctx context.Context, message *protocol.M
 		return nil, err
 	}
 
-	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, router, filter.ExchangeLiquidityWithdraw, map[*token.ERC20]*big.Int{
+	liquidityMetadata, err := i.buildLiquidityMetadata(ctx, platform, filter.ExchangeLiquidityWithdraw, map[*token.ERC20]*big.Int{
 		tokenSingle: event.Amount,
 	})
 	if err != nil {
@@ -353,7 +353,7 @@ func (i *internal) handleAAVEV3Withdraw(ctx context.Context, message *protocol.M
 		AddressTo:       strings.ToLower(event.User.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
-		Platform:        router.Name,
+		Platform:        platform.Name,
 		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
