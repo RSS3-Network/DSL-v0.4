@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/balancer"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/masknetwork"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spookyswap"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/treaderjoe"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -145,6 +146,11 @@ var (
 		Protocol: "Cow Protocol",
 	}
 
+	maskNetwork = Router{
+		Name:     protocol.PlatformMaskNetwork,
+		Protocol: "MaskNetwork ITO",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -232,5 +238,7 @@ var (
 		strings.ToLower(balancer.AddressVault.String()): balancerSwap,
 		// Cow
 		strings.ToLower("0x9008D19f58AAbD9eD0D60971565AA8510560ab41"): cowSwap,
+		// MaskNetwork
+		strings.ToLower(masknetwork.AddressHappyTokenPool.String()): maskNetwork,
 	}
 )

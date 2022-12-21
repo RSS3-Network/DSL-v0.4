@@ -24,14 +24,12 @@ import (
 
 var _ datasource.Datasource = (*Datasource)(nil)
 
-const Source = "kurora"
-
 type Datasource struct {
 	kuroraClient *kurora.Client
 }
 
 func (d *Datasource) Name() string {
-	return Source
+	return protocol.SourceKurora
 }
 
 func (d *Datasource) Networks() []string {
@@ -119,6 +117,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 
 		// Update cursor
 		if len(receipts) == 0 {
+			break
+		}
+
+		if len(unindexedTransactions) >= protocol.DatasourceLimit {
 			break
 		}
 

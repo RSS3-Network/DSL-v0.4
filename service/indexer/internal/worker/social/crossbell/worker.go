@@ -13,7 +13,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/worker/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-
 	lop "github.com/samber/lo/parallel"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"

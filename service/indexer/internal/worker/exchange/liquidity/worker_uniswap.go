@@ -58,7 +58,7 @@ func (i *internal) handleUniswapV2Mint(ctx context.Context, message *protocol.Me
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        platform.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -101,8 +101,8 @@ func (i *internal) handleUniswapV2Burn(ctx context.Context, message *protocol.Me
 		AddressTo:       strings.ToLower(event.To.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
+		Source:          transaction.Source,
 		Platform:        platform.Name,
-		Source:          ethereum.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -145,8 +145,8 @@ func (i *internal) handleUniswapV3Mint(ctx context.Context, message *protocol.Me
 		AddressTo:       strings.ToLower(log.Address.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
+		Source:          transaction.Source,
 		Platform:        platform.Name,
-		Source:          ethereum.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -193,8 +193,8 @@ func (i *internal) handleUniswapV3Burn(ctx context.Context, message *protocol.Me
 		AddressTo:       strings.ToLower(event.Owner.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
+		Source:          transaction.Source,
 		Platform:        platform.Name,
-		Source:          ethereum.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -247,8 +247,8 @@ func (i *internal) handleUniswapV3Collect(ctx context.Context, message *protocol
 		AddressTo:       strings.ToLower(event.Recipient.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
+		Source:          transaction.Source,
 		Platform:        platform.Name,
-		Source:          ethereum.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }

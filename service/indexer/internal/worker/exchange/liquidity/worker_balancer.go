@@ -72,7 +72,7 @@ func (i *internal) handleBalancerPoolBalanceChanged(ctx context.Context, message
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
 		Platform:        platform.Name,
-		Source:          ethereum.Source,
+		Source:          transaction.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }

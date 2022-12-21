@@ -57,8 +57,8 @@ func (i *internal) handlePolygonStakingDelegatorClaimedRewards(ctx context.Conte
 		AddressTo:       strings.ToLower(log.Address.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
+		Source:          transaction.Source,
 		Platform:        platform.Name,
-		Source:          ethereum.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
@@ -104,8 +104,8 @@ func (i *internal) handlePolygonStakingShareMinted(ctx context.Context, message 
 		AddressTo:       strings.ToLower(log.Address.String()),
 		Metadata:        liquidityMetadata,
 		Network:         transaction.Network,
+		Source:          transaction.Source,
 		Platform:        platform.Name,
-		Source:          ethereum.Source,
 		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
