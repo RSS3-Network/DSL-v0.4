@@ -4,7 +4,7 @@ go 1.18
 
 // https://github.com/samber/lo/pull/43
 // https://github.com/samber/lo/pull/81
-replace github.com/samber/lo v1.31.0 => github.com/kallydev/lo v1.26.0-alpha.1
+replace github.com/samber/lo => github.com/kallydev/lo v1.26.0-alpha.1
 
 replace github.com/labstack/echo/v4 => github.com/labstack/echo/v4 v4.7.2
 
@@ -25,6 +25,7 @@ require (
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/lib/pq v1.10.6
 	github.com/naturalselectionlabs/kurora v0.18.3
+	github.com/naturalselectionlabs/kurora/client v0.0.0-20221220095625-c2397520f27d
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.37.0
@@ -106,7 +107,6 @@ require (
 	github.com/multiformats/go-multibase v0.1.1 // indirect
 	github.com/multiformats/go-multihash v0.2.0 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
-	github.com/naturalselectionlabs/kurora/client v0.0.0-20221220095625-c2397520f27d // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
