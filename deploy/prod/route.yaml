@@ -8,7 +8,7 @@ spec:
   - web
   routes:
   - kind: Rule
-    match: Host(`pregod.rss3.dev`) && PathPrefix(`/v1`)
+    match: (Host(`pregod.rss3.dev`) || Host(`api.rss3.io`)) && (PathPrefix(`/v1/`) || Path(`/v1`))
     services:
     - name: pregod-1-1-hub-api
       port: 80
@@ -54,7 +54,7 @@ spec:
   redirectRegex:
     permanent: true
     regex: .*/v1\.1\.0(.*)
-    replacement: https://pregod.rss3.dev/v1${1}
+    replacement: https://api.rss3.io/v1${1}
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
