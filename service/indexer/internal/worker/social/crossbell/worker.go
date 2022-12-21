@@ -3,6 +3,8 @@ package crossbell
 import (
 	"context"
 	"encoding/json"
+	"sync"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -11,8 +13,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/worker/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
-	"sync"
-
 	lop "github.com/samber/lo/parallel"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
