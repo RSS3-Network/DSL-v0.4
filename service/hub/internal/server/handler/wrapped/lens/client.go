@@ -25,7 +25,6 @@ type Result struct {
 
 func (c *Client) GetFollowStat(ctx context.Context, result *model.SocialResult, address string) error {
 	profile, err := GetDefaultProfile(ctx, *c.GClient, address)
-
 	if err != nil {
 		return err
 	}

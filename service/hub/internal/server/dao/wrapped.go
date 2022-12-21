@@ -491,7 +491,6 @@ func getCSBFollowStats(ctx context.Context, result *model.SocialResult, address 
 		SetContext(ctx).
 		SetResult(&characterList).
 		Get(fmt.Sprintf("/v1/addresses/%s/characters", address))
-
 	if err != nil {
 		return err
 	}
@@ -525,7 +524,6 @@ func getCSBFollowStats(ctx context.Context, result *model.SocialResult, address 
 		if err == nil {
 			result.Follower += response.Count
 		}
-
 	})
 
 	return nil
