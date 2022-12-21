@@ -8,6 +8,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -15,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler/wrapped/lens"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
+	lop "github.com/samber/lo/parallel"
 	"go.opentelemetry.io/otel"
 )
 
@@ -42,8 +44,7 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 	database.Global().
 		Raw(fmt.Sprintf(`SELECT
 					COUNT(*) FILTER ( WHERE type = 'post') AS post,
-					COUNT(*) FILTER ( WHERE type = 'comment') AS comment,
-					COUNT(*) FILTER ( WHERE type = 'follow') AS following
+					COUNT(*) FILTER ( WHERE type = 'comment') AS comment
 				 FROM transactions 
 				 %s`, condition)).Scan(&result)
 
@@ -53,13 +54,16 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 	database.EthDb().
 		Raw(fmt.Sprintf(`SELECT follower_count as follower, following_count as following
 				FROM dataset_farcaster.profiles
-				WHERE '%s' = ANY (signer_address);`, "0xc930D0367984E6df5F271252e8675aEC1A3Bb662")).Scan(&countStruct)
+				WHERE '%s' = ANY (signer_address);`, request.Address)).Scan(&countStruct)
 
 	result.Following += countStruct.Following
 	result.Follower += countStruct.Follower
 
 	// followers and followings from Lens
 	_ = lensClient.GetFollowStat(c, &result, request.Address)
+
+	// followers and followings from crossbell
+	_ = getCSBFollowStats(c, &result, request.Address)
 
 	// get hashes of the longest and the shortest posts
 	hashStruct := struct{ Longest, Shortest string }{}
@@ -464,4 +468,65 @@ func count(s string) uint {
 	})
 	count := runeCount + len(strings.Fields(res))
 	return uint(count)
+}
+
+func getCSBFollowStats(ctx context.Context, result *model.SocialResult, address string) error {
+	client := resty.New()
+	client.SetBaseURL("https://indexer.crossbell.io/")
+
+	type Character struct {
+		CharacterId int    `json:"characterId"`
+		Handle      string `json:"handle"`
+	}
+
+	type CharacterList struct {
+		List []Character `json:"list"`
+	}
+
+	// get CSB character list
+	var characterList CharacterList
+
+	_, err := client.R().
+		SetHeader("Content-Type", "application/json").
+		SetContext(ctx).
+		SetResult(&characterList).
+		Get(fmt.Sprintf("/v1/addresses/%s/characters", address))
+
+	if err != nil {
+		return err
+	}
+
+	response := struct {
+		Count int64 `json:"count"`
+	}{}
+
+	lop.ForEach(characterList.List, func(character Character, i int) {
+		// get following
+		_, err := client.R().
+			SetHeader("Content-Type", "application/json").
+			SetQueryParam("limit", "0").
+			SetQueryParam("linkType", "follow").
+			SetContext(ctx).
+			SetResult(&response).
+			Get(fmt.Sprintf("/v1/characters/%d/links", character.CharacterId))
+
+		if err == nil {
+			result.Following += response.Count
+		}
+
+		// get follower
+		_, err = client.R().
+			SetHeader("Content-Type", "application/json").
+			SetQueryParam("limit", "0").
+			SetQueryParam("linkType", "follow").
+			SetContext(ctx).
+			SetResult(&response).
+			Get(fmt.Sprintf("/v1/characters/%d/backlinks", character.CharacterId))
+		if err == nil {
+			result.Follower += response.Count
+		}
+
+	})
+
+	return nil
 }
