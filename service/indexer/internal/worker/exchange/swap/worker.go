@@ -17,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/balancer"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/curve"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/dodo"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/masknetwork"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -113,7 +114,15 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 		}
 
 		transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagExchange, transaction.Tag, filter.ExchangeSwap, transaction.Type)
-		transaction.Owner = transaction.AddressFrom
+
+		switch transaction.Platform {
+		// CoW Swap uses offline signatures to offer gasless orders, aka signed orders.
+		// https://docs.cow.fi/front-end/cowswap
+		case protocol.PlatformCow:
+			transaction.Owner = message.Address
+		default:
+			transaction.Owner = transaction.AddressFrom
+		}
 
 		mu.Lock()
 		internalTransactionMap[transaction.Hash] = transaction
@@ -172,6 +181,8 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 				internalTokenMap, err = s.handleAAVEMint(ctx, message, *log, tokenMap, ethereumClient)
 			case aave.EventHashBurn:
 				internalTokenMap, err = s.handleAAVEBurn(ctx, message, *log, tokenMap, ethereumClient)
+			case masknetwork.EventSwapSuccess:
+				internalTokenMap, err = s.handleMaskEventSwapSuccess(ctx, message, *log, tokenMap, ethereumClient)
 			default:
 				continue
 			}
@@ -184,13 +195,22 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 		}
 	}
 
+	var addressTo string
+
+	switch {
+	case router == cowSwap: // Agent
+		addressTo = message.Address
+	default:
+		addressTo = transaction.AddressFrom
+	}
+
 	transfer := model.Transfer{
 		TransactionHash: transaction.Hash,
 		Timestamp:       transaction.Timestamp,
 		BlockNumber:     big.NewInt(transaction.BlockNumber),
 		Index:           0, // TODO
 		AddressFrom:     transaction.AddressFrom,
-		AddressTo:       transaction.AddressFrom,
+		AddressTo:       addressTo,
 		Metadata:        metadata.Default,
 		Network:         message.Network,
 		Source:          protocol.SourceOrigin,

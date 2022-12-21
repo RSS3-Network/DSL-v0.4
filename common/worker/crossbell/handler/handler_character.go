@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
@@ -27,7 +26,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"go.opentelemetry.io/otel"
-	"gorm.io/gorm/clause"
 )
 
 var _ Interface = (*characterHandler)(nil)
@@ -87,7 +85,7 @@ func (c *characterHandler) Handle(ctx context.Context, transaction *model.Transa
 		return c.handleSetNoteUri(ctx, transaction, transfer, log)
 	case crossbell.EventHashMintNote:
 		return c.handleMintNote(ctx, transaction, transfer, log)
-	case crossbell.EventHashSetOperator, crossbell.EventHashAddOperator, crossbell.EventHashRemoveOperator:
+	case crossbell.EventHashSetOperator, crossbell.EventHashAddOperator, crossbell.EventHashRemoveOperator, crossbell.EventHashGrantOperatorPermissions:
 		return c.handleOperator(ctx, transaction, transfer, log, log.Topics[0])
 	default:
 		return nil, crossbell.ErrorUnknownEvent
@@ -122,7 +120,7 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
-		Handle:   event.Handle,
+		Handle:   fmt.Sprintf("%v.csb", event.Handle),
 		Action:   filter.SocialCreate,
 		URL:      fmt.Sprintf("https://crossbell.io/@%v", event.Handle),
 	}
@@ -142,10 +140,6 @@ func (c *characterHandler) handleCharacterCreated(ctx context.Context, transacti
 		return nil, err
 	}
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash), url}
-
-	database.Global().Model(&social.Profile{}).Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(profile)
 
 	return &transfer, nil
 }
@@ -176,7 +170,7 @@ func (c *characterHandler) handleSetHandle(ctx context.Context, transaction *mod
 	profile := &social.Profile{
 		Address:  strings.ToLower(event.Account.String()),
 		Platform: protocol.PlatformCrossbell,
-		Handle:   event.NewHandle,
+		Handle:   fmt.Sprintf("%v.csb", event.NewHandle),
 		Network:  transfer.Network,
 		Source:   transfer.Network,
 		Action:   filter.SocialUpdate,
@@ -360,7 +354,7 @@ func (c *characterHandler) handleLinkCharacter(ctx context.Context, transaction 
 
 	profile := &social.Profile{
 		Address:  strings.ToLower(characterOwner.String()),
-		Handle:   handle,
+		Handle:   fmt.Sprintf("%v.csb", handle),
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
@@ -417,7 +411,7 @@ func (c *characterHandler) handleUnLinkCharacter(ctx context.Context, transactio
 
 	profile := &social.Profile{
 		Address:  strings.ToLower(characterOwner.String()),
-		Handle:   handle,
+		Handle:   fmt.Sprintf("%v.csb", handle),
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
@@ -474,7 +468,7 @@ func (c *characterHandler) handleSetCharacterUri(ctx context.Context, transactio
 
 	profile := &social.Profile{
 		Address:  strings.ToLower(characterOwner.String()),
-		Handle:   handle,
+		Handle:   fmt.Sprintf("%v.csb", handle),
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
@@ -628,6 +622,23 @@ func (c *characterHandler) handleOperator(ctx context.Context, transaction *mode
 		}
 		characterId = eventParam.CharacterId
 		action = filter.SocialRemove
+	case crossbell.EventHashGrantOperatorPermissions:
+		eventParam, err := c.eventContract.ParseGrantOperatorPermissions(log)
+		if err != nil {
+			return nil, err
+		}
+		characterId = eventParam.CharacterId
+
+		if eventParam.Operator == crossbell.AddressXSyncOperator {
+			if eventParam.PermissionBitMap.BitLen() == 0 {
+				action = filter.SocialRemove
+			} else {
+				proxy = strings.ToLower(eventParam.Operator.String())
+				action = filter.SocialAppoint
+			}
+		} else {
+			return nil, crossbell.ErrorUnknownEvent
+		}
 	}
 
 	erc721Token, err := c.tokenClient.ERC721(ctx, protocol.NetworkCrossbell, crossbell.AddressCharacter.String(), characterId)
@@ -650,7 +661,7 @@ func (c *characterHandler) handleOperator(ctx context.Context, transaction *mode
 	profile := &social.Profile{
 		Address:  strings.ToLower(characterOwner.String()),
 		Platform: protocol.PlatformCrossbell,
-		Handle:   handle,
+		Handle:   fmt.Sprintf("%v.csb", handle),
 		Action:   action,
 		Proxy:    proxy,
 		Network:  transfer.Network,

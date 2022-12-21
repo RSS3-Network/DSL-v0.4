@@ -16,10 +16,6 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-const (
-	Source = "blockscout"
-)
-
 var _ datasource.Datasource = (*Datasource)(nil)
 
 type Datasource struct {
@@ -27,7 +23,7 @@ type Datasource struct {
 }
 
 func (d *Datasource) Name() string {
-	return Source
+	return protocol.SourceBlockscout
 }
 
 func (d *Datasource) Networks() []string {

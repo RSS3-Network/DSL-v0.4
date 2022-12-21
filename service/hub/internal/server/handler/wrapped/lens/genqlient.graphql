@@ -1,0 +1,25 @@
+query GetDefaultProfile($address: EthereumAddress!) {
+  defaultProfile(request: { ethereumAddress: $address }) {
+    id
+  }
+}
+
+query GetFollowers($profileId: ProfileId!) {
+  followers(request: { profileId: $profileId, limit: 1 }) {
+    pageInfo {
+      prev
+      next
+      totalCount
+    }
+  }
+}
+
+query GetFollowing($address: EthereumAddress!) {
+  following(request: { address: $address, limit: 1 }) {
+    pageInfo {
+      prev
+      next
+      totalCount
+    }
+  }
+}

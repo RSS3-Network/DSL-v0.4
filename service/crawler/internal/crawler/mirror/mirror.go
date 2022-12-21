@@ -133,8 +133,8 @@ func (s *service) buildTransactions(ctx context.Context, query kurora.DatasetMir
 		address := strings.ToLower(entry.Contributor.String())
 
 		post := metadata.Post{
-			Title: entry.Title,
-			Body:  entry.Content,
+			Title: entry.Title.String(),
+			Body:  entry.Content.String(),
 			Author: []string{
 				fmt.Sprintf("https://mirror.xyz/%v", address),
 			},

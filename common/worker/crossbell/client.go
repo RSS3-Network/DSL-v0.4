@@ -62,6 +62,7 @@ func (c *Client) GetProfile(address string) ([]*social.Profile, error) {
 			Platform: protocol.PlatformCrossbell,
 			Source:   protocol.PlatformCrossbell,
 			Handle:   fmt.Sprintf("%v.csb", crossbell.Handle),
+			URL:      fmt.Sprintf("https://crossbell.io/@%v", crossbell.Handle),
 		}
 
 		content, err := ipfs.GetFileByURL(crossbell.URI)

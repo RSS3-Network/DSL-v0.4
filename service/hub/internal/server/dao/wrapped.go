@@ -8,12 +8,15 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	bridge "github.com/naturalselectionlabs/pregod/common/database/model/transaction"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler/wrapped/lens"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
+	lop "github.com/samber/lo/parallel"
 	"go.opentelemetry.io/otel"
 )
 
@@ -21,6 +24,7 @@ var (
 	// https://www.notion.so/rss3/social-x-4ec64be6f03146809c3d3d46abac0264
 	wordsCountPercentiles = []uint{0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 5, 6, 6, 7, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 19, 20, 22, 24, 27, 29, 33, 36, 40, 43, 47, 52, 56, 62, 68, 73, 80, 87, 99, 109, 120, 133, 149, 166, 184, 205, 231, 255, 282, 314, 352, 395, 436, 475, 511, 571, 631, 696, 767, 854, 939, 1034, 1136, 1241, 1369, 1489, 1630, 1777, 1963, 2183, 2420, 2687, 3078, 3468, 3917, 4493, 5103, 5816, 6654, 7901, 10567, 16244, 33439}
 	nonAcsii              = regexp.MustCompile(`([^\x00-\x7F])`)
+	lensClient            = lens.NewClient()
 )
 
 func CountSocial(c context.Context, request model.GetRequest) (model.SocialResult, error) {
@@ -40,21 +44,26 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 	database.Global().
 		Raw(fmt.Sprintf(`SELECT
 					COUNT(*) FILTER ( WHERE type = 'post') AS post,
-					COUNT(*) FILTER ( WHERE type = 'comment') AS comment,
-					COUNT(*) FILTER ( WHERE type = 'follow') AS following
+					COUNT(*) FILTER ( WHERE type = 'comment') AS comment
 				 FROM transactions 
 				 %s`, condition)).Scan(&result)
 
-	// follower
-	database.Global().
-		Raw(`SELECT COUNT(*) as follower
-		FROM transfers
-		WHERE TAG = 'social'
-		  AND TYPE ='follow'
-		  AND DATE_PART('year'
-			, TIMESTAMP) = '2022'
-		  AND metadata->>'address' = ?`, request.Address).
-		Scan(&result)
+	// followers and followings from farcaster
+	countStruct := struct{ Follower, Following int64 }{}
+
+	database.EthDb().
+		Raw(fmt.Sprintf(`SELECT follower_count as follower, following_count as following
+				FROM dataset_farcaster.profiles
+				WHERE '%s' = ANY (signer_address);`, request.Address)).Scan(&countStruct)
+
+	result.Following += countStruct.Following
+	result.Follower += countStruct.Follower
+
+	// followers and followings from Lens
+	_ = lensClient.GetFollowStat(c, &result, request.Address)
+
+	// followers and followings from crossbell
+	_ = getCSBFollowStats(c, &result, request.Address)
 
 	// get hashes of the longest and the shortest posts
 	hashStruct := struct{ Longest, Shortest string }{}
@@ -459,4 +468,63 @@ func count(s string) uint {
 	})
 	count := runeCount + len(strings.Fields(res))
 	return uint(count)
+}
+
+func getCSBFollowStats(ctx context.Context, result *model.SocialResult, address string) error {
+	client := resty.New()
+	client.SetBaseURL("https://indexer.crossbell.io/")
+
+	type Character struct {
+		CharacterId int    `json:"characterId"`
+		Handle      string `json:"handle"`
+	}
+
+	type CharacterList struct {
+		List []Character `json:"list"`
+	}
+
+	// get CSB character list
+	var characterList CharacterList
+
+	_, err := client.R().
+		SetHeader("Content-Type", "application/json").
+		SetContext(ctx).
+		SetResult(&characterList).
+		Get(fmt.Sprintf("/v1/addresses/%s/characters", address))
+	if err != nil {
+		return err
+	}
+
+	response := struct {
+		Count int64 `json:"count"`
+	}{}
+
+	lop.ForEach(characterList.List, func(character Character, i int) {
+		// get following
+		_, err := client.R().
+			SetHeader("Content-Type", "application/json").
+			SetQueryParam("limit", "0").
+			SetQueryParam("linkType", "follow").
+			SetContext(ctx).
+			SetResult(&response).
+			Get(fmt.Sprintf("/v1/characters/%d/links", character.CharacterId))
+
+		if err == nil {
+			result.Following += response.Count
+		}
+
+		// get follower
+		_, err = client.R().
+			SetHeader("Content-Type", "application/json").
+			SetQueryParam("limit", "0").
+			SetQueryParam("linkType", "follow").
+			SetContext(ctx).
+			SetResult(&response).
+			Get(fmt.Sprintf("/v1/characters/%d/backlinks", character.CharacterId))
+		if err == nil {
+			result.Follower += response.Count
+		}
+	})
+
+	return nil
 }

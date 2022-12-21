@@ -21,9 +21,12 @@ const (
 	PlatformMatters = "Matters"
 
 	// collectible
-	PlatformPOAP   = "POAP"
-	PlatformGalaxy = "Galaxy"
-	PlatformEns    = "ENS Registrar"
+	PlatformPOAP              = "POAP"
+	PlatformGalaxy            = "Galaxy"
+	PlatformEns               = "ENS Registrar"
+	PlatformSpaceID           = "Space ID"
+	PlatformUnstoppableDomain = "Unstoppable"
+	PlatformAvvy              = "Avvy"
 
 	// donation
 	PlatformGitcoin = "Gitcoin"
@@ -59,11 +62,14 @@ const (
 	PlatformTofuNFT        = "tofuNFT"
 	PlatformBlur           = "Blur"
 	PlatformElement        = "Element"
+	PlatformCow            = "Cow"
+	PlatformMaskNetwork    = "MaskNetwork"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
 	PlatformAavegotchi = "Aavegotchi"
 	PlatformCarv       = "Carv"
+	PlatformPlanetIX   = "PlanetIX"
 )
 
 var PlatformList = map[string][]string{
