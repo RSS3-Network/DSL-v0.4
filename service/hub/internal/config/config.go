@@ -22,6 +22,7 @@ type Config struct {
 	RabbitMQ      *configx.RabbitMQ      `mapstructure:"rabbitmq"`
 	OpenTelemetry *configx.OpenTelemetry `mapstructure:"opentelemetry"`
 	Postgres      *configx.Postgres      `mapstructure:"postgres"`
+	EthereumEtl   *configx.PostgresEtl   `mapstructure:"ethereumetl"`
 	Redis         *configx.Redis         `mapstructure:"redis"`
 	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
 	RPC           *configx.RPC           `mapstructure:"rpc"`

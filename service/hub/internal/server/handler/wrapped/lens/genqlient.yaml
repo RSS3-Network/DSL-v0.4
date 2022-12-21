@@ -1,0 +1,14 @@
+# Default genqlient config; for full documentation see:
+# https://github.com/Khan/genqlient/blob/main/docs/genqlient.yaml
+schema: schema.graphql
+operations:
+- genqlient.graphql
+generated: generated.go
+bindings:
+  EthereumAddress:
+    type: string
+  ProfileId:
+    type: string
+  Cursor:
+    type: string
+package: lens
