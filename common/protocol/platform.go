@@ -26,6 +26,7 @@ const (
 	PlatformEns               = "ENS Registrar"
 	PlatformSpaceID           = "Space ID"
 	PlatformUnstoppableDomain = "Unstoppable"
+	PlatformAvvy              = "Avvy"
 
 	// donation
 	PlatformGitcoin = "Gitcoin"
