@@ -62,6 +62,7 @@ const (
 	PlatformBlur           = "Blur"
 	PlatformElement        = "Element"
 	PlatformCow            = "Cow"
+	PlatformMaskNetwork    = "MaskNetwork"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
