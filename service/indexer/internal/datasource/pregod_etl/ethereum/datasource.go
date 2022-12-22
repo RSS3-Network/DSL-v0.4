@@ -71,6 +71,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		if transaction != nil {
 			internalTransactions = append(internalTransactions, *transaction)
 		}
+
+		if len(internalTransactions) > protocol.DatasourceLimit {
+			break
+		}
 	}
 
 	return internalTransactions, nil
