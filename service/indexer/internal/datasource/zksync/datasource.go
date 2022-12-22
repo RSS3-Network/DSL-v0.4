@@ -134,10 +134,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 			break
 		}
 
-		if len(transactions) >= protocol.DatasourceLimit {
-			break
-		}
-
 		// Get the hash of the last transaction in the array, used for paging
 		from = internalTransactions.List[len(internalTransactions.List)-1].TransactionHash
 	}
