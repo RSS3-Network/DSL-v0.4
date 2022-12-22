@@ -485,9 +485,13 @@ func getCSBFollowStats(ctx context.Context, result *model.SocialResult, address 
 
 	// get CSB character list
 	var characterList CharacterList
+	// this limits the number of characters to request from crossbell API
+	// 50 should be more than enough
+	limit := 50
 
 	_, err := client.R().
 		SetHeader("Content-Type", "application/json").
+		SetQueryParam("limit", fmt.Sprint(limit)).
 		SetContext(ctx).
 		SetResult(&characterList).
 		Get(fmt.Sprintf("/v1/addresses/%s/characters", address))
