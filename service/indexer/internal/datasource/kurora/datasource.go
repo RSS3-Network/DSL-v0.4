@@ -120,10 +120,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 			break
 		}
 
-		if len(unindexedTransactions) >= protocol.DatasourceLimit {
-			break
-		}
-
 		lastTransaction, _ := lo.Last(receipts)
 		ethereumReceiptQuery.Cursor = lo.ToPtr(lastTransaction.TransactionHash.String())
 	}

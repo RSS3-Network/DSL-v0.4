@@ -4,9 +4,10 @@ import (
 	"context"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	eth_etl "github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl/ethereum"
@@ -134,10 +135,6 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 		}
 
 		internalTransactions = append(internalTransactions, transaction)
-
-		if len(internalTransactions) >= protocol.DatasourceLimit {
-			break
-		}
 	}
 
 	return internalTransactions, nil
