@@ -190,10 +190,6 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 			break
 		}
 
-		if len(internalTransactions) >= protocol.DatasourceLimit {
-			break
-		}
-
 		parameter.PageKey = result.PageKey
 	}
 

@@ -182,10 +182,6 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 					mu.Unlock()
 				}
 
-				if len(internalTransactionMap) >= protocol.DatasourceLimit {
-					break
-				}
-
 				cursor := kurora.LogCursor(result[len(result)-1].TransactionHash, result[len(result)-1].Index)
 				query.Cursor = &cursor
 			}
