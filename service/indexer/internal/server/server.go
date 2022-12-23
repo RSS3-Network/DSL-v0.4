@@ -32,6 +32,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
@@ -140,6 +141,11 @@ func (s *Server) Initialize() (err error) {
 		return fmt.Errorf("create kurora datasource: %w", err)
 	}
 
+	mirrorDatasource, err := mirror.New(context.Background(), s.config.Kurora.Endpoint)
+	if err != nil {
+		return fmt.Errorf("create kurora datasource: %w", err)
+	}
+
 	lensDatasource, err := lens.New(context.Background(), s.config.Kurora.Endpoint)
 	if err != nil {
 		return err
@@ -147,6 +153,7 @@ func (s *Server) Initialize() (err error) {
 
 	s.datasources = []datasource.Datasource{
 		kuroraDatasource,
+		mirrorDatasource,
 		alchemyDatasource,
 		moralis.New(s.config.Moralis.Key),
 		blockscoutDatasource,
