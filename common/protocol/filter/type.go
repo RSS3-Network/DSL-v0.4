@@ -6,6 +6,7 @@ const (
 	TransactionBridge   string = "bridge"
 	TransactionMint     string = "mint"
 	TransactionBurn     string = "burn"
+	TransactionApproval string = "approval"
 
 	// exchange types
 	ExchangeWithdraw  string = "withdraw"
@@ -32,6 +33,7 @@ const (
 	CollectibleMint     string = "mint"
 	CollectibleBurn     string = "burn"
 	CollectiblePoap     string = "poap"
+	CollectibleApproval string = "approval"
 
 	// social types
 	SocialPost     string = "post"

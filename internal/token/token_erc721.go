@@ -58,19 +58,21 @@ func (c *Client) ERC721(ctx context.Context, network, contractAddress string, to
 		return nil, err
 	}
 
-	tokenURI, err := erc721Contract.TokenURI(&bind.CallOpts{}, tokenID)
-	if err != nil {
-		loggerx.Global().Named(contractAddress).Warn("Get NFT Uri error", zap.Error(err))
-		return nil, err
-	}
+	if tokenID != nil {
+		tokenURI, err := erc721Contract.TokenURI(&bind.CallOpts{}, tokenID)
+		if err != nil {
+			loggerx.Global().Named(contractAddress).Warn("Get NFT Uri error", zap.Error(err))
+			return nil, err
+		}
 
-	if result.URI, err = c.URI(contractAddress, tokenID, tokenURI); err != nil {
-		loggerx.Global().Named(contractAddress).Warn("Get NFT Name error", zap.Error(err))
-		return nil, err
-	}
+		if result.URI, err = c.URI(contractAddress, tokenID, tokenURI); err != nil {
+			loggerx.Global().Named(contractAddress).Warn("Get NFT Name error", zap.Error(err))
+			return nil, err
+		}
 
-	if result.Metadata, err = c.Metadata(result.URI); err != nil {
-		loggerx.Global().Named(contractAddress).Warn("Get NFT Metadata error", zap.Error(err))
+		if result.Metadata, err = c.Metadata(result.URI); err != nil {
+			loggerx.Global().Named(contractAddress).Warn("Get NFT Metadata error", zap.Error(err))
+		}
 	}
 
 	var metadata Metadata

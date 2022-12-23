@@ -200,7 +200,7 @@ func (s *service) handleEthereumOriginNative(ctx context.Context, message *proto
 		return nil, ErrorNativeTokenTransferValueIsZero
 	}
 
-	return s.buildEthereumTokenMetadata(ctx, message, transaction, transfer, nil, nil, sourceData.Transaction.Value())
+	return s.buildEthereumTokenTransferMetadata(ctx, message, transaction, transfer, nil, nil, sourceData.Transaction.Value())
 }
 
 // Used to handle ERC20 and NFT token transactions, such as DAI, AZUKI
@@ -218,9 +218,11 @@ func (s *service) handleEthereumOriginToken(ctx context.Context, message *protoc
 	}
 
 	var (
-		tokenAddress = strings.ToLower(log.Address.String())
-		tokenIDs     = make([]*big.Int, 0)
-		tokenValues  = make([]*big.Int, 0)
+		tokenApproval bool
+		tokenApproved bool
+		tokenAddress  = strings.ToLower(log.Address.String())
+		tokenIDs      = make([]*big.Int, 0)
+		tokenValues   = make([]*big.Int, 0)
 
 		transfers = make([]model.Transfer, 0)
 	)
@@ -284,30 +286,102 @@ func (s *service) handleEthereumOriginToken(ctx context.Context, message *protoc
 			tokenIDs = append(tokenIDs, id)
 			tokenValues = append(tokenValues, event.Values[i])
 		}
+	case erc20.EventHashApproval:
+		switch len(log.Topics) {
+		case 3: // ERC-20
+			filterer, err := erc20.NewERC20Filterer(log.Address, nil)
+			if err != nil {
+				return nil, fmt.Errorf("new erc20 filterer: %w", err)
+			}
+
+			event, err := filterer.ParseApproval(*log)
+			if err != nil {
+				return nil, fmt.Errorf("parse approval event: %w", err)
+			}
+
+			tokenApproval = true
+			tokenValues = append(tokenValues, event.Value)
+		case 4: // ERC-721
+			filterer, err := erc721.NewERC721Filterer(log.Address, nil)
+			if err != nil {
+				return nil, fmt.Errorf("new erc20 filterer: %w", err)
+			}
+
+			event, err := filterer.ParseApproval(*log)
+			if err != nil {
+				return nil, fmt.Errorf("parse approval event: %w", err)
+			}
+
+			tokenApproval = true
+			tokenIDs = append(tokenIDs, event.TokenId)
+		}
+	case erc721.EventHashApprovalForAll:
+		filterer, err := erc721.NewERC721Filterer(log.Address, nil)
+		if err != nil {
+			return nil, fmt.Errorf("new erc721 filterer: %w", err)
+		}
+
+		event, err := filterer.ParseApprovalForAll(*log)
+		if err != nil {
+			return nil, fmt.Errorf("parse approval for all event: %w", err)
+		}
+
+		tokenApproval = true
+		tokenApproved = event.Approved
 	default:
 		return nil, ErrorUnsupportedContractEvent
 	}
 
-	for i := 0; i < lo.Max([]int{len(tokenIDs), len(tokenValues)}); i++ {
-		var (
-			tokenID    *big.Int
-			tokenValue *big.Int
-		)
+	if tokenApproval {
+		switch {
+		case len(tokenValues) > 0: // Approval ERC-20
+			for _, tokenValue := range tokenValues {
+				internalTransfer, err := s.buildEthereumTokenApprovalMetadata(ctx, transaction, transfer, &tokenAddress, nil, tokenValue, tokenApproved)
+				if err != nil {
+					return nil, fmt.Errorf("build ethereum token approval metadata: %w", err)
+				}
 
-		if len(tokenIDs) > i {
-			tokenID = tokenIDs[i]
+				transfers = append(transfers, *internalTransfer)
+			}
+		case len(tokenIDs) > 0: // Approval ERC-721
+			for _, tokenID := range tokenIDs {
+				internalTransfer, err := s.buildEthereumTokenApprovalMetadata(ctx, transaction, transfer, &tokenAddress, tokenID, nil, tokenApproved)
+				if err != nil {
+					return nil, fmt.Errorf("build ethereum token approval metadata: %w", err)
+				}
+
+				transfers = append(transfers, *internalTransfer)
+			}
+		default: // Approval for all (ERC-721 and ERC-1155)
+			internalTransfer, err := s.buildEthereumTokenApprovalMetadata(ctx, transaction, transfer, &tokenAddress, nil, nil, tokenApproved)
+			if err != nil {
+				return nil, fmt.Errorf("build ethereum token approval metadata: %w", err)
+			}
+
+			transfers = append(transfers, *internalTransfer)
 		}
+	} else {
+		for i := 0; i < lo.Max([]int{len(tokenIDs), len(tokenValues)}); i++ {
+			var (
+				tokenID    *big.Int
+				tokenValue *big.Int
+			)
 
-		if len(tokenValues) > i {
-			tokenValue = tokenValues[i]
+			if len(tokenIDs) > i {
+				tokenID = tokenIDs[i]
+			}
+
+			if len(tokenValues) > i {
+				tokenValue = tokenValues[i]
+			}
+
+			internalTransfer, err := s.buildEthereumTokenTransferMetadata(ctx, message, transaction, transfer, &tokenAddress, tokenID, tokenValue)
+			if err != nil {
+				return nil, err
+			}
+
+			transfers = append(transfers, *internalTransfer)
 		}
-
-		internalTransfer, err := s.buildEthereumTokenMetadata(ctx, message, transaction, transfer, &tokenAddress, tokenID, tokenValue)
-		if err != nil {
-			return nil, err
-		}
-
-		transfers = append(transfers, *internalTransfer)
 	}
 
 	return transfers, nil
@@ -393,7 +467,7 @@ func (s *service) handleZkSync(ctx context.Context, message *protocol.Message, t
 }
 
 // For build metadata.Token for native and ERC-20 and ERC-721 and ERC-1155 tokens
-func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *protocol.Message, transaction model.Transaction, transfer model.Transfer, address *string, id *big.Int, value *big.Int) (*model.Transfer, error) {
+func (s *service) buildEthereumTokenTransferMetadata(ctx context.Context, message *protocol.Message, transaction model.Transaction, transfer model.Transfer, address *string, id *big.Int, value *big.Int) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_token")
 	_, snap := tracer.Start(ctx, "worker_token:buildEthereumTokenMetadata")
 
@@ -488,9 +562,66 @@ func (s *service) buildEthereumTokenMetadata(ctx context.Context, message *proto
 	return &transfer, nil
 }
 
+func (s *service) buildEthereumTokenApprovalMetadata(ctx context.Context, transaction model.Transaction, transfer model.Transfer, tokenAddress *string, tokenID *big.Int, tokenValue *big.Int, approved bool) (*model.Transfer, error) {
+	_, snap := otel.Tracer("worker_token").Start(ctx, "worker_token:buildEthereumTokenApprovalMetadata")
+
+	defer snap.End()
+
+	var tokenMetadata *metadata.Token
+	var err error
+
+	switch {
+	case tokenID == nil && tokenValue != nil: // ERC-20
+		if tokenMetadata, err = s.tokenClient.ERC20ToMetadata(ctx, transaction.Network, *tokenAddress); err != nil {
+			return nil, fmt.Errorf("get erc20 metadata %s: %w", *tokenAddress, err)
+		}
+
+		tokenMetadata.SetValue(decimal.NewFromBigInt(tokenValue, 0))
+		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagTransaction, transfer.Tag, filter.CollectibleApproval, transfer.Type)
+	case tokenID != nil && tokenValue != nil: // ERC-721
+		erc721, err := s.tokenClient.ERC721(ctx, transaction.Network, *tokenAddress, tokenID)
+		if err != nil {
+			return nil, fmt.Errorf("get erc-721 %s/%d: %w", *tokenAddress, tokenID, err)
+		}
+
+		nft, err := erc721.ToNFT(tokenID)
+		if err != nil {
+			return nil, fmt.Errorf("erc721 to nft %s/%d: %w", *tokenAddress, tokenID, err)
+		}
+
+		if tokenMetadata, err = nft.ToMetadata(); err != nil {
+			return nil, fmt.Errorf("erc721 to metadata %s/%d: %w", *tokenAddress, tokenID, err)
+		}
+
+		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagCollectible, transfer.Tag, filter.CollectibleApproval, transfer.Type)
+
+		// Not supported
+		// transfer.RelatedUrls = ethereum.BuildURL(transfer.RelatedUrls, ethereum.BuildTokenURL(transaction.Network, *tokenAddress, tokenID.String())...)
+	case tokenID == nil && tokenValue == nil: // ERC-721 and ERC-1155
+		if tokenMetadata, err = s.tokenClient.NFTToMetadata(ctx, transaction.Network, *tokenAddress, nil); err != nil {
+			return nil, fmt.Errorf("get nft metadata %s: %w", *tokenAddress, err)
+		}
+
+		tokenMetadata.Approved = approved
+
+		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagCollectible, transfer.Tag, filter.CollectibleApproval, transfer.Type)
+	default:
+		return nil, ErrorUnsupportedContractEvent
+	}
+
+	metadataRaw, err := json.Marshal(tokenMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("marshal token metadata: %w", err)
+	}
+
+	transfer.Metadata = metadataRaw
+
+	return &transfer, nil
+}
+
 func (s *service) buildZkSyncTokenMetadata(ctx context.Context, message *protocol.Message, transfer model.Transfer, tokenInfo *model.GetTokenInfo, value string) (*model.Transfer, error) {
 	tracer := otel.Tracer("worker_token")
-	_, snap := tracer.Start(ctx, "worker_token:buildEthereumTokenMetadata")
+	_, snap := tracer.Start(ctx, "worker_token:buildEthereumTokenTransferMetadata")
 
 	defer snap.End()
 
