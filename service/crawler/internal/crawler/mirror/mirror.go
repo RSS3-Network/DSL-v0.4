@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/naturalselectionlabs/pregod/common/worker/arweave"
 	"strings"
 	"time"
 
@@ -26,10 +27,7 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-var (
-	mirrorCacheKey = "crawler:mirror" // height:cursor
-	AddressMirror  = "Ky1c1Kkt-jZ9sY1hvLF5nCf6WWdBhIU5Un_BMYh-t3c"
-)
+var mirrorCacheKey = "crawler:mirror" // height:cursor
 
 var _ crawler.Crawler = (*service)(nil)
 
@@ -159,7 +157,7 @@ func (s *service) buildTransactions(ctx context.Context, query kurora.DatasetMir
 			Hash:        entry.TransactionID,
 			Owner:       strings.ToLower(entry.Contributor.String()),
 			AddressFrom: address,
-			AddressTo:   AddressMirror,
+			AddressTo:   arweave.AddressMirror,
 			Platform:    protocol.PlatformMirror,
 			Network:     protocol.NetworkArweave,
 			Source:      protocol.SourceKurora,
@@ -173,7 +171,7 @@ func (s *service) buildTransactions(ctx context.Context, query kurora.DatasetMir
 					Timestamp:       entry.Timestamp,
 					Index:           protocol.IndexVirtual,
 					AddressFrom:     address,
-					AddressTo:       AddressMirror,
+					AddressTo:       arweave.AddressMirror,
 					Metadata:        postMetadata,
 					Network:         protocol.NetworkArweave,
 					Source:          protocol.SourceKurora,
