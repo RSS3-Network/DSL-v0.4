@@ -4,34 +4,58 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/naturalselectionlabs/pregod/common/database"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/ethereum/go-ethereum/common"
+	kurora "github.com/naturalselectionlabs/kurora/client"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/datasource/farcaster"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
-	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
-	lop "github.com/samber/lo/parallel"
-	"go.opentelemetry.io/otel"
+	"github.com/samber/lo"
+
 	"go.uber.org/zap"
 )
 
-var _ crawler.Crawler = (*service)(nil)
+var (
+	_                 crawler.Crawler = (*service)(nil)
+	farcasterCacheKey                 = "crawler:farcaster"
+)
 
 type service struct {
-	farClient *farcaster.Client
+	config       *config.Config
+	kuroraClient *kurora.Client
 }
 
-func New() crawler.Crawler {
+type Cast struct {
+	Hash                 common.Hash
+	ThreadHash           common.Hash
+	ParentHash           common.Hash
+	AuthorFid            int64
+	AuthorUsername       string
+	AuthorDisplayname    string
+	AuthorPfpUrl         string
+	Text                 string
+	PublishedAt          time.Time
+	RepliesCount         int64
+	ReactionsCount       int64
+	RecastsCount         int64
+	WatchesCount         int64
+	ParentAuthorFid      int64
+	ParentAuthorUsername string
+}
+
+func New(conf *config.Config) crawler.Crawler {
 	return &service{
-		farClient: farcaster.NewClient(),
+		config: conf,
 	}
 }
 
@@ -39,243 +63,254 @@ func (s *service) Name() string {
 	return protocol.PlatformFarcaster
 }
 
+func (s *service) Network() string {
+	return protocol.NetworkFarcaster
+}
+
 func (s *service) Run() error {
+	loggerx.Global().Info("farcaster: run")
+
+	var err error
 	ctx := context.Background()
-	// init cache cast number 0
-	loggerx.Global().Info("farcaster_crawler start to init Map Cache")
-	err := s.farClient.SetFarcasterCacheMap()
-	if err != nil && err != redis.Nil {
-		loggerx.Global().Error("farcaster_crawler fail to init Map Cache", zap.Error(err))
+
+	s.kuroraClient, err = kurora.Dial(ctx, s.config.Kurora.Endpoint, kurora.WithHTTPClient(http.DefaultClient))
+	if err != nil {
+		loggerx.Global().Error("farcaster: kurora.Dial error", zap.Error(err), zap.String("endpoint", s.config.Kurora.Endpoint))
+
 		return err
 	}
 
-	// get address cast number from db
-	loggerx.Global().Info("farcaster_crawler start to get db data")
-	s.GetAddressCastNumFromDb()
-
-	var wg sync.WaitGroup
-	ch := make(chan struct{}, 5)
 	for {
-		farCacheMap := farcaster.Global()
-
-		loggerx.Global().Info("farcaster_crawler start a new round ", zap.Int("cache user is:", len(farCacheMap)))
-
-		for address, data := range farCacheMap {
-			wg.Add(1)
-			go func(faAddress string, cacheData *farcaster.CacheAddress) {
-				defer func() {
-					<-ch
-					wg.Done()
-				}()
-				ch <- struct{}{}
-				castList, err := s.farClient.GetActivityList(ctx, faAddress)
-				if err != nil {
-					loggerx.Global().Warn("farcaster_crawler get cast error, ", zap.Error(err))
-					return
-				}
-
-				// castList maybe nil
-				if len(castList) <= int(cacheData.CastNumber) {
-					return
-				}
-
-				transactions, err := s.HandleTransactions(ctx, castList, cacheData.EvmAddress, cacheData.CastNumber)
-				if err != nil {
-					loggerx.Global().Warn("farcaster_crawler handle transactions error, ", zap.Error(err))
-					return
-				}
-
-				internalTransactions, err := s.HandleTransfer(ctx, transactions)
-				if err != nil {
-					loggerx.Global().Warn("farcaster_crawler handle transfer error, ", zap.Error(err))
-					return
-				}
-
-				err = database.UpsertTransactions(ctx, internalTransactions)
-				if err != nil {
-					loggerx.Global().Warn("farcaster_crawler upsertTransactions error, ", zap.Error(err))
-					return
-				}
-
-				loggerx.Global().Info("farcaster_crawler refresh", zap.String("user", cacheData.EvmAddress), zap.Int("num", len(internalTransactions)))
-
-				farcaster.ReplaceGlobal(faAddress, &farcaster.CacheAddress{
-					EvmAddress: cacheData.EvmAddress,
-					CastNumber: int64(len(castList)),
-				})
-			}(address, data)
-		}
-		wg.Wait()
-
-		loggerx.Global().Info("farcaster_crawler end a new round ")
-
-		// add new users to cache map
-		s.farClient.UpdateFarcasterCacheMap()
-		loggerx.Global().Info("farcaster_crawler finish update cache map ")
-
-		err = s.farClient.SetCurrentMap(ctx, farcaster.Global())
+		transactions, err := s.GetKuroraCasts(ctx)
 		if err != nil {
-			loggerx.Global().Error("farcaster_crawler fail to set Map Cache", zap.Error(err))
+			loggerx.Global().Error("farcaster: GetKuroraLogs error", zap.Error(err), zap.String("endpoint", s.config.Kurora.Endpoint))
+			return err
+		}
+
+		err = database.UpsertTransactions(ctx, transactions)
+		if err != nil {
+			continue
+		}
+
+		if len(transactions) == 0 {
+			time.Sleep(2 * time.Hour)
+
+			continue
 		}
 	}
 }
 
-func (s *service) GetAddressCastNumFromDb() {
-	var wg sync.WaitGroup
+func (s *service) GetKuroraCasts(ctx context.Context) ([]*model.Transaction, error) {
+	var err error
+	transactions := make([]*model.Transaction, 0)
 
-	ch := make(chan struct{}, 10)
+	cursor, _ := cache.Global().Get(ctx, farcasterCacheKey).Result()
+	query := kurora.DatasetFarcasterCastQuery{}
 
-	for address, cache := range farcaster.Global() {
+	if len(cursor) > 0 {
+		query.Cursor = &cursor
+	}
+
+	casts, err := s.kuroraClient.FetchDatasetFarcasterCasts(ctx, query)
+	if err != nil {
+		loggerx.Global().Error("farcaster: kuroraClient FetchDatasetFarcasterCasts error", zap.Error(err), zap.String("cursor", cursor))
+		return nil, err
+	}
+
+	loggerx.Global().Info("farcaster: kuroraClient FetchEthereumLogs result", zap.Int("len", len(casts)), zap.String("cursor", cursor))
+
+	var (
+		wg sync.WaitGroup
+		mu sync.Mutex
+	)
+
+	for _, rawCast := range casts {
 		wg.Add(1)
-		go func(evmAddress string, faAddress string) {
+
+		cast := Cast{
+			Hash:                 rawCast.Hash,
+			ThreadHash:           rawCast.ThreadHash,
+			ParentHash:           rawCast.ParentHash,
+			AuthorFid:            rawCast.AuthorFid,
+			AuthorUsername:       rawCast.AuthorUsername,
+			AuthorDisplayname:    rawCast.AuthorDisplayname,
+			AuthorPfpUrl:         rawCast.AuthorPfpUrl,
+			Text:                 rawCast.Text,
+			PublishedAt:          rawCast.PublishedAt,
+			RepliesCount:         rawCast.RepliesCount,
+			ReactionsCount:       rawCast.ReactionsCount,
+			RecastsCount:         rawCast.RecastsCount,
+			WatchesCount:         rawCast.WatchesCount,
+			ParentAuthorFid:      rawCast.ParentAuthorFid,
+			ParentAuthorUsername: rawCast.ParentAuthorUsername,
+		}
+
+		go func(cast Cast) {
 			defer func() {
-				<-ch
 				wg.Done()
 			}()
-			ch <- struct{}{}
-			total := int64(0)
-			if err := database.Global().
-				Model(&model.Transfer{}).
-				Where("address_from = ?", evmAddress).
-				Where("platform = ?", protocol.PlatformFarcaster).
-				Count(&total).Error; err != nil {
-				loggerx.Global().Warn("farcaster_crawler find transactions error, ", zap.Error(err))
+
+			queryProfile := kurora.DatasetFarcasterProfileQuery{
+				Fid: lo.ToPtr(cast.AuthorFid),
 			}
 
-			farcaster.ReplaceGlobal(faAddress, &farcaster.CacheAddress{
-				EvmAddress: evmAddress,
-				CastNumber: total,
-			})
-		}(cache.EvmAddress, address)
+			profiles, err := s.kuroraClient.FetchDatasetFarcasterProfiles(ctx, queryProfile)
+			if err != nil {
+				loggerx.Global().Error("farcaster: kuroraClient Fetch Profiles error", zap.Error(err))
+				return
+			}
+
+			if len(profiles) == 0 || len(profiles[0].SignerAddresses) == 0 {
+				return
+			}
+
+			user := profiles[0]
+
+			// post
+			if cast.Hash == cast.ThreadHash {
+				post := &metadata.Post{
+					CreatedAt:      cast.PublishedAt.Format(time.RFC3339),
+					Author:         []string{cast.AuthorUsername, strings.ToLower(user.Address.String())},
+					Body:           cast.Text,
+					TypeOnPlatform: []string{"cast"},
+				}
+				metadataPost, _ := json.Marshal(post)
+
+				for index, evmAddress := range user.SignerAddresses {
+					hash := fmt.Sprintf("%s%d", cast.Hash.String(), index)
+					transaction := model.Transaction{
+						// use timestamp as block number, as there is no actual blocknumber on farcaster
+						BlockNumber: cast.PublishedAt.UnixMilli(),
+						Timestamp:   cast.PublishedAt,
+						// use MerkleRoot as hash, as there is no actual hash on farcaster
+						Hash:        hash,
+						AddressFrom: strings.ToLower(user.Address.String()),
+						AddressTo:   strings.ToLower(user.Address.String()),
+						Owner:       strings.ToLower(evmAddress),
+						Tag:         filter.TagSocial,
+						Type:        filter.SocialPost,
+						Platform:    protocol.PlatformFarcaster,
+						Network:     protocol.NetworkFarcaster,
+						Source:      protocol.SourceKurora,
+						Transfers: []model.Transfer{
+							{
+								TransactionHash: hash,
+								Timestamp:       cast.PublishedAt,
+								Index:           protocol.IndexVirtual,
+								AddressFrom:     strings.ToLower(user.Address.String()),
+								AddressTo:       strings.ToLower(user.Address.String()),
+								Tag:             filter.TagSocial,
+								Type:            filter.SocialPost,
+								Metadata:        metadataPost,
+								Network:         protocol.NetworkFarcaster,
+								Platform:        protocol.PlatformFarcaster,
+								Source:          protocol.SourceKurora,
+								RelatedUrls:     []string{fmt.Sprintf("https://www.discove.xyz/casts/%s", cast.ParentHash)},
+							},
+						},
+					}
+					mu.Lock()
+					transactions = append(transactions, &transaction)
+					mu.Unlock()
+				}
+			} else {
+				// comment
+				targetCastQuery := kurora.DatasetFarcasterCastQuery{
+					Hash: lo.ToPtr(cast.ParentHash),
+				}
+				targetCasts, err := s.kuroraClient.FetchDatasetFarcasterCasts(ctx, targetCastQuery)
+				if err != nil {
+					loggerx.Global().Error("farcaster: kuroraClient Fetch parent Casts error", zap.Error(err), zap.String("parent hash", cast.ParentHash.String()))
+					return
+				}
+
+				if len(targetCasts) == 0 {
+
+					loggerx.Global().Warn("farcaster: kuroraClient Fetch Casts no parent hash", zap.String("hash", cast.Hash.String()), zap.String("parent hash", cast.ParentHash.String()))
+					return
+				}
+
+				parent := targetCasts[0]
+
+				queryParentProfile := kurora.DatasetFarcasterProfileQuery{
+					Fid: lo.ToPtr(targetCasts[0].AuthorFid),
+				}
+
+				parentProfiles, err := s.kuroraClient.FetchDatasetFarcasterProfiles(ctx, queryParentProfile)
+				if err != nil {
+					loggerx.Global().Error("farcaster: kuroraClient Fetch Profiles error", zap.Error(err))
+					return
+				}
+
+				if len(parentProfiles) == 0 || len(parentProfiles[0].SignerAddresses) == 0 {
+					return
+				}
+
+				parentUser := parentProfiles[0]
+
+				post := &metadata.Post{
+					Target: &metadata.Post{
+						CreatedAt:      parent.PublishedAt.Format(time.RFC3339),
+						Author:         []string{parent.AuthorUsername, strings.ToLower(parentUser.Address.String())},
+						Body:           parent.Text,
+						TypeOnPlatform: []string{"cast"},
+					},
+					CreatedAt:      cast.PublishedAt.Format(time.RFC3339),
+					Author:         []string{cast.AuthorUsername, strings.ToLower(user.Address.String())},
+					Body:           cast.Text,
+					TypeOnPlatform: []string{"cast"},
+				}
+				metadataPost, _ := json.Marshal(post)
+				for index, evmAddress := range user.SignerAddresses {
+					hash := fmt.Sprintf("%s%d", cast.Hash.String(), index)
+					transaction := model.Transaction{
+						// use timestamp as block number, as there is no actual blocknumber on farcaster
+						BlockNumber: cast.PublishedAt.UnixMilli(),
+						Timestamp:   cast.PublishedAt,
+						// use MerkleRoot as hash, as there is no actual hash on farcaster
+						Hash:        hash,
+						AddressFrom: strings.ToLower(user.Address.String()),
+						AddressTo:   strings.ToLower(parentUser.Address.String()),
+						Owner:       strings.ToLower(evmAddress),
+						Tag:         filter.TagSocial,
+						Type:        filter.SocialComment,
+						Platform:    protocol.PlatformFarcaster,
+						Network:     protocol.NetworkFarcaster,
+						Source:      s.Name(),
+						Transfers: []model.Transfer{
+							{
+								TransactionHash: hash,
+								Timestamp:       cast.PublishedAt,
+								Index:           protocol.IndexVirtual,
+								AddressFrom:     strings.ToLower(user.Address.String()),
+								AddressTo:       strings.ToLower(parentUser.Address.String()),
+								Tag:             filter.TagSocial,
+								Type:            filter.SocialComment,
+								Metadata:        metadataPost,
+								Network:         protocol.NetworkFarcaster,
+								Platform:        protocol.PlatformFarcaster,
+								Source:          s.Name(),
+								RelatedUrls:     []string{fmt.Sprintf("https://www.discove.xyz/casts/%s", cast.ParentHash)},
+							},
+						},
+					}
+					mu.Lock()
+					transactions = append(transactions, &transaction)
+					mu.Unlock()
+				}
+			}
+		}(cast)
 	}
 	wg.Wait()
-}
 
-func (s *service) HandleTransactions(ctx context.Context, castList []farcaster.Cast, evmAddress string, castNum int64) ([]model.Transaction, error) {
-	tracer := otel.Tracer("crawler_farcaster")
-	_, trace := tracer.Start(ctx, "crawler_farcaster:HandleTransactions")
-	defer trace.End()
-
-	transactions := make([]model.Transaction, 0)
-
-	for i := 0; i < len(castList)-int(castNum); i++ {
-		cast := castList[i]
-		sourceData, err := json.Marshal(cast)
-		if err != nil {
-			loggerx.Global().Warn("farcaster_crawler marshal error", zap.Error(err))
-			return transactions, err
-		}
-		timestamp := time.UnixMilli(cast.Body.PublishedAt)
-
-		var addressTo string
-		if cast.Meta.ReplyParentUsername.Address != "" {
-			addressTo = cast.Meta.ReplyParentUsername.Address
-		} else {
-			addressTo = evmAddress
-		}
-
-		addressTo = strings.ToLower(addressTo)
-
-		hash := fmt.Sprintf("%s%d", cast.MerkleRoot, cast.Body.Sequence)
-
-		transactions = append(transactions, model.Transaction{
-			// use timestamp as block number, as there is no actual blocknumber on farcaster
-			BlockNumber: cast.Body.PublishedAt,
-			Timestamp:   timestamp,
-			// use MerkleRoot as hash, as there is no actual hash on farcaster
-			Hash:        hash,
-			AddressFrom: evmAddress,
-			AddressTo:   addressTo,
-			// TODO: identify the correct platform
-			Platform:   protocol.PlatformFarcaster,
-			Network:    protocol.NetworkFarcaster,
-			Source:     s.Name(),
-			SourceData: sourceData,
-			Transfers: []model.Transfer{
-				{
-					// This is a virtual transfer
-					TransactionHash: hash,
-					Timestamp:       timestamp,
-					Index:           protocol.IndexVirtual,
-					AddressFrom:     evmAddress,
-					AddressTo:       strings.ToLower(cast.Body.Address),
-					Metadata:        metadata.Default,
-					Network:         protocol.NetworkFarcaster,
-					Platform:        protocol.PlatformFarcaster,
-					SourceData:      sourceData,
-				},
-			},
-		})
+	if len(casts) == 0 {
+		return transactions, nil
 	}
+	// set cache
+	last, _ := lo.Last(casts)
+
+	cursor = last.Hash.String()
+	cache.Global().Set(ctx, farcasterCacheKey, cursor, 7*24*time.Hour)
 
 	return transactions, nil
-}
-
-func (s *service) HandleTransfer(ctx context.Context, transactions []model.Transaction) ([]*model.Transaction, error) {
-	tracer := otel.Tracer("crawler_farcaster")
-
-	_, snap := tracer.Start(ctx, "crawler_farcaster:HandleTransfer")
-
-	defer snap.End()
-
-	internalTransactions := make([]*model.Transaction, 0)
-
-	var mu sync.Mutex
-
-	lop.ForEach(transactions, func(transaction model.Transaction, i int) {
-		// Retain the action model of the transfer type
-		transferMap := make(map[int64]model.Transfer)
-
-		for _, transfer := range transaction.Transfers {
-			if err := s.HandlePost(ctx, &transfer); err != nil {
-				loggerx.Global().Warn("[farcaster]: failed to HandlePost", zap.Error(err), zap.String("network", protocol.NetworkFarcaster), zap.String("transaction_hash", transaction.Hash), zap.String("address", transfer.AddressFrom))
-
-				continue
-			}
-			transfer.AddressTo = transaction.AddressTo
-			transferMap[transfer.Index] = transfer
-		}
-
-		// Empty transfer data to avoid data duplication
-		transaction.Transfers = make([]model.Transfer, 0)
-		transaction.Transfers = append(transaction.Transfers, transferMap[protocol.IndexVirtual])
-
-		for _, transfer := range transaction.Transfers {
-			transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
-		}
-
-		transaction.Owner = transaction.AddressFrom
-		mu.Lock()
-		internalTransactions = append(internalTransactions, &transaction)
-		mu.Unlock()
-	})
-
-	return internalTransactions, nil
-}
-
-func (s *service) HandlePost(ctx context.Context, transfer *model.Transfer) (err error) {
-	tracer := otel.Tracer("crawler_farcaster")
-	_, trace := tracer.Start(ctx, "crawler_farcaster:HandlePost")
-
-	defer func() { opentelemetry.Log(trace, transfer.AddressFrom, transfer.TransactionHash, err) }()
-
-	var cast farcaster.Cast
-	err = json.Unmarshal(transfer.SourceData, &cast)
-	if err != nil {
-		loggerx.Global().Warn("unable to unmarshal cast", zap.Error(err))
-		return err
-	}
-
-	post := &metadata.Post{
-		CreatedAt:      time.UnixMilli(cast.Body.PublishedAt).Format(time.RFC3339),
-		Author:         []string{cast.Meta.DisplayName, transfer.AddressTo},
-		Body:           cast.Body.Data.Text,
-		TypeOnPlatform: []string{"cast"},
-	}
-	transfer.Metadata, _ = json.Marshal(post)
-	transfer.Tag = filter.TagSocial
-	transfer.Type = filter.SocialPost
-	// TODO: farcaster does not have an API for individual posts, so we can't get the post URL
-	transfer.RelatedUrls = []string{fmt.Sprintf("https://www.discove.xyz/casts/%s", cast.MerkleRoot)}
-	return nil
 }
