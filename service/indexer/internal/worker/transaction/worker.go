@@ -577,7 +577,7 @@ func (s *service) buildEthereumTokenApprovalMetadata(ctx context.Context, transa
 		}
 
 		tokenMetadata.SetValue(decimal.NewFromBigInt(tokenValue, 0))
-		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagTransaction, transfer.Tag, filter.CollectibleApproval, transfer.Type)
+		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagTransaction, transfer.Tag, filter.TransactionApproval, transfer.Type)
 	case tokenID != nil && tokenValue != nil: // ERC-721
 		erc721, err := s.tokenClient.ERC721(ctx, transaction.Network, *tokenAddress, tokenID)
 		if err != nil {
