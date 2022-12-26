@@ -56,6 +56,10 @@ func UpsertTransactions(ctx context.Context, transactions []*model.Transaction) 
 		updatedTransactions = append(updatedTransactions, *transaction)
 	}
 
+	// Deduplicate Transfers
+	transfersMap := getTransfersMap(transfers)
+	transfers = transfersMap2Array(transfersMap)
+
 	for _, ts := range lo.Chunk(updatedTransactions, dbChunkSize) {
 		if err := Global().
 			Clauses(clause.OnConflict{
@@ -113,4 +117,24 @@ func DeduplicateTransactions(ctx context.Context, transactions []*model.Transact
 	}
 
 	return transactions, nil
+}
+
+func getTransfersMap(transfers []model.Transfer) map[string]model.Transfer {
+	transfersMap := make(map[string]model.Transfer)
+
+	for _, t := range transfers {
+		transfersMap[t.TransactionHash] = t
+	}
+
+	return transfersMap
+}
+
+func transfersMap2Array(transfersMap map[string]model.Transfer) []model.Transfer {
+	transfers := make([]model.Transfer, 0)
+
+	for _, t := range transfersMap {
+		transfers = append(transfers, t)
+	}
+
+	return transfers
 }
