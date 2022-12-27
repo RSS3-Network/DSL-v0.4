@@ -54,7 +54,7 @@ func CountSocial(c context.Context, request model.GetRequest) (model.SocialResul
 	database.EthDb().
 		Raw(fmt.Sprintf(`SELECT follower_count as follower, following_count as following
 				FROM dataset_farcaster.profiles
-				WHERE '%s' = ANY (signer_address);`, request.Address)).Scan(&countStruct)
+				WHERE '%s' = ANY (signer_address);`, common.HexToAddress(request.Address).String())).Scan(&countStruct)
 
 	result.Following += countStruct.Following
 	result.Follower += countStruct.Follower
