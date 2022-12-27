@@ -27,6 +27,7 @@ import (
 
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -130,7 +131,7 @@ func (s *Server) Initialize() (err error) {
 		lens.New(s.config),
 		mirror.New(s.config),
 		eip1577.New(s.config, s.employer),
-		farcaster.New(),
+		farcaster.New(s.config),
 		iqwiki.New(),
 		crossbell.New(s.config),
 	}
