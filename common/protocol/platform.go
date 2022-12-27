@@ -26,6 +26,7 @@ const (
 	PlatformEns               = "ENS Registrar"
 	PlatformSpaceID           = "Space ID"
 	PlatformUnstoppableDomain = "Unstoppable"
+	PlatformAvvy              = "Avvy"
 
 	// donation
 	PlatformGitcoin = "Gitcoin"
@@ -63,6 +64,7 @@ const (
 	PlatformElement        = "Element"
 	PlatformHop            = "Hop"
 	PlatformCow            = "Cow"
+	PlatformMaskNetwork    = "MaskNetwork"
 
 	// metaverse
 	PlatformMars4      = "Mars4"

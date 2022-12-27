@@ -17,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/balancer"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/curve"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/dodo"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/masknetwork"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -180,6 +181,8 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 				internalTokenMap, err = s.handleAAVEMint(ctx, message, *log, tokenMap, ethereumClient)
 			case aave.EventHashBurn:
 				internalTokenMap, err = s.handleAAVEBurn(ctx, message, *log, tokenMap, ethereumClient)
+			case masknetwork.EventSwapSuccess:
+				internalTokenMap, err = s.handleMaskEventSwapSuccess(ctx, message, *log, tokenMap, ethereumClient)
 			default:
 				continue
 			}

@@ -10,7 +10,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -21,7 +20,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/internal/token"
 
 	"go.opentelemetry.io/otel"
-	"gorm.io/gorm/clause"
 )
 
 var _ Interface = (*profileHandler)(nil)
@@ -80,7 +78,7 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction *
 		Network:   transfer.Network,
 		Source:    transfer.Network,
 		Action:    filter.SocialCreate,
-		Handle:    event.Handle,
+		Handle:    fmt.Sprintf("%v.csb", event.Handle),
 		CreatedAt: time.Unix(event.Timestamp.Int64(), 0),
 		URL:       fmt.Sprintf("https://crossbell.io/@%v", event.Handle),
 	}
@@ -99,10 +97,6 @@ func (p *profileHandler) handleProfileCreated(ctx context.Context, transaction *
 
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialProfile, transfer.Type)
 	transfer.RelatedUrls = []string{ethereum.BuildScanURL(transfer.Network, transfer.TransactionHash)}
-
-	database.Global().Model(&social.Profile{}).Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(profile)
 
 	return &transfer, nil
 }
@@ -195,7 +189,7 @@ func (p *profileHandler) handleUnLinkProfile(ctx context.Context, transaction *m
 
 	profile := &social.Profile{
 		Address:  strings.ToLower(characterOwner.String()),
-		Handle:   handle,
+		Handle:   fmt.Sprintf("%v.csb", handle),
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,
@@ -252,7 +246,7 @@ func (p *profileHandler) handleSetProfileUri(ctx context.Context, transaction *m
 
 	profile := &social.Profile{
 		Address:  transaction.Owner,
-		Handle:   handle,
+		Handle:   fmt.Sprintf("%v.csb", handle),
 		Platform: protocol.PlatformCrossbell,
 		Network:  transfer.Network,
 		Source:   transfer.Network,

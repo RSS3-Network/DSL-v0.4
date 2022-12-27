@@ -88,6 +88,10 @@ package contract
 // ERC1155OrdersFeature https://polygonscan.com/address/0xA4807EF31298b121eF39Cd423A8Aa05A800B2Bb8
 //go:generate abigen --abi ./element/erc_1155_orders_feature.abi --pkg element --type ERC1155OrdersFeature --out ./element/erc_1155_orders_feature.go
 
+// Mask Network
+// HappyTokenPool https://polygonscan.com/address/0xf9f7c1496c21bc0180f4b64dabe0754ebfc8a8c0
+//go:generate abigen --abi ./masknetwork/happy_token_pool.abi --pkg masknetwork --type HappyTokenPool --out ./masknetwork/happy_token_pool.go
+
 // Hop
 // L1 bridge https://etherscan.io/address/0x3E4a3a4796d16c0Cd582C382691998f7c06420B6
 //go:generate abigen --abi ./hop/l1_bridge.abi --pkg hop --type L1Bridge --out ./hop/l1_bridge.go

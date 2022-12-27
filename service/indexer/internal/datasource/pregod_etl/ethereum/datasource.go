@@ -4,9 +4,10 @@ import (
 	"context"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	eth_etl "github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl/ethereum"
@@ -18,16 +19,12 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	Source = protocol.SourcePregodETL
-)
-
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct{}
 
 func (d *Datasource) Name() string {
-	return Source
+	return protocol.SourcePregodETL
 }
 
 func (d *Datasource) Networks() []string {
@@ -124,7 +121,6 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 	}
 
 	for _, transfer := range result.Transfers {
-
 		transaction := model.Transaction{
 			BlockNumber: transfer.BlockNum,
 			Hash:        transfer.Hash.Hex(),

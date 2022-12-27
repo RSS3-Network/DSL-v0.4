@@ -49,6 +49,10 @@ func (c *Client) GetProfile(address string) (*social.Profile, error) {
 		return nil, err
 	}
 
+	if len(UDResult.Name) == 0 {
+		return nil, fmt.Errorf("unstoppable unregistered")
+	}
+
 	profile := &social.Profile{
 		Address:     address,
 		Network:     protocol.NetworkPolygon,

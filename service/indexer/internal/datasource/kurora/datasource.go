@@ -24,14 +24,12 @@ import (
 
 var _ datasource.Datasource = (*Datasource)(nil)
 
-const Source = "kurora"
-
 type Datasource struct {
 	kuroraClient *kurora.Client
 }
 
 func (d *Datasource) Name() string {
-	return Source
+	return protocol.SourceKurora
 }
 
 func (d *Datasource) Networks() []string {

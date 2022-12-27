@@ -41,7 +41,7 @@ func (c *Client) GetProfile(address string) (*social.Profile, error) {
 	if resolver == ethereum.AddressGenesis {
 		loggerx.Global().Error("the space id does not have a resolver: ", zap.Error(err))
 
-		return nil, err
+		return nil, fmt.Errorf("the space id does not have a resolver")
 	}
 
 	spaceidResolver, err := spaceidcontract.NewResolver(resolver, c.ethClient)

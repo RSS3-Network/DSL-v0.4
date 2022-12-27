@@ -193,7 +193,7 @@ func (s *service) handleGitcoinEthereum(ctx context.Context, message *protocol.M
 			AddressTo:       strings.ToLower(event.Dest.String()),
 			Metadata:        metadata.Default,
 			Network:         transaction.Network,
-			Source:          ethereum.Source,
+			Source:          transaction.Source,
 			SourceData:      sourceData,
 		}
 

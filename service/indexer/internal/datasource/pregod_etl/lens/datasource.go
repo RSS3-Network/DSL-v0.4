@@ -27,10 +27,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	Source = "pregod_etl"
-)
-
 var _ datasource.Datasource = &Datasource{}
 
 type Datasource struct {
@@ -39,7 +35,7 @@ type Datasource struct {
 }
 
 func (d *Datasource) Name() string {
-	return Source
+	return protocol.SourceKurora
 }
 
 func (d *Datasource) Networks() []string {

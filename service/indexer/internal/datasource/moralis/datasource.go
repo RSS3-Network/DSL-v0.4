@@ -20,8 +20,6 @@ import (
 )
 
 const (
-	Source = "moralis"
-
 	MaxPage = 5
 )
 
@@ -32,12 +30,12 @@ type Datasource struct {
 }
 
 func (d *Datasource) Name() string {
-	return Source
+	return protocol.SourceMoralis
 }
 
 func (d *Datasource) Networks() []string {
 	return []string{
-		protocol.NetworkBinanceSmartChain, // protocol.NetworkEthereum, protocol.NetworkPolygon,
+		protocol.NetworkBinanceSmartChain,
 	}
 }
 
@@ -48,7 +46,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	defer func() { opentelemetry.Log(trace, message, transactions, err) }()
 
 	switch message.Network {
-	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain:
+	case protocol.NetworkBinanceSmartChain:
 		return d.handleEthereum(ctx, message)
 	default:
 		return []model.Transaction{}, nil

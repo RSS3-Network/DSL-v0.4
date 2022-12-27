@@ -10,6 +10,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/worker/crossbell"
 	"github.com/naturalselectionlabs/pregod/common/worker/lens"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service/avvy"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service/ens"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service/spaceid"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service/unstoppable"
@@ -17,6 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
+
 	"go.uber.org/zap"
 )
 
@@ -26,6 +28,7 @@ var ProfilePlatformList = []string{
 	protocol.PlatformCrossbell,
 	protocol.PlatformSpaceID,
 	protocol.PlatformUnstoppableDomain,
+	protocol.PlatformAvvy,
 }
 
 var ProfileLockKey = "profile:%v:%v"
@@ -128,6 +131,9 @@ func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address s
 	case protocol.PlatformUnstoppableDomain:
 		unstoppableClient := unstoppable.New()
 		profile, err = unstoppableClient.GetProfile(address)
+	case protocol.PlatformAvvy:
+		avvyClient := avvy.New()
+		profile, err = avvyClient.GetProfile(address)
 	}
 
 	if err != nil {
