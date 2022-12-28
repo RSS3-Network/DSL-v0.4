@@ -69,6 +69,7 @@ var addressesMap = map[string][]common.Address{
 		polygon.AddressEtherePredicate,
 		polygon.AddressERC20Predicate,
 		polygon.AddressMintableERC20Predicate,
+		polygon.AddressBridge,
 	},
 	optimism.PlatformBridge: {
 		optimism.AddressGateway,
