@@ -152,12 +152,18 @@ type NFT struct {
 }
 
 func (n NFT) ToMetadata() (*metadata.Token, error) {
+	id := ""
+
+	if n.ID != nil {
+		id = n.ID.String()
+	}
+
 	result := &metadata.Token{
 		Name:            n.Name,
 		Collection:      n.Collection,
 		Symbol:          n.Symbol,
 		Description:     n.Description,
-		ID:              n.ID.String(),
+		ID:              id,
 		Image:           n.Image,
 		ContractAddress: n.ContractAddress,
 		AnimationURL:    n.AnimationURL,
@@ -257,6 +263,11 @@ func (c *Client) NFTToMetadata(context context.Context, network, contractAddress
 		})
 	}
 
+	id := ""
+	if nft.ID != nil {
+		id = nft.ID.String()
+	}
+
 	tokenMetadata := &metadata.Token{
 		Name:            nft.Name,
 		Collection:      nft.Collection,
@@ -264,7 +275,7 @@ func (c *Client) NFTToMetadata(context context.Context, network, contractAddress
 		Standard:        nft.Standard,
 		ContractAddress: nft.ContractAddress,
 		Image:           nft.Image,
-		ID:              nft.ID.String(),
+		ID:              id,
 		Description:     nft.Description,
 		Attributes:      tokenAttributes,
 		ExternalLink:    nft.ExternalLink,
