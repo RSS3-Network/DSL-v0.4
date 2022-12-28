@@ -12,6 +12,7 @@ require (
 	github.com/Khan/genqlient v0.5.0
 	github.com/alecthomas/repr v0.1.0
 	github.com/avast/retry-go/v4 v4.1.0
+	github.com/avvydomains/golang-client v0.2.0
 	github.com/deckarep/golang-set v1.8.0
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/go-playground/validator/v10 v10.11.0
@@ -21,11 +22,12 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/hasura/go-graphql-client v0.7.1
+	github.com/k0kubun/pp/v3 v3.2.0
 	github.com/labstack/echo-contrib v0.13.0
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/lib/pq v1.10.6
 	github.com/naturalselectionlabs/kurora v0.18.4
-	github.com/naturalselectionlabs/kurora/client v0.0.0-20221224024707-c8bdb267b0b0
+	github.com/naturalselectionlabs/kurora/client v0.0.0-20221228053806-f8dcb5e0749b
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.37.0
@@ -55,12 +57,9 @@ require (
 
 require (
 	github.com/Zilliqa/gozilliqa-sdk v1.2.0 // indirect
-	github.com/agnivade/levenshtein v1.1.1 // indirect
-	github.com/alexflint/go-arg v1.4.2 // indirect
-	github.com/alexflint/go-scalar v1.0.0 // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
-	github.com/avvydomains/golang-client v0.2.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.0 // indirect
+	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.2 // indirect
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -134,11 +133,9 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
-	golang.org/x/tools v0.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
