@@ -44,4 +44,4 @@ coverage_fail: test
 
 # lint
 lint:
-	golangci-lint run --timeout=10m --skip-dirs=gen
+	golangci-lint run --timeout=20m --skip-dirs=gen
