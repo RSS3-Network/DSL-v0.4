@@ -19,7 +19,6 @@ FILE_COVERAGE = $(DIR_TEST)/coverage.txt
 COVERAGE_FAIL_UNDER ?= 30
 
 TEST_FLAGS := \
-	-timeout 30m \
 	-race -failfast -p=1 \
 	-covermode=atomic \
 
