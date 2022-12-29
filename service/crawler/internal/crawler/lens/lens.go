@@ -100,7 +100,7 @@ func (s *service) Run() error {
 		internalTransactions := s.getInternalTransaction(ctx, transactions)
 
 		// insert db
-		err = database.UpsertTransactions(ctx, internalTransactions)
+		err = database.UpsertTransactions(ctx, internalTransactions, false)
 		if err != nil {
 			continue
 		}

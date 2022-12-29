@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func UpsertTransactions(ctx context.Context, transactions []*model.Transaction) error {
+func UpsertTransactions(ctx context.Context, transactions []*model.Transaction, dedupTransfer bool) error {
 	dbChunkSize := 800
 	transfers := []model.Transfer{}
 	updatedTransactions := []model.Transaction{}
@@ -57,8 +57,11 @@ func UpsertTransactions(ctx context.Context, transactions []*model.Transaction) 
 	}
 
 	// Deduplicate Transfers
-	transfersMap := getTransfersMap(transfers)
-	transfers = transfersMap2Array(transfersMap)
+	// eg: multi owners own one tx which is mapping the same transfer in farcaster
+	if dedupTransfer {
+		transfersMap := getTransfersMap(transfers)
+		transfers = transfersMap2Array(transfersMap)
+	}
 
 	for _, ts := range lo.Chunk(updatedTransactions, dbChunkSize) {
 		if err := Global().
