@@ -19,6 +19,7 @@ FILE_COVERAGE = $(DIR_TEST)/coverage.txt
 COVERAGE_FAIL_UNDER ?= 30
 
 TEST_FLAGS := \
+	-timeout 30m \
 	-race -failfast -p=1 \
 	-covermode=atomic \
 
@@ -44,4 +45,4 @@ coverage_fail: test
 
 # lint
 lint:
-	golangci-lint run --timeout=20m --skip-dirs=gen
+	golangci-lint run --timeout=10m --skip-dirs=gen
