@@ -33,17 +33,30 @@ func main() {
 }
 
 const (
-	notesCountSQL     = `select reltuples::bigint as total from pg_class where relname = 'transfers'`
-	addressesCountSQL = `select reltuples::bigint as total from pg_class where relname = 'address'`
-	sampleTotal       = 400000
-	sampleSQL         = `SELECT COUNT(DISTINCT owner) FROM (SELECT owner FROM transactions limit 400000) AS temp`
+	notesCountSQL = `SELECT reltuples::bigint AS total
+						FROM pg_class
+						WHERE relname = 'transfers';`
 
-	transfersPerTagSQL = `SELECT tag, COUNT(*) FROM (SELECT tag FROM transfers order by updated_at desc limit 100000) as temp GROUP BY tag;`
+	addressesCountSQL = `SELECT reltuples::bigint AS total
+							FROM pg_class
+							WHERE relname = 'address';`
 
-	profilesCountSQL       = `select reltuples::bigint as total from pg_class where relname = 'profiles'`
-	profilesPerPlatformSQL = `SELECT platform, COUNT(*) FROM profiles GROUP BY platform;`
+	transfersPerTagSQL = `SELECT tag, COUNT(*)
+							FROM (SELECT tag FROM transfers ORDER BY updated_at DESC LIMIT 100000) AS temp
+							GROUP BY tag;`
 
-	top20AddressesSQL = `SELECT address, count FROM address ORDER BY count DESC LIMIT 20`
+	profilesCountSQL = `SELECT reltuples::bigint AS total
+								FROM pg_class
+								WHERE relname = 'profiles';`
+
+	profilesPerPlatformSQL = `SELECT platform, COUNT(*)
+								FROM profiles
+								GROUP BY platform;`
+
+	top20AddressesSQL = `SELECT address, count
+							FROM address
+							ORDER BY count DESC
+							LIMIT 20;`
 )
 
 func beat(cmd *cobra.Command, args []string) error {
