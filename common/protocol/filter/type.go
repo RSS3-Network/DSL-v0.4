@@ -8,6 +8,10 @@ const (
 	TransactionBurn     string = "burn"
 	TransactionApproval string = "approval"
 
+	// actiosn for TransactionApproval and CollectibleApproval
+	ActionApprove string = "approve"
+	ActionRevoke  string = "revoke"
+
 	// exchange types
 	ExchangeWithdraw  string = "withdraw"
 	ExchangeDeposit   string = "deposit"

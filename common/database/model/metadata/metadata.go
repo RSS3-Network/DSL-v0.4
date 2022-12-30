@@ -30,7 +30,7 @@ type Token struct {
 	ContractAddress string           `json:"contract_address,omitempty"`
 	Image           string           `json:"image,omitempty"`
 	ID              string           `json:"id,omitempty"`
-	Approved        bool             `json:"approved,omitempty"`
+	Action          string           `json:"action,omitempty"`
 	Value           *decimal.Decimal `json:"value,omitempty"`
 	ValueDisplay    *decimal.Decimal `json:"value_display,omitempty"` // TODO Refactor it
 	Cost            *Token           `json:"cost,omitempty"`          // TODO Differentiate between UMS

@@ -602,7 +602,11 @@ func (s *service) buildEthereumTokenApprovalMetadata(ctx context.Context, transa
 			return nil, fmt.Errorf("get nft metadata %s: %w", *tokenAddress, err)
 		}
 
-		tokenMetadata.Approved = approved
+		if approved {
+			tokenMetadata.Action = filter.ActionApprove
+		} else {
+			tokenMetadata.Action = filter.ActionRevoke
+		}
 
 		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagCollectible, transfer.Tag, filter.CollectibleApproval, transfer.Type)
 	default:
