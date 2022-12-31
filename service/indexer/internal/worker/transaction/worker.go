@@ -577,6 +577,13 @@ func (s *service) buildEthereumTokenApprovalMetadata(ctx context.Context, transa
 		}
 
 		tokenMetadata.SetValue(decimal.NewFromBigInt(tokenValue, 0))
+
+		if len(tokenValue.Bits()) > 0 {
+			tokenMetadata.Action = filter.ActionApprove
+		} else {
+			tokenMetadata.Action = filter.ActionRevoke
+		}
+
 		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagTransaction, transfer.Tag, filter.TransactionApproval, transfer.Type)
 	case tokenID != nil && tokenValue != nil: // ERC-721
 		erc721, err := s.tokenClient.ERC721(ctx, transaction.Network, *tokenAddress, tokenID)
@@ -602,7 +609,11 @@ func (s *service) buildEthereumTokenApprovalMetadata(ctx context.Context, transa
 			return nil, fmt.Errorf("get nft metadata %s: %w", *tokenAddress, err)
 		}
 
-		tokenMetadata.Approved = approved
+		if approved {
+			tokenMetadata.Action = filter.ActionApprove
+		} else {
+			tokenMetadata.Action = filter.ActionRevoke
+		}
 
 		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagCollectible, transfer.Tag, filter.CollectibleApproval, transfer.Type)
 	default:
