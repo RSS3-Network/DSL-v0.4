@@ -13,10 +13,10 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func UpsertTransactions(ctx context.Context, transactions []*model.Transaction) error {
+func UpsertTransactions(ctx context.Context, transactions []*model.Transaction, dedupTransfer bool) error {
 	dbChunkSize := 800
-	transfers := []model.Transfer{}
-	updatedTransactions := []model.Transaction{}
+	var transfers []model.Transfer
+	var updatedTransactions []model.Transaction
 
 	for _, transaction := range transactions {
 		// ignore empty tag and type
@@ -57,8 +57,11 @@ func UpsertTransactions(ctx context.Context, transactions []*model.Transaction) 
 	}
 
 	// Deduplicate Transfers
-	transfersMap := getTransfersMap(transfers)
-	transfers = transfersMap2Array(transfersMap)
+	// eg: multi owners own one tx which is mapping the same transfer in farcaster
+	if dedupTransfer {
+		transfersMap := getTransfersMap(transfers)
+		transfers = transfersMap2Array(transfersMap)
+	}
 
 	for _, ts := range lo.Chunk(updatedTransactions, dbChunkSize) {
 		if err := Global().
@@ -89,12 +92,12 @@ func UpsertTransactions(ctx context.Context, transactions []*model.Transaction) 
 }
 
 func DeduplicateTransactions(ctx context.Context, transactions []*model.Transaction) ([]*model.Transaction, error) {
-	hashList := []string{}
+	var hashList []string
 	for _, transaction := range transactions {
 		hashList = append(hashList, transaction.Hash)
 	}
 
-	data := []*model.Transaction{}
+	var data []*model.Transaction
 	if err := Global().
 		Model(&model.Transaction{}).
 		Where("hash in (?)", hashList).
@@ -130,7 +133,7 @@ func getTransfersMap(transfers []model.Transfer) map[string]model.Transfer {
 }
 
 func transfersMap2Array(transfersMap map[string]model.Transfer) []model.Transfer {
-	transfers := make([]model.Transfer, 0)
+	var transfers []model.Transfer
 
 	for _, t := range transfersMap {
 		transfers = append(transfers, t)

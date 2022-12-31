@@ -9,8 +9,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/arbitrum"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/optimism"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/polygon"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -159,111 +157,111 @@ func Test_worker_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
-		{
-			name: "optimism native",
-			arguments: arguments{
-				ctx: context.Background(),
-				message: &protocol.Message{
-					Address: "0x777f4d384bc5dc2e4ef29f235ec95fc8efff8f35", // Unknown
-					Network: protocol.NetworkEthereum,
-				},
-				transactions: []model.Transaction{
-					{
-						// https://etherscan.io/tx/0xeec6b2c3a7ab2f47f429014de4df2ef75a7b7bef606cc387c2494b8cf28bd622
-						Hash:        "0xeec6b2c3a7ab2f47f429014de4df2ef75a7b7bef606cc387c2494b8cf28bd622",
-						BlockNumber: 15733462,
-						Network:     protocol.NetworkEthereum,
-					},
-				},
-			},
-			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
-				transactions, ok := i.([]model.Transaction)
-				if !ok {
-					return false
-				}
-
-				assert.Len(t, transactions, 1)
-
-				for _, transaction := range transactions {
-					_, _ = pp.Println(transaction)
-
-					assert.Equal(t, transaction.Platform, optimism.PlatformBridge)
-				}
-
-				return false
-			},
-			wantErr: assert.NoError,
-		},
-		{
-			name: "arbitrum one",
-			arguments: arguments{
-				ctx: context.Background(),
-				message: &protocol.Message{
-					Address: "0xaee4a9a854a28d70cb6531a8735e40f255aca61a", // Unknown
-					Network: protocol.NetworkEthereum,
-				},
-				transactions: []model.Transaction{
-					{
-						// https://etherscan.io/tx/0xec53d0b79d6fe33d9ab54c00aab12b8af737d3dfddd0cf87ba271089e9dc07d3
-						Hash:        "0xec53d0b79d6fe33d9ab54c00aab12b8af737d3dfddd0cf87ba271089e9dc07d3",
-						BlockNumber: 15773866,
-						Network:     protocol.NetworkEthereum,
-					},
-				},
-			},
-			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
-				transactions, ok := i.([]model.Transaction)
-				if !ok {
-					return false
-				}
-
-				assert.Len(t, transactions, 1)
-
-				for _, transaction := range transactions {
-					_, _ = pp.Println(transaction)
-
-					assert.Equal(t, transaction.Platform, arbitrum.PlatformInboxOne)
-				}
-
-				return false
-			},
-			wantErr: assert.NoError,
-		},
-		{
-			name: "arbitrum nova",
-			arguments: arguments{
-				ctx: context.Background(),
-				message: &protocol.Message{
-					Address: "0xaee4a9a854a28d70cb6531a8735e40f255aca61a", // Unknown
-					Network: protocol.NetworkEthereum,
-				},
-				transactions: []model.Transaction{
-					{
-						// https://etherscan.io/tx/0xa8b2d5c889fbc233a9e7730129364959b05c0edc9048a3d1e997abd392cbb271
-						Hash:        "0xa8b2d5c889fbc233a9e7730129364959b05c0edc9048a3d1e997abd392cbb271",
-						BlockNumber: 15773792,
-						Network:     protocol.NetworkEthereum,
-					},
-				},
-			},
-			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
-				transactions, ok := i.([]model.Transaction)
-				if !ok {
-					return false
-				}
-
-				assert.Len(t, transactions, 1)
-
-				for _, transaction := range transactions {
-					_, _ = pp.Println(transaction)
-
-					assert.Equal(t, transaction.Platform, arbitrum.PlatformInboxNova)
-				}
-
-				return false
-			},
-			wantErr: assert.NoError,
-		},
+		//{
+		//	name: "optimism native",
+		//	arguments: arguments{
+		//		ctx: context.Background(),
+		//		message: &protocol.Message{
+		//			Address: "0x777f4d384bc5dc2e4ef29f235ec95fc8efff8f35", // Unknown
+		//			Network: protocol.NetworkEthereum,
+		//		},
+		//		transactions: []model.Transaction{
+		//			{
+		//				// https://etherscan.io/tx/0xeec6b2c3a7ab2f47f429014de4df2ef75a7b7bef606cc387c2494b8cf28bd622
+		//				Hash:        "0xeec6b2c3a7ab2f47f429014de4df2ef75a7b7bef606cc387c2494b8cf28bd622",
+		//				BlockNumber: 15733462,
+		//				Network:     protocol.NetworkEthereum,
+		//			},
+		//		},
+		//	},
+		//	want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+		//		transactions, ok := i.([]model.Transaction)
+		//		if !ok {
+		//			return false
+		//		}
+		//
+		//		assert.Len(t, transactions, 1)
+		//
+		//		for _, transaction := range transactions {
+		//			_, _ = pp.Println(transaction)
+		//
+		//			assert.Equal(t, transaction.Platform, optimism.PlatformBridge)
+		//		}
+		//
+		//		return false
+		//	},
+		//	wantErr: assert.NoError,
+		//},
+		//{
+		//	name: "arbitrum one",
+		//	arguments: arguments{
+		//		ctx: context.Background(),
+		//		message: &protocol.Message{
+		//			Address: "0xaee4a9a854a28d70cb6531a8735e40f255aca61a", // Unknown
+		//			Network: protocol.NetworkEthereum,
+		//		},
+		//		transactions: []model.Transaction{
+		//			{
+		//				// https://etherscan.io/tx/0xec53d0b79d6fe33d9ab54c00aab12b8af737d3dfddd0cf87ba271089e9dc07d3
+		//				Hash:        "0xec53d0b79d6fe33d9ab54c00aab12b8af737d3dfddd0cf87ba271089e9dc07d3",
+		//				BlockNumber: 15773866,
+		//				Network:     protocol.NetworkEthereum,
+		//			},
+		//		},
+		//	},
+		//	want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+		//		transactions, ok := i.([]model.Transaction)
+		//		if !ok {
+		//			return false
+		//		}
+		//
+		//		assert.Len(t, transactions, 1)
+		//
+		//		for _, transaction := range transactions {
+		//			_, _ = pp.Println(transaction)
+		//
+		//			assert.Equal(t, transaction.Platform, arbitrum.PlatformInboxOne)
+		//		}
+		//
+		//		return false
+		//	},
+		//	wantErr: assert.NoError,
+		//},
+		//{
+		//	name: "arbitrum nova",
+		//	arguments: arguments{
+		//		ctx: context.Background(),
+		//		message: &protocol.Message{
+		//			Address: "0xaee4a9a854a28d70cb6531a8735e40f255aca61a", // Unknown
+		//			Network: protocol.NetworkEthereum,
+		//		},
+		//		transactions: []model.Transaction{
+		//			{
+		//				// https://etherscan.io/tx/0xa8b2d5c889fbc233a9e7730129364959b05c0edc9048a3d1e997abd392cbb271
+		//				Hash:        "0xa8b2d5c889fbc233a9e7730129364959b05c0edc9048a3d1e997abd392cbb271",
+		//				BlockNumber: 15773792,
+		//				Network:     protocol.NetworkEthereum,
+		//			},
+		//		},
+		//	},
+		//	want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+		//		transactions, ok := i.([]model.Transaction)
+		//		if !ok {
+		//			return false
+		//		}
+		//
+		//		assert.Len(t, transactions, 1)
+		//
+		//		for _, transaction := range transactions {
+		//			_, _ = pp.Println(transaction)
+		//
+		//			assert.Equal(t, transaction.Platform, arbitrum.PlatformInboxNova)
+		//		}
+		//
+		//		return false
+		//	},
+		//	wantErr: assert.NoError,
+		//},
 	}
 
 	for _, testcase := range testcases {
