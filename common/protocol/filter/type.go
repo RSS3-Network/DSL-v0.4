@@ -41,7 +41,7 @@ const (
 	CollectibleMusic    string = "music"
 
 	// sub-types for Music
-	CollectibleMusicBuyEdition string = "buy edition"
+	CollectibleMusicBuyEdition string = "buy"
 	CollectibleMusicRelease    string = "release"
 	CollectibleMusicMint       string = "mint"
 
