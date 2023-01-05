@@ -63,6 +63,7 @@ const (
 	PlatformTofuNFT        = "tofuNFT"
 	PlatformBlur           = "Blur"
 	PlatformElement        = "Element"
+	PlatformHop            = "Hop"
 	PlatformCow            = "Cow"
 	PlatformMaskNetwork    = "MaskNetwork"
 

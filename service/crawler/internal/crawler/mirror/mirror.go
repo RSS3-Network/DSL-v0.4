@@ -97,7 +97,7 @@ func (s *service) Run() error {
 		}
 
 		// Store transactions to databse
-		err = database.UpsertTransactions(ctx, transactions)
+		err = database.UpsertTransactions(ctx, transactions, false)
 		if err != nil {
 			continue
 		}

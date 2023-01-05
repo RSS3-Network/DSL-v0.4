@@ -6,6 +6,11 @@ const (
 	TransactionBridge   string = "bridge"
 	TransactionMint     string = "mint"
 	TransactionBurn     string = "burn"
+	TransactionApproval string = "approval"
+
+	// actiosn for TransactionApproval and CollectibleApproval
+	ActionApprove string = "approve"
+	ActionRevoke  string = "revoke"
 
 	// exchange types
 	ExchangeWithdraw  string = "withdraw"
@@ -17,7 +22,7 @@ const (
 	BridgeWithdraw string = "withdraw"
 	BridgeDeposit  string = "deposit"
 
-	// sub-types for Exchange-Liquidity
+	// actions for Exchange-Liquidity
 	ExchangeLiquidityAdd      string = "add"
 	ExchangeLiquidityRemove   string = "remove"
 	ExchangeLiquidityCollect  string = "collect"
@@ -32,6 +37,7 @@ const (
 	CollectibleMint     string = "mint"
 	CollectibleBurn     string = "burn"
 	CollectiblePoap     string = "poap"
+	CollectibleApproval string = "approval"
 	CollectibleMusic    string = "music"
 
 	// sub-types for Music
@@ -53,7 +59,7 @@ const (
 	SocialReward   string = "reward"
 	SocialProxy    string = "proxy"
 
-	// sub-types for Social-Profile
+	// actions for Social-Profile
 	SocialCreate  string = "create"
 	SocialUpdate  string = "update"
 	SocialAppoint string = "appoint"
@@ -83,6 +89,7 @@ var ValidTypeMap = map[string][]string{
 		TransactionBridge,
 		TransactionMint,
 		TransactionBurn,
+		TransactionApproval,
 	},
 	TagExchange: {
 		ExchangeWithdraw,
@@ -92,9 +99,11 @@ var ValidTypeMap = map[string][]string{
 	},
 	TagCollectible: {
 		CollectibleTransfer,
+		CollectibleTrade,
 		CollectibleMint,
 		CollectibleBurn,
 		CollectiblePoap,
+		CollectibleApproval,
 	},
 	TagSocial: {
 		SocialPost,
@@ -105,8 +114,10 @@ var ValidTypeMap = map[string][]string{
 		SocialFollow,
 		SocialUnfollow,
 		SocialLike,
+		SocialMint,
 		SocialWiki,
 		SocialReward,
+		SocialProxy,
 	},
 	TagDonation: {
 		DonationLaunch,

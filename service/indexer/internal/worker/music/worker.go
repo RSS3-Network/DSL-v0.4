@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -18,7 +20,6 @@ import (
 	lop "github.com/samber/lo/parallel"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"strings"
 )
 
 var (

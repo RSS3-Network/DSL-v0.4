@@ -7,7 +7,7 @@ import (
 //go:generate abigen --abi ./contract/artist.abi --pkg contract --type Artist --out ./contract/artist.go
 //go:generate abigen --abi ./contract/merkleDropMinter.abi --pkg contract --type MerkleDropMinter --out ./contract/merkleDropMinter.go
 
-//https://etherscan.io/address/0xbaa4b1c49b84876332ddafc9d0cae5bcd439e12c
+// https://etherscan.io/address/0xbaa4b1c49b84876332ddafc9d0cae5bcd439e12c
 
 var (
 	EventEditionPurchased = common.HexToHash("0xc3e4ad784e3889561b308df24921cf08a47410a8ed63b8afe80c50a002efb251")

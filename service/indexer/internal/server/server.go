@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
 	"os"
 	"os/signal"
 	"strings"
@@ -14,12 +13,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
+
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/databeat"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
@@ -329,7 +331,12 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 			transfers += len(transaction.Transfers)
 		}
 
-		loggerx.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
+		_, _ = databeat.IndexedCompletion.Beat(map[string]interface{}{
+			"address":      message.Address,
+			"network":      message.Network,
+			"transfers":    transfers,
+			"transactions": len(transactions),
+		})
 
 		// upsert address status
 		go s.upsertAddress(ctx, model.Address{

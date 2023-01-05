@@ -163,7 +163,7 @@ func HandleEIP1577(ctx context.Context, domain string, address string) error {
 	for i := range internalTransactions {
 		transaction = append(transaction, &internalTransactions[i])
 	}
-	err = database.UpsertTransactions(ctx, transaction)
+	err = database.UpsertTransactions(ctx, transaction, false)
 	if err != nil {
 		loggerx.Global().Error("eip1577: eip1577 database UpsertTransactions error", zap.Error(err))
 
