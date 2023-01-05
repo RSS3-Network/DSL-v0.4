@@ -22,6 +22,7 @@ func init() {
 
 // TODO Token constructor
 type Token struct {
+	Action          string           `json:"action,omitempty"`
 	Name            string           `json:"name"`
 	Collection      string           `json:"collection,omitempty"` // ERC-1155
 	Symbol          string           `json:"symbol"`

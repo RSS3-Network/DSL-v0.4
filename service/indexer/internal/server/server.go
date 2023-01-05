@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
 	"os"
 	"os/signal"
 	"strings"
@@ -195,6 +196,7 @@ func (s *Server) Initialize() (err error) {
 		mattersWorker,
 		transaction.New(),
 		metaverse.New(),
+		music.New(),
 	}
 
 	s.employer = shedlock.New()
