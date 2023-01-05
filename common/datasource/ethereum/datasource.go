@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -348,6 +349,48 @@ func handleLog(ctx context.Context, message *protocol.Message, transaction *mode
 
 		transfer.AddressFrom = strings.ToLower(event.Donor.String())
 		transfer.AddressTo = strings.ToLower(event.Dest.String())
+	case erc20.EventHashApproval: // ERC-20 and ERC-721
+		switch {
+		case len(log.Topics) == 3:
+			filterer, err := erc20.NewERC20Filterer(log.Address, nil)
+			if err != nil {
+				return nil, fmt.Errorf("create erc20 filterer: %w", err)
+			}
+
+			event, err := filterer.ParseApproval(log)
+			if err != nil {
+				return nil, fmt.Errorf("parse approval event: %w", err)
+			}
+
+			transfer.AddressFrom = strings.ToLower(event.Owner.String())
+			transfer.AddressTo = strings.ToLower(event.Spender.String())
+		case len(log.Topics) == 4:
+			filterer, err := erc721.NewERC721Filterer(log.Address, nil)
+			if err != nil {
+				return nil, fmt.Errorf("create erc20 filterer: %w", err)
+			}
+
+			event, err := filterer.ParseApproval(log)
+			if err != nil {
+				return nil, fmt.Errorf("parse approval event: %w", err)
+			}
+
+			transfer.AddressFrom = strings.ToLower(event.Owner.String())
+			transfer.AddressTo = strings.ToLower(event.Spender.String())
+		}
+	case erc721.EventHashApprovalForAll: // ERC-721 and ERC-1155
+		filterer, err := erc721.NewERC721Filterer(log.Address, nil)
+		if err != nil {
+			return nil, fmt.Errorf("create erc721 filterer: %w", err)
+		}
+
+		event, err := filterer.ParseApprovalForAll(log)
+		if err != nil {
+			return nil, fmt.Errorf("parse approval for all event: %w", err)
+		}
+
+		transfer.AddressFrom = strings.ToLower(event.Owner.String())
+		transfer.AddressTo = strings.ToLower(event.Operator.String())
 	default:
 		return nil, ErrorUnsupportedEvent
 	}

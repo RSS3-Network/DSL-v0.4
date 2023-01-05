@@ -19,6 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/databeat"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
@@ -32,6 +33,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
@@ -140,6 +142,11 @@ func (s *Server) Initialize() (err error) {
 		return fmt.Errorf("create kurora datasource: %w", err)
 	}
 
+	mirrorDatasource, err := mirror.New(context.Background(), s.config.Kurora.Endpoint)
+	if err != nil {
+		return fmt.Errorf("create kurora datasource: %w", err)
+	}
+
 	lensDatasource, err := lens.New(context.Background(), s.config.Kurora.Endpoint)
 	if err != nil {
 		return err
@@ -147,6 +154,7 @@ func (s *Server) Initialize() (err error) {
 
 	s.datasources = []datasource.Datasource{
 		kuroraDatasource,
+		mirrorDatasource,
 		alchemyDatasource,
 		moralis.New(s.config.Moralis.Key),
 		blockscoutDatasource,
@@ -320,7 +328,12 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 			transfers += len(transaction.Transfers)
 		}
 
-		loggerx.Global().Info("indexed data completion", zap.String("address", message.Address), zap.String("network", message.Network), zap.Int("transactions", len(transactions)), zap.Int("transfers", transfers))
+		_, _ = databeat.IndexedCompletion.Beat(map[string]interface{}{
+			"address":      message.Address,
+			"network":      message.Network,
+			"transfers":    transfers,
+			"transactions": len(transactions),
+		})
 
 		// upsert address status
 		go s.upsertAddress(ctx, model.Address{

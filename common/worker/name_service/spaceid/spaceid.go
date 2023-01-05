@@ -61,18 +61,18 @@ func (c *Client) GetProfile(address string) (*social.Profile, error) {
 		return nil, err
 	}
 
-	profile := &social.Profile{
-		Address:  address,
-		Network:  protocol.NetworkBinanceSmartChain,
-		Platform: protocol.PlatformSpaceID,
-		Source:   protocol.PlatformSpaceID,
-		Name:     handle,
-		Handle:   handle,
-	}
-
 	label := NameLabel(handle)
 	tokenID := TokenID(label)
-	profile.ProfileUris = []string{fmt.Sprintf("https://meta.image.space.id/image/mainnet/%v.svg", tokenID)}
+
+	profile := &social.Profile{
+		Address:     address,
+		Network:     protocol.NetworkBinanceSmartChain,
+		Platform:    protocol.PlatformSpaceID,
+		Source:      protocol.PlatformSpaceID,
+		Name:        handle,
+		Handle:      handle,
+		ProfileUris: []string{fmt.Sprintf("https://meta.image.space.id/image/mainnet/%v.svg", tokenID)},
+	}
 
 	return profile, nil
 }

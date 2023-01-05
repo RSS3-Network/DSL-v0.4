@@ -26,10 +26,13 @@ func setup() {
 	if err := database.Global().Migrator().CreateTable(&model.Transfer{}); err != nil {
 		panic(err)
 	}
+
+	ts := time.Date(2022, 12, 1, 1, 1, 1, 1, time.UTC)
+
 	database.Global().CreateInBatches([]model.Transfer{
 		{
 			TransactionHash: "0x00",
-			Timestamp:       time.Now(),
+			Timestamp:       ts,
 			BlockNumber:     big.NewInt(0),
 			Tag:             "social",
 			Type:            "post",
@@ -42,7 +45,7 @@ func setup() {
 		},
 		{
 			TransactionHash: "0x01",
-			Timestamp:       time.Now(),
+			Timestamp:       ts,
 			BlockNumber:     big.NewInt(0),
 			Tag:             "social",
 			Type:            "post",
@@ -55,7 +58,7 @@ func setup() {
 		},
 		{
 			TransactionHash: "0x02",
-			Timestamp:       time.Now(),
+			Timestamp:       ts,
 			BlockNumber:     big.NewInt(0),
 			Tag:             "social",
 			Type:            "post",
@@ -68,7 +71,7 @@ func setup() {
 		},
 		{
 			TransactionHash: "0x03",
-			Timestamp:       time.Now(),
+			Timestamp:       ts,
 			BlockNumber:     big.NewInt(0),
 			Tag:             "social",
 			Type:            "post",
