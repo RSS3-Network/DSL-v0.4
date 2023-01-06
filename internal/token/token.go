@@ -317,14 +317,6 @@ func MetadataToAttributes(metadata Metadata) []MetadataAttribute {
 		})
 	}
 
-	// temp fix for `reflect: Elem of invalid type string` Error
-	// TODO: remove this after fixing the issue
-	defer func() {
-		if r := recover(); r != nil {
-			loggerx.Global().Error("panic in metadata to attributes", zap.Any("panic", r))
-		}
-	}()
-
 	return attributes
 }
 
@@ -336,6 +328,10 @@ func PropertiesToAttributes(properties map[string]any) (attributeMap map[string]
 	description := field1.Tag.Get("json")
 
 	for key, value := range properties {
+		if value == nil {
+			continue
+		}
+
 		t := reflect.TypeOf(value)
 
 		// Ignore property with null value
