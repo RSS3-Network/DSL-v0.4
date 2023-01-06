@@ -334,11 +334,6 @@ func PropertiesToAttributes(properties map[string]any) (attributeMap map[string]
 
 		t := reflect.TypeOf(value)
 
-		// Ignore property with null value
-		if t.Elem() == nil {
-			continue
-		}
-
 		if strings.EqualFold(t.Kind().String(), reflect.Map.String()) {
 			if temp, ok := value.(map[string]any); ok {
 				value = temp[description]
