@@ -28,21 +28,7 @@ func UpsertTransactions(ctx context.Context, transactions []*model.Transaction, 
 		internalTransfers := make([]model.Transfer, 0)
 
 		for _, transfer := range transaction.Transfers {
-			if bytes.Equal(transfer.Metadata, metadata.Default) {
-				continue
-			}
-
-			internalTransfers = append(internalTransfers, transfer)
-		}
-
-		if len(internalTransfers) == 0 {
-			continue
-		}
-
-		// Handle all transfers
-		for _, transfer := range transaction.Transfers {
-			// Ignore empty transfer
-			if bytes.Equal(transfer.Metadata, metadata.Default) {
+			if bytes.Equal(transfer.Metadata, metadata.Default) || len(transfer.Metadata) == 0 {
 				continue
 			}
 
@@ -50,7 +36,15 @@ func UpsertTransactions(ctx context.Context, transactions []*model.Transaction, 
 				continue
 			}
 
-			transfers = append(transfers, transfer)
+			internalTransfers = append(internalTransfers, transfer)
+
+			if dedupTransfer {
+				transfers = append(transfers, transfer)
+			}
+		}
+
+		if len(internalTransfers) == 0 {
+			continue
 		}
 
 		updatedTransactions = append(updatedTransactions, *transaction)
