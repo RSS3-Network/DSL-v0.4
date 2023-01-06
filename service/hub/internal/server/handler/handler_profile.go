@@ -29,7 +29,7 @@ func (h *Handler) GetProfilesFunc(c echo.Context) error {
 		return err
 	}
 
-	go h.filterReport(model.GetProfiles, request)
+	go h.filterReport(model.GetProfiles, request, c)
 
 	profileList, err := h.service.GetProfiles(ctx, request)
 	if err != nil {
@@ -60,7 +60,7 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 		return err
 	}
 
-	go h.filterReport(model.PostProfiles, request)
+	go h.filterReport(model.PostProfiles, request, c)
 
 	if len(request.Address) > model.DefaultLimit {
 		request.Address = request.Address[:model.DefaultLimit]
