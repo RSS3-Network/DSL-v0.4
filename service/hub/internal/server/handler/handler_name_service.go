@@ -31,7 +31,7 @@ func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 		return AddressIsEmpty(c)
 	}
 
-	go h.filterReport(model.GetNS, request)
+	go h.filterReport(model.GetNS, request, c)
 
 	result := name_service.ReverseResolveAll(strings.ToLower(request.Address), true)
 
