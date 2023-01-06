@@ -29,11 +29,11 @@ spec:
               protocol: TCP
           resources:
             requests:
-              memory: "50Mi"
-              cpu: "50m"
+              memory: "200Mi"
+              cpu: "500m"
             limits:
-              memory: "1000Mi"
-              cpu: "300m"
+              memory: "2000Mi"
+              cpu: "1500m"
           readinessProbe:
             httpGet:
               path: /
