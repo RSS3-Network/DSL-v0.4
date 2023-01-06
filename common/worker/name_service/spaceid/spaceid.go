@@ -2,9 +2,12 @@ package spaceid
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -58,6 +61,9 @@ func (c *Client) GetProfile(address string) (*social.Profile, error) {
 		return nil, err
 	}
 
+	label := NameLabel(handle)
+	tokenID := TokenID(label)
+
 	profile := &social.Profile{
 		Address:     address,
 		Network:     protocol.NetworkBinanceSmartChain,
@@ -65,10 +71,19 @@ func (c *Client) GetProfile(address string) (*social.Profile, error) {
 		Source:      protocol.PlatformSpaceID,
 		Name:        handle,
 		Handle:      handle,
-		ProfileUris: []string{fmt.Sprintf("https://meta.image.space.id/image/mainnet/%v.svg", resolver)},
+		ProfileUris: []string{fmt.Sprintf("https://meta.image.space.id/image/mainnet/%v.svg", tokenID)},
 	}
 
 	return profile, nil
+}
+
+func NameLabel(handle string) (node common.Hash) {
+	name := strings.Split(handle, ".bnb")[0]
+	return crypto.Keccak256Hash([]byte(name))
+}
+
+func TokenID(label common.Hash) *big.Int {
+	return new(big.Int).SetBytes(label.Bytes())
 }
 
 func New() *Client {
