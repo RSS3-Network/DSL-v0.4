@@ -71,7 +71,8 @@ func (s *service) Run() error {
 		if err != nil {
 			loggerx.Global().Error("failed to query lens", zap.Error(err))
 
-			return err
+			time.Sleep(10 * time.Minute)
+			continue
 		}
 
 		if len(transactions) == 0 {
