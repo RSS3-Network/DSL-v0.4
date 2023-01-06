@@ -35,7 +35,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 
 	// api report
 	if len(request.Cursor) == 0 {
-		go h.filterReport(model.GetNotes, request)
+		go h.filterReport(model.GetNotes, request, c)
 	}
 
 	transactions, total, err := h.service.GetNotes(ctx, request)
@@ -82,7 +82,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	}
 
 	if len(request.Cursor) == 0 {
-		go h.filterReport(model.PostNotes, request)
+		go h.filterReport(model.PostNotes, request, c)
 	}
 
 	if len(request.Address) == 0 {

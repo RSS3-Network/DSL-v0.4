@@ -33,7 +33,7 @@ func (h *Handler) apiReport(path string, c echo.Context) {
 	fmt.Printf("[DATABEAT]%v\n", string(output))
 }
 
-func (h *Handler) filterReport(path string, request interface{}) {
+func (h *Handler) filterReport(path string, request interface{}, c echo.Context) {
 	b, _ := json.Marshal(request)
 	report := make(map[string]interface{})
 
@@ -52,6 +52,7 @@ func (h *Handler) filterReport(path string, request interface{}) {
 		report["index"] = model.EsIndex
 		report["path"] = path
 		report["ts"] = time.Now().Format("2006-01-02 15:04:05")
+		report["remote_addr"] = c.RealIP()
 
 		if addresses, ok := report["address"].([]interface{}); ok {
 			for _, address := range addresses {
