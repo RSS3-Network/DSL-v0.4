@@ -66,11 +66,11 @@ func (s *service) Run() error {
 	for {
 		transactions, err := s.GetKuroraCasts(ctx)
 		if err != nil {
-			loggerx.Global().Error("farcaster: GetKuroraLogs error", zap.Error(err), zap.String("endpoint", s.config.Kurora.Endpoint))
+			loggerx.Global().Error("farcaster: GetKuroraCasts error", zap.Error(err), zap.String("endpoint", s.config.Kurora.Endpoint))
 			return err
 		}
 
-		err = database.UpsertTransactions(ctx, transactions)
+		err = database.UpsertTransactions(ctx, transactions, true)
 		if err != nil {
 			continue
 		}

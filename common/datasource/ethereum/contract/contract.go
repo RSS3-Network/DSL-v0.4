@@ -91,3 +91,9 @@ package contract
 // Mask Network
 // HappyTokenPool https://polygonscan.com/address/0xf9f7c1496c21bc0180f4b64dabe0754ebfc8a8c0
 //go:generate abigen --abi ./masknetwork/happy_token_pool.abi --pkg masknetwork --type HappyTokenPool --out ./masknetwork/happy_token_pool.go
+
+// Hop
+// L1 bridge https://etherscan.io/address/0x3E4a3a4796d16c0Cd582C382691998f7c06420B6
+//go:generate abigen --abi ./hop/l1_bridge.abi --pkg hop --type L1Bridge --out ./hop/l1_bridge.go
+// L2 AMM Wapper https://polygonscan.com/address/0x9b0c694c6939b5ea9584e9b61c7815e8d97d9c63
+//go:generate abigen --abi ./hop/l2_amm_wrapper.abi --pkg hop --type L2AMMWapper --out ./hop/l2_amm_wrapper.go

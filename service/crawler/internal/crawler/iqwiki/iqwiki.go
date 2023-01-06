@@ -94,7 +94,7 @@ func (s *service) Run() error {
 				continue
 			}
 
-			err = database.UpsertTransactions(ctx, internalTransactions)
+			err = database.UpsertTransactions(ctx, internalTransactions, false)
 			if err != nil {
 				loggerx.Global().Warn("iqwiki_crawler upsertTransactions error", zap.Error(err))
 				continue

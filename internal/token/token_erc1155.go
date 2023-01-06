@@ -33,24 +33,26 @@ func (c *Client) ERC1155(context context.Context, network, contractAddress strin
 	result.Name, _ = erc1155Contract.Name(&bind.CallOpts{})
 	result.Symbol, _ = erc1155Contract.Symbol(&bind.CallOpts{})
 
-	tokenURI, err := erc1155Contract.Uri(&bind.CallOpts{}, tokenID)
-	if err != nil {
-		return nil, err
-	}
+	if tokenID != nil {
+		tokenURI, err := erc1155Contract.Uri(&bind.CallOpts{}, tokenID)
+		if err != nil {
+			return nil, err
+		}
 
-	if result.URI, err = c.URI(contractAddress, tokenID, tokenURI); err != nil {
-		return nil, err
-	}
+		if result.URI, err = c.URI(contractAddress, tokenID, tokenURI); err != nil {
+			return nil, err
+		}
 
-	result.Metadata, err = c.Metadata(result.URI)
-	if err != nil {
-		loggerx.Global().Named(contractAddress).Warn("Get ERC1155 Metadata error", zap.Error(err))
-	}
+		result.Metadata, err = c.Metadata(result.URI)
+		if err != nil {
+			loggerx.Global().Named(contractAddress).Warn("Get ERC1155 Metadata error", zap.Error(err))
+		}
 
-	var metadata Metadata
+		var metadata Metadata
 
-	if err := json.Unmarshal(result.Metadata, &metadata); err != nil {
-		loggerx.Global().Named(contractAddress).Warn("Get ERC1155 Metadata Unmarshal error", zap.Error(err))
+		if err := json.Unmarshal(result.Metadata, &metadata); err != nil {
+			loggerx.Global().Named(contractAddress).Warn("Get ERC1155 Metadata Unmarshal error", zap.Error(err))
+		}
 	}
 
 	return &result, nil
