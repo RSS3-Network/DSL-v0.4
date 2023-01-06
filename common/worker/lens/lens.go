@@ -82,14 +82,14 @@ func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big
 
 	ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)
 	if err != nil {
-		logrus.Errorf("[common] lens: ethclientx.Global err, %v", err)
+		loggerx.Global().Error("[common] lens: ethclientx.Global err", zap.Error(err))
 
 		return nil, err
 	}
 
 	lensHubContract, err := lenscontract.NewHub(lens.HubProxyContractAddress, ethereumClient)
 	if err != nil {
-		logrus.Errorf("[common] lens: NewHub err, %v", err)
+		loggerx.Global().Error("[common] lens: NewHub err", zap.Error(err))
 
 		return nil, err
 	}
@@ -97,14 +97,14 @@ func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big
 	if profileID == nil {
 		profileID, err = lensHubContract.DefaultProfile(&bind.CallOpts{BlockNumber: blockNumber}, common.HexToAddress(address))
 		if err != nil {
-			logrus.Errorf("[common] lens: Handle DefaultProfile err, %v", err)
+			loggerx.Global().Error("[common] lens: Handle DefaultProfile err", zap.Error(err))
 
 			return nil, err
 		}
 	}
 
 	if profileID.Int64() == 0 {
-		logrus.Infof("[common] lens: Handle getDefaultProfile is nil, address: %v", address)
+		loggerx.Global().Error("[common] lens: Handle getDefaultProfile is nil", zap.String("address", address))
 
 		return nil, fmt.Errorf("DefaultProfile is nil")
 	}
@@ -112,7 +112,7 @@ func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big
 	if len(address) == 0 {
 		owner, err := lensHubContract.OwnerOf(&bind.CallOpts{BlockNumber: blockNumber}, profileID)
 		if err != nil {
-			logrus.Infof("[common] lens: OwnerOf error: %v", err)
+			loggerx.Global().Error("[common] lens: OwnerOf error", zap.Error(err))
 
 			return nil, err
 		}
@@ -122,7 +122,7 @@ func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big
 
 	result, err := lensHubContract.GetProfile(&bind.CallOpts{BlockNumber: blockNumber}, profileID)
 	if err != nil {
-		logrus.Errorf("[common] lens: GetProfile err, %v", err)
+		loggerx.Global().Error("[common] lens: GetProfile err", zap.Error(err))
 
 		return nil, err
 	}
@@ -390,18 +390,12 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 		loggerx.Global().Error("[lens worker] HandleFollowed: ParseFollowed error", zap.Error(err))
 		return nil, err
 	}
-
-	transaction.Owner = strings.ToLower(event.Follower.String())
-	transfer.AddressFrom = transaction.Owner
-
-	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
-	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialFollow, transfer.Type)
-
+	
 	for index, profileID := range event.ProfileIds {
 		profile, err := c.GetProfile(transfer.BlockNumber, "", profileID)
 		if err != nil {
 			loggerx.Global().Error("[lens worker] HandleFollowed: GetProfile error", zap.Error(err))
-			continue
+			return nil, err
 		}
 
 		transfer.Index = int64(index)
@@ -411,11 +405,17 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 		}
 
 		if transfer.Metadata, err = json.Marshal(profile); err != nil {
-			continue
+			return nil, err
 		}
 
 		transfers = append(transfers, *transfer)
 	}
+
+	transaction.Owner = strings.ToLower(event.Follower.String())
+	transfer.AddressFrom = transaction.Owner
+
+	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialFollow, transfer.Type)
 
 	return transfers, nil
 }
