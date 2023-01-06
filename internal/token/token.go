@@ -16,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+
 	"go.uber.org/zap"
 )
 
@@ -328,6 +329,11 @@ func PropertiesToAttributes(properties map[string]any) (attributeMap map[string]
 
 	for key, value := range properties {
 		t := reflect.TypeOf(value)
+
+		// Ignore property with null value
+		if t.Elem() == nil {
+			continue
+		}
 
 		if strings.EqualFold(t.Kind().String(), reflect.Map.String()) {
 			if temp, ok := value.(map[string]any); ok {
