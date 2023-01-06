@@ -328,6 +328,10 @@ func PropertiesToAttributes(properties map[string]any) (attributeMap map[string]
 	description := field1.Tag.Get("json")
 
 	for key, value := range properties {
+		if value == nil {
+			continue
+		}
+
 		t := reflect.TypeOf(value)
 
 		// Ignore property with null value
