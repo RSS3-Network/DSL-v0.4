@@ -66,6 +66,14 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+const (
+	// 每个 indexer worker 最大并发数 50，目的是为了防止内存爆炸
+	// 同时能处理的任务等于 50 * indexer replicas（目前是 50 * 20 = 1000）
+	// 我们应当认为大多数任务都是刷不出来内容的、快速的，所以这个值应当是足够的
+	// 此时即使任务堆积、刷新慢，至少 indexer 还有复活的机会并缓慢消耗掉任务；而不是死掉然后任务丢掉
+	MAX_CONCURRENT_JOBS = 50
+)
+
 type Server struct {
 	config           *config.Config
 	datasources      []datasource.Datasource
@@ -244,6 +252,7 @@ func (s *Server) Run() error {
 	defer s.employer.Stop()
 
 	go func() {
+		waitChan := make(chan struct{}, MAX_CONCURRENT_JOBS)
 		for {
 			delivery := <-rabbitmqx.GetRabbitmqDelivery()
 			if len(delivery.Body) == 0 {
@@ -261,6 +270,11 @@ func (s *Server) Run() error {
 			}
 
 			go func() {
+				waitChan <- struct{}{}
+				defer func() {
+					<-waitChan
+				}()
+
 				if err := s.handle(context.Background(), &message); err != nil {
 					loggerx.Global().Error("failed to handle message", zap.Error(err), zap.String("address", message.Address), zap.String("network", message.Network))
 				}
