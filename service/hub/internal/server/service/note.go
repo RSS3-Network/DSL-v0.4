@@ -96,7 +96,7 @@ func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotes
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
 		// limit 10 addresses each time, max 50 times
-		// 如果一次来 500 个，我们就手动把任务曲线拉平，500 个任务分布到 10s 发送
+		// 如果一次来 500 个，我们就手动把任务曲线拉平，500 个任务分布到 5s 发送
 		// 请求的地址越多我们响应的越慢，很合理吧
 		for _, addresses := range lo.Chunk(request.Address, 10) {
 			wg := &sync.WaitGroup{}
@@ -104,8 +104,8 @@ func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotes
 				wg.Add(1)
 				go func(address string) {
 					defer wg.Done()
-					n := rand.Intn(200)
-					time.Sleep(time.Duration(n) * time.Millisecond) // max 200ms * 50 = 10s
+					n := rand.Intn(100)
+					time.Sleep(time.Duration(n) * time.Millisecond) // max 100ms * 50 = 5s
 					s.PublishIndexerMessage(ctx, protocol.Message{Address: address})
 				}(address)
 			}
