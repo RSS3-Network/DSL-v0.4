@@ -61,7 +61,7 @@ func (i *internal) handleElementERC721SellOrderFilled(ctx context.Context, trans
 		return nil, fmt.Errorf("build cost: %w", err)
 	}
 
-	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, nft, nft.Cost)
+	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, *nft, *nft.Cost)
 	if err != nil {
 		return nil, fmt.Errorf("build trade transfer: %w", err)
 	}
@@ -115,7 +115,7 @@ func (i *internal) handleElementERC1155SellOrderFilled(ctx context.Context, tran
 		return nil, fmt.Errorf("build cost: %w", err)
 	}
 
-	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, nft, nft.Cost)
+	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, *nft, *nft.Cost)
 	if err != nil {
 		return nil, fmt.Errorf("build trade transfer: %w", err)
 	}

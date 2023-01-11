@@ -76,7 +76,7 @@ func (i *internal) handleBlurOrdersMatched(ctx context.Context, transaction mode
 		return nil, fmt.Errorf("build cost: %w", err)
 	}
 
-	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, nft, nft.Cost)
+	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, common.HexToAddress(transaction.AddressFrom) /* The buyer address is not output in event. */, *nft, *nft.Cost)
 	if err != nil {
 		return nil, fmt.Errorf("build trade transfer: %w", err)
 	}

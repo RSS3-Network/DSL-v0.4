@@ -21,7 +21,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
+
+	"go.uber.org/zap"
 )
 
 var _ worker.Worker = (*internal)(nil)
@@ -60,8 +63,11 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 
 	for _, transaction := range transactions {
 		var sourceData ethereum.SourceData
+
 		if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
-			return nil, fmt.Errorf("unmarshal source data: %w", err)
+			zap.L().Warn("unmarshal source data", zap.Error(err), zap.String("transaction_hash", transaction.Hash))
+
+			continue
 		}
 
 		// Filter unsupported platforms
@@ -103,7 +109,9 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			}
 
 			if err != nil {
-				return nil, fmt.Errorf("handle %s: %w", platform, err)
+				zap.L().Warn("handle marketplace event", zap.Error(err))
+
+				continue
 			}
 
 			internalTransaction.Transfers = append(internalTransaction.Transfers, internalTransfers...)
@@ -118,15 +126,18 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	return internalTransactions, nil
 }
 
-func (i *internal) buildTradeTransfer(transaction model.Transaction, index int64, platform string, seller, buyer common.Address, nft *metadata.Token, cost *metadata.Token) (*model.Transfer, error) {
-	valueDisplay := nft.Value.Shift(-int32(nft.Decimals))
-	nft.ValueDisplay = &valueDisplay
+func (i *internal) buildTradeTransfer(transaction model.Transaction, index int64, platform string, seller, buyer common.Address, nft metadata.Token, cost metadata.Token) (*model.Transfer, error) {
+	if nft.Value == nil {
+		nft.Value = lo.ToPtr(decimal.Zero)
+	}
 
-	nft.Cost = cost
+	nft.SetValue(*nft.Value)
+
+	nft.Cost = &cost
 
 	metadataRaw, err := json.Marshal(nft)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("marshal metadata: %w", err)
 	}
 
 	transfer := model.Transfer{

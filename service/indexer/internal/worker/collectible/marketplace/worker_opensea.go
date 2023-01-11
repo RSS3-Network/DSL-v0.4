@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20/weth"
@@ -55,54 +56,94 @@ func (i *internal) handleOpenSeaOrderFulfilled(ctx context.Context, transaction 
 
 	internalTransfers := make([]model.Transfer, 0)
 
-	for _, spentItem := range event.Offer {
-		if spentItem.ItemType == opensea.ItemTypeNative || spentItem.ItemType == opensea.ItemTypeERC20 {
-			continue
+	// In most cases the offered is the seller and the recipient are the buyer.
+	// However, if the matching nft in Consideration transfers, the opposite is true.
+	seller, buyer := event.Offerer, event.Recipient
+
+	// Quix is OpenSea's Fork, but it modifies the transaction logic.
+	if platform == protocol.PlatformQuix {
+		if seller == quix.AddressWrapperSeaportProxy {
+			seller = common.HexToAddress(transaction.AddressFrom)
 		}
 
-		nft, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, spentItem.Token.String(), spentItem.Identifier)
-		if err != nil {
-			zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("contract_address", spentItem.Token.String()), zap.Int64("token_id", spentItem.Amount.Int64()), zap.Uint64("value", spentItem.Amount.Uint64()))
-
-			return nil, fmt.Errorf("nft to metadata: %w", err)
+		if buyer == quix.AddressWrapperSeaportProxy {
+			buyer = common.HexToAddress(transaction.AddressFrom)
 		}
-
-		nft.SetValue(decimal.NewFromBigInt(spentItem.Amount, 0))
-
-		for _, receivedItem := range event.Consideration {
-			if receivedItem.Recipient == event.Offerer {
-				if nft.Cost, err = i.buildCost(ctx, transaction.Network, receivedItem.Token, receivedItem.Amount); err != nil {
-					zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.String("contract_address", receivedItem.Token.String()), zap.Int64("token_id", receivedItem.Amount.Int64()))
-
-					return nil, fmt.Errorf("build cost: %w", err)
-				}
-
-				break
-			}
-		}
-
-		var index int64
-		for _, logForIndex := range relatedLogs {
-			// If a user purchases multiple NFTs in the same transaction,
-			// the log indexes will conflict and need to be matched with their transfer logs separately.
-			if len(logForIndex.Topics) == 4 &&
-				logForIndex.Topics[0] == erc721.EventHashTransfer &&
-				strings.EqualFold(common.HexToAddress(logForIndex.Topics[1].Hex()).String(), event.Offerer.String()) &&
-				strings.EqualFold(common.HexToAddress(logForIndex.Topics[2].Hex()).String(), event.Recipient.String()) &&
-				strings.EqualFold(logForIndex.Topics[3].Big().String(), nft.ID) {
-				index = int64(logForIndex.Index)
-
-				break
-			}
-		}
-
-		internalTransfer, err := i.buildTradeTransfer(transaction, index, platform, event.Recipient, event.Offerer, nft, nft.Cost)
-		if err != nil {
-			return nil, fmt.Errorf("build trade transfer: %w", err)
-		}
-
-		internalTransfers = append(internalTransfers, *internalTransfer)
 	}
+
+	var nft, cost *metadata.Token
+
+	for _, offer := range event.Offer {
+		switch offer.ItemType {
+		case opensea.ItemTypeNative, opensea.ItemTypeERC20:
+			if cost, err = i.buildCost(ctx, transaction.Network, offer.Token, offer.Amount); err != nil {
+				zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.Stringer("contract_address", offer.Token), zap.Stringer("token_id", offer.Amount))
+
+				return nil, fmt.Errorf("build cost: %w", err)
+			}
+		case opensea.ItemTypeERC721, opensea.ItemTypeERC1155:
+			if nft, err = i.tokenClient.NFTToMetadata(ctx, transaction.Network, offer.Token.String(), offer.Identifier); err != nil {
+				zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.Stringer("contract_address", offer.Token), zap.Stringer("token_id", offer.Amount), zap.Stringer("value", offer.Amount))
+
+				return nil, fmt.Errorf("nft to metadata: %w", err)
+			}
+
+			nft.SetValue(decimal.NewFromBigInt(offer.Amount, 0))
+		}
+	}
+
+	for _, consideration := range event.Consideration {
+		switch consideration.ItemType {
+		case opensea.ItemTypeNative, opensea.ItemTypeERC20:
+			// Ignore token transfers where receipt is not seller.
+			if consideration.Recipient != seller {
+				continue
+			}
+
+			if cost, err = i.buildCost(ctx, transaction.Network, consideration.Token, consideration.Amount); err != nil {
+				zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.Stringer("contract_address", consideration.Token), zap.Stringer("token_id", consideration.Amount))
+
+				return nil, fmt.Errorf("build cost: %w", err)
+			}
+		case opensea.ItemTypeERC721, opensea.ItemTypeERC1155:
+			// Offerer is a buyer, Recipient is a seller.
+			seller, buyer = buyer, seller
+
+			if nft, err = i.tokenClient.NFTToMetadata(ctx, transaction.Network, consideration.Token.String(), consideration.Identifier); err != nil {
+				zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.Stringer("contract_address", consideration.Token), zap.Stringer("token_id", consideration.Amount), zap.Stringer("value", consideration.Amount))
+
+				return nil, fmt.Errorf("nft to metadata: %w", err)
+			}
+
+			nft.SetValue(decimal.NewFromBigInt(consideration.Amount, 0))
+		}
+	}
+
+	if nft == nil {
+		return nil, fmt.Errorf("this is not an nft transaction")
+	}
+
+	var index int64
+	for _, logForIndex := range relatedLogs {
+		// If a user purchases multiple NFTs in the same transaction,
+		// the log indexes will conflict and need to be matched with their transfer logs separately.
+		if len(logForIndex.Topics) == 4 &&
+			logForIndex.Topics[0] == erc721.EventHashTransfer &&
+			strings.EqualFold(common.HexToAddress(logForIndex.Topics[1].Hex()).String(), event.Offerer.String()) &&
+			strings.EqualFold(common.HexToAddress(logForIndex.Topics[2].Hex()).String(), event.Recipient.String()) &&
+			strings.EqualFold(logForIndex.Topics[3].Big().String(), nft.ID) {
+			index = int64(logForIndex.Index)
+
+			break
+		}
+	}
+
+	internalTransfer, err := i.buildTradeTransfer(transaction, index, platform, seller, buyer, *nft, *cost)
+	if err != nil {
+		return nil, fmt.Errorf("build trade transfer: %w", err)
+	}
+
+	internalTransfers = append(internalTransfers, *internalTransfer)
 
 	return internalTransfers, nil
 }
@@ -172,12 +213,12 @@ func (i *internal) handleOpenSeaOrdersMatched(ctx context.Context, transaction m
 	case protocol.TokenStandardERC721:
 		erc721, err := erc721.NewERC721(transferLog.Address, ethereumClient)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("new erc721 contract: %w", err)
 		}
 
 		event, err := erc721.ParseTransfer(*transferLog)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("parse transfer event: %w", err)
 		}
 
 		tokenID = event.TokenId
@@ -185,12 +226,12 @@ func (i *internal) handleOpenSeaOrdersMatched(ctx context.Context, transaction m
 	case protocol.TokenStandardERC1155:
 		erc1155, err := erc1155.NewERC1155(transferLog.Address, ethereumClient)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("new erc1155 contract: %w", err)
 		}
 
 		event, err := erc1155.ParseTransferSingle(*transferLog)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("parse transfer single event: %w", err)
 		}
 
 		tokenID = event.Id
@@ -214,7 +255,7 @@ func (i *internal) handleOpenSeaOrdersMatched(ctx context.Context, transaction m
 		return nil, err
 	}
 
-	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, nft, cost)
+	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, *nft, *cost)
 	if err != nil {
 		return nil, err
 	}
