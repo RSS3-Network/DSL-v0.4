@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
+
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
@@ -68,7 +70,7 @@ import (
 
 const (
 	// 每个 indexer worker 最大并发数 50，目的是为了防止内存爆炸
-	// 同时能处理的任务等于 50 * indexer replicas（目前是 50 * 20 = 1000）
+	// 同时能处理的任务等于 50 * indexer replicas（目前是 50 * 30 = 1500）
 	// 我们应当认为大多数任务都是刷不出来内容的、快速的，所以这个值应当是足够的
 	// 此时即使任务堆积、刷新慢，至少 indexer 还有复活的机会并缓慢消耗掉任务；而不是死掉然后任务丢掉
 	MAX_CONCURRENT_JOBS = 50
@@ -203,6 +205,7 @@ func (s *Server) Initialize() (err error) {
 		mattersWorker,
 		transaction.New(),
 		metaverse.New(),
+		music.New(),
 	}
 
 	s.employer = shedlock.New()
