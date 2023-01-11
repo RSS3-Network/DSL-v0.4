@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
+
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
@@ -203,6 +205,7 @@ func (s *Server) Initialize() (err error) {
 		mattersWorker,
 		transaction.New(),
 		metaverse.New(),
+		music.New(),
 	}
 
 	s.employer = shedlock.New()
