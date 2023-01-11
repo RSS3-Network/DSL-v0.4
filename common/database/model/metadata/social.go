@@ -1,5 +1,7 @@
 package metadata
 
+import "math/big"
+
 // Post used for Post,Comment,Share
 type Post struct {
 	// TypeOnPlatform: used when the type on the platform is different from our type definition
@@ -17,6 +19,8 @@ type Post struct {
 	Categories     []string `json:"categories,omitempty"`
 	Tags           []string `json:"tags,omitempty"`
 	Reward         *Token   `json:"reward,omitempty"`
+	PublicationID  *big.Int `json:"publication_id,omitempty"`
+	ProfileID      *big.Int `json:"profile_id,omitempty"`
 }
 
 type Media struct {
