@@ -188,34 +188,25 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			RelatedUrls:     []string{utils.GetTxHashURL(protocol.NetworkPolygon, transaction.Hash)},
 		}
 
-		var eventType string
 		var handleErr error
 		var batchTransfers []model.Transfer
 		switch log.Topics[0] {
 		case lens.EventHashPostCreated:
 			handleErr = c.HandlePostCreated(ctx, *lensContract, transaction, &transfer, *log)
-			eventType = "handlePostCreated"
 		case lens.EventHashCommentCreated:
 			handleErr = c.HandleCommentCreated(ctx, *lensContract, transaction, &transfer, *log)
-			eventType = "handleCommentCreated"
 		case lens.EventHashProfileCreated:
 			handleErr = c.HandleProfileCreated(ctx, *lensContract, transaction, &transfer, *log)
-			eventType = "handleProfileCreated"
 		case lens.EventHashMirrorCreated:
 			handleErr = c.HandleMirrorCreated(ctx, *lensContract, transaction, &transfer, *log)
-			eventType = "handleMirrorCreated"
 		case lens.EventHashFollowed:
 			batchTransfers, handleErr = c.HandleFollowed(ctx, *lensContract, transaction, &transfer, *log)
-			eventType = "HandleFollowed"
 		case lens.EventHashFollowNFTTransferred:
 			handleErr = c.HandleFollowNFTTransferred(ctx, *lensContract, transaction, &transfer, *log)
-			eventType = "HandleFollowNFTTransferred"
 		default:
 			continue
 		}
 		if handleErr != nil {
-			logrus.Errorf("[lens worker] handleReceipt: %s error, %v", eventType, handleErr)
-
 			continue
 		}
 
@@ -328,6 +319,8 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 
 	rawMetadata, err := json.Marshal(&profile)
 	if err != nil {
+		loggerx.Global().Error("[lens worker] handleProfileCreated: json marshal error", zap.Error(err))
+
 		return err
 	}
 
@@ -369,6 +362,8 @@ func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.
 
 	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
 	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))	
+
 		return err
 	}
 
@@ -405,6 +400,8 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 		}
 
 		if transfer.Metadata, err = json.Marshal(profile); err != nil {
+			loggerx.Global().Error("[lens worker] HandleFollowed: json marshal error", zap.Error(err))
+
 			return nil, err
 		}
 
@@ -423,6 +420,8 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (err error) {
 	event, err := lensContract.EventsFilterer.ParseFollowNFTTransferred(log)
 	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: ParseFollowNFTTransferred error", zap.Error(err))
+
 		return err
 	}
 
@@ -433,6 +432,8 @@ func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract co
 
 	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
 	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleMirrorCreated: GetProfile error", zap.Error(err))	
+
 		return err
 	}
 
@@ -440,6 +441,8 @@ func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract co
 	transfer.AddressFrom = transaction.Owner
 
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
+		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: json marshal error", zap.Error(err))	
+
 		return err
 	}
 
