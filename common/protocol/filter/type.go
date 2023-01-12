@@ -38,6 +38,12 @@ const (
 	CollectibleBurn     string = "burn"
 	CollectiblePoap     string = "poap"
 	CollectibleApproval string = "approval"
+	CollectibleMusic    string = "music"
+
+	// sub-types for Music
+	CollectibleMusicBuyEdition string = "buy"
+	CollectibleMusicRelease    string = "release"
+	CollectibleMusicMint       string = "mint"
 
 	// social types
 	SocialPost     string = "post"

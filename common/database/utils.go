@@ -38,9 +38,7 @@ func UpsertTransactions(ctx context.Context, transactions []*model.Transaction, 
 
 			internalTransfers = append(internalTransfers, transfer)
 
-			if dedupTransfer {
-				transfers = append(transfers, transfer)
-			}
+			transfers = append(transfers, transfer)
 		}
 
 		if len(internalTransfers) == 0 {

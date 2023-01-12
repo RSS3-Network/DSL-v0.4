@@ -27,6 +27,7 @@ import (
 	lens_comm "github.com/naturalselectionlabs/pregod/common/worker/lens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
+	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -75,7 +76,7 @@ func (s *service) Run() error {
 
 			for {
 				// get lens logs
-				transactions, err := s.getLensLogs(ctx, eventHash, contractAddress)
+				transactions, cacheInfo, err := s.getLensLogs(ctx, eventHash, contractAddress)
 				if err != nil {
 					loggerx.Global().Error("failed to query lens", zap.Error(err))
 
@@ -113,6 +114,10 @@ func (s *service) Run() error {
 				if err != nil {
 					continue
 				}
+
+				// set cache
+				cacheKey := fmt.Sprintf(lensLogsCacheKey, eventHash.String())
+				cache.Global().Set(ctx, cacheKey, cacheInfo, 7*24*time.Hour)
 			}
 		}(eventHash, contractAddress)
 	}
@@ -120,16 +125,18 @@ func (s *service) Run() error {
 	return nil
 }
 
-func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contractAddress common.Address) ([]*model.Transaction, error) {
+func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contractAddress common.Address) ([]*model.Transaction, string, error) {
 	tracer := otel.Tracer("lens")
 	_, trace := tracer.Start(ctx, "len:GetLensLogs")
 	var internalTransactions []*model.Transaction
 	var err error
 	defer func() { opentelemetry.Log(trace, nil, internalTransactions, err) }()
 
+	limit := 100
 	query := kurora.DatasetLensEventQuery{
 		Address:    &contractAddress,
 		TopicFirst: &eventHash,
+		Limit:      &limit,
 	}
 
 	cacheKey := fmt.Sprintf(lensLogsCacheKey, eventHash.String())
@@ -146,7 +153,7 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 	result, err := s.kuroraClient.FetchDatasetLensEvents(ctx, query)
 	if err != nil {
 		loggerx.Global().Error("FetchDatasetLensEvents error", zap.Error(err), zap.Any("query", query))
-		return nil, err
+		return nil, "", err
 	}
 
 	transactionMap := make(map[string]*model.Transaction)
@@ -168,16 +175,15 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 		internalTransactions = append(internalTransactions, transaction)
 	}
 
-	// set cache
-	if len(result) == 0 {
-		return internalTransactions, nil
+	last, err := lo.Last(result)
+	if err != nil {
+		return nil, "", nil
 	}
 
-	cursor := kurora.LogCursor(result[len(result)-1].TransactionHash, result[len(result)-1].Index)
-	cacheInfo = fmt.Sprintf("%v:%v", result[len(result)-1].BlockNumber, cursor)
-	cache.Global().Set(ctx, cacheKey, cacheInfo, 7*24*time.Hour)
+	cursor := kurora.LogCursor(last.TransactionHash, last.Index)
+	cacheInfo = fmt.Sprintf("%v:%v", last.BlockNumber, cursor)
 
-	return internalTransactions, nil
+	return internalTransactions, cacheInfo, nil
 }
 
 func (s *service) getInternalTransaction(ctx context.Context, transactions []*model.Transaction) []*model.Transaction {
