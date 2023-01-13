@@ -8,7 +8,7 @@ const (
 	TransactionBurn     string = "burn"
 	TransactionApproval string = "approval"
 
-	// actiosn for TransactionApproval and CollectibleApproval
+	// Actions for TransactionApproval and CollectibleApproval
 	ActionApprove string = "approve"
 	ActionRevoke  string = "revoke"
 

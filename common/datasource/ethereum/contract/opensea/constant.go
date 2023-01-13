@@ -6,8 +6,10 @@ import (
 )
 
 const (
-	ItemTypeNative uint8 = 0
-	ItemTypeERC20  uint8 = 1
+	ItemTypeNative  uint8 = 0
+	ItemTypeERC20   uint8 = 1
+	ItemTypeERC721  uint8 = 2
+	ItemTypeERC1155 uint8 = 3
 
 	Platform = "OpenSea"
 )
