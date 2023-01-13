@@ -72,9 +72,9 @@ func (i *internal) handleTofuNFTEvInventoryUpdate(ctx context.Context, transacti
 	nftValue := decimal.NewFromInt(1)
 	nftMetadata.Value = &nftValue
 
-	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Inventory.Seller, event.Inventory.Buyer, nftMetadata, cost)
+	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Inventory.Seller, event.Inventory.Buyer, *nftMetadata, *cost)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("build trade transfer: %w", err)
 	}
 
 	internalTransfers := []model.Transfer{
