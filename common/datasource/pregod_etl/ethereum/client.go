@@ -23,6 +23,7 @@ type Transfer struct {
 	To       []byte         `gorm:"column:to_address"`
 	Value    float64        `gorm:"column:value"`
 	Category string         `gorm:"column:category"`
+	Status   int64          `gorm:"column:status"`
 }
 
 func GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter) (*GetAssetTransfersResult, error) {
@@ -31,9 +32,9 @@ func GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter
 	blockNum := parameter.FromBlock
 
 	err := database.EthDb().
-		Raw("select 'external' as category,value,block_number,hash,from_address,to_address from ethereum.transactions where block_number >= ? and from_address = ? "+
+		Raw("select 'external' as category,value,block_number,hash,from_address,to_address,receipt_status as status from ethereum.transactions where block_number >= ? and from_address = ? "+
 			"UNION ALL "+
-			"select '' as category,value,block_number,transaction_hash as hash,from_address,to_address from ethereum.token_transfers where block_number >= ? and to_address = ? order by block_number",
+			"select '' as category,value,block_number,transaction_hash as hash,from_address,to_address, 1 as status from ethereum.token_transfers where block_number >= ? and to_address = ? order by block_number",
 			blockNum, fromAddress, blockNum, fromAddress).
 		Scan(&result.Transfers).
 		WithContext(ctx).

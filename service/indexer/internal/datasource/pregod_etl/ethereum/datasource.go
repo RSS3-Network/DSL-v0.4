@@ -121,6 +121,9 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 	}
 
 	for _, transfer := range result.Transfers {
+		if transfer.Status == 0 {
+			continue
+		}
 		transaction := model.Transaction{
 			BlockNumber: transfer.BlockNum,
 			Hash:        transfer.Hash.Hex(),
