@@ -1,6 +1,7 @@
 package rabbitmq
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -111,14 +112,18 @@ func connect(mq *configx.RabbitMQ) (err error) {
 		return err
 	}
 
+	// work queue
+	if protocol.WorkQ2RoutingKey[mq.QueueWork] == "" {
+		return fmt.Errorf("invalid work queue: %s", mq.QueueWork)
+	}
 	if rabbitmqQueue, err = rabbitmqChannel.QueueDeclare(
-		protocol.IndexerWorkQueue, false, false, false, false, nil,
+		mq.QueueWork, false, false, false, false, nil,
 	); err != nil {
 		return err
 	}
 
 	if err := rabbitmqChannel.QueueBind(
-		rabbitmqQueue.Name, protocol.IndexerWorkRoutingKey, protocol.ExchangeJob, false, nil,
+		rabbitmqQueue.Name, protocol.WorkQ2RoutingKey[mq.QueueWork], protocol.ExchangeJob, false, nil,
 	); err != nil {
 		return err
 	}
@@ -128,7 +133,7 @@ func connect(mq *configx.RabbitMQ) (err error) {
 		return err
 	}
 
-	// asset mq
+	// asset queue
 	if rabbitmqAssetQueue, err = rabbitmqChannel.QueueDeclare(
 		protocol.IndexerAssetQueue, false, false, false, false, nil,
 	); err != nil {

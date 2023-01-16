@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pregod-1-1-indexer-io
+  namespace: pregod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pregod-1-1-indexer-io
+  template:
+    metadata:
+      labels:
+        app: pregod-1-1-indexer-io
+    spec:
+      containers:
+        - image: $IMAGE_TAG_RELEASE
+          imagePullPolicy: Always
+          name: pregod-1-1
+          envFrom:
+            - secretRef:
+                name: pregod-1-1
+          env:
+            - name: CONFIG_ENV_RABBITMQ_QUEUE_WORK
+              value: "pregod11.indexer-io.work"
+          command:
+            - indexer
+          resources:
+            requests:
+              memory: "400Mi"
+              cpu: "300m"
+            limits:
+              memory: "6000Mi"
+              cpu: "3000m"

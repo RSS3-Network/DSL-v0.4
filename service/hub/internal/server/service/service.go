@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
@@ -139,6 +140,8 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		protocol.NetworkEIP1577,
 	}
 
+	routingKey := getRoutingKeyByAPIKey(ctx)
+
 	for _, network := range networks {
 		message.Network = network
 
@@ -147,7 +150,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 			return
 		}
 
-		if err := s.rabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
+		if err := s.rabbitmqChannel.Publish(protocol.ExchangeJob, routingKey, false, false, rabbitmq.Publishing{
 			ContentType: protocol.ContentTypeJSON,
 			Body:        messageData,
 		}); err != nil {
@@ -155,6 +158,25 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 			return
 		}
 	}
+}
+
+// if not valid, return empty string
+func getRoutingKeyByAPIKey(ctx context.Context) string {
+	// default
+	res := protocol.IndexerWorkRoutingKey
+
+	// api key check
+	apiKey := ctx.Value(constant.API_KEY_CTX_KEY)
+	if apiKey == nil {
+		return res
+	}
+	if v, ok := apiKey.(string); !ok {
+		return res
+	} else if v == constant.IO_API_Key {
+		res = protocol.IndexerWorkRoutingKeyIO
+	}
+
+	return res
 }
 
 // publishIndexerAssetMessage create a rabbitmq job to index the latest user data
