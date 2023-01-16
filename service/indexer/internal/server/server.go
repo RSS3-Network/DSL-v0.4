@@ -22,7 +22,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/databeat"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -57,7 +56,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
 	"github.com/samber/lo"
-	"github.com/scylladb/go-set/strset"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -531,9 +529,6 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 	)
 
 	for _, transaction := range transactions {
-		addresses := strset.New(transaction.AddressFrom, transaction.AddressTo)
-
-		// Ignore empty transactions
 		internalTransfers := make([]model.Transfer, 0)
 
 		for _, transfer := range transaction.Transfers {
@@ -554,23 +549,15 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 			if bytes.Equal(transfer.Metadata, metadata.Default) {
 				continue
 			}
-			// handle unsupported Unicode escape sequence
+
+			// Handle unsupported Unicode escape sequence
 			if bytes.Contains(transfer.Metadata, []byte(`\u0000`)) {
 				transfer.Metadata = bytes.ReplaceAll(transfer.Metadata, []byte(`\u0000`), []byte{})
 			}
 
 			transfers = append(transfers, transfer)
-
-			if transfer.AddressFrom != "" && transfer.AddressFrom != ethereum.AddressGenesis.String() {
-				addresses.Add(transfer.AddressFrom)
-			}
-
-			if transfer.AddressTo != "" && transfer.AddressTo != ethereum.AddressGenesis.String() {
-				addresses.Add(transfer.AddressTo)
-			}
 		}
 
-		transaction.Addresses = addresses.List()
 		updatedTransactions = append(updatedTransactions, transaction)
 	}
 
