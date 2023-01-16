@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/blockscout"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
@@ -75,18 +74,14 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		unindexedTransactions = append(unindexedTransactions, transaction)
 	}
 
-	indexedTransactions, err := ethereum.BuildTransactions(ctx, message, unindexedTransactions)
-	if err != nil {
-		return nil, err
-	}
+	//indexedTransactions, err := ethereum.BuildTransactions(ctx, message, unindexedTransactions)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	internalTransactions := make([]model.Transaction, 0)
 
-	for _, transaction := range indexedTransactions {
-		if transaction.Timestamp.Before(message.Timestamp) {
-			continue
-		}
-
+	for _, transaction := range unindexedTransactions {
 		internalTransactions = append(internalTransactions, *transaction)
 	}
 

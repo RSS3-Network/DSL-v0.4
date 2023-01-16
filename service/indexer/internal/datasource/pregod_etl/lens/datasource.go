@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
@@ -82,11 +81,11 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		}
 
 		// build transaction
-		if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
-			loggerx.Global().Error("failed to build transactions", zap.Error(err))
-
-			return nil, err
-		}
+		//if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
+		//	loggerx.Global().Error("failed to build transactions", zap.Error(err))
+		//
+		//	return nil, err
+		//}
 
 		for _, transaction := range transactions {
 			if transaction != nil {

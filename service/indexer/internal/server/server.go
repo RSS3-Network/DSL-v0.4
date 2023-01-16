@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/build_transactions"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
@@ -81,6 +83,13 @@ type Server struct {
 	workers          []worker.Worker
 	employer         *shedlock.Employer
 }
+
+// sort
+type TransactionList []model.Transaction
+
+func (ts TransactionList) Len() int           { return len(ts) }
+func (ts TransactionList) Less(i, j int) bool { return ts[i].BlockNumber >= ts[j].BlockNumber }
+func (ts TransactionList) Swap(i, j int)      { ts[i], ts[j] = ts[j], ts[i] }
 
 var _ command.Interface = &Server{}
 
@@ -191,6 +200,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
+		build_transactions.New(),
 		liquidity.New(),
 		swapWorker,
 		bridge.New(),
@@ -425,9 +435,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	}
 	wg.Wait()
 
-	transactionsMap := getTransactionsMap(transactions)
-
-	return s.handleWorkers(ctx, message, transactions, transactionsMap)
+	return s.handleWorkers(ctx, message, transactions)
 }
 
 func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (err error) {
@@ -603,42 +611,58 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 	return tx.Commit().Error
 }
 
-func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction, transactionsMap map[string]model.Transaction) (err error) {
+func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (err error) {
 	tracer := otel.Tracer("indexer")
 	ctx, span := tracer.Start(ctx, "indexer:handleWorkers")
 
 	defer opentelemetry.Log(span, message, transactions, err)
 
+	// sort, lastest -> oldest
+	sort.Sort(TransactionList(transactions))
+
+	result := []model.Transaction{}
+
 	// Using workers to clean data
-	for _, worker := range s.workers {
-		for _, network := range worker.Networks() {
-			if network == message.Network {
-				// log
-				loggerx.Global().Info("start worker", zap.String("worker", worker.Name()), zap.String("address", message.Address))
-				startTime := time.Now()
+	for _, ts := range lo.Chunk(transactions, 1000) {
+		transactionsMap := make(map[string]model.Transaction)
 
-				internalTransactions, err := worker.Handle(ctx, message, transactions)
+		for _, worker := range s.workers {
+			for _, network := range worker.Networks() {
+				if network == message.Network {
+					// log
+					loggerx.Global().Info("start worker", zap.String("worker", worker.Name()), zap.String("address", message.Address))
+					startTime := time.Now()
 
-				// log
-				loggerx.Global().Info("worker completion", zap.String("worker", worker.Name()), zap.Int("transactions", len(internalTransactions)), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
+					internalTransactions, err := worker.Handle(ctx, message, ts)
 
-				if err != nil {
-					loggerx.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
+					// log
+					loggerx.Global().Info("worker completion", zap.String("worker", worker.Name()), zap.Int("transactions", len(internalTransactions)), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
 
-					continue
+					if err != nil {
+						loggerx.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
+
+						continue
+					}
+
+					if len(internalTransactions) == 0 {
+						continue
+					}
+
+					newTransactionMap := getTransactionsMap(internalTransactions)
+					for _, t := range newTransactionMap {
+						transactionsMap[t.Hash] = t
+					}
+
+					ts = transactionsMap2Array(transactionsMap)
 				}
-
-				if len(internalTransactions) == 0 {
-					continue
-				}
-
-				newTransactionMap := getTransactionsMap(internalTransactions)
-				for _, t := range newTransactionMap {
-					transactionsMap[t.Hash] = t
-				}
-
-				transactions = transactionsMap2Array(transactionsMap)
 			}
+		}
+
+		result = append(result, ts...)
+
+		// only update the latest 1000 data
+		if len(result) > 1000 {
+			break
 		}
 	}
 

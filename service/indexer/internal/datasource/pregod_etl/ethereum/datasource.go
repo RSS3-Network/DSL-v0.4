@@ -9,7 +9,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	eth_etl "github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -60,11 +59,11 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		transactions = append(transactions, &internalTransaction)
 	}
 
-	if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
-		loggerx.Global().Error("failed to build transactions", zap.Error(err))
-
-		return nil, err
-	}
+	//if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
+	//	loggerx.Global().Error("failed to build transactions", zap.Error(err))
+	//
+	//	return nil, err
+	//}
 
 	internalTransactions := make([]model.Transaction, 0)
 
