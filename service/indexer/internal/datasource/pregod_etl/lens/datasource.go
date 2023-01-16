@@ -140,13 +140,13 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 	var mu sync.Mutex
 	for eventHash, contractAddress := range lens.SupportLensEvents {
 		wg.Add(1)
-		go func(eventHash common.Hash, contractAddress *common.Address) {
+		go func(eventHash common.Hash, contractAddress common.Address) {
 			defer wg.Done()
 
 			query := kurora.DatasetLensEventQuery{
 				TopicFirst:  &eventHash,
 				TopicSecond: &hash,
-				Address:     contractAddress,
+				Address:     &contractAddress,
 				// BlockNumberFrom: message.BlockNumber,
 			}
 

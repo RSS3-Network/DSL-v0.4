@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/shopspring/decimal"
 
@@ -25,6 +27,7 @@ import (
 	lens_comm "github.com/naturalselectionlabs/pregod/common/worker/lens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
+	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -33,7 +36,7 @@ import (
 var (
 	_ crawler.Crawler = (*service)(nil)
 
-	lensLogsCacheKey = "crawler:lens"
+	lensLogsCacheKey = "crawler:lens:%v"
 )
 
 type service struct {
@@ -65,61 +68,79 @@ func (s *service) Run() error {
 		return err
 	}
 
-	for {
-		// get lens logs
-		transactions, err := s.getLensLogs(ctx)
-		if err != nil {
-			loggerx.Global().Error("failed to query lens", zap.Error(err))
+	var wg sync.WaitGroup
+	for eventHash, contractAddress := range lens.SupportLensEvents {
+		wg.Add(1)
+		go func(eventHash common.Hash, contractAddress common.Address) {
+			defer wg.Done()
 
-			time.Sleep(10 * time.Minute)
-			continue
-		}
+			for {
+				// get lens logs
+				transactions, cacheInfo, err := s.getLensLogs(ctx, eventHash, contractAddress)
+				if err != nil {
+					loggerx.Global().Error("failed to query lens", zap.Error(err))
 
-		if len(transactions) == 0 {
-			time.Sleep(10 * time.Minute)
+					time.Sleep(10 * time.Minute)
+					continue
+				}
 
-			continue
-		}
+				if len(transactions) == 0 {
+					time.Sleep(10 * time.Minute)
 
-		// deduplicate data
-		transactions, err = database.DeduplicateTransactions(ctx, transactions)
-		if err != nil || len(transactions) == 0 {
-			continue
-		}
+					continue
+				}
 
-		// build transaction
-		message := &protocol.Message{
-			Network: protocol.NetworkPolygon,
-		}
-		if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
-			logrus.Error("failed to build transactions, ", err)
+				// deduplicate data
+				// transactions, err = database.DeduplicateTransactions(ctx, transactions)
+				// if err != nil || len(transactions) == 0 {
+				// 	continue
+				// }
 
-			continue
-		}
+				// build transaction
+				message := &protocol.Message{
+					Network: protocol.NetworkPolygon,
+				}
+				if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
+					logrus.Error("failed to build transactions, ", err)
 
-		// lens worker
-		internalTransactions := s.getInternalTransaction(ctx, transactions)
+					continue
+				}
 
-		// insert db
-		err = database.UpsertTransactions(ctx, internalTransactions, false)
-		if err != nil {
-			continue
-		}
+				// lens worker
+				internalTransactions := s.getInternalTransaction(ctx, transactions)
+
+				// insert db
+				err = database.UpsertTransactions(ctx, internalTransactions, false)
+				if err != nil {
+					continue
+				}
+
+				// set cache
+				cacheKey := fmt.Sprintf(lensLogsCacheKey, eventHash.String())
+				cache.Global().Set(ctx, cacheKey, cacheInfo, 7*24*time.Hour)
+			}
+		}(eventHash, contractAddress)
 	}
+	wg.Wait()
+	return nil
 }
 
-func (s *service) getLensLogs(ctx context.Context) ([]*model.Transaction, error) {
+func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contractAddress common.Address) ([]*model.Transaction, string, error) {
 	tracer := otel.Tracer("lens")
 	_, trace := tracer.Start(ctx, "len:GetLensLogs")
 	var internalTransactions []*model.Transaction
 	var err error
 	defer func() { opentelemetry.Log(trace, nil, internalTransactions, err) }()
 
+	limit := 100
 	query := kurora.DatasetLensEventQuery{
-		Address: &lens.HubProxyContractAddress,
+		Address:    &contractAddress,
+		TopicFirst: &eventHash,
+		Limit:      &limit,
 	}
 
-	cacheInfo, _ := cache.Global().Get(ctx, lensLogsCacheKey).Result()
+	cacheKey := fmt.Sprintf(lensLogsCacheKey, eventHash.String())
+	cacheInfo, _ := cache.Global().Get(ctx, cacheKey).Result()
 	if cacheList := strings.Split(cacheInfo, ":"); len(cacheList) == 2 {
 		blockNumber, _ := decimal.NewFromString(cacheList[0])
 		query.BlockNumberFrom = &blockNumber
@@ -132,7 +153,7 @@ func (s *service) getLensLogs(ctx context.Context) ([]*model.Transaction, error)
 	result, err := s.kuroraClient.FetchDatasetLensEvents(ctx, query)
 	if err != nil {
 		loggerx.Global().Error("FetchDatasetLensEvents error", zap.Error(err), zap.Any("query", query))
-		return nil, err
+		return nil, "", err
 	}
 
 	transactionMap := make(map[string]*model.Transaction)
@@ -154,16 +175,15 @@ func (s *service) getLensLogs(ctx context.Context) ([]*model.Transaction, error)
 		internalTransactions = append(internalTransactions, transaction)
 	}
 
-	// set cache
-	if len(result) == 0 {
-		return internalTransactions, nil
+	last, err := lo.Last(result)
+	if err != nil {
+		return nil, "", nil
 	}
 
-	cursor := kurora.LogCursor(result[len(result)-1].TransactionHash, result[len(result)-1].Index)
-	cacheInfo = fmt.Sprintf("%v:%v", result[len(result)-1].BlockNumber, cursor)
-	cache.Global().Set(ctx, lensLogsCacheKey, cacheInfo, 7*24*time.Hour)
+	cursor := kurora.LogCursor(last.TransactionHash, last.Index)
+	cacheInfo = fmt.Sprintf("%v:%v", last.BlockNumber, cursor)
 
-	return internalTransactions, nil
+	return internalTransactions, cacheInfo, nil
 }
 
 func (s *service) getInternalTransaction(ctx context.Context, transactions []*model.Transaction) []*model.Transaction {

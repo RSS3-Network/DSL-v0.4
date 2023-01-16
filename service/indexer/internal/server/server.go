@@ -15,6 +15,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
+
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
@@ -22,7 +24,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/databeat"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -57,7 +58,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
 	"github.com/samber/lo"
-	"github.com/scylladb/go-set/strset"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -70,7 +70,7 @@ import (
 
 const (
 	// 每个 indexer worker 最大并发数 50，目的是为了防止内存爆炸
-	// 同时能处理的任务等于 50 * indexer replicas（目前是 50 * 20 = 1000）
+	// 同时能处理的任务等于 50 * indexer replicas（目前是 50 * 30 = 1500）
 	// 我们应当认为大多数任务都是刷不出来内容的、快速的，所以这个值应当是足够的
 	// 此时即使任务堆积、刷新慢，至少 indexer 还有复活的机会并缓慢消耗掉任务；而不是死掉然后任务丢掉
 	MAX_CONCURRENT_JOBS = 50
@@ -213,6 +213,7 @@ func (s *Server) Initialize() (err error) {
 		mattersWorker,
 		transaction.New(),
 		metaverse.New(),
+		music.New(),
 	}
 
 	s.employer = shedlock.New()
@@ -536,9 +537,6 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 	)
 
 	for _, transaction := range transactions {
-		addresses := strset.New(transaction.AddressFrom, transaction.AddressTo)
-
-		// Ignore empty transactions
 		internalTransfers := make([]model.Transfer, 0)
 
 		for _, transfer := range transaction.Transfers {
@@ -559,23 +557,15 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 			if bytes.Equal(transfer.Metadata, metadata.Default) {
 				continue
 			}
-			// handle unsupported Unicode escape sequence
+
+			// Handle unsupported Unicode escape sequence
 			if bytes.Contains(transfer.Metadata, []byte(`\u0000`)) {
 				transfer.Metadata = bytes.ReplaceAll(transfer.Metadata, []byte(`\u0000`), []byte{})
 			}
 
 			transfers = append(transfers, transfer)
-
-			if transfer.AddressFrom != "" && transfer.AddressFrom != ethereum.AddressGenesis.String() {
-				addresses.Add(transfer.AddressFrom)
-			}
-
-			if transfer.AddressTo != "" && transfer.AddressTo != ethereum.AddressGenesis.String() {
-				addresses.Add(transfer.AddressTo)
-			}
 		}
 
-		transaction.Addresses = addresses.List()
 		updatedTransactions = append(updatedTransactions, transaction)
 	}
 

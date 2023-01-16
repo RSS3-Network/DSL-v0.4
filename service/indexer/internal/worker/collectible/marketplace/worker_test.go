@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/k0kubun/pp/v3"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -72,6 +73,82 @@ func Test_internal_Handle(t *testing.T) {
 				assert.NotEmpty(t, transactions)
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformOpenSea) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "opensea seaport 2",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x409e69490da698cf2f9a928d96e769c59a5ffbbb", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0x30d3791752c1d486e630b009aa83b4d9bc9a551531d6245396e5806a7e730c81
+						Hash:        "0x30d3791752c1d486e630b009aa83b4d9bc9a551531d6245396e5806a7e730c81",
+						BlockNumber: 16382596,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.NotEmpty(t, transactions)
+
+				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformOpenSea) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "opensea seaport sweep",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x0fefed77bb715e96f1c35c1a4e0d349563d6f6c0", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0xe4690049758d03cdba2556220e85c034e44b604af5ca5b55fe0a8d2143f7873f
+						Hash:        "0xe4690049758d03cdba2556220e85c034e44b604af5ca5b55fe0a8d2143f7873f",
+						BlockNumber: 16393668,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.NotEmpty(t, transactions)
+
+				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					if !assert.Equal(t, transaction.Platform, protocol.PlatformOpenSea) {
 						return false
 					}
@@ -107,6 +184,8 @@ func Test_internal_Handle(t *testing.T) {
 				assert.NotEmpty(t, transactions)
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					if !assert.Equal(t, transaction.Platform, protocol.PlatformOpenSea) {
 						return false
 					}
@@ -142,6 +221,8 @@ func Test_internal_Handle(t *testing.T) {
 				assert.NotEmpty(t, transactions)
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					if !assert.Equal(t, transaction.Platform, protocol.PlatformOpenSea) {
 						return false
 					}
@@ -186,6 +267,8 @@ func Test_internal_Handle(t *testing.T) {
 				assert.NotEmpty(t, transactions)
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					if !assert.Equal(t, transaction.Platform, protocol.PlatformLooksRare) {
 						return false
 					}
@@ -223,6 +306,8 @@ func Test_internal_Handle(t *testing.T) {
 				assert.NotEmpty(t, transactions)
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					if !assert.Equal(t, transaction.Platform, protocol.PlatformLooksRare) {
 						return false
 					}
@@ -260,6 +345,8 @@ func Test_internal_Handle(t *testing.T) {
 				assert.NotEmpty(t, transactions)
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					if !assert.Equal(t, transaction.Platform, protocol.PlatformQuix) {
 						return false
 					}
@@ -295,6 +382,8 @@ func Test_internal_Handle(t *testing.T) {
 				assert.NotEmpty(t, transactions)
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					if !assert.Equal(t, transaction.Platform, protocol.PlatformQuix) {
 						return false
 					}
@@ -330,6 +419,8 @@ func Test_internal_Handle(t *testing.T) {
 				assert.NotEmpty(t, transactions)
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					assert.Len(t, transaction.Transfers, 2)
 
 					// This transaction purchased two NFTs from both OpenSea and LooksRare through Gem
@@ -388,6 +479,45 @@ func Test_internal_Handle(t *testing.T) {
 				}
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformUniswap) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "uniswap 2",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x1cb1fa7d604e06cd8c596b5b7bcaaf5c5fdefd53", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0xca38b066d755cad06be0443888726452fe55db56bf09a7d8d2b8ded2388330f2
+						Hash:        "0xca38b066d755cad06be0443888726452fe55db56bf09a7d8d2b8ded2388330f2",
+						BlockNumber: 16131568,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.NotEmpty(t, transactions)
+
+				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					if !assert.Equal(t, transaction.Platform, protocol.PlatformUniswap) {
 						return false
 					}
@@ -427,6 +557,8 @@ func Test_internal_Handle(t *testing.T) {
 				}
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					if !assert.Equal(t, transaction.Platform, protocol.PlatformTofuNFT) {
 						return false
 					}
@@ -462,6 +594,8 @@ func Test_internal_Handle(t *testing.T) {
 				assert.Len(t, transactions, 1)
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					assert.Len(t, transaction.Transfers, 4)
 				}
 
@@ -501,10 +635,14 @@ func Test_internal_Handle(t *testing.T) {
 				assert.Len(t, transactions, 1)
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					assert.Len(t, transaction.Transfers, 1)
 				}
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					if !assert.Equal(t, transaction.Platform, protocol.PlatformElement) {
 						return false
 					}
@@ -540,6 +678,8 @@ func Test_internal_Handle(t *testing.T) {
 				assert.Len(t, transactions, 1)
 
 				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
 					assert.Len(t, transaction.Transfers, 1)
 				}
 

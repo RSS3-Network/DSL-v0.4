@@ -57,6 +57,8 @@ type FormatOption struct {
 	Transfer         *model.Transfer
 	ProfileIdPointed *big.Int
 	PubIdPointed     *big.Int
+	ProfileId        *big.Int
+	PubId            *big.Int
 }
 
 const (
@@ -153,15 +155,13 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 		return nil, err
 	}
 
-	receipt, err := ethclient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
-	if err != nil {
-		logrus.Errorf("[lens worker] ethereumClient TransactionReceipt error, %v", err)
-
-		return nil, err
+	var sourceData ethereum.SourceData
+	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal source data: %w", err)
 	}
 
 	// parse log
-	for _, log := range receipt.Logs {
+	for _, log := range sourceData.Receipt.Logs {
 		lensContract, err := contract.NewEvents(log.Address, ethclient)
 		if err != nil {
 			logrus.Errorf("[lens worker] handleReceipt: new events error, %v", err)
@@ -188,34 +188,25 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			RelatedUrls:     []string{utils.GetTxHashURL(protocol.NetworkPolygon, transaction.Hash)},
 		}
 
-		var eventType string
 		var handleErr error
 		var batchTransfers []model.Transfer
 		switch log.Topics[0] {
 		case lens.EventHashPostCreated:
 			handleErr = c.HandlePostCreated(ctx, *lensContract, transaction, &transfer, *log)
-			eventType = "handlePostCreated"
 		case lens.EventHashCommentCreated:
 			handleErr = c.HandleCommentCreated(ctx, *lensContract, transaction, &transfer, *log)
-			eventType = "handleCommentCreated"
 		case lens.EventHashProfileCreated:
 			handleErr = c.HandleProfileCreated(ctx, *lensContract, transaction, &transfer, *log)
-			eventType = "handleProfileCreated"
 		case lens.EventHashMirrorCreated:
 			handleErr = c.HandleMirrorCreated(ctx, *lensContract, transaction, &transfer, *log)
-			eventType = "handleMirrorCreated"
 		case lens.EventHashFollowed:
 			batchTransfers, handleErr = c.HandleFollowed(ctx, *lensContract, transaction, &transfer, *log)
-			eventType = "HandleFollowed"
 		case lens.EventHashFollowNFTTransferred:
 			handleErr = c.HandleFollowNFTTransferred(ctx, *lensContract, transaction, &transfer, *log)
-			eventType = "HandleFollowNFTTransferred"
 		default:
 			continue
 		}
 		if handleErr != nil {
-			logrus.Errorf("[lens worker] handleReceipt: %s error, %v", eventType, handleErr)
-
 			continue
 		}
 
@@ -239,11 +230,11 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 	}
 
 	err = c.FormatContent(ctx, &FormatOption{
-		ContentURI:       event.ContentURI,
-		ContentType:      Post,
-		Transfer:         transfer,
-		ProfileIdPointed: event.ProfileId,
-		PubIdPointed:     event.PubId,
+		ContentURI:  event.ContentURI,
+		ContentType: Post,
+		Transfer:    transfer,
+		ProfileId:   event.ProfileId,
+		PubId:       event.PubId,
 	})
 	if err != nil {
 		loggerx.Global().Error("[lens worker] HandlePostCreated: FormatContent error", zap.Error(err))
@@ -280,6 +271,8 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 		ContentURI:       event.ContentURI,
 		ContentType:      Comment,
 		Transfer:         transfer,
+		ProfileId:        event.ProfileId,
+		PubId:            event.PubId,
 		ProfileIdPointed: event.ProfileIdPointed,
 		PubIdPointed:     event.PubIdPointed,
 	})
@@ -328,6 +321,8 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 
 	rawMetadata, err := json.Marshal(&profile)
 	if err != nil {
+		loggerx.Global().Error("[lens worker] handleProfileCreated: json marshal error", zap.Error(err))
+
 		return err
 	}
 
@@ -359,6 +354,8 @@ func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.
 		ContentURI:       contentURI,
 		ContentType:      Share,
 		Transfer:         transfer,
+		ProfileId:        event.ProfileId,
+		PubId:            event.PubId,
 		ProfileIdPointed: event.ProfileIdPointed,
 		PubIdPointed:     event.PubIdPointed,
 	})
@@ -369,6 +366,8 @@ func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.
 
 	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
 	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))
+
 		return err
 	}
 
@@ -405,6 +404,8 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 		}
 
 		if transfer.Metadata, err = json.Marshal(profile); err != nil {
+			loggerx.Global().Error("[lens worker] HandleFollowed: json marshal error", zap.Error(err))
+
 			return nil, err
 		}
 
@@ -423,6 +424,8 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (err error) {
 	event, err := lensContract.EventsFilterer.ParseFollowNFTTransferred(log)
 	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: ParseFollowNFTTransferred error", zap.Error(err))
+
 		return err
 	}
 
@@ -433,6 +436,8 @@ func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract co
 
 	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
 	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleMirrorCreated: GetProfile error", zap.Error(err))
+
 		return err
 	}
 
@@ -440,6 +445,8 @@ func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract co
 	transfer.AddressFrom = transaction.Owner
 
 	if transfer.Metadata, err = json.Marshal(profile); err != nil {
+		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: json marshal error", zap.Error(err))
+
 		return err
 	}
 
@@ -521,7 +528,6 @@ func (c *Client) CreatePost(ctx context.Context, lensContent *LensContent) *meta
 				// orb.ac url example: https://orb.ac/@@username
 				post.Author = []string{lensContent.ExternalURL, strings.ReplaceAll(path[1], "@", "")}
 			}
-
 		}
 	}
 
@@ -545,10 +551,11 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 	opt.Transfer.Platform = lensContent.AppId
 
 	post := c.CreatePost(ctx, &lensContent)
+	post.TypeOnPlatform = []string{opt.ContentType}
 
 	// special handling for Share and Comment
 	postFinal := &metadata.Post{}
-	post.TypeOnPlatform = []string{opt.ContentType}
+
 	switch opt.ContentType {
 	case Share:
 		// get the correct type on Lens
@@ -560,9 +567,14 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 		if !lensContent.CreatedOn.IsZero() {
 			post.CreatedAt = lensContent.CreatedOn.Format(time.RFC3339)
 		}
+
+		// target
+		postFinal.Target = post
+		postFinal.Target.ProfileID = opt.ProfileIdPointed
+		postFinal.Target.PublicationID = opt.PubIdPointed
 		post.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
 
-		postFinal.Target = post
+		// post
 		postFinal.TypeOnPlatform = []string{opt.ContentType}
 
 	case Comment:
@@ -580,7 +592,12 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 			return err
 		}
 
+		// target
 		postFinal.Target = c.CreatePost(ctx, &targetContent)
+		postFinal.Target.ProfileID = opt.ProfileIdPointed
+		postFinal.Target.PublicationID = opt.PubIdPointed
+		postFinal.Target.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
+
 		// get the correct type on Lens
 		if len(targetContent.Attributes) > 0 {
 			postFinal.Target.TypeOnPlatform = []string{c.FormatTypeOnPlatform(targetContent.Attributes[0].Value)}
@@ -590,11 +607,13 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 		if !targetContent.CreatedOn.IsZero() {
 			postFinal.Target.CreatedAt = targetContent.CreatedOn.Format(time.RFC3339)
 		}
-		postFinal.Target.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
 
 	default:
 		postFinal = post
 	}
+
+	postFinal.ProfileID = opt.ProfileId
+	postFinal.PublicationID = opt.PubId
 
 	rawMetadata, err := json.Marshal(postFinal)
 	if err != nil {
