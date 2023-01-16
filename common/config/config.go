@@ -58,11 +58,12 @@ func (k *Kurora) String() string {
 var _ fmt.Stringer = &RabbitMQ{}
 
 type RabbitMQ struct {
-	TLS      bool   `mapstructure:"tls"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
+	TLS       bool   `mapstructure:"tls"`
+	Host      string `mapstructure:"host"`
+	Port      int    `mapstructure:"port"`
+	User      string `mapstructure:"user"`
+	Password  string `mapstructure:"password"`
+	QueueWork string `mapstructure:"queue_work"`
 }
 
 func (r *RabbitMQ) String() string {

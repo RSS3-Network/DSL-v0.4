@@ -23,6 +23,7 @@ rabbitmq:
   port: 5672
   user: guest
   password: guest
+  queue_work: "pregod11.indexer.work"
 
 opentelemetry:
   enabled: false

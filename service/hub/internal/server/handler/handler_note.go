@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/constant"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
@@ -37,6 +39,10 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 	if len(request.Cursor) == 0 {
 		go h.filterReport(model.GetNotes, request, c)
 	}
+
+	// api key
+	apiKey := c.Request().Header.Get(constant.API_KEY_HEADER)
+	ctx = context.WithValue(ctx, constant.API_KEY_CTX_KEY, apiKey)
 
 	transactions, total, err := h.service.GetNotes(ctx, request)
 	if err != nil {
@@ -100,6 +106,10 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 		}
 		request.Address[i] = address
 	}
+
+	// api key
+	apiKey := c.Request().Header.Get(constant.API_KEY_HEADER)
+	ctx = context.WithValue(ctx, constant.API_KEY_CTX_KEY, apiKey)
 
 	transactions, total, err := h.service.BatchGetNotes(ctx, request)
 	if err != nil {
