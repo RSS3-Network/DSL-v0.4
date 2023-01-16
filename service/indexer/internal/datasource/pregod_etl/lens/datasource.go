@@ -7,11 +7,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	kurora "github.com/naturalselectionlabs/kurora/client"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
@@ -22,8 +21,12 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	lens_comm "github.com/naturalselectionlabs/pregod/common/worker/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/samber/lo"
+	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
+
 	"go.opentelemetry.io/otel"
+
 	"go.uber.org/zap"
 )
 
@@ -145,10 +148,10 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 			defer wg.Done()
 
 			query := kurora.DatasetLensEventQuery{
-				TopicFirst:  &eventHash,
-				TopicSecond: &hash,
-				Address:     &contractAddress,
-				// BlockNumberFrom: message.BlockNumber,
+				TopicFirst:      &eventHash,
+				TopicSecond:     &hash,
+				Address:         &contractAddress,
+				BlockNumberFrom: lo.ToPtr(decimal.NewFromInt(message.BlockNumber)),
 			}
 
 			if eventHash == lens.EventHashFollowed {
@@ -187,6 +190,7 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 			}
 		}(eventHash, contractAddress)
 	}
+
 	wg.Wait()
 
 	return internalTransactionMap, nil
