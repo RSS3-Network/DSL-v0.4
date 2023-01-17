@@ -91,6 +91,7 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.GET("/exchanges/:exchange_type", s.httpHandler.GetExchangeListFunc)
 	s.httpServer.GET("/platforms/:platform_type", s.httpHandler.GetPlatformListFunc)
 	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfilesFunc, middlewarex.APIMiddleware)
+	s.httpServer.GET("/profiles/v2/:address", s.httpHandler.GetProfilesFunc2)
 	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolveFunc)
 
 	// POST
