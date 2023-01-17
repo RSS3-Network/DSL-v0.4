@@ -123,10 +123,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		ethereumReceiptQuery.Cursor = lo.ToPtr(lastTransaction.TransactionHash.String())
 	}
 
-	//indexedTransactions, err := ethereum.BuildTransactions(ctx, message, unindexedTransactions)
-	//if err != nil {
-	//	return nil, fmt.Errorf("build transactions: %w", err)
-	//}
+	// indexedTransactions, err := ethereum.BuildTransactions(ctx, message, unindexedTransactions)
+	// if err != nil {
+	//	 return nil, fmt.Errorf("build transactions: %w", err)
+	// }
 
 	return lo.Map(unindexedTransactions, func(transaction *model.Transaction, _ int) model.Transaction {
 		return *transaction

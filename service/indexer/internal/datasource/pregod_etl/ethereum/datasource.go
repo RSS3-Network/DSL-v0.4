@@ -59,11 +59,11 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		transactions = append(transactions, &internalTransaction)
 	}
 
-	//if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
-	//	loggerx.Global().Error("failed to build transactions", zap.Error(err))
+	// if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
+	//	 loggerx.Global().Error("failed to build transactions", zap.Error(err))
 	//
-	//	return nil, err
-	//}
+	//	 return nil, err
+	// }
 
 	internalTransactions := make([]model.Transaction, 0)
 

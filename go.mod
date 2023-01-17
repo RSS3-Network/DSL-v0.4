@@ -24,14 +24,13 @@ require (
 	github.com/hasura/go-graphql-client v0.7.1
 	github.com/k0kubun/pp/v3 v3.2.0
 	github.com/labstack/echo-contrib v0.13.0
-	github.com/labstack/echo/v4 v4.9.1
+	github.com/labstack/echo/v4 v4.10.0
 	github.com/lib/pq v1.10.6
-	github.com/naturalselectionlabs/kurora v0.19.0
-	github.com/naturalselectionlabs/kurora/client v0.0.0-20221228053806-f8dcb5e0749b
+	github.com/naturalselectionlabs/kurora v0.19.2
+	github.com/naturalselectionlabs/kurora/client v0.0.0-20230116124150-a98d396d9858
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.37.0
-	github.com/scylladb/go-set v1.0.2
 	github.com/shopspring/decimal v1.3.1
 	github.com/shurcooL/graphql v0.0.0-20220606043923-3cf50f8a0a29
 	github.com/sirupsen/logrus v1.8.1
@@ -47,9 +46,9 @@ require (
 	go.opentelemetry.io/otel/sdk v1.11.2
 	go.opentelemetry.io/otel/trace v1.11.2
 	go.uber.org/ratelimit v0.2.0
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20221106115401-f9659909a136
-	golang.org/x/net v0.3.0
+	golang.org/x/net v0.4.0
 	golang.org/x/sync v0.1.0
 	gorm.io/driver/postgres v1.4.6
 	gorm.io/gorm v1.24.2
@@ -70,27 +69,21 @@ require (
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/go-playground/form v3.1.4+incompatible // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
-	github.com/gorilla/schema v1.2.0 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/holiman/uint256 v1.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/ipfs/go-cid v0.2.0 // indirect
-	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.13.0 // indirect
-	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.3.1 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgtype v1.12.0 // indirect
-	github.com/jackc/pgx/v4 v4.17.2 // indirect
 	github.com/jackc/pgx/v5 v5.2.0 // indirect
 	github.com/jgimeno/go-namehash v0.0.0-20180808144722-2773b36cc1f8 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -126,7 +119,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.5.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasttemplate v1.2.1 // indirect
+	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/vektah/gqlparser/v2 v2.4.5 // indirect
 	github.com/wealdtech/go-multicodec v1.4.0 // indirect
 	github.com/ybbus/jsonrpc v2.1.2+incompatible // indirect

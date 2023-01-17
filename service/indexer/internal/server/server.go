@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/build_transactions"
 	"os"
 	"os/signal"
 	"sort"
@@ -14,6 +13,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/build_transactions"
 
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
 
@@ -684,7 +685,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 		}
 	}
 
-	return s.upsertTransactions(ctx, message, tx, transactions)
+	return s.upsertTransactions(ctx, message, tx, result)
 }
 
 func (s *Server) upsertAddress(ctx context.Context, address model.Address) {

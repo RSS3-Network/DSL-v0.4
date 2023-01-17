@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
@@ -28,7 +29,7 @@ func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 		}
 
-		apiKey := c.Request().Header.Get("X-API-KEY")
+		apiKey := c.Request().Header.Get(constant.API_KEY_HEADER)
 		c.Set("API-KEY", apiKey)
 
 		_ = CheckAPIKey(apiKey)
@@ -44,7 +45,7 @@ func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 func CheckAPIKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		apiKey := c.Request().Header.Get("X-API-KEY")
+		apiKey := c.Request().Header.Get(constant.API_KEY_HEADER)
 		c.Set("API-KEY", apiKey)
 
 		_ = CheckAPIKey(apiKey)

@@ -74,10 +74,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		unindexedTransactions = append(unindexedTransactions, transaction)
 	}
 
-	//indexedTransactions, err := ethereum.BuildTransactions(ctx, message, unindexedTransactions)
-	//if err != nil {
-	//	return nil, err
-	//}
+	// indexedTransactions, err := ethereum.BuildTransactions(ctx, message, unindexedTransactions)
+	// if err != nil {
+	//	 return nil, err
+	// }
 
 	internalTransactions := make([]model.Transaction, 0)
 

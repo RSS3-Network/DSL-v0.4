@@ -393,7 +393,7 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 
 	transaction.Owner = strings.ToLower(event.Follower.String())
 	transfer.AddressFrom = transaction.Owner
-	
+
 	for index, profileID := range event.ProfileIds {
 		profile, err := c.GetProfile(transfer.BlockNumber, "", profileID)
 		if err != nil {

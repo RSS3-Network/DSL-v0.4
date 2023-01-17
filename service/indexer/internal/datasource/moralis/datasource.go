@@ -123,10 +123,10 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 		internalTransactions = append(internalTransactions, transaction)
 	}
 
-	//internalTransactions, err = ethereum.BuildTransactions(ctx, message, internalTransactions)
-	//if err != nil {
-	//	return nil, err
-	//}
+	// internalTransactions, err = ethereum.BuildTransactions(ctx, message, internalTransactions)
+	// if err != nil {
+	//	 return nil, err
+	// }
 
 	for _, transaction := range internalTransactions {
 		transactions = append(transactions, *transaction)

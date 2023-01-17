@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pregod-1-1-indexer-io
+  namespace: pregod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pregod-1-1-indexer-io
+  template:
+    metadata:
+      labels:
+        app: pregod-1-1-indexer-io
+    spec:
+      containers:
+        - image: $IMAGE_TAG_RELEASE
+          imagePullPolicy: Always
+          name: pregod-1-1-io
+          envFrom:
+            - secretRef:
+                name: pregod-1-1
+          env:
+            - name: CONFIG_ENV_RABBITMQ_QUEUE_WORK
+              value: "pregod11.indexer-io.work"
+          command:
+            - indexer
+          resources:
+            requests:
+              memory: "2000Mi"
+              cpu: "1"
+            limits:
+              memory: "12000Mi"
+              cpu: "3"
+      tolerations:
+      - key: "rss3.io/usage"
+        operator: "Exists"
+        effect: "NoSchedule"
+      nodeSelector:
+        rss3.io/usage: indexer

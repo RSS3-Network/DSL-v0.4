@@ -2,6 +2,7 @@ package build_transactions
 
 import (
 	"context"
+
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
