@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/constant"
 	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -150,6 +152,8 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		protocol.NetworkEIP1577,
 	}
 
+	routingKey := getRoutingKeyByHeader(ctx)
+
 	for _, network := range networks {
 		message.Network = network
 
@@ -158,7 +162,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 			return
 		}
 
-		if err := s.rabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
+		if err := s.rabbitmqChannel.Publish(protocol.ExchangeJob, routingKey, false, false, rabbitmq.Publishing{
 			ContentType: protocol.ContentTypeJSON,
 			Body:        messageData,
 		}); err != nil {
@@ -166,6 +170,41 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 			return
 		}
 	}
+}
+
+// if not valid, return empty string
+func getRoutingKeyByHeader(ctx context.Context) string {
+	var (
+		httpHeader http.Header
+		ok         bool
+	)
+
+	// default
+	res := protocol.IndexerWorkRoutingKey
+
+	header := ctx.Value(constant.HEADER_CTX_KEY)
+	if header == nil {
+		return res
+	}
+	if httpHeader, ok = header.(http.Header); !ok {
+		return res
+	}
+
+	// check origin
+	// TODO to be removed
+	for _, domain := range []string{"rss3.io", "hoot.it", "openscan.it"} {
+		if strings.Contains(httpHeader.Get("Origin"), domain) {
+			return protocol.IndexerWorkRoutingKeyIO
+		}
+	}
+
+	// check api key
+	apiKey := httpHeader.Get(constant.API_KEY_HEADER)
+	if apiKey == constant.IO_API_Key {
+		return protocol.IndexerWorkRoutingKeyIO
+	}
+
+	return res
 }
 
 // publishIndexerAssetMessage create a rabbitmq job to index the latest user data

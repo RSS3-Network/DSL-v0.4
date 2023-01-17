@@ -18,10 +18,24 @@ metadata:
   name: pregod-1-1-indexer
   namespace: pregod
 spec:
-  maxReplicas: 30
+  maxReplicas: 28
   minReplicas: 3
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: pregod-1-1-indexer
+  targetCPUUtilizationPercentage: 80
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: pregod-1-1-indexer-io
+  namespace: pregod
+spec:
+  maxReplicas: 5
+  minReplicas: 2
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: pregod-1-1-indexer-io
   targetCPUUtilizationPercentage: 80
