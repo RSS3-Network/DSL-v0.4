@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/constant"
@@ -140,7 +142,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		protocol.NetworkEIP1577,
 	}
 
-	routingKey := getRoutingKeyByAPIKey(ctx)
+	routingKey := getRoutingKeyByHeader(ctx)
 
 	for _, network := range networks {
 		message.Network = network
@@ -161,19 +163,35 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 }
 
 // if not valid, return empty string
-func getRoutingKeyByAPIKey(ctx context.Context) string {
+func getRoutingKeyByHeader(ctx context.Context) string {
+	var (
+		httpHeader http.Header
+		ok         bool
+	)
+
 	// default
 	res := protocol.IndexerWorkRoutingKey
 
-	// api key check
-	apiKey := ctx.Value(constant.API_KEY_CTX_KEY)
-	if apiKey == nil {
+	header := ctx.Value(constant.HEADER_CTX_KEY)
+	if header == nil {
 		return res
 	}
-	if v, ok := apiKey.(string); !ok {
+	if httpHeader, ok = header.(http.Header); !ok {
 		return res
-	} else if v == constant.IO_API_Key {
-		res = protocol.IndexerWorkRoutingKeyIO
+	}
+
+	// check origin
+	// TODO to be removed
+	for _, domain := range []string{"rss3.io", "hoot.it", "openscan.it"} {
+		if strings.Contains(httpHeader.Get("Origin"), domain) {
+			return protocol.IndexerWorkRoutingKeyIO
+		}
+	}
+
+	// check api key
+	apiKey := httpHeader.Get(constant.API_KEY_HEADER)
+	if apiKey == constant.IO_API_Key {
+		return protocol.IndexerWorkRoutingKeyIO
 	}
 
 	return res
