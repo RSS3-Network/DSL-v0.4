@@ -108,3 +108,38 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 		Result: profileList,
 	})
 }
+
+func (h *Handler) BatchGetProfilesFunc2(c echo.Context) error {
+	go h.apiReport(model.PostProfiles+"/v2", c)
+	tracer := otel.Tracer("BatchGetProfilesFunc2")
+	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
+
+	defer httpSnap.End()
+
+	request := model.BatchGetProfilesRequest{}
+
+	if err := c.Bind(&request); err != nil {
+		return BadRequest(c)
+	}
+
+	if err := c.Validate(&request); err != nil {
+		return err
+	}
+
+	go h.filterReport(model.PostProfiles+"/v2", request, c)
+
+	if len(request.Address) > model.DefaultLimit {
+		request.Address = request.Address[:model.DefaultLimit]
+	}
+
+	profileList, err := h.service.BatchKuroraProfiles(ctx, request)
+	if err != nil {
+		return InternalError(c)
+	}
+
+	total := int64(len(profileList))
+	return c.JSON(http.StatusOK, &model.Response{
+		Total:  &total,
+		Result: profileList,
+	})
+}

@@ -97,6 +97,7 @@ func (s *Server) Initialize() (err error) {
 	// POST
 	s.httpServer.POST("/notes", s.httpHandler.BatchGetNotesFunc, middlewarex.CheckAPIKeyMiddleware)
 	s.httpServer.POST("/profiles", s.httpHandler.BatchGetProfilesFunc, middlewarex.CheckAPIKeyMiddleware)
+	s.httpServer.POST("/profiles/v2", s.httpHandler.BatchGetProfilesFunc2, middlewarex.CheckAPIKeyMiddleware)
 
 	// End of year Wrapped
 	s.httpServer.GET("/wrapped/:address", s.httpHandler.GetWrappedFunc)

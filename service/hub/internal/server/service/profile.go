@@ -166,7 +166,7 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 	)
 
 	if name_service.IsValidAddress(request.Address) {
-		result, err = s.GetKuroraAddress(c, common.HexToAddress(request.Address))
+		result, err = s.GetKuroraAddress(c, request)
 		if err != nil {
 			return nil, err
 		}
@@ -177,12 +177,14 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 
 		profiles, err := s.kuroraClient.FetchDatasetDomains(c, domainsQuery)
 		if err != nil {
-			logrus.Errorf("[profile] getProfilesFromKurora error, %v", err)
+			loggerx.Global().Error("get profiles error", zap.Error(err), zap.String("address", strings.ToLower(request.Address)))
 			return nil, err
 		}
 
 		if len(profiles) > 0 {
-			result, err = s.GetKuroraAddress(c, profiles[0].Address)
+			request.Address = profiles[0].Address.String()
+
+			result, err = s.GetKuroraAddress(c, request)
 			if err != nil {
 				return nil, err
 			}
@@ -190,11 +192,11 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 			if profiles[0].ReverseAddress != profiles[0].Address {
 				profile := profiles[0]
 				var expiredAt *time.Time
-				if profile.ExpiredAt.Year() != 0 {
+				if profile.ExpiredAt.Year() > 2000 {
 					expiredAt = &profile.ExpiredAt
 				}
 				result = append(result, &social.Profile{
-					Address:     profile.Address.String(),
+					Address:     strings.ToLower(profile.Address.String()),
 					Network:     profile.Network,
 					Platform:    profile.Platform,
 					Name:        profile.Name,
@@ -214,27 +216,90 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 	return result, nil
 }
 
-func (s *Service) GetKuroraAddress(c context.Context, address common.Address) ([]*social.Profile, error) {
+func (s *Service) GetKuroraAddress(c context.Context, request model.GetRequest) ([]*social.Profile, error) {
 	result := make([]*social.Profile, 0)
 
 	domainsQuery := kurora.DatasetDomainQuery{
-		ReverseAddress: lo.ToPtr(address),
+		ReverseAddress: lo.ToPtr(common.HexToAddress(request.Address)),
+	}
+
+	if len(request.Network) > 0 {
+		for i, v := range request.Network {
+			request.Network[i] = strings.ToLower(v)
+		}
+
+		domainsQuery.NetworkList = request.Network
+	}
+
+	if len(request.Platform) > 0 {
+		domainsQuery.PlatformList = request.Platform
 	}
 
 	profiles, err := s.kuroraClient.FetchDatasetDomains(c, domainsQuery)
 	if err != nil {
-		logrus.Errorf("[profile] getProfilesFromKurora error, %v", err)
+		loggerx.Global().Error("get profiles error", zap.Error(err), zap.String("address", strings.ToLower(request.Address)))
 
 		return result, err
 	}
 
 	for _, profile := range profiles {
 		var expiredAt *time.Time
-		if profile.ExpiredAt.Year() != 0 {
+		if profile.ExpiredAt.Year() > 2000 {
 			expiredAt = &profile.ExpiredAt
 		}
 		result = append(result, &social.Profile{
-			Address:     address.String(),
+			Address:     strings.ToLower(request.Address),
+			Network:     profile.Network,
+			Platform:    profile.Platform,
+			Name:        profile.Name,
+			Handle:      profile.Handle,
+			Bio:         profile.Bio,
+			URL:         profile.URL,
+			ExpireAt:    expiredAt,
+			ProfileUris: profile.ProfileUris,
+			BannerUris:  profile.BannerUris,
+			SocialUris:  profile.SocialUris,
+			Source:      profile.Platform,
+		})
+	}
+
+	return result, nil
+}
+
+func (s *Service) BatchKuroraProfiles(c context.Context, request model.BatchGetProfilesRequest) ([]*social.Profile, error) {
+	result := make([]*social.Profile, 0)
+
+	domainsQuery := kurora.DatasetDomainQuery{
+		ReverseAddressList: request.Address,
+		Limit:              lo.ToPtr(10 * model.DefaultLimit),
+	}
+
+	if len(request.Network) > 0 {
+		for i, v := range request.Network {
+			request.Network[i] = strings.ToLower(v)
+		}
+
+		domainsQuery.NetworkList = request.Network
+	}
+
+	if len(request.Platform) > 0 {
+		domainsQuery.PlatformList = request.Platform
+	}
+
+	profiles, err := s.kuroraClient.FetchDatasetDomains(c, domainsQuery)
+	if err != nil {
+		loggerx.Global().Error("batch get profiles error", zap.Error(err))
+
+		return result, err
+	}
+
+	for _, profile := range profiles {
+		var expiredAt *time.Time
+		if profile.ExpiredAt.Year() > 2000 {
+			expiredAt = &profile.ExpiredAt
+		}
+		result = append(result, &social.Profile{
+			Address:     strings.ToLower(profile.ReverseAddress.String()),
 			Network:     profile.Network,
 			Platform:    profile.Platform,
 			Name:        profile.Name,
