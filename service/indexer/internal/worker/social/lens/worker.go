@@ -48,7 +48,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 	opt := lop.NewOption().WithConcurrency(ethereum.RPCMaxConcurrency)
 	lop.ForEach(transactions, func(transaction model.Transaction, i int) {
 		addressTo := common.HexToAddress(transaction.AddressTo)
-		if transaction.Source != protocol.SourceKurora && addressTo != lens.HubProxyContractAddress && addressTo != lens.ProfileProxyContractAddress {
+		if transaction.Source != protocol.SourceKurora && transaction.Source != protocol.SourceAlchemy &&
+			addressTo != lens.HubProxyContractAddress && addressTo != lens.ProfileProxyContractAddress {
 			return
 		}
 

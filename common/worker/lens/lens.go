@@ -185,6 +185,7 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			Network:         transaction.Network,
 			SourceData:      sourceData,
 			Platform:        protocol.PlatformLens,
+			Source:          transaction.Source,
 			RelatedUrls:     []string{utils.GetTxHashURL(protocol.NetworkPolygon, transaction.Hash)},
 		}
 
@@ -390,6 +391,9 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 		return nil, err
 	}
 
+	transaction.Owner = strings.ToLower(event.Follower.String())
+	transfer.AddressFrom = transaction.Owner
+	
 	for index, profileID := range event.ProfileIds {
 		profile, err := c.GetProfile(transfer.BlockNumber, "", profileID)
 		if err != nil {
@@ -409,14 +413,10 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 			return nil, err
 		}
 
+		transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
+		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialFollow, transfer.Type)
 		transfers = append(transfers, *transfer)
 	}
-
-	transaction.Owner = strings.ToLower(event.Follower.String())
-	transfer.AddressFrom = transaction.Owner
-
-	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
-	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialFollow, transfer.Type)
 
 	return transfers, nil
 }
@@ -436,7 +436,7 @@ func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract co
 
 	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
 	if err != nil {
-		loggerx.Global().Error("[lens worker] HandleMirrorCreated: GetProfile error", zap.Error(err))
+		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))
 
 		return err
 	}
