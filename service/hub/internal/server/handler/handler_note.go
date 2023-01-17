@@ -40,9 +40,8 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		go h.filterReport(model.GetNotes, request, c)
 	}
 
-	// api key
-	apiKey := c.Request().Header.Get(constant.API_KEY_HEADER)
-	ctx = context.WithValue(ctx, constant.API_KEY_CTX_KEY, apiKey)
+	// header into ctx
+	ctx = context.WithValue(ctx, constant.HEADER_CTX_KEY, c.Request().Header)
 
 	transactions, total, err := h.service.GetNotes(ctx, request)
 	if err != nil {
@@ -107,9 +106,8 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 		request.Address[i] = address
 	}
 
-	// api key
-	apiKey := c.Request().Header.Get(constant.API_KEY_HEADER)
-	ctx = context.WithValue(ctx, constant.API_KEY_CTX_KEY, apiKey)
+	// header into ctx
+	ctx = context.WithValue(ctx, constant.HEADER_CTX_KEY, c.Request().Header)
 
 	transactions, total, err := h.service.BatchGetNotes(ctx, request)
 	if err != nil {
