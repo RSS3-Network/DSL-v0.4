@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/build_transactions"
 
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
@@ -23,7 +25,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/databeat"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
@@ -538,26 +539,8 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 	)
 
 	for _, transaction := range transactions {
-		internalTransfers := make([]model.Transfer, 0)
-
-		for _, transfer := range transaction.Transfers {
-			if bytes.Equal(transfer.Metadata, metadata.Default) {
-				continue
-			}
-
-			internalTransfers = append(internalTransfers, transfer)
-		}
-
-		if len(internalTransfers) == 0 {
-			continue
-		}
-
 		// Handle all transfers
 		for _, transfer := range transaction.Transfers {
-			// Ignore empty transfer
-			if bytes.Equal(transfer.Metadata, metadata.Default) {
-				continue
-			}
 
 			// Handle unsupported Unicode escape sequence
 			if bytes.Contains(transfer.Metadata, []byte(`\u0000`)) {
@@ -614,7 +597,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	result := []model.Transaction{}
 
 	// Using workers to clean data
-	for _, ts := range lo.Chunk(transactions, 1000) {
+	for _, ts := range lo.Chunk(transactions, 500) {
 		transactionsMap := make(map[string]model.Transaction)
 
 		for _, worker := range s.workers {
@@ -649,10 +632,26 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 			}
 		}
 
-		result = append(result, ts...)
+		for _, transaction := range ts {
+			internalTransfers := make([]model.Transfer, 0)
 
-		// only update the latest 1000 data
-		if len(result) > 1000 {
+			for _, transfer := range transaction.Transfers {
+				if bytes.Equal(transfer.Metadata, metadata.Default) {
+					continue
+				}
+
+				internalTransfers = append(internalTransfers, transfer)
+			}
+
+			if len(internalTransfers) == 0 {
+				continue
+			}
+
+			result = append(result, transaction)
+		}
+
+		// only update the latest 500 data
+		if len(result) >= 500 {
 			break
 		}
 	}

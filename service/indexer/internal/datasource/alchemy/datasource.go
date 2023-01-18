@@ -189,6 +189,10 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 			break
 		}
 
+		if len(internalTransactions) > datasource.DatasourceLimit {
+			break
+		}
+
 		parameter.PageKey = result.PageKey
 	}
 

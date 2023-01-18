@@ -47,10 +47,9 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 
 	defer opentelemetry.Log(span, message, transactions, err)
 
-	chunkSize := 5 * MaxConcurrency
 	tempTransactions := make([]*model.Transaction, 0)
 
-	for _, ts := range lo.Chunk(transactions, chunkSize) {
+	for _, ts := range lo.Chunk(transactions, 2*MaxConcurrency) {
 		blocks, err := lop.MapWithError(ts, makeBlockHandlerFunc(ctx, message), lop.NewOption().WithConcurrency(MaxConcurrency))
 		if err != nil {
 			loggerx.Global().Error("failed to handle blocks", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))

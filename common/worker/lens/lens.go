@@ -219,6 +219,10 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 		transfers = append(transfers, transfer)
 	}
 
+	if len(transfers) > 0 {
+		transaction.Platform = protocol.PlatformLens
+	}
+
 	return transfers, nil
 }
 

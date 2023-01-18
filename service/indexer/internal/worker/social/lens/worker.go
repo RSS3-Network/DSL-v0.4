@@ -53,9 +53,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			return
 		}
 
-		transaction.Owner = message.Address
-		transaction.Platform = s.Name()
-
 		transferMap := make(map[int64]model.Transfer)
 		for _, transfer := range transaction.Transfers {
 			transferMap[transfer.Index] = transfer

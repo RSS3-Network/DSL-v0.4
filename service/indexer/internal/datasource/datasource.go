@@ -7,6 +7,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
+const DatasourceLimit = 40000
+
 type Datasource interface {
 	Name() string
 	Networks() []string
