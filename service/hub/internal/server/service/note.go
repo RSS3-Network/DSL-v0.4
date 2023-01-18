@@ -116,6 +116,25 @@ func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotes
 	return transactions, total, nil
 }
 
+func (s *Service) BatchGetSocialNotes(ctx context.Context, request model.BatchGetSocialNotesRequest) ([]dbModel.Transaction, int64, error) {
+	return s.BatchGetNotes(ctx, model.BatchGetNotesRequest{
+		Address:        request.Address,
+		Type:           request.Type,
+		Tag:            []string{"social"},
+		Network:        request.Network,
+		Platform:       request.Platform,
+		Timestamp:      request.Timestamp,
+		Limit:          request.Limit,
+		Cursor:         request.Cursor,
+		Refresh:        false,
+		IncludePoap:    false,
+		Page:           request.Page,
+		QueryStatus:    request.QueryStatus,
+		CountOnly:      request.CountOnly,
+		IgnoreContract: true,
+	})
+}
+
 func (s *Service) CheckRequestTagAndType(reqTags []string, reqTypes []string) ([]string, []string, bool) {
 	// support many-many relationship between tag and type
 	var tags []string

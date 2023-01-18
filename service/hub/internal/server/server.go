@@ -95,6 +95,7 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolveFunc)
 
 	// POST
+	s.httpServer.POST("/notes/social", s.httpHandler.BatchGetSocialNotesFunc, middlewarex.CheckAPIKeyMiddleware)
 	s.httpServer.POST("/notes", s.httpHandler.BatchGetNotesFunc, middlewarex.CheckAPIKeyMiddleware)
 	s.httpServer.POST("/profiles", s.httpHandler.BatchGetProfilesFunc, middlewarex.CheckAPIKeyMiddleware)
 	s.httpServer.POST("/profiles/v2", s.httpHandler.BatchGetProfilesFunc2, middlewarex.CheckAPIKeyMiddleware)
