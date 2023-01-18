@@ -3,19 +3,24 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/worker/crossbell"
 	"github.com/naturalselectionlabs/pregod/common/worker/lens"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service/avvy"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service/ens"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service/spaceid"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service/unstoppable"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
+	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
 	"github.com/sirupsen/logrus"
 
@@ -152,4 +157,162 @@ func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address s
 	go dao.UpsertProfiles(c, profiles)
 
 	return profiles, err
+}
+
+func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest) ([]*social.Profile, error) {
+	var (
+		result []*social.Profile
+		err    error
+	)
+
+	if name_service.IsValidAddress(request.Address) {
+		result, err = s.GetKuroraAddress(c, request)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		domainsQuery := kurora.DatasetDomainQuery{
+			Handle: lo.ToPtr(strings.ToLower(request.Address)),
+		}
+
+		profiles, err := s.kuroraClient.FetchDatasetDomains(c, domainsQuery)
+		if err != nil {
+			loggerx.Global().Error("get profiles error", zap.Error(err), zap.String("address", strings.ToLower(request.Address)))
+			return nil, err
+		}
+
+		if len(profiles) > 0 {
+			request.Address = profiles[0].Address.String()
+
+			result, err = s.GetKuroraAddress(c, request)
+			if err != nil {
+				return nil, err
+			}
+
+			if profiles[0].ReverseAddress != profiles[0].Address {
+				profile := profiles[0]
+				var expiredAt *time.Time
+				if profile.ExpiredAt.Year() > 2000 {
+					expiredAt = &profile.ExpiredAt
+				}
+				result = append(result, &social.Profile{
+					Address:     strings.ToLower(profile.Address.String()),
+					Network:     profile.Network,
+					Platform:    profile.Platform,
+					Name:        profile.Name,
+					Handle:      profile.Handle,
+					Bio:         profile.Bio,
+					URL:         profile.URL,
+					ExpireAt:    expiredAt,
+					ProfileUris: profile.ProfileUris,
+					BannerUris:  profile.BannerUris,
+					SocialUris:  profile.SocialUris,
+					Source:      profile.Platform,
+				})
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func (s *Service) GetKuroraAddress(c context.Context, request model.GetRequest) ([]*social.Profile, error) {
+	result := make([]*social.Profile, 0)
+
+	domainsQuery := kurora.DatasetDomainQuery{
+		ReverseAddress: lo.ToPtr(common.HexToAddress(request.Address)),
+	}
+
+	if len(request.Network) > 0 {
+		for i, v := range request.Network {
+			request.Network[i] = strings.ToLower(v)
+		}
+
+		domainsQuery.NetworkList = request.Network
+	}
+
+	if len(request.Platform) > 0 {
+		domainsQuery.PlatformList = request.Platform
+	}
+
+	profiles, err := s.kuroraClient.FetchDatasetDomains(c, domainsQuery)
+	if err != nil {
+		loggerx.Global().Error("get profiles error", zap.Error(err), zap.String("address", strings.ToLower(request.Address)))
+
+		return result, err
+	}
+
+	for _, profile := range profiles {
+		var expiredAt *time.Time
+		if profile.ExpiredAt.Year() > 2000 {
+			expiredAt = &profile.ExpiredAt
+		}
+		result = append(result, &social.Profile{
+			Address:     strings.ToLower(request.Address),
+			Network:     profile.Network,
+			Platform:    profile.Platform,
+			Name:        profile.Name,
+			Handle:      profile.Handle,
+			Bio:         profile.Bio,
+			URL:         profile.URL,
+			ExpireAt:    expiredAt,
+			ProfileUris: profile.ProfileUris,
+			BannerUris:  profile.BannerUris,
+			SocialUris:  profile.SocialUris,
+			Source:      profile.Platform,
+		})
+	}
+
+	return result, nil
+}
+
+func (s *Service) BatchKuroraProfiles(c context.Context, request model.BatchGetProfilesRequest) ([]*social.Profile, error) {
+	result := make([]*social.Profile, 0)
+
+	domainsQuery := kurora.DatasetDomainQuery{
+		ReverseAddressList: request.Address,
+		Limit:              lo.ToPtr(10 * model.DefaultLimit),
+	}
+
+	if len(request.Network) > 0 {
+		for i, v := range request.Network {
+			request.Network[i] = strings.ToLower(v)
+		}
+
+		domainsQuery.NetworkList = request.Network
+	}
+
+	if len(request.Platform) > 0 {
+		domainsQuery.PlatformList = request.Platform
+	}
+
+	profiles, err := s.kuroraClient.FetchDatasetDomains(c, domainsQuery)
+	if err != nil {
+		loggerx.Global().Error("batch get profiles error", zap.Error(err))
+
+		return result, err
+	}
+
+	for _, profile := range profiles {
+		var expiredAt *time.Time
+		if profile.ExpiredAt.Year() > 2000 {
+			expiredAt = &profile.ExpiredAt
+		}
+		result = append(result, &social.Profile{
+			Address:     strings.ToLower(profile.ReverseAddress.String()),
+			Network:     profile.Network,
+			Platform:    profile.Platform,
+			Name:        profile.Name,
+			Handle:      profile.Handle,
+			Bio:         profile.Bio,
+			URL:         profile.URL,
+			ExpireAt:    expiredAt,
+			ProfileUris: profile.ProfileUris,
+			BannerUris:  profile.BannerUris,
+			SocialUris:  profile.SocialUris,
+			Source:      profile.Platform,
+		})
+	}
+
+	return result, nil
 }

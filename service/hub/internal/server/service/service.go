@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -18,6 +19,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/websocket"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
+
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -29,6 +31,7 @@ type Service struct {
 	rabbitmqQueue      rabbitmq.Queue
 	WsHub              *websocket.WSHub
 	DeliveryCh         <-chan rabbitmq.Delivery
+	kuroraClient       *kurora.Client
 }
 
 func New() (s *Service) {
@@ -36,6 +39,13 @@ func New() (s *Service) {
 		employer: shedlock.New(),
 		WsHub:    websocket.NewHub(),
 	}
+
+	kuroraClient, err := kurora.Dial(context.Background(), config.ConfigHub.Kurora.Endpoint, kurora.WithHTTPClient(http.DefaultClient))
+	if err != nil {
+		loggerx.Global().Fatal("connect kurora failed", zap.Error(err))
+	}
+
+	s.kuroraClient = kuroraClient
 
 	if err := s.connectMQ(); err != nil {
 		loggerx.Global().Fatal("connect mq failed", zap.Error(err))

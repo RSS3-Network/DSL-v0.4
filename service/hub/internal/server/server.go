@@ -91,11 +91,13 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.GET("/exchanges/:exchange_type", s.httpHandler.GetExchangeListFunc)
 	s.httpServer.GET("/platforms/:platform_type", s.httpHandler.GetPlatformListFunc)
 	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfilesFunc, middlewarex.APIMiddleware)
+	s.httpServer.GET("/profiles/v2/:address", s.httpHandler.GetProfilesFunc2)
 	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolveFunc)
 
 	// POST
 	s.httpServer.POST("/notes", s.httpHandler.BatchGetNotesFunc, middlewarex.CheckAPIKeyMiddleware)
 	s.httpServer.POST("/profiles", s.httpHandler.BatchGetProfilesFunc, middlewarex.CheckAPIKeyMiddleware)
+	s.httpServer.POST("/profiles/v2", s.httpHandler.BatchGetProfilesFunc2, middlewarex.CheckAPIKeyMiddleware)
 
 	// End of year Wrapped
 	s.httpServer.GET("/wrapped/:address", s.httpHandler.GetWrappedFunc)

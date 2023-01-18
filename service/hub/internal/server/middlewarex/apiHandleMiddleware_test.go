@@ -169,7 +169,7 @@ func TestResolveAddress(t *testing.T) {
 		{
 			name:   "resolve avax",
 			input:  arguments{"avvydomains.avax", false},
-			output: "0x797ac669a1908ca68cd9854994345f570495541a",
+			output: "0x9BC4e7C1Fa4Ca66f6B2F4B6F446Dad80Ec541983",
 			err:    nil,
 		},
 		{
