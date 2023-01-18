@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -37,7 +38,8 @@ import (
 )
 
 const (
-	Name = "transaction"
+	Name       = "transaction"
+	threadSize = 200
 )
 
 var _ worker.Worker = (*service)(nil)
@@ -139,47 +141,70 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 	internalTransaction := transaction
 	internalTransaction.Transfers = make([]model.Transfer, 0)
 
-	for _, transfer := range transaction.Transfers {
-		var (
-			internalTransfers []model.Transfer
-			err               error
-		)
+	var locker sync.Mutex
 
-		if transfer.Index == protocol.IndexVirtual {
-			// Native token
-			if internalTransfer, err := s.handleEthereumOriginNative(ctx, message, transaction, transfer); err == nil { // Require error as nil
-				internalTransfers = append(internalTransfers, *internalTransfer)
-			}
-		} else {
-			// Contract events
-			internalTransfers, err = s.handleEthereumOriginToken(ctx, message, transaction, transfer)
-		}
+	// Limit the maximum number of tasks for a single address.
+	for _, transfers := range lo.Chunk(transaction.Transfers, threadSize) {
+		var waitGroup sync.WaitGroup
 
-		if err != nil && !errors.Is(err, ErrorNativeTokenTransferValueIsZero) && !errors.Is(err, ErrorUnsupportedContractEvent) /* Ignore actively aborted transactions */ {
-			zap.L().Warn("handle ethereum origin", zap.Error(err), zap.String("network", transaction.Network), zap.String("address", message.Address), zap.String("transaction_hash", transaction.Hash))
+		for _, transfer := range transfers {
+			waitGroup.Add(1)
 
-			continue
-		}
+			go func(transfer model.Transfer) {
+				defer waitGroup.Done()
 
-		for _, internalTransfer := range internalTransfers {
-			wallet, err := s.isCentralizedExchangeWallet(ctx, internalTransfer.AddressFrom, internalTransfer.AddressTo)
-			if err != nil {
-				return nil, fmt.Errorf("check centralized exchange wallet: %w", err)
-			}
+				var (
+					internalTransfers []model.Transfer
+					err               error
+				)
 
-			if wallet != nil {
-				// Build deposit or withdraw transaction
-				if err := s.buildCentralizedExchangeTransfer(ctx, &internalTransfer, lo.FromPtr(wallet), message.Address); err != nil {
-					return nil, fmt.Errorf("build centralized exchange transaction: %w", err)
+				if transfer.Index == protocol.IndexVirtual {
+					// Native token
+					if internalTransfer, err := s.handleEthereumOriginNative(ctx, message, transaction, transfer); err == nil { // Require error as nil
+						internalTransfers = append(internalTransfers, *internalTransfer)
+					}
+				} else {
+					// EIP tokens
+					internalTransfers, err = s.handleEthereumOriginToken(ctx, message, transaction, transfer)
 				}
 
-				internalTransaction.Platform = internalTransfer.Platform
-			}
+				if err != nil && !errors.Is(err, ErrorNativeTokenTransferValueIsZero) && !errors.Is(err, ErrorUnsupportedContractEvent) /* Ignore actively aborted transactions */ {
+					zap.L().Warn("handle ethereum origin", zap.Error(err), zap.String("network", transaction.Network), zap.String("address", message.Address), zap.String("transaction_hash", transaction.Hash))
 
-			internalTransaction, internalTransfer = s.buildType(internalTransaction, internalTransfer)
-			internalTransaction.Transfers = append(internalTransaction.Transfers, internalTransfer)
-			internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(internalTransfer.Tag, internalTransaction.Tag, internalTransfer.Type, internalTransaction.Type)
+					return
+				}
+
+				for _, internalTransfer := range internalTransfers {
+					wallet, err := s.isCentralizedExchangeWallet(ctx, internalTransfer.AddressFrom, internalTransfer.AddressTo)
+					if err != nil {
+						zap.L().Error("check centralized exchange wallet", zap.Error(err))
+
+						return
+					}
+
+					if wallet != nil {
+						// Build deposit or withdraw transaction
+						if err := s.buildCentralizedExchangeTransfer(ctx, &internalTransfer, lo.FromPtr(wallet), message.Address); err != nil {
+							zap.L().Error("build centralized exchange transaction", zap.Error(err))
+
+							return
+						}
+
+						locker.Lock()
+						internalTransaction.Platform = internalTransfer.Platform
+						locker.Unlock()
+					}
+
+					locker.Lock()
+					internalTransaction, internalTransfer = s.buildType(internalTransaction, internalTransfer)
+					internalTransaction.Transfers = append(internalTransaction.Transfers, internalTransfer)
+					internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(internalTransfer.Tag, transaction.Tag, internalTransfer.Type, internalTransaction.Type)
+					locker.Unlock()
+				}
+			}(transfer)
 		}
+
+		waitGroup.Wait()
 	}
 
 	return s.buildCostMetadata(ctx, internalTransaction)
