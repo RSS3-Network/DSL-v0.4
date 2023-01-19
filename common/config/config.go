@@ -19,12 +19,20 @@ type Postgres struct {
 	User     string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
 	Database string `mapstructure:"database"`
+	SocialDB string `mapstructure:"socialdb"`
 }
 
 func (p *Postgres) String() string {
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
 		p.User, p.Password, p.Host, p.Port, p.Database,
+	)
+}
+
+func (p *Postgres) SocialString() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+		p.User, p.Password, p.Host, p.Port, p.SocialDB,
 	)
 }
 

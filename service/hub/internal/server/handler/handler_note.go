@@ -184,11 +184,6 @@ func (h *Handler) BatchGetSocialNotesFunc(c echo.Context) error {
 		return InternalError(c)
 	}
 
-	var addressStatus []dbModel.Address
-	if request.QueryStatus {
-		addressStatus, _ = dao.GetAddress(ctx, request.Address)
-	}
-
 	if request.CountOnly {
 		return c.JSON(http.StatusOK, &model.Response{
 			Total: &total,
@@ -202,16 +197,14 @@ func (h *Handler) BatchGetSocialNotesFunc(c echo.Context) error {
 
 	if total == 0 {
 		return c.JSON(http.StatusOK, &model.Response{
-			Result:        make([]dbModel.Transaction, 0),
-			AddressStatus: addressStatus,
+			Result: make([]dbModel.Transaction, 0),
 		})
 	}
 
 	return c.JSON(http.StatusOK, &model.Response{
-		Total:         &total,
-		Cursor:        cursor,
-		Result:        transactions,
-		AddressStatus: addressStatus,
+		Total:  &total,
+		Cursor: cursor,
+		Result: transactions,
 	})
 }
 

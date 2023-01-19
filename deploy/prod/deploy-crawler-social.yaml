@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pregod-1-1-crawler-social
+  namespace: pregod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pregod-1-1-crawler
+      tier: social
+  template:
+    metadata:
+      labels:
+        app: pregod-1-1-crawler
+      tier: social
+    spec:
+      containers:
+        - image: $IMAGE_TAG_RELEASE
+          imagePullPolicy: Always
+          name: pregod-1-1-crawler-social
+          envFrom:
+            - secretRef:
+                name: pregod-1-1
+          env:
+            - name: ENABLE_MIGRATION
+              value: "true"
+          command:
+            - crawler
+            - --socialdb=social
+          resources:
+            requests:
+              memory: "200Mi"
+              cpu: "200m"
+            limits:
+              memory: "2000Mi"
+              cpu: "1000m"

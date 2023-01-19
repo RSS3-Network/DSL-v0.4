@@ -117,22 +117,35 @@ func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotes
 }
 
 func (s *Service) BatchGetSocialNotes(ctx context.Context, request model.BatchGetSocialNotesRequest) ([]dbModel.Transaction, int64, error) {
-	return s.BatchGetNotes(ctx, model.BatchGetNotesRequest{
-		Address:        request.Address,
-		Type:           request.Type,
-		Tag:            []string{"social"},
-		Network:        request.Network,
-		Platform:       request.Platform,
-		Timestamp:      request.Timestamp,
-		Limit:          request.Limit,
-		Cursor:         request.Cursor,
-		Refresh:        false,
-		IncludePoap:    false,
-		Page:           request.Page,
-		QueryStatus:    request.QueryStatus,
-		CountOnly:      request.CountOnly,
-		IgnoreContract: true,
-	})
+	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
+		request.Limit = model.DefaultLimit
+	}
+
+	transactions, total, err := dao.BatchGetSocialTransactions(ctx, request)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	transactionHashes := make([]string, 0)
+	for _, transactionHash := range transactions {
+		transactionHashes = append(transactionHashes, transactionHash.Hash)
+	}
+
+	transfers, err := dao.GetTransfers(ctx, transactionHashes)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	transferMap := make(map[string][]dbModel.Transfer)
+	for _, transfer := range transfers {
+		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
+	}
+
+	for index := range transactions {
+		transactions[index].Transfers = transferMap[transactions[index].Hash]
+	}
+
+	return transactions, total, nil
 }
 
 func (s *Service) CheckRequestTagAndType(reqTags []string, reqTypes []string) ([]string, []string, bool) {

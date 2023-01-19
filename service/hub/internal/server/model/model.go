@@ -81,16 +81,15 @@ type BatchGetNotesRequest struct {
 }
 
 type BatchGetSocialNotesRequest struct {
-	Address     []string  `json:"address" validate:"required"`
-	Type        []string  `json:"type"`
-	Network     []string  `json:"network"`
-	Platform    []string  `json:"platform"`
-	Timestamp   time.Time `json:"timestamp"`
-	Limit       int       `json:"limit"`
-	Cursor      string    `json:"cursor"`
-	Page        int       `json:"page"`
-	QueryStatus bool      `json:"query_status"`
-	CountOnly   bool      `json:"count_only"`
+	Address   []string  `json:"address" validate:"required"`
+	Type      []string  `json:"type"`
+	Network   []string  `json:"network"`
+	Platform  []string  `json:"platform"`
+	Timestamp time.Time `json:"timestamp"`
+	Limit     int       `json:"limit"`
+	Cursor    string    `json:"cursor"`
+	Page      int       `json:"page"`
+	CountOnly bool      `json:"count_only"`
 }
 
 type BatchGetProfilesRequest struct {

@@ -72,7 +72,11 @@ func (s *Server) Initialize() (err error) {
 		)),
 	))
 
-	databaseClient, err := database.Dial(s.config.Postgres.String(), false)
+	enableMigration := false
+	if os.Getenv("ENABLE_MIGRATION") == "true" {
+		enableMigration = true
+	}
+	databaseClient, err := database.Dial(s.config.Postgres.String(), enableMigration)
 	if err != nil {
 		return err
 	}

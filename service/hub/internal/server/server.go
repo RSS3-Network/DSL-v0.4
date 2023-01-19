@@ -47,6 +47,17 @@ func (s *Server) Initialize() (err error) {
 	}
 	database.ReplaceGlobal(databaseClient)
 
+	// Compatible with old configuration
+	if config.ConfigHub.Postgres.SocialDB != "" {
+		socialDatabaseClient, err := database.Dial(config.ConfigHub.Postgres.SocialString(), false)
+		if err != nil {
+			panic(err)
+		}
+		database.ReplaceSocial(socialDatabaseClient)
+	} else {
+		database.ReplaceSocial(databaseClient)
+	}
+
 	redisClient, err := cache.Dial(config.ConfigHub.Redis)
 	if err != nil {
 		return err
