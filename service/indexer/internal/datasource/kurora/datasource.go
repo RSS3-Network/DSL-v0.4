@@ -11,7 +11,6 @@ import (
 	"github.com/naturalselectionlabs/kurora/constant"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -124,12 +123,12 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		ethereumReceiptQuery.Cursor = lo.ToPtr(lastTransaction.TransactionHash.String())
 	}
 
-	indexedTransactions, err := ethereum.BuildTransactions(ctx, message, unindexedTransactions)
-	if err != nil {
-		return nil, fmt.Errorf("build transactions: %w", err)
-	}
+	// indexedTransactions, err := ethereum.BuildTransactions(ctx, message, unindexedTransactions)
+	// if err != nil {
+	//	 return nil, fmt.Errorf("build transactions: %w", err)
+	// }
 
-	return lo.Map(indexedTransactions, func(transaction *model.Transaction, _ int) model.Transaction {
+	return lo.Map(unindexedTransactions, func(transaction *model.Transaction, _ int) model.Transaction {
 		return *transaction
 	}), nil
 }
