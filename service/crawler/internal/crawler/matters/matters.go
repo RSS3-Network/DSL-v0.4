@@ -96,7 +96,9 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 	defer func() { opentelemetry.Log(trace, nil, internalTransactions, err) }()
 
 	cursor, _ := cache.Global().Get(ctx, mattersCacheKey).Result()
-	query := kurora.DatasetMattersEntryQuery{}
+	query := kurora.DatasetMattersEntryQuery{
+		Limit: &DefaultLimit,
+	}
 
 	if len(cursor) > 0 {
 		query.Cursor = &cursor
