@@ -20,6 +20,7 @@ var rootCommand = cobra.Command{
 
 func init() {
 	rootCommand.PersistentFlags().String("socialdb", "", "social db name")
+	rootCommand.PersistentFlags().Int("socialredisdb", -1, "social redis db name")
 }
 
 func main() {
@@ -51,6 +52,10 @@ func main() {
 		socialDB, _ := rootCommand.Flags().GetString("socialdb")
 		if socialDB != "" {
 			configCrawler.Postgres.Database = socialDB
+		}
+		socialRedisDB, _ := rootCommand.Flags().GetInt("socialredisdb")
+		if socialRedisDB != -1 {
+			configCrawler.Redis.DB = socialRedisDB
 		}
 
 		return srv.Run()

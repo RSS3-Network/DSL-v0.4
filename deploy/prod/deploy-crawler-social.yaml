@@ -28,6 +28,7 @@ spec:
           command:
             - crawler
             - --socialdb=social
+            - --socialredisdb=5
           resources:
             requests:
               memory: "200Mi"
