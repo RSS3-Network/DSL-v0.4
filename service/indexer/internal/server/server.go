@@ -14,17 +14,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/build_transactions"
-
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
-
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/databeat"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/ipfs"
@@ -47,6 +42,7 @@ import (
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
 	rabbitmqx "github.com/naturalselectionlabs/pregod/service/indexer/internal/rabbitmq"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/build_transactions"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/marketplace"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
@@ -54,18 +50,22 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/metaverse"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/matters"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
 	"github.com/samber/lo"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+
 	"go.uber.org/zap"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -85,13 +85,6 @@ type Server struct {
 	workers          []worker.Worker
 	employer         *shedlock.Employer
 }
-
-// sort
-type TransactionList []model.Transaction
-
-func (ts TransactionList) Len() int           { return len(ts) }
-func (ts TransactionList) Less(i, j int) bool { return ts[i].BlockNumber >= ts[j].BlockNumber }
-func (ts TransactionList) Swap(i, j int)      { ts[i], ts[j] = ts[j], ts[i] }
 
 var _ command.Interface = &Server{}
 
@@ -235,11 +228,11 @@ func (s *Server) Initialize() (err error) {
 			continue
 		}
 
-		for _, job := range internalWorker.Jobs() {
-			if err := s.employer.AddJob(job.Name(), job.Spec(), job.Timeout(), worker.NewCronJob(s.employer, job)); err != nil {
-				return err
-			}
-		}
+		// for _, job := range internalWorker.Jobs() {
+		//	if err := s.employer.AddJob(job.Name(), job.Spec(), job.Timeout(), worker.NewCronJob(s.employer, job)); err != nil {
+		//		return err
+		//	}
+		//}
 	}
 
 	// asset
@@ -505,26 +498,6 @@ func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (er
 	return nil
 }
 
-func getTransactionsMap(transactions []model.Transaction) map[string]model.Transaction {
-	transactionsMap := make(map[string]model.Transaction)
-
-	for _, t := range transactions {
-		transactionsMap[t.Hash] = t
-	}
-
-	return transactionsMap
-}
-
-func transactionsMap2Array(transactionsMap map[string]model.Transaction) []model.Transaction {
-	transactions := make([]model.Transaction, 0)
-
-	for _, t := range transactionsMap {
-		transactions = append(transactions, t)
-	}
-
-	return transactions
-}
-
 func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Message, tx *gorm.DB, transactions []model.Transaction) (err error) {
 	tracer := otel.Tracer("indexer")
 	_, span := tracer.Start(ctx, "indexer:upsertTransactions")
@@ -586,25 +559,27 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 }
 
 func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (err error) {
-	tracer := otel.Tracer("indexer")
-	ctx, span := tracer.Start(ctx, "indexer:handleWorkers")
+	ctx, span := otel.Tracer("indexer").Start(ctx, "indexer:handleWorkers")
 
 	defer opentelemetry.Log(span, message, transactions, err)
 
-	// sort, lastest -> oldest
-	sort.Sort(TransactionList(transactions))
+	// Sort, latest -> oldest
+	sort.SliceStable(transactions, func(i, j int) bool {
+		return transactions[i].BlockNumber < transactions[j].BlockNumber
+	})
 
-	result := []model.Transaction{}
+	var (
+		result         []model.Transaction
+		uniqueFilterer = make(map[string]struct{})
+	)
 
 	// Using workers to clean data
-	for _, ts := range lo.Chunk(transactions, 500) {
-		transactionsMap := make(map[string]model.Transaction)
-
+	for epoch, ts := range lo.Chunk(transactions, 500) {
 		for _, worker := range s.workers {
 			for _, network := range worker.Networks() {
 				if network == message.Network {
 					// log
-					loggerx.Global().Info("start worker", zap.String("worker", worker.Name()), zap.String("address", message.Address))
+					loggerx.Global().Info("start worker", zap.String("worker", worker.Name()), zap.String("network", message.Network), zap.String("address", message.Address), zap.Int("epoch", epoch), zap.Int("size", len(result)))
 					startTime := time.Now()
 
 					internalTransactions, err := worker.Handle(ctx, message, ts)
@@ -622,17 +597,19 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 						continue
 					}
 
-					newTransactionMap := getTransactionsMap(internalTransactions)
-					for _, t := range newTransactionMap {
-						transactionsMap[t.Hash] = t
-					}
-
-					ts = transactionsMap2Array(transactionsMap)
+					ts = internalTransactions
 				}
 			}
 		}
 
 		for _, transaction := range ts {
+			// Filter the duplicated transactions
+			if _, exists := uniqueFilterer[transaction.Hash]; exists {
+				continue
+			} else {
+				uniqueFilterer[transaction.Hash] = struct{}{}
+			}
+
 			internalTransfers := make([]model.Transfer, 0)
 			transfersMap := make(map[int64]bool)
 
