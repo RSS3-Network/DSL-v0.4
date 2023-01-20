@@ -53,7 +53,7 @@ func (i *internal) handleQuickSellOrderFilled(ctx context.Context, transaction m
 		return nil, fmt.Errorf("build cost: %w", err)
 	}
 
-	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Seller, event.Buyer, *nft, *nft.Cost)
+	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Seller, event.Buyer, *nft, nft.Cost)
 	if err != nil {
 		return nil, fmt.Errorf("build trade transfer: %w", err)
 	}

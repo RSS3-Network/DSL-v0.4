@@ -149,14 +149,32 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	return internalTransactions, nil
 }
 
-func (i *internal) buildTradeTransfer(transaction model.Transaction, index int64, platform string, seller, buyer common.Address, nft metadata.Token, cost metadata.Token) (*model.Transfer, error) {
+func (i *internal) buildTradeTransfer(transaction model.Transaction, index int64, platform string, seller, buyer common.Address, nft metadata.Token, cost *metadata.Token) (*model.Transfer, error) {
 	if nft.Value == nil {
 		nft.Value = lo.ToPtr(decimal.Zero)
 	}
 
 	nft.SetValue(*nft.Value)
 
-	nft.Cost = &cost
+	// Fill default value for zero dollar purchase
+	if cost == nil {
+		nativeToken, err := i.tokenClient.Native(context.Background(), transaction.Network)
+		if err != nil {
+			return nil, fmt.Errorf("get native token: %w", err)
+		}
+
+		cost = &metadata.Token{
+			Name:         nativeToken.Name,
+			Symbol:       nativeToken.Symbol,
+			Decimals:     nativeToken.Decimals,
+			Standard:     protocol.TokenStandardNative,
+			Image:        nativeToken.Logo,
+			Value:        lo.ToPtr(decimal.Zero),
+			ValueDisplay: lo.ToPtr(decimal.Zero),
+		}
+	}
+
+	nft.Cost = cost
 
 	metadataRaw, err := json.Marshal(nft)
 	if err != nil {
