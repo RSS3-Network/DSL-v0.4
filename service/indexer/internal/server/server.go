@@ -634,18 +634,26 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 
 		for _, transaction := range ts {
 			internalTransfers := make([]model.Transfer, 0)
+			transfersMap := make(map[int64]bool)
 
 			for _, transfer := range transaction.Transfers {
 				if bytes.Equal(transfer.Metadata, metadata.Default) {
 					continue
 				}
 
+				if exist := transfersMap[transfer.Index]; exist {
+					continue
+				}
+
+				transfersMap[transfer.Index] = true
 				internalTransfers = append(internalTransfers, transfer)
 			}
 
 			if len(internalTransfers) == 0 {
 				continue
 			}
+
+			transaction.Transfers = internalTransfers
 
 			result = append(result, transaction)
 		}
