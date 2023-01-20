@@ -228,11 +228,11 @@ func (s *Server) Initialize() (err error) {
 			continue
 		}
 
-		// for _, job := range internalWorker.Jobs() {
-		//	if err := s.employer.AddJob(job.Name(), job.Spec(), job.Timeout(), worker.NewCronJob(s.employer, job)); err != nil {
-		//		return err
-		//	}
-		//}
+		for _, job := range internalWorker.Jobs() {
+			if err := s.employer.AddJob(job.Name(), job.Spec(), job.Timeout(), worker.NewCronJob(s.employer, job)); err != nil {
+				return err
+			}
+		}
 	}
 
 	// asset
