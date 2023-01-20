@@ -55,6 +55,7 @@ func (c *Client) GetTransactionList(ctx context.Context, address common.Address,
 	option.Module = "account"
 	option.Address = address.String()
 	option.Action = "txlist"
+	option.Sort = "desc"
 
 	values, err := query.Values(option)
 	if err != nil {
@@ -103,6 +104,7 @@ func (c *Client) GetTokenTransactionList(ctx context.Context, address common.Add
 	option.Module = "account"
 	option.Address = address.String()
 	option.Action = "tokentx"
+	option.Sort = "desc"
 
 	values, err := query.Values(option)
 	if err != nil {

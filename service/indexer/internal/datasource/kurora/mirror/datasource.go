@@ -12,6 +12,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/worker/arweave"
 	"github.com/samber/lo"
+	"github.com/shopspring/decimal"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -48,7 +49,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 	address := common.HexToAddress(message.Address)
 	query := kurora.DatasetMirrorEntryQuery{
-		// HeightFrom: message.BlockNumber,
+		HeightFrom:  lo.ToPtr(decimal.NewFromInt(int64(message.BlockNumber))),
 		Contributor: &address,
 	}
 	for {

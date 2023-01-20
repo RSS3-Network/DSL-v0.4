@@ -31,6 +31,9 @@ opentelemetry:
   port: 14268
   path: /api/traces
 
+kurora:
+  endpoint: ''
+
 redis:
   tls: false
   addr: 127.0.0.1:6379

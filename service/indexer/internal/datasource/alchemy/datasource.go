@@ -10,7 +10,6 @@ import (
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/alchemy"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -71,11 +70,11 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		transactions = append(transactions, &internalTransaction)
 	}
 
-	if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
-		loggerx.Global().Error("failed to build transactions", zap.Error(err))
-
-		return nil, err
-	}
+	// if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
+	//	 loggerx.Global().Error("failed to build transactions", zap.Error(err))
+	//
+	//	 return nil, err
+	// }
 
 	internalTransactions := make([]model.Transaction, 0)
 
@@ -187,6 +186,10 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 		}
 
 		if result.PageKey == "" {
+			break
+		}
+
+		if len(internalTransactions) > datasource.DatasourceLimit {
 			break
 		}
 

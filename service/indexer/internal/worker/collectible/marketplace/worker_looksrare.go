@@ -46,7 +46,7 @@ func (i *internal) handleLooksRareTakerAsk(ctx context.Context, transaction mode
 	nftValue := decimal.NewFromBigInt(event.Amount, 0)
 	nftMetadata.Value = &nftValue
 
-	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Taker, event.Maker, *nftMetadata, *cost)
+	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Taker, event.Maker, *nftMetadata, cost)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (i *internal) handleLooksRareTakerBid(ctx context.Context, transaction mode
 	nftValue := decimal.NewFromBigInt(event.Amount, 0)
 	nftMetadata.Value = &nftValue
 
-	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, *nftMetadata, *cost)
+	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, *nftMetadata, cost)
 	if err != nil {
 		return nil, err
 	}

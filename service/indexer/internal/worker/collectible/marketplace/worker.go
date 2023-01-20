@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -31,6 +32,7 @@ var _ worker.Worker = (*internal)(nil)
 
 const (
 	SourceName = "marketplace"
+	ThreadSize = 200
 )
 
 type internal struct {
@@ -59,81 +61,120 @@ func (i *internal) Initialize(ctx context.Context) error {
 }
 
 func (i *internal) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
-	internalTransactions := make([]model.Transaction, 0)
+	var (
+		internalTransactions = make([]model.Transaction, 0)
+		limiter              = make(chan struct{}, ThreadSize)
+
+		waitGroup sync.WaitGroup
+		locker    sync.Mutex
+	)
 
 	for _, transaction := range transactions {
-		var sourceData ethereum.SourceData
-
-		if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
-			zap.L().Warn("unmarshal source data", zap.Error(err), zap.String("transaction_hash", transaction.Hash))
-
-			continue
-		}
-
 		// Filter unsupported platforms
 		platform, exists := platformMap[common.HexToAddress(transaction.AddressTo)]
 		if !exists {
 			continue
 		}
 
-		internalTransaction := transaction
-		internalTransaction.Transfers = make([]model.Transfer, 0)
+		limiter <- struct{}{}
+		waitGroup.Add(1)
 
-		for _, log := range sourceData.Receipt.Logs {
-			var (
-				internalTransfers []model.Transfer
-				err               error
-			)
+		go func(transaction model.Transaction) {
+			defer func() {
+				<-limiter
+				waitGroup.Done()
+			}()
 
-			switch log.Topics[0] {
-			case opensea.EventHashOrderFulfilled:
-				internalTransfers, err = i.handleOpenSeaOrderFulfilled(ctx, transaction, log, sourceData.Receipt.Logs)
-			case opensea.EventHashOrdersMatched:
-				internalTransfers, err = i.handleOpenSeaOrdersMatched(ctx, transaction, log)
-			case quix.EventHashSellOrderFilled:
-				internalTransfers, err = i.handleQuickSellOrderFilled(ctx, transaction, log)
-			case looksrare.EventHashTakerAsk:
-				internalTransfers, err = i.handleLooksRareTakerAsk(ctx, transaction, log)
-			case looksrare.EventHashTakerBid:
-				internalTransfers, err = i.handleLooksRareTakerBid(ctx, transaction, log)
-			case tofunft.EventEvInventoryUpdate:
-				internalTransfers, err = i.handleTofuNFTEvInventoryUpdate(ctx, transaction, log, sourceData.Receipt.Logs)
-			case blur.EventOrdersMatched:
-				internalTransfers, err = i.handleBlurOrdersMatched(ctx, transaction, log)
-			case element.EventERC721SellOrderFilled:
-				internalTransfers, err = i.handleElementERC721SellOrderFilled(ctx, transaction, log)
-			case element.EventERC1155SellOrderFilled:
-				internalTransfers, err = i.handleElementERC1155SellOrderFilled(ctx, transaction, log)
-			default:
-				continue
+			var sourceData ethereum.SourceData
+
+			if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
+				zap.L().Warn("unmarshal source data", zap.Error(err), zap.String("transaction_hash", transaction.Hash))
+
+				return
 			}
 
-			if err != nil {
-				zap.L().Warn("handle marketplace event", zap.Error(err))
+			internalTransaction := transaction
+			internalTransaction.Transfers = make([]model.Transfer, 0)
 
-				continue
+			for _, log := range sourceData.Receipt.Logs {
+				var (
+					internalTransfers []model.Transfer
+					err               error
+				)
+
+				switch log.Topics[0] {
+				case opensea.EventHashOrderFulfilled:
+					internalTransfers, err = i.handleOpenSeaOrderFulfilled(ctx, transaction, log, sourceData.Receipt.Logs)
+				case opensea.EventHashOrdersMatched:
+					internalTransfers, err = i.handleOpenSeaOrdersMatched(ctx, transaction, log)
+				case quix.EventHashSellOrderFilled:
+					internalTransfers, err = i.handleQuickSellOrderFilled(ctx, transaction, log)
+				case looksrare.EventHashTakerAsk:
+					internalTransfers, err = i.handleLooksRareTakerAsk(ctx, transaction, log)
+				case looksrare.EventHashTakerBid:
+					internalTransfers, err = i.handleLooksRareTakerBid(ctx, transaction, log)
+				case tofunft.EventEvInventoryUpdate:
+					internalTransfers, err = i.handleTofuNFTEvInventoryUpdate(ctx, transaction, log, sourceData.Receipt.Logs)
+				case blur.EventOrdersMatched:
+					internalTransfers, err = i.handleBlurOrdersMatched(ctx, transaction, log)
+				case element.EventERC721SellOrderFilled:
+					internalTransfers, err = i.handleElementERC721SellOrderFilled(ctx, transaction, log)
+				case element.EventERC1155SellOrderFilled:
+					internalTransfers, err = i.handleElementERC1155SellOrderFilled(ctx, transaction, log)
+				default:
+					continue
+				}
+
+				if err != nil {
+					zap.L().Warn("handle marketplace event", zap.Error(err))
+
+					continue
+				}
+
+				locker.Lock()
+				internalTransaction.Transfers = append(internalTransaction.Transfers, internalTransfers...)
+				locker.Unlock()
 			}
 
-			internalTransaction.Transfers = append(internalTransaction.Transfers, internalTransfers...)
-		}
-
-		internalTransaction.Platform = platform
-		internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
-
-		internalTransactions = append(internalTransactions, internalTransaction)
+			locker.Lock()
+			internalTransaction.Platform = platform
+			internalTransaction.Tag, internalTransaction.Type = filter.UpdateTagAndType(filter.TagCollectible, internalTransaction.Tag, filter.CollectibleTrade, internalTransaction.Type)
+			internalTransactions = append(internalTransactions, internalTransaction)
+			locker.Unlock()
+		}(transaction)
 	}
+
+	waitGroup.Wait()
 
 	return internalTransactions, nil
 }
 
-func (i *internal) buildTradeTransfer(transaction model.Transaction, index int64, platform string, seller, buyer common.Address, nft metadata.Token, cost metadata.Token) (*model.Transfer, error) {
+func (i *internal) buildTradeTransfer(transaction model.Transaction, index int64, platform string, seller, buyer common.Address, nft metadata.Token, cost *metadata.Token) (*model.Transfer, error) {
 	if nft.Value == nil {
 		nft.Value = lo.ToPtr(decimal.Zero)
 	}
 
 	nft.SetValue(*nft.Value)
 
-	nft.Cost = &cost
+	// Fill default value for zero dollar purchase
+	if cost == nil {
+		nativeToken, err := i.tokenClient.Native(context.Background(), transaction.Network)
+		if err != nil {
+			return nil, fmt.Errorf("get native token: %w", err)
+		}
+
+		cost = &metadata.Token{
+			Name:         nativeToken.Name,
+			Symbol:       nativeToken.Symbol,
+			Decimals:     nativeToken.Decimals,
+			Standard:     protocol.TokenStandardNative,
+			Image:        nativeToken.Logo,
+			Value:        lo.ToPtr(decimal.Zero),
+			ValueDisplay: lo.ToPtr(decimal.Zero),
+		}
+	}
+
+	nft.Cost = cost
 
 	metadataRaw, err := json.Marshal(nft)
 	if err != nil {

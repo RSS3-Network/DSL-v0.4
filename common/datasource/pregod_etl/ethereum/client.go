@@ -7,6 +7,11 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database"
 )
 
+const (
+	DefaultTransactionLimit = 30000
+	DefaultTransferLimit    = 10000
+)
+
 type GetAssetTransfersParameter struct {
 	FromBlock   int64  `json:"fromBlock,omitempty"`
 	FromAddress string `json:"fromAddress,omitempty"`
@@ -22,7 +27,6 @@ type Transfer struct {
 	From     common.Address `gorm:"column:from_address"`
 	To       []byte         `gorm:"column:to_address"`
 	Value    float64        `gorm:"column:value"`
-	Category string         `gorm:"column:category"`
 }
 
 func GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter) (*GetAssetTransfersResult, error) {
@@ -31,10 +35,14 @@ func GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter
 	blockNum := parameter.FromBlock
 
 	err := database.EthDb().
-		Raw("select 'external' as category,value,block_number,hash,from_address,to_address from ethereum.transactions where block_number >= ? and from_address = ? "+
+		Raw("select * from "+
+			"("+
+			"(select value,block_number,hash,from_address,to_address from ethereum.transactions where block_number >= ? and from_address = ? limit ?) "+
 			"UNION ALL "+
-			"select '' as category,value,block_number,transaction_hash as hash,from_address,to_address from ethereum.token_transfers where block_number >= ? and to_address = ? order by block_number",
-			blockNum, fromAddress, blockNum, fromAddress).
+			"(select value,block_number,transaction_hash as hash, from_address,to_address from ethereum.token_transfers where block_number >= ? and to_address = ? limit ?)"+
+			") "+
+			"as foo order by foo.block_number",
+			blockNum, fromAddress, DefaultTransactionLimit, blockNum, fromAddress, DefaultTransferLimit).
 		Scan(&result.Transfers).
 		WithContext(ctx).
 		Error

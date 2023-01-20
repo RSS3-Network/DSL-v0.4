@@ -138,7 +138,7 @@ func (i *internal) handleOpenSeaOrderFulfilled(ctx context.Context, transaction 
 		}
 	}
 
-	internalTransfer, err := i.buildTradeTransfer(transaction, index, platform, seller, buyer, *nft, *cost)
+	internalTransfer, err := i.buildTradeTransfer(transaction, index, platform, seller, buyer, *nft, cost)
 	if err != nil {
 		return nil, fmt.Errorf("build trade transfer: %w", err)
 	}
@@ -255,7 +255,7 @@ func (i *internal) handleOpenSeaOrdersMatched(ctx context.Context, transaction m
 		return nil, err
 	}
 
-	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, *nft, *cost)
+	tradeTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, event.Taker, *nft, cost)
 	if err != nil {
 		return nil, err
 	}

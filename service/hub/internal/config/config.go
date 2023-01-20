@@ -26,6 +26,7 @@ type Config struct {
 	Redis         *configx.Redis         `mapstructure:"redis"`
 	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
 	RPC           *configx.RPC           `mapstructure:"rpc"`
+	Kurora        *configx.Kurora        `mapstructure:"kurora"`
 }
 
 var ConfigHub Config

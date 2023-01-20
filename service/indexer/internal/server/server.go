@@ -8,12 +8,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
-
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
 
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -43,6 +42,7 @@ import (
 	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
 	rabbitmqx "github.com/naturalselectionlabs/pregod/service/indexer/internal/rabbitmq"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/build_transactions"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/marketplace"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
@@ -50,18 +50,22 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/metaverse"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/matters"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
 	"github.com/samber/lo"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+
 	"go.uber.org/zap"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -191,6 +195,7 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	s.workers = []worker.Worker{
+		build_transactions.New(),
 		liquidity.New(),
 		swapWorker,
 		bridge.New(),
@@ -426,9 +431,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	}
 	wg.Wait()
 
-	transactionsMap := getTransactionsMap(transactions)
-
-	return s.handleWorkers(ctx, message, transactions, transactionsMap)
+	return s.handleWorkers(ctx, message, transactions)
 }
 
 func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (err error) {
@@ -495,26 +498,6 @@ func (s *Server) handleAsset(ctx context.Context, message *protocol.Message) (er
 	return nil
 }
 
-func getTransactionsMap(transactions []model.Transaction) map[string]model.Transaction {
-	transactionsMap := make(map[string]model.Transaction)
-
-	for _, t := range transactions {
-		transactionsMap[t.Hash] = t
-	}
-
-	return transactionsMap
-}
-
-func transactionsMap2Array(transactionsMap map[string]model.Transaction) []model.Transaction {
-	transactions := make([]model.Transaction, 0)
-
-	for _, t := range transactionsMap {
-		transactions = append(transactions, t)
-	}
-
-	return transactions
-}
-
 func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Message, tx *gorm.DB, transactions []model.Transaction) (err error) {
 	tracer := otel.Tracer("indexer")
 	_, span := tracer.Start(ctx, "indexer:upsertTransactions")
@@ -529,26 +512,8 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 	)
 
 	for _, transaction := range transactions {
-		internalTransfers := make([]model.Transfer, 0)
-
-		for _, transfer := range transaction.Transfers {
-			if bytes.Equal(transfer.Metadata, metadata.Default) {
-				continue
-			}
-
-			internalTransfers = append(internalTransfers, transfer)
-		}
-
-		if len(internalTransfers) == 0 {
-			continue
-		}
-
 		// Handle all transfers
 		for _, transfer := range transaction.Transfers {
-			// Ignore empty transfer
-			if bytes.Equal(transfer.Metadata, metadata.Default) {
-				continue
-			}
 
 			// Handle unsupported Unicode escape sequence
 			if bytes.Contains(transfer.Metadata, []byte(`\u0000`)) {
@@ -593,42 +558,86 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 	return tx.Commit().Error
 }
 
-func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction, transactionsMap map[string]model.Transaction) (err error) {
-	tracer := otel.Tracer("indexer")
-	ctx, span := tracer.Start(ctx, "indexer:handleWorkers")
+func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (err error) {
+	ctx, span := otel.Tracer("indexer").Start(ctx, "indexer:handleWorkers")
 
 	defer opentelemetry.Log(span, message, transactions, err)
 
+	// Sort, latest -> oldest
+	sort.SliceStable(transactions, func(i, j int) bool {
+		return transactions[i].BlockNumber < transactions[j].BlockNumber
+	})
+
+	var (
+		result         []model.Transaction
+		uniqueFilterer = make(map[string]struct{})
+	)
+
 	// Using workers to clean data
-	for _, worker := range s.workers {
-		for _, network := range worker.Networks() {
-			if network == message.Network {
-				// log
-				loggerx.Global().Info("start worker", zap.String("worker", worker.Name()), zap.String("address", message.Address))
-				startTime := time.Now()
+	for epoch, ts := range lo.Chunk(transactions, 500) {
+		for _, worker := range s.workers {
+			for _, network := range worker.Networks() {
+				if network == message.Network {
+					// log
+					loggerx.Global().Info("start worker", zap.String("worker", worker.Name()), zap.String("network", message.Network), zap.String("address", message.Address), zap.Int("epoch", epoch), zap.Int("size", len(result)))
+					startTime := time.Now()
 
-				internalTransactions, err := worker.Handle(ctx, message, transactions)
+					internalTransactions, err := worker.Handle(ctx, message, ts)
 
-				// log
-				loggerx.Global().Info("worker completion", zap.String("worker", worker.Name()), zap.Int("transactions", len(internalTransactions)), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
+					// log
+					loggerx.Global().Info("worker completion", zap.String("worker", worker.Name()), zap.Int("transactions", len(internalTransactions)), zap.String("address", message.Address), zap.Duration("duration", time.Since(startTime)))
 
-				if err != nil {
-					loggerx.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
+					if err != nil {
+						loggerx.Global().Error("worker handle failed", zap.Error(err), zap.String("worker", worker.Name()), zap.String("network", network))
 
-					continue
+						continue
+					}
+
+					if len(internalTransactions) == 0 {
+						continue
+					}
+
+					ts = internalTransactions
 				}
-
-				if len(internalTransactions) == 0 {
-					continue
-				}
-
-				newTransactionMap := getTransactionsMap(internalTransactions)
-				for _, t := range newTransactionMap {
-					transactionsMap[t.Hash] = t
-				}
-
-				transactions = transactionsMap2Array(transactionsMap)
 			}
+		}
+
+		for _, transaction := range ts {
+			// Filter the duplicated transactions
+			if _, exists := uniqueFilterer[transaction.Hash]; exists {
+				continue
+			} else {
+				uniqueFilterer[transaction.Hash] = struct{}{}
+			}
+
+			internalTransfers := make([]model.Transfer, 0)
+			transfersMap := make(map[int64]bool)
+
+			for _, transfer := range transaction.Transfers {
+				if bytes.Equal(transfer.Metadata, metadata.Default) {
+					continue
+				}
+
+				if exist := transfersMap[transfer.Index]; exist {
+					continue
+				}
+
+				transfersMap[transfer.Index] = true
+				internalTransfers = append(internalTransfers, transfer)
+			}
+
+			if len(internalTransfers) == 0 {
+				continue
+			}
+
+			transaction.Transfers = internalTransfers
+
+			result = append(result, transaction)
+		}
+
+		// only update the latest 500 data
+		if len(result) >= 500 {
+			break
 		}
 	}
 
@@ -660,7 +669,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 		}
 	}
 
-	return s.upsertTransactions(ctx, message, tx, transactions)
+	return s.upsertTransactions(ctx, message, tx, result)
 }
 
 func (s *Server) upsertAddress(ctx context.Context, address model.Address) {

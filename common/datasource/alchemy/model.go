@@ -13,6 +13,7 @@ type GetAssetTransfersParameter struct {
 	PageKey           string   `json:"pageKey,omitempty"`
 	WithMetadata      bool     `json:"withMetadata,omitempty"`
 	Category          []string `json:"category,omitempty"`
+	Order             string   `json:"order,omitempty"`
 }
 
 type GetAssetTransfersResult struct {
