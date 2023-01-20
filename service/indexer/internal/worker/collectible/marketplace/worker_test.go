@@ -159,6 +159,43 @@ func Test_internal_Handle(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "opensea seaport zero dollar purchase",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0xc5bacbb46b18cd035c1063d16d32c6bdcf541de8", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0x7df97b3ef1d5d5b0fe913a40488975c004c27933abbe7acdad04e5f1b6657a7a
+						Hash:        "0x7df97b3ef1d5d5b0fe913a40488975c004c27933abbe7acdad04e5f1b6657a7a",
+						BlockNumber: 15323187,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.NotEmpty(t, transactions)
+
+				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformOpenSea) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "opensea wyvern exchange v1",
 			arguments: arguments{
 				ctx: context.Background(),
