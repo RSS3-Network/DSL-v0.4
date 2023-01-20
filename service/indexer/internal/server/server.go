@@ -558,6 +558,26 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 	return tx.Commit().Error
 }
 
+func getTransactionsMap(transactions []model.Transaction) map[string]model.Transaction {
+	transactionsMap := make(map[string]model.Transaction)
+
+	for _, t := range transactions {
+		transactionsMap[t.Hash] = t
+	}
+
+	return transactionsMap
+}
+
+func transactionsMap2Array(transactionsMap map[string]model.Transaction) []model.Transaction {
+	transactions := make([]model.Transaction, 0)
+
+	for _, t := range transactionsMap {
+		transactions = append(transactions, t)
+	}
+
+	return transactions
+}
+
 func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, transactions []model.Transaction) (err error) {
 	ctx, span := otel.Tracer("indexer").Start(ctx, "indexer:handleWorkers")
 
@@ -568,13 +588,11 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 		return transactions[i].BlockNumber < transactions[j].BlockNumber
 	})
 
-	var (
-		result         []model.Transaction
-		uniqueFilterer = make(map[string]struct{})
-	)
+	var result []model.Transaction
 
 	// Using workers to clean data
 	for epoch, ts := range lo.Chunk(transactions, 500) {
+		transactionsMap := make(map[string]model.Transaction)
 		for _, worker := range s.workers {
 			for _, network := range worker.Networks() {
 				if network == message.Network {
@@ -597,19 +615,17 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 						continue
 					}
 
-					ts = internalTransactions
+					newTransactionMap := getTransactionsMap(internalTransactions)
+					for _, t := range newTransactionMap {
+						transactionsMap[t.Hash] = t
+					}
+
+					ts = transactionsMap2Array(transactionsMap)
 				}
 			}
 		}
 
 		for _, transaction := range ts {
-			// Filter the duplicated transactions
-			if _, exists := uniqueFilterer[transaction.Hash]; exists {
-				continue
-			} else {
-				uniqueFilterer[transaction.Hash] = struct{}{}
-			}
-
 			internalTransfers := make([]model.Transfer, 0)
 			transfersMap := make(map[int64]bool)
 
