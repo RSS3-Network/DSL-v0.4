@@ -97,7 +97,7 @@ func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big
 	}
 
 	if profileID == nil {
-		profileID, err = lensHubContract.DefaultProfile(&bind.CallOpts{BlockNumber: blockNumber}, common.HexToAddress(address))
+		profileID, err = lensHubContract.DefaultProfile(&bind.CallOpts{}, common.HexToAddress(address))
 		if err != nil {
 			loggerx.Global().Error("[common] lens: Handle DefaultProfile err", zap.Error(err))
 
@@ -112,7 +112,7 @@ func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big
 	}
 
 	if len(address) == 0 {
-		owner, err := lensHubContract.OwnerOf(&bind.CallOpts{BlockNumber: blockNumber}, profileID)
+		owner, err := lensHubContract.OwnerOf(&bind.CallOpts{}, profileID)
 		if err != nil {
 			loggerx.Global().Error("[common] lens: OwnerOf error", zap.Error(err))
 
@@ -122,7 +122,7 @@ func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big
 		address = owner.String()
 	}
 
-	result, err := lensHubContract.GetProfile(&bind.CallOpts{BlockNumber: blockNumber}, profileID)
+	result, err := lensHubContract.GetProfile(&bind.CallOpts{}, profileID)
 	if err != nil {
 		loggerx.Global().Error("[common] lens: GetProfile err", zap.Error(err))
 
@@ -217,10 +217,6 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 		}
 
 		transfers = append(transfers, transfer)
-	}
-
-	if len(transfers) > 0 {
-		transaction.Platform = protocol.PlatformLens
 	}
 
 	return transfers, nil
