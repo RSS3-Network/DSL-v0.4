@@ -70,10 +70,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			//nolint:gocritic
 			transaction.Transfers = append(internalTransfers, transferMap[protocol.IndexVirtual])
 			transaction.Platform = protocol.PlatformLens
-		}
 
-		for _, transfer := range transaction.Transfers {
-			if transaction.Tag == "" {
+			for _, transfer := range transaction.Transfers {
 				transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
 			}
 		}
