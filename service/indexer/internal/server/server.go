@@ -52,7 +52,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/metaverse"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
-	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/matters"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
@@ -204,7 +203,7 @@ func (s *Server) Initialize() (err error) {
 		gitcoin.New(),
 		snapshot.New(),
 		crossbell.New(),
-		lens_worker.New(),
+
 		mattersWorker,
 		transaction.New(),
 		metaverse.New(),
@@ -588,7 +587,10 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 		return transactions[i].BlockNumber < transactions[j].BlockNumber
 	})
 
-	var result []model.Transaction
+	var (
+		result         []model.Transaction
+		uniqueFilterer = make(map[string]struct{})
+	)
 
 	// Using workers to clean data
 	for epoch, ts := range lo.Chunk(transactions, 500) {
@@ -626,6 +628,13 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 		}
 
 		for _, transaction := range ts {
+			// Filter the duplicated transactions
+			if _, exists := uniqueFilterer[transaction.Hash]; exists {
+				continue
+			} else {
+				uniqueFilterer[transaction.Hash] = struct{}{}
+			}
+
 			internalTransfers := make([]model.Transfer, 0)
 			transfersMap := make(map[int64]bool)
 
