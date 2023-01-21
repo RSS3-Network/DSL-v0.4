@@ -58,10 +58,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			transferMap[transfer.Index] = transfer
 		}
 
-		// Empty transfer data to avoid data duplication
-		transaction.Transfers = make([]model.Transfer, 0)
-		transaction.Transfers = append(transaction.Transfers, transferMap[protocol.IndexVirtual])
-
 		// get receipt
 		internalTransfers, err := s.commWorkerClient.HandleReceipt(ctx, &transaction)
 		if err != nil {
@@ -70,10 +66,12 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			return
 		}
 
-		transaction.Transfers = append(transaction.Transfers, internalTransfers...)
+		if len(internalTransfers) > 0 {
+			//nolint:gocritic
+			transaction.Transfers = append(internalTransfers, transferMap[protocol.IndexVirtual])
+			transaction.Platform = protocol.PlatformLens
 
-		for _, transfer := range transaction.Transfers {
-			if transaction.Tag == "" {
+			for _, transfer := range transaction.Transfers {
 				transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
 			}
 		}
