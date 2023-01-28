@@ -213,6 +213,26 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 		}
 	}
 
+	// kurora can not fetch the whole handle such as the avvy domain which sets enhanced privacy
+	// https://avvy.domains/docs/privacy-features-registrations/
+	if len(result) == 0 && !name_service.IsValidAddress(request.Address) {
+		res := name_service.ReverseResolveAll(request.Address, false)
+		if len(res.Address) == 0 && res.Err != nil {
+			return nil, res.Err
+		}
+
+		if !name_service.IsValidAddress(res.Address) {
+			return nil, fmt.Errorf("%s: %s", name_service.ErrNotEvmAddress, name_service.ReferDoc)
+		}
+
+		request.Address = res.Address
+
+		result, err = s.GetKuroraAddress(c, request)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return result, nil
 }
 
