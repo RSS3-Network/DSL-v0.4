@@ -80,6 +80,8 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 		waitGroup.Add(1)
 
 		go func() {
+			defer waitGroup.Done()
+
 			var sourceData ethereum.SourceData
 			if err := json.Unmarshal(internalTransaction.SourceData, &sourceData); err != nil {
 				zap.L().Warn("unmarshal source data", zap.Error(err), zap.String("hash", internalTransaction.Hash))
@@ -131,8 +133,6 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 
 				internalTransactions = append(internalTransactions, internalTransaction)
 			}
-
-			waitGroup.Done()
 		}()
 	}
 
