@@ -52,7 +52,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/metaverse"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/matters"
+	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
 	"github.com/samber/lo"
@@ -179,11 +179,6 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
-	mattersWorker, err := matters.New(context.Background(), s.config.Kurora.Endpoint)
-	if err != nil {
-		return err
-	}
-
 	ethereumClientMap, err := ethclientx.Dial(s.config.RPC, protocol.EthclientNetworks)
 	if err != nil {
 		return err
@@ -203,8 +198,7 @@ func (s *Server) Initialize() (err error) {
 		gitcoin.New(),
 		snapshot.New(),
 		crossbell.New(),
-
-		mattersWorker,
+		lens_worker.New(),
 		transaction.New(),
 		metaverse.New(),
 		music.New(),

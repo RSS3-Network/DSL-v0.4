@@ -18,6 +18,11 @@ var rootCommand = cobra.Command{
 	Version:       protocol.Version,
 }
 
+func init() {
+	rootCommand.PersistentFlags().String("socialdb", "", "social db name")
+	rootCommand.PersistentFlags().Int("socialredisdb", -1, "social redis db name")
+}
+
 func main() {
 	viper.SetConfigName("crawler")
 	viper.SetConfigType("yaml")
@@ -33,15 +38,26 @@ func main() {
 		logrus.Fatalln(err)
 	}
 
-	configHub := config.Config{}
+	// read config
+	configCrawler := config.Config{}
 
-	if err := viper.Unmarshal(&configHub); err != nil {
+	if err := viper.Unmarshal(&configCrawler); err != nil {
 		logrus.Fatalln(err)
 	}
 
-	srv := server.New(&configHub)
+	srv := server.New(&configCrawler)
 
 	rootCommand.RunE = func(cmd *cobra.Command, args []string) error {
+		// config: db overridden by args
+		socialDB, _ := rootCommand.Flags().GetString("socialdb")
+		if socialDB != "" {
+			configCrawler.Postgres.Database = socialDB
+		}
+		socialRedisDB, _ := rootCommand.Flags().GetInt("socialredisdb")
+		if socialRedisDB != -1 {
+			configCrawler.Redis.DB = socialRedisDB
+		}
+
 		return srv.Run()
 	}
 
