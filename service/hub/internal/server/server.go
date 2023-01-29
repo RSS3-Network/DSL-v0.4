@@ -47,6 +47,17 @@ func (s *Server) Initialize() (err error) {
 	}
 	database.ReplaceGlobal(databaseClient)
 
+	// Compatible with old configuration
+	if config.ConfigHub.Postgres.SocialDB != "" {
+		socialDatabaseClient, err := database.Dial(config.ConfigHub.Postgres.SocialString(), false)
+		if err != nil {
+			panic(err)
+		}
+		database.ReplaceSocial(socialDatabaseClient)
+	} else {
+		database.ReplaceSocial(databaseClient)
+	}
+
 	redisClient, err := cache.Dial(config.ConfigHub.Redis)
 	if err != nil {
 		return err
@@ -95,6 +106,7 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolveFunc)
 
 	// POST
+	s.httpServer.POST("/notes/social", s.httpHandler.BatchGetSocialNotesFunc, middlewarex.CheckAPIKeyMiddleware)
 	s.httpServer.POST("/notes", s.httpHandler.BatchGetNotesFunc, middlewarex.CheckAPIKeyMiddleware)
 	s.httpServer.POST("/profiles", s.httpHandler.BatchGetProfilesFunc, middlewarex.CheckAPIKeyMiddleware)
 	s.httpServer.POST("/profiles/v2", s.httpHandler.BatchGetProfilesFunc2, middlewarex.CheckAPIKeyMiddleware)

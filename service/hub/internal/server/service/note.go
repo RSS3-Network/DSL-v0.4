@@ -116,6 +116,38 @@ func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotes
 	return transactions, total, nil
 }
 
+func (s *Service) BatchGetSocialNotes(ctx context.Context, request model.BatchGetSocialNotesRequest) ([]dbModel.Transaction, int64, error) {
+	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
+		request.Limit = model.DefaultLimit
+	}
+
+	transactions, total, err := dao.BatchGetSocialTransactions(ctx, request)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	transactionHashes := make([]string, 0)
+	for _, transactionHash := range transactions {
+		transactionHashes = append(transactionHashes, transactionHash.Hash)
+	}
+
+	transfers, err := dao.GetTransfers(ctx, transactionHashes)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	transferMap := make(map[string][]dbModel.Transfer)
+	for _, transfer := range transfers {
+		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
+	}
+
+	for index := range transactions {
+		transactions[index].Transfers = transferMap[transactions[index].Hash]
+	}
+
+	return transactions, total, nil
+}
+
 func (s *Service) CheckRequestTagAndType(reqTags []string, reqTypes []string) ([]string, []string, bool) {
 	// support many-many relationship between tag and type
 	var tags []string
