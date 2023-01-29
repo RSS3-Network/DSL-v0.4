@@ -13,7 +13,7 @@ spec:
     metadata:
       labels:
         app: pregod-1-1-crawler
-      tier: social
+        tier: social
     spec:
       containers:
         - image: $IMAGE_TAG_RELEASE
