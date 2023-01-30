@@ -1,0 +1,149 @@
+package aptos
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	aptosClient "github.com/naturalselectionlabs/pregod/common/datasource/aptos"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/samber/lo"
+	"github.com/shopspring/decimal"
+	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
+	"time"
+)
+
+var _ datasource.Datasource = &Datasource{}
+
+type Datasource struct {
+	client *aptosClient.Client
+}
+
+func (d *Datasource) Name() string {
+	return protocol.SourceAptos
+}
+
+func (d *Datasource) Networks() []string {
+	return []string{
+		protocol.NetworkAptos,
+	}
+}
+
+func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
+	tracer := otel.Tracer("datasource_aptos")
+	ctx, trace := tracer.Start(ctx, "datasource_aptos:Handle")
+	internalTransactions := make([]model.Transaction, 0)
+	var err error
+	defer func() { opentelemetry.Log(trace, message, len(internalTransactions), err) }()
+
+	query := aptosClient.GetAccountTransactionsParameter{
+		Address: message.Address,
+		Start:   decimal.New(message.BlockNumber, 10),
+		Limit:   protocol.DatasourceLimit, // order by desc
+	}
+
+	result, err := d.client.GetAccountTractions(ctx, query)
+	if err != nil {
+		loggerx.Global().Error("GetAccountTractions error", zap.Error(err), zap.Any("query", query))
+
+		return nil, err
+	}
+
+	for _, tx := range result {
+		// (currently) only supports native token transfer
+		if tx.Payload.Function != CoinTransferFunc && tx.Payload.Function != AccountTransferFunc {
+			continue
+		}
+
+		if len(tx.Payload.TypeArguments) == 0 {
+			tx.Payload.TypeArguments = append(tx.Payload.TypeArguments, AptosCoin)
+		}
+
+		metadata, err := d.buildMetadata(tx.Payload.TypeArguments[0], tx.Payload.Arguments[1])
+		if err != nil {
+			loggerx.Global().Error("aptos datasource buildMetadata error", zap.Error(err))
+
+			continue
+		}
+
+		metadataRaw, err := json.Marshal(metadata)
+		if err != nil {
+			loggerx.Global().Error("aptos metadata marshal error", zap.Error(err))
+
+			continue
+		}
+
+		internalTransactions = append(internalTransactions, model.Transaction{
+			BlockNumber: tx.Version.BigInt().Int64(),
+			Hash:        tx.Hash,
+			Owner:       message.Address,
+			AddressFrom: tx.Sender,
+			AddressTo:   tx.Payload.Arguments[0],
+			Network:     protocol.NetworkAptos,
+			Source:      protocol.SourceAptos,
+			Timestamp:   time.UnixMicro(tx.Timestamp.BigInt().Int64()),
+			Tag:         filter.TagTransaction,
+			Type:        filter.TransactionTransfer,
+			Success:     lo.ToPtr(tx.Success),
+			Fee:         lo.ToPtr(tx.GasUsed.Shift(-int32(metadata.Decimals))),
+			Transfers: []model.Transfer{
+				// This is a virtual transfer
+				{
+					TransactionHash: tx.Hash,
+					Timestamp:       time.UnixMicro(tx.Timestamp.BigInt().Int64()),
+					Index:           protocol.IndexVirtual,
+					AddressFrom:     tx.Sender,
+					AddressTo:       tx.Payload.Arguments[0],
+					Metadata:        metadataRaw,
+					Network:         protocol.NetworkAptos,
+					Source:          protocol.SourceAptos,
+					RelatedUrls: []string{
+						fmt.Sprintf("https://explorer.aptoslabs.com/txn/%v", tx.Hash),
+					},
+					Tag:  filter.TagTransaction,
+					Type: filter.TransactionTransfer,
+				},
+			},
+		})
+
+		if len(internalTransactions) > datasource.DefaultLimit {
+			break
+		}
+	}
+
+	return internalTransactions, nil
+}
+
+func (d *Datasource) buildMetadata(coinType string, v string) (*metadata.Token, error) {
+	value, err := decimal.NewFromString(v)
+	if err != nil {
+		return nil, err
+	}
+
+	coin, exist := coinMetadata[coinType]
+	if !exist {
+		return nil, fmt.Errorf("unsupported")
+	}
+
+	return &metadata.Token{
+		Name:         coin.Name,
+		Value:        lo.ToPtr(value),
+		Symbol:       coin.Symbol,
+		Decimals:     coin.Decimals,
+		Standard:     coin.Standard,
+		ValueDisplay: lo.ToPtr(value.Shift(-int32(coin.Decimals))),
+	}, nil
+
+}
+
+func New() datasource.Datasource {
+	return &Datasource{
+		client: aptosClient.NewClient(),
+	}
+}

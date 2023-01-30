@@ -81,11 +81,11 @@ func ResolveAddress(address string, ignoreContract bool) (string, error) {
 		return "", result.Err
 	}
 
-	// check valid
-	valid := name_service.IsValidAddress(result.Address)
-	if !valid {
-		return "", fmt.Errorf("%s: %s", name_service.ErrNotEvmAddress, name_service.ReferDoc)
-	}
+	// // check valid
+	// valid := name_service.IsValidAddress(result.Address)
+	// if !valid {
+	// 	return "", fmt.Errorf("%s: %s", name_service.ErrNotEvmAddress, name_service.ReferDoc)
+	// }
 
 	// check contract
 	if !ignoreContract {
