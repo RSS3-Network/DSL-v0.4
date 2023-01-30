@@ -195,6 +195,10 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 		}
 	}
 
+	if len(tokenMap) == 0 {
+		return nil, errors.New("unsupported protocol")
+	}
+
 	var addressTo string
 
 	switch {

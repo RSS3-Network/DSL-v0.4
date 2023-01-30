@@ -7,6 +7,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/masknetwork"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spookyswap"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/treaderjoe"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
@@ -159,6 +160,12 @@ var (
 		// https://docs.uniswap.org/protocol/reference/deployments
 		strings.ToLower("0xE592427A0AEce92De3Edee1F18E0157C05861564"): routerUniswapV3, // Uniswap V3 1
 		strings.ToLower("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"): routerUniswapV3, // Uniswap V3 2
+		// Uniswap V3 Universal Router
+		strings.ToLower(uniswap.AddressUniversalRouter.String()):         routerUniswapV3, // Ethereum
+		strings.ToLower(uniswap.AddressUniversalRouterArbitrum.String()): routerUniswapV3, // Arbitrum
+		strings.ToLower(uniswap.AddressUniversalRouterCelo.String()):     routerUniswapV3, // Celo
+		strings.ToLower(uniswap.AddressUniversalRouterOptimism.String()): routerUniswapV3, // Optimism
+		strings.ToLower(uniswap.AddressUniversalRouterPolygon.String()):  routerUniswapV3, // Polygon
 		// SushiSwap
 		// https://docs.sushi.com/docs/Developers/Deployment%20Addresses
 		strings.ToLower("0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F"): routerSushiSwap, // SushiSwap Ethereum
