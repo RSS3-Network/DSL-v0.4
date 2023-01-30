@@ -168,7 +168,7 @@ func (s *service) handleEthereumOrigin(ctx context.Context, message *protocol.Me
 					internalTransfers, err = s.handleEthereumOriginToken(ctx, message, transaction, transfer)
 				}
 
-				if err != nil && !errors.Is(err, ErrorNativeTokenTransferValueIsZero) && !errors.Is(err, ErrorUnsupportedContractEvent) /* Ignore actively aborted transactions */ {
+				if err != nil && !errors.Is(err, ErrorNativeTokenTransferValueIsZero) && !errors.Is(err, ErrorUnsupportedContractEvent) && !errors.Is(err, ErrorNonUserDirectApproval) /* Ignore actively aborted transactions */ {
 					zap.L().Warn("handle ethereum origin", zap.Error(err), zap.String("network", transaction.Network), zap.String("address", message.Address), zap.String("transaction_hash", transaction.Hash))
 
 					return
@@ -358,6 +358,10 @@ func (s *service) handleEthereumOriginToken(ctx context.Context, message *protoc
 	}
 
 	if tokenApproval {
+		if common.HexToAddress(transaction.AddressTo) != log.Address {
+			return nil, ErrorNonUserDirectApproval
+		}
+
 		switch {
 		case len(tokenValues) > 0: // Approval ERC-20
 			for _, tokenValue := range tokenValues {
