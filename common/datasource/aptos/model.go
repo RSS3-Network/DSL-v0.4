@@ -17,10 +17,10 @@ type Event struct {
 }
 
 type Payload struct {
-	Function      string   `json:"function"`
-	TypeArguments []string `json:"type_arguments"`
-	Arguments     []string `json:"arguments"`
-	Type          string   `json:"type"`
+	Function      string        `json:"function"`
+	TypeArguments []interface{} `json:"type_arguments"`
+	Arguments     []interface{} `json:"arguments"`
+	Type          string        `json:"type"`
 }
 
 type GetAccountTransactionsParameter struct {
