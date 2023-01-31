@@ -108,7 +108,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			Tag:         filter.TagTransaction,
 			Type:        filter.TransactionTransfer,
 			Success:     lo.ToPtr(tx.Success),
-			Fee:         lo.ToPtr(tx.GasUsed.Shift(-int32(metadata.Decimals))),
+			Fee:         lo.ToPtr(tx.GasUsed.Shift(-int32(metadata.Decimals)).Mul(tx.GasUnitPrice)),
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{

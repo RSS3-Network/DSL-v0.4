@@ -35,6 +35,7 @@ type GetAccountTransactionsResult struct {
 	Hash           string          `json:"hash"`
 	Success        bool            `json:"success"`
 	GasUsed        decimal.Decimal `json:"gas_used"`
+	GasUnitPrice   decimal.Decimal `json:"gas_unit_price"`
 	Sender         string          `json:"sender"`
 	Timestamp      decimal.Decimal `json:"timestamp"`
 	Type           string          `json:"type"`
