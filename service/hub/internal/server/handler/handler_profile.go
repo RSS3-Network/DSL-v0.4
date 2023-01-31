@@ -43,37 +43,6 @@ func (h *Handler) GetProfilesFunc(c echo.Context) error {
 	})
 }
 
-func (h *Handler) GetProfilesFunc2(c echo.Context) error {
-	go h.apiReport(model.GetProfiles+"/v2", c)
-	tracer := otel.Tracer("GetProfilesFunc2")
-	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
-
-	defer httpSnap.End()
-
-	request := model.GetRequest{}
-
-	if err := c.Bind(&request); err != nil {
-		return BadRequest(c)
-	}
-
-	if err := c.Validate(&request); err != nil {
-		return err
-	}
-
-	go h.filterReport(model.GetProfiles+"/v2", request, c)
-
-	profileList, err := h.service.GetKuroraProfiles(ctx, request)
-	if err != nil {
-		return InternalError(c)
-	}
-
-	total := int64(len(profileList))
-	return c.JSON(http.StatusOK, &model.Response{
-		Total:  &total,
-		Result: profileList,
-	})
-}
-
 func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 	go h.apiReport(model.PostProfiles, c)
 	tracer := otel.Tracer("BatchGetProfilesFunc")
@@ -109,8 +78,39 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 	})
 }
 
+func (h *Handler) GetProfilesFunc2(c echo.Context) error {
+	go h.apiReport(model.GetProfiles, c)
+	tracer := otel.Tracer("GetProfilesFunc2")
+	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
+
+	defer httpSnap.End()
+
+	request := model.GetRequest{}
+
+	if err := c.Bind(&request); err != nil {
+		return BadRequest(c)
+	}
+
+	if err := c.Validate(&request); err != nil {
+		return err
+	}
+
+	go h.filterReport(model.GetProfiles, request, c)
+
+	profileList, err := h.service.GetKuroraProfiles(ctx, request)
+	if err != nil {
+		return InternalError(c)
+	}
+
+	total := int64(len(profileList))
+	return c.JSON(http.StatusOK, &model.Response{
+		Total:  &total,
+		Result: profileList,
+	})
+}
+
 func (h *Handler) BatchGetProfilesFunc2(c echo.Context) error {
-	go h.apiReport(model.PostProfiles+"/v2", c)
+	go h.apiReport(model.PostProfiles, c)
 	tracer := otel.Tracer("BatchGetProfilesFunc2")
 	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
 
@@ -126,7 +126,7 @@ func (h *Handler) BatchGetProfilesFunc2(c echo.Context) error {
 		return err
 	}
 
-	go h.filterReport(model.PostProfiles+"/v2", request, c)
+	go h.filterReport(model.PostProfiles, request, c)
 
 	if len(request.Address) > model.DefaultLimit {
 		request.Address = request.Address[:model.DefaultLimit]

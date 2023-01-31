@@ -70,6 +70,11 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	)
 
 	for _, transaction := range transactions {
+		// Some protocols support both NFT and token trade
+		if transaction.Type != "" && transaction.Tag != "" {
+			continue
+		}
+
 		// Filter unsupported platforms
 		platform, exists := platformMap[common.HexToAddress(transaction.AddressTo)]
 		if !exists {

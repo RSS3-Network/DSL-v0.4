@@ -11,7 +11,12 @@ const (
 )
 
 var (
-	AddressUniversalRouter = common.HexToAddress("0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B")
+	// https://github.com/Uniswap/universal-router/tree/main/deploy-addresses
+	AddressUniversalRouter         = common.HexToAddress("0xEf1c6E67703c7BD7107eed8303Fbe6EC2554BF6B")
+	AddressUniversalRouterArbitrum = common.HexToAddress("0x4C60051384bd2d3C01bfc845Cf5F4b44bcbE9de5")
+	AddressUniversalRouterCelo     = common.HexToAddress("0xC73d61d192FB994157168Fb56730FdEc64C9Cb8F")
+	AddressUniversalRouterOptimism = common.HexToAddress("0xb555edF5dcF85f42cEeF1f3630a52A108E55A654")
+	AddressUniversalRouterPolygon  = common.HexToAddress("0x4C60051384bd2d3C01bfc845Cf5F4b44bcbE9de5")
 
 	EventHashTransfer            = common.BytesToHash(crypto.Keccak256([]byte("Transfer(address,address,uint256)")))
 	EventHashSwapV2              = common.BytesToHash(crypto.Keccak256([]byte("Swap(address,uint256,uint256,uint256,uint256,address)")))
