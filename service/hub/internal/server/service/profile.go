@@ -221,10 +221,6 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 			return nil, res.Err
 		}
 
-		if !name_service.IsValidAddress(res.Address) {
-			return nil, fmt.Errorf("%s: %s", name_service.ErrNotEvmAddress, name_service.ReferDoc)
-		}
-
 		request.Address = res.Address
 
 		result, err = s.GetKuroraAddress(c, request)
