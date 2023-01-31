@@ -7,4 +7,5 @@ var (
 	ErrorInvalidContractEvent           = errors.New("invalid contract event")
 	ErrorUnsupportedContractEvent       = errors.New("unsupported contract event")
 	ErrorInvalidTopicsLength            = errors.New("invalid topics length")
+	ErrorNonUserDirectApproval          = errors.New("non user direct approval")
 )
