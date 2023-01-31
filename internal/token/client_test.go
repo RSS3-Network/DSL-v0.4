@@ -19,7 +19,7 @@ func init() {
 	rpcConfig := configx.RPC{
 		General: configx.RPCNetwork{
 			Ethereum: &configx.RPCEndpoint{
-				WebSocket: "https://rpc.rss3.dev/networks/ethereum",
+				WebSocket: "https://eth.llamarpc.com",
 			},
 		},
 	}
