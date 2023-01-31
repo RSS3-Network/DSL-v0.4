@@ -6,6 +6,9 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"go.uber.org/zap"
+
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
@@ -44,6 +47,8 @@ func DoRequest(_ context.Context, client *http.Client, request *http.Request, re
 	_ = reader.Close()
 
 	if err = json.Unmarshal(data, &response); err != nil {
+		loggerx.Global().Error("DoRequest error", zap.Error(err), zap.Any("data", data))
+
 		return err
 	}
 

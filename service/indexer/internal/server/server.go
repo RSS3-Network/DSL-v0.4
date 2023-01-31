@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/aptos"
+
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
@@ -172,6 +174,7 @@ func (s *Server) Initialize() (err error) {
 		eth_etl.New(),
 		eip1577.New(s.employer),
 		lensDatasource,
+		aptos.New(),
 	}
 
 	swapWorker, err := swap.New(s.employer)
