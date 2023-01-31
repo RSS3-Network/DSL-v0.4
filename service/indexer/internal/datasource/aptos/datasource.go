@@ -146,6 +146,7 @@ func (d *Datasource) buildMetadata(coinType string, v string) (*metadata.Token, 
 		Symbol:       coin.Symbol,
 		Decimals:     coin.Decimals,
 		Standard:     coin.Standard,
+		Image:        coin.Image,
 		ValueDisplay: lo.ToPtr(value.Shift(-int32(coin.Decimals))),
 	}, nil
 }
