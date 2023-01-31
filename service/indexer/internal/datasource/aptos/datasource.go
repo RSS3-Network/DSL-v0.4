@@ -65,15 +65,19 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 	for _, tx := range result {
 		// (currently) only supports native token transfer
-		if tx.Payload.Function != CoinTransferFunc && tx.Payload.Function != AccountTransferFunc {
+		if tx.Payload.Function != CoinTransferFunc && tx.Payload.Function != AccountTransferFunc && len(tx.Payload.Arguments) < 2 {
 			continue
 		}
 
-		if len(tx.Payload.TypeArguments) == 0 {
-			tx.Payload.TypeArguments = append(tx.Payload.TypeArguments, AptosCoin)
+		var coinType = AptosCoin
+		var addressTo, _ = tx.Payload.Arguments[0].(string)
+		var value, _ = tx.Payload.Arguments[1].(string)
+
+		if len(tx.Payload.TypeArguments) > 0 {
+			coinType, _ = tx.Payload.TypeArguments[0].(string)
 		}
 
-		metadata, err := d.buildMetadata(tx.Payload.TypeArguments[0], tx.Payload.Arguments[1])
+		metadata, err := d.buildMetadata(coinType, value)
 		if err != nil {
 			loggerx.Global().Error("aptos datasource buildMetadata error", zap.Error(err))
 
@@ -93,7 +97,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 			Hash:        tx.Hash,
 			Owner:       message.Address,
 			AddressFrom: tx.Sender,
-			AddressTo:   tx.Payload.Arguments[0],
+			AddressTo:   addressTo,
 			Network:     protocol.NetworkAptos,
 			Source:      protocol.SourceAptos,
 			Timestamp:   time.UnixMicro(tx.Timestamp.BigInt().Int64()),
@@ -108,7 +112,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 					Timestamp:       time.UnixMicro(tx.Timestamp.BigInt().Int64()),
 					Index:           protocol.IndexVirtual,
 					AddressFrom:     tx.Sender,
-					AddressTo:       tx.Payload.Arguments[0],
+					AddressTo:       addressTo,
 					Metadata:        metadataRaw,
 					Network:         protocol.NetworkAptos,
 					Source:          protocol.SourceAptos,
