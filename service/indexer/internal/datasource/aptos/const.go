@@ -14,6 +14,7 @@ var coinMetadata = map[string]metadata.Token{
 		Name:     "Aptos",
 		Symbol:   "APT",
 		Decimals: 8,
+		Image:    "https://assets.coingecko.com/coins/images/26455/large/aptos_round.png",
 		Standard: "Native",
 	},
 }
