@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/worker/crossbell"
@@ -181,7 +182,7 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 			return nil, err
 		}
 
-		if len(profiles) > 0 {
+		if len(profiles) > 0 && profiles[0].Address != ethereum.AddressGenesis {
 			request.Address = profiles[0].Address.String()
 
 			result, err = s.GetKuroraAddress(c, request)
@@ -219,6 +220,10 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 		res := name_service.ReverseResolveAll(request.Address, false)
 		if len(res.Address) == 0 && res.Err != nil {
 			return nil, res.Err
+		}
+
+		if !name_service.IsValidAddress(res.Address) {
+			return nil, fmt.Errorf("%s: %s", name_service.ErrNotEvmAddress, name_service.ReferDoc)
 		}
 
 		request.Address = res.Address
