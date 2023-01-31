@@ -166,7 +166,7 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 		err    error
 	)
 
-	if name_service.IsValidAddress(request.Address) {
+	if name_service.IsValidAddress(request.Address) && !strings.EqualFold(ethereum.AddressGenesis.String(), request.Address) {
 		result, err = s.GetKuroraAddress(c, request)
 		if err != nil {
 			return nil, err
@@ -218,12 +218,8 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 	// https://avvy.domains/docs/privacy-features-registrations/
 	if len(result) == 0 && !name_service.IsValidAddress(request.Address) {
 		res := name_service.ReverseResolveAll(request.Address, false)
-		if len(res.Address) == 0 && res.Err != nil {
-			return nil, res.Err
-		}
-
-		if !name_service.IsValidAddress(res.Address) {
-			return nil, fmt.Errorf("%s: %s", name_service.ErrNotEvmAddress, name_service.ReferDoc)
+		if len(res.Address) == 0 || !name_service.IsValidAddress(res.Address) {
+			return result, nil
 		}
 
 		request.Address = res.Address
@@ -290,8 +286,16 @@ func (s *Service) GetKuroraAddress(c context.Context, request model.GetRequest) 
 func (s *Service) BatchKuroraProfiles(c context.Context, request model.BatchGetProfilesRequest) ([]*social.Profile, error) {
 	result := make([]*social.Profile, 0)
 
+	addresses := make([]string, 0)
+
+	for _, address := range request.Address {
+		if !strings.EqualFold(ethereum.AddressGenesis.String(), address) {
+			addresses = append(addresses, address)
+		}
+	}
+
 	domainsQuery := kurora.DatasetDomainQuery{
-		ReverseAddressList: request.Address,
+		ReverseAddressList: addresses,
 		Limit:              lo.ToPtr(10 * model.DefaultLimit),
 	}
 
