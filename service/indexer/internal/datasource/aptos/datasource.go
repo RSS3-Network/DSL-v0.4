@@ -65,13 +65,17 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 	for _, tx := range result {
 		// (currently) only supports native token transfer
-		if tx.Payload.Function != CoinTransferFunc && tx.Payload.Function != AccountTransferFunc && len(tx.Payload.Arguments) < 2 {
+		if tx.Payload.Function != CoinTransferFunc && tx.Payload.Function != AccountTransferFunc {
 			continue
 		}
 
-		var coinType = AptosCoin
-		var addressTo, _ = tx.Payload.Arguments[0].(string)
-		var value, _ = tx.Payload.Arguments[1].(string)
+		if len(tx.Payload.Arguments) < 2 {
+			continue
+		}
+
+		coinType := AptosCoin
+		addressTo, _ := tx.Payload.Arguments[0].(string)
+		value, _ := tx.Payload.Arguments[1].(string)
 
 		if len(tx.Payload.TypeArguments) > 0 {
 			coinType, _ = tx.Payload.TypeArguments[0].(string)
