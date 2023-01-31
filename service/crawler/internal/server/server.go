@@ -23,6 +23,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/farcaster"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/iqwiki"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/lens"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/matters"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/mirror"
 
 	rabbitmq "github.com/rabbitmq/amqp091-go"
@@ -71,7 +72,11 @@ func (s *Server) Initialize() (err error) {
 		)),
 	))
 
-	databaseClient, err := database.Dial(s.config.Postgres.String(), false)
+	enableMigration := false
+	if os.Getenv("ENABLE_MIGRATION") == "true" {
+		enableMigration = true
+	}
+	databaseClient, err := database.Dial(s.config.Postgres.String(), enableMigration)
 	if err != nil {
 		return err
 	}
@@ -134,6 +139,7 @@ func (s *Server) Initialize() (err error) {
 		farcaster.New(s.config),
 		iqwiki.New(),
 		crossbell.New(s.config),
+		matters.New(s.config),
 	}
 
 	return nil

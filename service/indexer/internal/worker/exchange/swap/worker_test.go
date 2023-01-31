@@ -200,6 +200,40 @@ func Test_service_Handle(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "uniswap v3 universal router",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6727a51caefcaf1bc189a8316ea09f844644b195", // PreGod developer
+					Network: protocol.NetworkPolygon,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://polygonscan.com/tx/0x7ccf6a6a48297105e48f038284f38297d481306cbdd7f2ecf5371daccfe7ba49
+						Hash:        "0x7ccf6a6a48297105e48f038284f38297d481306cbdd7f2ecf5371daccfe7ba49",
+						BlockNumber: 38694790,
+						Network:     protocol.NetworkPolygon,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformUniswap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "sushiswap swap",
 			fields: fields{
 				employer: shedlock.New(),

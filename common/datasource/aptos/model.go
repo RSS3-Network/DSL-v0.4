@@ -30,13 +30,14 @@ type GetAccountTransactionsParameter struct {
 }
 
 type GetAccountTransactionsResult struct {
-	Version   decimal.Decimal `json:"version"`
-	Hash      string          `json:"hash"`
-	Success   bool            `json:"success"`
-	GasUsed   decimal.Decimal `json:"gas_used"`
-	Sender    string          `json:"sender"`
-	Timestamp decimal.Decimal `json:"timestamp"`
-	Type      string          `json:"type"`
-	Payload   Payload         `json:"payload"`
-	Events    []Event         `json:"events"`
+	Version        decimal.Decimal `json:"version"`
+	SequenceNumber decimal.Decimal `json:"sequence_number"`
+	Hash           string          `json:"hash"`
+	Success        bool            `json:"success"`
+	GasUsed        decimal.Decimal `json:"gas_used"`
+	Sender         string          `json:"sender"`
+	Timestamp      decimal.Decimal `json:"timestamp"`
+	Type           string          `json:"type"`
+	Payload        Payload         `json:"payload"`
+	Events         []Event         `json:"events"`
 }

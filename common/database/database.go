@@ -39,7 +39,9 @@ var tables = []any{
 var (
 	client               *gorm.DB
 	globalLocker         sync.RWMutex
+	socialLocker         sync.RWMutex
 	globalDatabaseClient *gorm.DB
+	socialDatabaseClient *gorm.DB
 	ethDbLocker          sync.RWMutex
 	ethDbClient          *gorm.DB
 )
@@ -68,12 +70,28 @@ func Global() *gorm.DB {
 	return globalDatabaseClient
 }
 
+func Social() *gorm.DB {
+	socialLocker.RLock()
+
+	defer socialLocker.RUnlock()
+
+	return socialDatabaseClient
+}
+
 func ReplaceGlobal(db *gorm.DB) {
 	globalLocker.Lock()
 
 	defer globalLocker.Unlock()
 
 	globalDatabaseClient = db
+}
+
+func ReplaceSocial(db *gorm.DB) {
+	socialLocker.Lock()
+
+	defer socialLocker.Unlock()
+
+	socialDatabaseClient = db
 }
 
 func Dial(dsn string, autoMigrate bool) (*gorm.DB, error) {

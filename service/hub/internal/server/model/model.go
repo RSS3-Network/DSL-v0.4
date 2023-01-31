@@ -10,11 +10,12 @@ const (
 	DefaultLimit = 500
 
 	// path
-	GetNotes     = "/notes/"
-	PostNotes    = "/notes"
-	GetProfiles  = "/profiles/"
-	PostProfiles = "/profiles"
-	GetNS        = "/ns/"
+	GetNotes        = "/notes/"
+	PostNotes       = "/notes"
+	PostSocialNotes = "/notes/social"
+	GetProfiles     = "/profiles/"
+	PostProfiles    = "/profiles"
+	GetNS           = "/ns/"
 
 	EsIndex = "pregod-v1-visit-path"
 
@@ -77,6 +78,18 @@ type BatchGetNotesRequest struct {
 	QueryStatus    bool      `json:"query_status"`
 	CountOnly      bool      `json:"count_only"`
 	IgnoreContract bool      `json:"ignore_contract"`
+}
+
+type BatchGetSocialNotesRequest struct {
+	Address   []string  `json:"address" validate:"required"`
+	Type      []string  `json:"type"`
+	Network   []string  `json:"network"`
+	Platform  []string  `json:"platform"`
+	Timestamp time.Time `json:"timestamp"`
+	Limit     int       `json:"limit"`
+	Cursor    string    `json:"cursor"`
+	Page      int       `json:"page"`
+	CountOnly bool      `json:"count_only"`
 }
 
 type BatchGetProfilesRequest struct {

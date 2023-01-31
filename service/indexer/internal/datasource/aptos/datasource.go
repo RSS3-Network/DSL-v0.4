@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	aptosClient "github.com/naturalselectionlabs/pregod/common/datasource/aptos"
@@ -16,7 +18,6 @@ import (
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"time"
 )
 
 var _ datasource.Datasource = &Datasource{}
@@ -41,6 +42,13 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	internalTransactions := make([]model.Transaction, 0)
 	var err error
 	defer func() { opentelemetry.Log(trace, message, len(internalTransactions), err) }()
+
+	// recover panic
+	defer func() {
+		if err := recover(); err != nil {
+			loggerx.Global().Error("datasource_aptos panic", zap.Any("error", err))
+		}
+	}()
 
 	query := aptosClient.GetAccountTransactionsParameter{
 		Address: message.Address,
@@ -81,6 +89,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 		internalTransactions = append(internalTransactions, model.Transaction{
 			BlockNumber: tx.Version.BigInt().Int64(),
+			Index:       tx.SequenceNumber.BigInt().Int64(),
 			Hash:        tx.Hash,
 			Owner:       message.Address,
 			AddressFrom: tx.Sender,
@@ -139,7 +148,6 @@ func (d *Datasource) buildMetadata(coinType string, v string) (*metadata.Token, 
 		Standard:     coin.Standard,
 		ValueDisplay: lo.ToPtr(value.Shift(-int32(coin.Decimals))),
 	}, nil
-
 }
 
 func New() datasource.Datasource {

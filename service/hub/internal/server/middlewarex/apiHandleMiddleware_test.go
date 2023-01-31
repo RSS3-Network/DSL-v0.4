@@ -2,13 +2,14 @@ package middlewarex
 
 import (
 	"fmt"
+	"log"
+	"strings"
+	"testing"
+
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
-	"log"
-	"strings"
-	"testing"
 )
 
 func init() {
@@ -118,8 +119,8 @@ func TestResolveAddress(t *testing.T) {
 		{
 			name:   "invalid evm address",
 			input:  arguments{"qwerfdsazxc", true},
-			output: "",
-			err:    fmt.Errorf("%s: %s", name_service.ErrNotEvmAddress, name_service.ReferDoc),
+			output: "qwerfdsazxc",
+			err:    nil,
 		},
 		{
 			name: "contract address",

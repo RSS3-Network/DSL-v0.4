@@ -145,6 +145,69 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	})
 }
 
+// BatchGetSocialNotesFunc query multiple addresses
+func (h *Handler) BatchGetSocialNotesFunc(c echo.Context) error {
+	go h.apiReport(model.PostSocialNotes, c)
+	tracer := otel.Tracer("BatchGetSocialNotesFunc")
+	ctx, httpSnap := tracer.Start(c.Request().Context(), "BatchGetSocialNotesFunc:http")
+
+	defer httpSnap.End()
+
+	request := model.BatchGetSocialNotesRequest{}
+
+	if err := c.Bind(&request); err != nil {
+		return BadRequest(c)
+	}
+
+	if len(request.Cursor) == 0 {
+		go h.filterReport(model.PostSocialNotes, request, c)
+	}
+
+	if len(request.Address) == 0 {
+		return AddressIsEmpty(c)
+	}
+
+	// check address
+	if len(request.Address) > model.DefaultLimit {
+		request.Address = request.Address[:model.DefaultLimit]
+	}
+	for i, v := range request.Address {
+		address, err := middlewarex.ResolveAddress(v, true)
+		if err != nil {
+			return ErrorResp(c, err)
+		}
+		request.Address[i] = address
+	}
+
+	transactions, total, err := h.service.BatchGetSocialNotes(ctx, request)
+	if err != nil {
+		return InternalError(c)
+	}
+
+	if request.CountOnly {
+		return c.JSON(http.StatusOK, &model.Response{
+			Total: &total,
+		})
+	}
+
+	var cursor string
+	if total > int64(request.Limit) {
+		cursor = transactions[len(transactions)-1].Hash
+	}
+
+	if total == 0 {
+		return c.JSON(http.StatusOK, &model.Response{
+			Result: make([]dbModel.Transaction, 0),
+		})
+	}
+
+	return c.JSON(http.StatusOK, &model.Response{
+		Total:  &total,
+		Cursor: cursor,
+		Result: transactions,
+	})
+}
+
 func (h *Handler) GetNotesWsFunc(c echo.Context) error {
 	ws.GetClientMaps()
 
