@@ -164,7 +164,7 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 	var err error
 	result := make([]*social.Profile, 0)
 
-	if name_service.IsValidAddress(request.Address) && !strings.EqualFold(ethereum.AddressGenesis.String(), request.Address) {
+	if name_service.IsEvmValidAddress(request.Address) && !strings.EqualFold(ethereum.AddressGenesis.String(), request.Address) {
 		result, err = s.GetKuroraAddress(c, request)
 		if err != nil {
 			return nil, err
@@ -214,9 +214,9 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 
 	// kurora can not fetch the whole handle such as the avvy domain which sets enhanced privacy
 	// https://avvy.domains/docs/privacy-features-registrations/
-	if len(result) == 0 && !name_service.IsValidAddress(request.Address) {
+	if len(result) == 0 && !name_service.IsEvmValidAddress(request.Address) {
 		res := name_service.ReverseResolveAll(request.Address, false)
-		if len(res.Address) == 0 || !name_service.IsValidAddress(res.Address) {
+		if len(res.Address) == 0 || !name_service.IsEvmValidAddress(res.Address) {
 			return result, nil
 		}
 
