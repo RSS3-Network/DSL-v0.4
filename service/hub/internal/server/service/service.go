@@ -15,6 +15,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/websocket"
@@ -157,6 +158,12 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		protocol.NetworkFantom,
 		protocol.NetworkEIP1577,
 		protocol.NetworkAptos,
+	}
+
+	if !name_service.IsEvmValidAddress(message.Address) {
+		networks = []string{
+			protocol.NetworkAptos,
+		}
 	}
 
 	routingKey := getRoutingKeyByHeader(ctx)
