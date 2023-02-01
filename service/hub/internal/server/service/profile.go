@@ -161,10 +161,8 @@ func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address s
 }
 
 func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest) ([]*social.Profile, error) {
-	var (
-		result []*social.Profile
-		err    error
-	)
+	var err error
+	result := make([]*social.Profile, 0)
 
 	if name_service.IsValidAddress(request.Address) && !strings.EqualFold(ethereum.AddressGenesis.String(), request.Address) {
 		result, err = s.GetKuroraAddress(c, request)
