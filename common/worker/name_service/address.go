@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func IsValidAddress(address string) bool {
+func IsEvmValidAddress(address string) bool {
 	re := regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
 	return re.MatchString(address)
 }

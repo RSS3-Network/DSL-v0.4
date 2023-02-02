@@ -48,9 +48,8 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	unindexedTransactions := make([]*model.Transaction, 0)
 
 	ethereumReceiptQuery := kurora.EthereumReceiptQuery{
-		From:            lo.ToPtr(common.HexToAddress(message.Address)),
-		BlockNumberFrom: lo.ToPtr(decimal.NewFromInt(message.BlockNumber)),
-		Order:           lo.ToPtr("desc"),
+		From:  lo.ToPtr(common.HexToAddress(message.Address)),
+		Order: lo.ToPtr("desc"),
 	}
 
 	// Increase index by timestamp and block number

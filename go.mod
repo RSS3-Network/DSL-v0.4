@@ -37,7 +37,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.8.1
-	github.com/unstoppabledomains/resolution-go/v2 v2.3.0
+	github.com/unstoppabledomains/resolution-go/v2 v2.3.1
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	github.com/wealdtech/go-ens/v3 v3.5.5
 	go.opentelemetry.io/otel v1.11.2
