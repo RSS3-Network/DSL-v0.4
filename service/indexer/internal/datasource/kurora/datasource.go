@@ -50,6 +50,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	ethereumReceiptQuery := kurora.EthereumReceiptQuery{
 		From:            lo.ToPtr(common.HexToAddress(message.Address)),
 		BlockNumberFrom: lo.ToPtr(decimal.NewFromInt(message.BlockNumber)),
+		Order:           lo.ToPtr("desc"),
 	}
 
 	// Increase index by timestamp and block number
@@ -112,6 +113,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 					},
 				},
 			})
+
+			if len(unindexedTransactions) >= datasource.DatasourceLimit {
+				break
+			}
 		}
 
 		// Update cursor
@@ -122,11 +127,6 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 		lastTransaction, _ := lo.Last(receipts)
 		ethereumReceiptQuery.Cursor = lo.ToPtr(lastTransaction.TransactionHash.String())
 	}
-
-	// indexedTransactions, err := ethereum.BuildTransactions(ctx, message, unindexedTransactions)
-	// if err != nil {
-	//	 return nil, fmt.Errorf("build transactions: %w", err)
-	// }
 
 	return lo.Map(unindexedTransactions, func(transaction *model.Transaction, _ int) model.Transaction {
 		return *transaction
