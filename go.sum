@@ -552,8 +552,12 @@ github.com/naoina/go-stringutil v0.1.0/go.mod h1:XJ2SJL9jCtBh+P9q5btrd/Ylo8XwT/h
 github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416/go.mod h1:NBIhNtsFMo3G2szEBne+bO4gS192HuIYRqfvOWb4i1E=
 github.com/naturalselectionlabs/kurora v0.19.6 h1:/JbLra+ci3+CWROrAZTsEoNNongc7ccEuMOqWsuy5uk=
 github.com/naturalselectionlabs/kurora v0.19.6/go.mod h1:vXpvkSMFJFVh6S8xncjuMDM9irXVfCAteEI+dMDMyuQ=
+github.com/naturalselectionlabs/kurora v0.21.3 h1:O2bECU+/NYNJ7oWdFdD+0fnr6G9pcUEbmdAIrN6EjbI=
+github.com/naturalselectionlabs/kurora v0.21.3/go.mod h1:LK5IK9Bdy9Q8D3IFWOpqmoBi2Han+6xH51BwpSLb2kM=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20230118230429-9a38a28119b8 h1:AqYnjcy+lCS4rJpuI7UotYPJua6EZtXVEIQPz/naUIY=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20230118230429-9a38a28119b8/go.mod h1:l2XVJ0tRgAfox3atwg029y6ctrVr3K+87XjH0mAefAE=
+github.com/naturalselectionlabs/kurora/client v0.0.0-20230203041250-bba44b8bf34f h1:fQ5lZhRkKcidga05ps7kTKEh6r5/+rx6vsgBqC0y7Bg=
+github.com/naturalselectionlabs/kurora/client v0.0.0-20230203041250-bba44b8bf34f/go.mod h1:l2XVJ0tRgAfox3atwg029y6ctrVr3K+87XjH0mAefAE=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
@@ -710,6 +714,7 @@ github.com/ugorji/go/codec v1.1.7 h1:2SvQaVZ1ouYrrKKwoSk2pzd4A9evlKJb9oTL+OaLUSs
 github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLYF3GoBXY=
 github.com/unstoppabledomains/resolution-go/v2 v2.2.0 h1:stPsIF/vWvHZVfn/YNik4j0VfcnSyZnbmvo8KXywbKA=
 github.com/unstoppabledomains/resolution-go/v2 v2.2.0/go.mod h1:86vB9r5o48mo8yhBBcZxnTZ03/kov8MAJzsCWTPiLmU=
+github.com/unstoppabledomains/resolution-go/v2 v2.3.0/go.mod h1:86vB9r5o48mo8yhBBcZxnTZ03/kov8MAJzsCWTPiLmU=
 github.com/urfave/cli v1.22.1 h1:+mkCCcOFKPnCmVYVcURKps1Xe+3zP90gSYGNfRkjoIY=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/urfave/cli/v2 v2.3.0/go.mod h1:LJmUH05zAU44vOAcrfzZQKsZbVcdbOG8rtL3/XcUArI=
