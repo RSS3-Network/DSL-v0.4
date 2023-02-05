@@ -65,29 +65,29 @@ func (c *Client) ERC20(ctx context.Context, network string, contractAddress stri
 
 	ethclient, err := ethclientx.Global(network)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get ethclient: %w", err)
 	}
 
 	erc20Contract, err := erc20.NewERC20(common.HexToAddress(result.ContractAddress), ethclient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new erc20 contract: %w", err)
 	}
 
 	if result.Name, err = erc20Contract.Name(&bind.CallOpts{}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get erc20 token name: %w", err)
 	}
 
 	if result.Symbol, err = erc20Contract.Symbol(&bind.CallOpts{}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get erc20 token symbol: %w", err)
 	}
 
 	if result.Decimals, err = erc20Contract.Decimals(&bind.CallOpts{}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get erc20 token decimals: %w", err)
 	}
 
 	// Set token to cache
 	if err := cache.SetMsgPack(ctx, tokenID, result, 24*time.Hour); err != nil {
-		return nil, fmt.Errorf("set token to cache: %w", err)
+		zap.L().Warn("set token to cache", zap.Error(err))
 	}
 
 	return result, nil
