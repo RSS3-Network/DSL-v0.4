@@ -3,10 +3,13 @@ package token
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -14,15 +17,31 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"github.com/samber/lo"
+
 	"go.uber.org/zap"
+
 	"gorm.io/gorm"
 )
 
 func (c *Client) ERC20(ctx context.Context, network string, contractAddress string) (*ERC20, error) {
 	var token model.Token
 
+	tokenID := fmt.Sprintf("token_%s-%s", network, contractAddress)
+
 	if database.Global() != nil {
-		err := database.Global().
+		// Get token from cache
+		exists, err := cache.GetMsgPack(ctx, tokenID, &token)
+		if err != nil {
+			return nil, fmt.Errorf("get token from cache: %w", err)
+		}
+
+		if exists {
+			return lo.ToPtr(tokenToERC20(token)), nil
+		}
+
+		// Get token from database
+		err = database.Global().
 			Model((*model.Token)(nil)).
 			Where(map[string]interface{}{
 				"network":          network,
@@ -36,13 +55,7 @@ func (c *Client) ERC20(ctx context.Context, network string, contractAddress stri
 		}
 
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return &ERC20{
-				Name:            token.Name,
-				Symbol:          token.Symbol,
-				Decimals:        token.Decimal, // TODO Rename it to decimals
-				ContractAddress: token.ContractAddress,
-				Logo:            token.Logo,
-			}, nil
+			return lo.ToPtr(tokenToERC20(token)), nil
 		}
 	}
 
@@ -72,7 +85,10 @@ func (c *Client) ERC20(ctx context.Context, network string, contractAddress stri
 		return nil, err
 	}
 
-	// TODO Insert token to database
+	// Set token to cache
+	if err := cache.SetMsgPack(ctx, tokenID, result, 24*time.Hour); err != nil {
+		return nil, fmt.Errorf("set token to cache: %w", err)
+	}
 
 	return result, nil
 }
@@ -95,4 +111,14 @@ func (c *Client) ERC20ToMetadata(context context.Context, network, contractAddre
 	}
 
 	return tokenMetadata, nil
+}
+
+func tokenToERC20(token model.Token) ERC20 {
+	return ERC20{
+		Name:            token.Name,
+		Symbol:          token.Symbol,
+		Decimals:        token.Decimal,
+		ContractAddress: token.ContractAddress,
+		Logo:            token.Logo,
+	}
 }
