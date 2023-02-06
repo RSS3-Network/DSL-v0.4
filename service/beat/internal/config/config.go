@@ -16,11 +16,13 @@ type Config struct {
 	RabbitMQ      *configx.RabbitMQ      `mapstructure:"rabbitmq"`
 	OpenTelemetry *configx.OpenTelemetry `mapstructure:"opentelemetry"`
 	Postgres      *configx.Postgres      `mapstructure:"postgres"`
+	EthereumEtl   *configx.PostgresEtl   `mapstructure:"ethereumetl"`
 	Redis         *configx.Redis         `mapstructure:"redis"`
 	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
 	RPC           *configx.RPC           `mapstructure:"rpc"`
 
-	DatabaseClient *gorm.DB
+	DatabaseClient    *gorm.DB
+	DtatbaseEtlClient *gorm.DB
 }
 
 var ConfigBeat Config
@@ -46,6 +48,10 @@ func Initialize() {
 
 	var err error
 	ConfigBeat.DatabaseClient, err = database.Dial(ConfigBeat.Postgres.String(), false)
+	if err != nil {
+		panic(err)
+	}
+	ConfigBeat.DtatbaseEtlClient, err = database.Dial(ConfigBeat.EthereumEtl.String(), false)
 	if err != nil {
 		panic(err)
 	}

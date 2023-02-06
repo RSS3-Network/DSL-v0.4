@@ -552,10 +552,7 @@ github.com/multiformats/go-varint v0.0.6/go.mod h1:3Ls8CIEsrijN6+B7PbrXRPxHRPuXS
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/naoina/go-stringutil v0.1.0/go.mod h1:XJ2SJL9jCtBh+P9q5btrd/Ylo8XwT/h1USek5+NqSA0=
 github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416/go.mod h1:NBIhNtsFMo3G2szEBne+bO4gS192HuIYRqfvOWb4i1E=
-github.com/naturalselectionlabs/kurora v0.19.5 h1:TkN8OZxHqZWbgOuCQEr3KvRLFEN4yvTtiYSBfq3pNYE=
-github.com/naturalselectionlabs/kurora v0.19.5/go.mod h1:vXpvkSMFJFVh6S8xncjuMDM9irXVfCAteEI+dMDMyuQ=
-github.com/naturalselectionlabs/kurora v0.19.6-0.20230118201535-084edb0024ff h1:GTi08tti5xSo8wId472kthGGmc8l/wTG/xfeZ0zk5QE=
-github.com/naturalselectionlabs/kurora v0.19.6-0.20230118201535-084edb0024ff/go.mod h1:vXpvkSMFJFVh6S8xncjuMDM9irXVfCAteEI+dMDMyuQ=
+github.com/naturalselectionlabs/kurora v0.8.0/go.mod h1:BsFFIcu4M1HVtuS10JN/7UlJdGF8sebnokV7mQxXXhc=
 github.com/naturalselectionlabs/kurora v0.19.6 h1:/JbLra+ci3+CWROrAZTsEoNNongc7ccEuMOqWsuy5uk=
 github.com/naturalselectionlabs/kurora v0.19.6/go.mod h1:vXpvkSMFJFVh6S8xncjuMDM9irXVfCAteEI+dMDMyuQ=
 github.com/naturalselectionlabs/kurora v0.21.1 h1:2GtI2XhToko7LaC6QuRBPSmRnYH0P4PuFUsNKPt549M=
@@ -570,6 +567,8 @@ github.com/naturalselectionlabs/kurora/client v0.0.0-20230118230429-9a38a28119b8
 github.com/naturalselectionlabs/kurora/client v0.0.0-20230118230429-9a38a28119b8/go.mod h1:l2XVJ0tRgAfox3atwg029y6ctrVr3K+87XjH0mAefAE=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20230202061729-c7c2f061d960 h1:mCV5sk9y8SleS7mjK5sKXk2VmQTryYDKEKXVLoF2XMY=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20230202061729-c7c2f061d960/go.mod h1:l2XVJ0tRgAfox3atwg029y6ctrVr3K+87XjH0mAefAE=
+github.com/naturalselectionlabs/kurora/client v0.0.0-20230205120114-3d336437ee0f h1:rCUsdwlOZnfiRObo8zG94JwKzbCAK9FZt6VgUeapKx4=
+github.com/naturalselectionlabs/kurora/client v0.0.0-20230205120114-3d336437ee0f/go.mod h1:l2XVJ0tRgAfox3atwg029y6ctrVr3K+87XjH0mAefAE=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
