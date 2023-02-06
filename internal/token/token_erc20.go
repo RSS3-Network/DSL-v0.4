@@ -29,8 +29,8 @@ func (c *Client) ERC20(ctx context.Context, network string, contractAddress stri
 
 	tokenID := fmt.Sprintf("token_%s-%s", network, contractAddress)
 
-	if database.Global() != nil {
-		// Get token from cache
+	// Get token from cache
+	if cache.Global() != nil {
 		exists, err := cache.GetMsgPack(ctx, tokenID, &token)
 		if err != nil {
 			return nil, fmt.Errorf("get token from cache: %w", err)
@@ -39,9 +39,11 @@ func (c *Client) ERC20(ctx context.Context, network string, contractAddress stri
 		if exists {
 			return lo.ToPtr(tokenToERC20(token)), nil
 		}
+	}
 
-		// Get token from database
-		err = database.Global().
+	// Get token from database
+	if database.Global() != nil {
+		err := database.Global().
 			Model((*model.Token)(nil)).
 			Where(map[string]interface{}{
 				"network":          network,
@@ -86,8 +88,10 @@ func (c *Client) ERC20(ctx context.Context, network string, contractAddress stri
 	}
 
 	// Set token to cache
-	if err := cache.SetMsgPack(ctx, tokenID, result, 24*time.Hour); err != nil {
-		zap.L().Warn("set token to cache", zap.Error(err))
+	if cache.Global() != nil {
+		if err := cache.SetMsgPack(ctx, tokenID, result, 24*time.Hour); err != nil {
+			zap.L().Warn("set token to cache", zap.Error(err))
+		}
 	}
 
 	return result, nil
