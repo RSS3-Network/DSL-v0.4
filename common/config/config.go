@@ -1,6 +1,10 @@
 package configx
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/naturalselectionlabs/pregod/common/protocol"
+)
 
 type Mode string
 
@@ -150,6 +154,36 @@ type RPCNetwork struct {
 	Avalanche         *RPCEndpoint `mapstructure:"avalanche"`
 	Celo              *RPCEndpoint `mapstructure:"celo"`
 	Fantom            *RPCEndpoint `mapstructure:"fantom"`
+}
+
+func (r RPCNetwork) network2EP() map[string]*RPCEndpoint {
+	return map[string]*RPCEndpoint{
+		protocol.NetworkEthereum:          r.Ethereum,
+		protocol.NetworkPolygon:           r.Polygon,
+		protocol.NetworkBinanceSmartChain: r.BinanceSmartChain,
+		protocol.NetworkXDAI:              r.XDAI,
+		protocol.NetworkCrossbell:         r.Crossbell,
+		protocol.NetworkOptimism:          r.Optimism,
+		protocol.NetworkAvalanche:         r.Avalanche,
+		protocol.NetworkCelo:              r.Celo,
+		protocol.NetworkFantom:            r.Fantom,
+	}
+}
+
+func (r RPCNetwork) HTTP(network string) string {
+	mapNetwork := r.network2EP()
+	if mapNetwork[network] == nil {
+		return ""
+	}
+	return mapNetwork[network].HTTP
+}
+
+func (r RPCNetwork) WebSocket(network string) string {
+	mapNetwork := r.network2EP()
+	if mapNetwork[network] == nil {
+		return ""
+	}
+	return mapNetwork[network].WebSocket
 }
 
 type RPCEndpoint struct {
