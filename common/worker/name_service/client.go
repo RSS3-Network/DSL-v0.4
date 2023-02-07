@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid"
 	avvy_client "github.com/naturalselectionlabs/pregod/common/worker/name_service/avvy"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service/ens"
@@ -35,7 +37,11 @@ import (
 	goens "github.com/wealdtech/go-ens/v3"
 )
 
-func ReverseResolveAll(input string, resolveAll bool) model.NameServiceResult {
+func ReverseResolveAll(ctx context.Context, input string, resolveAll bool) model.NameServiceResult {
+	tracer := otel.Tracer("ReverseResolveAll")
+	_, httpSnap := tracer.Start(ctx, "name_service")
+	defer httpSnap.End()
+
 	result := model.NameServiceResult{}
 	splits := strings.Split(input, ".")
 	var address string
