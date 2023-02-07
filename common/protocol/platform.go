@@ -19,6 +19,7 @@ const (
 	PlatformLensLensterCrowdfund = "Lenster Crowdfund"
 
 	PlatformMatters = "Matters"
+	PlatformRara    = "RARA"
 
 	// collectible
 	PlatformPOAP              = "POAP"

@@ -74,3 +74,30 @@ func NetworkToID(networkName string) string {
 		return "0x0"
 	}
 }
+
+func IdToNetwork(chainId string) string {
+	switch chainId {
+	case "0x1":
+		return NetworkEthereum
+	case "0x38":
+		return NetworkBinanceSmartChain
+	case "0x89":
+		return NetworkPolygon
+	case "0x118":
+		return NetworkZkSync
+	case "0x64":
+		return NetworkXDAI
+	case "0xA4B1":
+		return NetworkArbitrum
+	case "0xA":
+		return NetworkOptimism
+	case "0xFA":
+		return NetworkFantom
+	case "0xA4EC":
+		return NetworkCelo
+	case "0xA86A":
+		return NetworkAvalanche
+	default:
+		return ""
+	}
+}

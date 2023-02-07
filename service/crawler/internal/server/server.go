@@ -25,7 +25,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/lens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/matters"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/mirror"
-
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/rara"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 
@@ -140,6 +140,7 @@ func (s *Server) Initialize() (err error) {
 		iqwiki.New(),
 		crossbell.New(s.config),
 		matters.New(s.config),
+		rara.New(s.config),
 	}
 
 	return nil

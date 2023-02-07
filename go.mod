@@ -23,10 +23,11 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/hasura/go-graphql-client v0.7.1
 	github.com/k0kubun/pp/v3 v3.2.0
-	github.com/labstack/echo-contrib v0.13.0
+	github.com/labstack/echo-contrib v0.13.1
 	github.com/labstack/echo/v4 v4.10.0
-	github.com/lib/pq v1.10.6
-	github.com/naturalselectionlabs/kurora v0.21.3
+	github.com/lib/pq v1.10.7
+	github.com/naturalselectionlabs/kurora v0.23.1-0.20230206185625-02740007c9bd
+	github.com/naturalselectionlabs/kurora/client v0.0.0-20230206185625-02740007c9bd
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.37.0
@@ -39,18 +40,18 @@ require (
 	github.com/unstoppabledomains/resolution-go/v2 v2.3.1
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	github.com/wealdtech/go-ens/v3 v3.5.5
-	go.opentelemetry.io/otel v1.11.2
-	go.opentelemetry.io/otel/exporters/jaeger v1.7.0
-	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.7.0
-	go.opentelemetry.io/otel/sdk v1.11.2
-	go.opentelemetry.io/otel/trace v1.11.2
+	go.opentelemetry.io/otel v1.12.0
+	go.opentelemetry.io/otel/exporters/jaeger v1.12.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.12.0
+	go.opentelemetry.io/otel/sdk v1.12.0
+	go.opentelemetry.io/otel/trace v1.12.0
 	go.uber.org/ratelimit v0.2.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20221106115401-f9659909a136
 	golang.org/x/net v0.4.0
 	golang.org/x/sync v0.1.0
 	gorm.io/driver/postgres v1.4.6
-	gorm.io/gorm v1.24.2
+	gorm.io/gorm v1.24.5
 )
 
 require (
@@ -102,7 +103,6 @@ require (
 	github.com/multiformats/go-multibase v0.1.1 // indirect
 	github.com/multiformats/go-multihash v0.2.0 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
-	github.com/naturalselectionlabs/kurora/client v0.0.0-20230203041250-bba44b8bf34f // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
