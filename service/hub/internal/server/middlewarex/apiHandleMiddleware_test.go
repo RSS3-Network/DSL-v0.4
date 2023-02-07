@@ -3,9 +3,11 @@ package middlewarex
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"testing"
 
+	"github.com/labstack/echo/v4"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -183,7 +185,8 @@ func TestResolveAddress(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			output, err := ResolveAddress(tt.input.ns, tt.input.ignoreContract)
+			var c = echo.New()
+			output, err := ResolveAddress(c.NewContext(&http.Request{}, nil), tt.input.ns, tt.input.ignoreContract)
 			if tt.err == nil {
 				if err != nil {
 					t.Fatalf("unexpected error %v", err)
