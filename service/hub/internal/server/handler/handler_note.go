@@ -99,7 +99,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 		request.Address = request.Address[:model.DefaultLimit]
 	}
 	for i, v := range request.Address {
-		address, err := middlewarex.ResolveAddress(v, request.IgnoreContract)
+		address, err := middlewarex.ResolveAddress(c, v, request.IgnoreContract)
 		if err != nil {
 			return ErrorResp(c, err)
 		}
@@ -172,7 +172,7 @@ func (h *Handler) BatchGetSocialNotesFunc(c echo.Context) error {
 		request.Address = request.Address[:model.DefaultLimit]
 	}
 	for i, v := range request.Address {
-		address, err := middlewarex.ResolveAddress(v, true)
+		address, err := middlewarex.ResolveAddress(c, v, true)
 		if err != nil {
 			return ErrorResp(c, err)
 		}

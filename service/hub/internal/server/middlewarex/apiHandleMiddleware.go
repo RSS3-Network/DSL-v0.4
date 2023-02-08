@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -20,7 +22,7 @@ func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		address := c.Param("address")
 		if address != "" {
-			if address, err := ResolveAddress(address, false); err != nil {
+			if address, err := ResolveAddress(c, address, false); err != nil {
 				return c.JSON(http.StatusOK, &ErrorResponse{
 					Error: err.Error(),
 				})
@@ -75,15 +77,19 @@ func CheckAPIKey(apiKey string) error {
 }
 
 // ResolveAddress resolve handles into an address
-func ResolveAddress(address string, ignoreContract bool) (string, error) {
-	result := name_service.ReverseResolveAll(strings.ToLower(address), false)
+func ResolveAddress(c echo.Context, address string, ignoreContract bool) (string, error) {
+	tracer := otel.Tracer("ResolveAddress")
+	_, httpSnap := tracer.Start(c.Request().Context(), "middleware")
+	defer httpSnap.End()
+
+	result := name_service.ReverseResolveAll(c.Request().Context(), strings.ToLower(address), false)
 	if len(result.Address) == 0 && result.Err != nil {
 		return "", result.Err
 	}
 
 	// check contract
 	if !ignoreContract {
-		isContract, _ := name_service.IsEthereumContract(result.Address)
+		isContract, _ := name_service.IsEthereumContract(c.Request().Context(), result.Address)
 		if isContract {
 			return "", fmt.Errorf("%s", name_service.ErrNotSupportContract)
 		}

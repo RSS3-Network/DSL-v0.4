@@ -25,7 +25,7 @@ func (h *Handler) GetWrappedFunc(c echo.Context) error {
 		return err
 	}
 
-	request.Address = name_service.ReverseResolveAll(request.Address, false).Address
+	request.Address = name_service.ReverseResolveAll(c.Request().Context(), request.Address, false).Address
 
 	if len(request.Address) == 0 {
 		return AddressIsInvalid(c)
