@@ -111,6 +111,7 @@ func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message) func(t
 				return nil, err
 			}
 
+			transaction.BlockNumber = block.Number().Int64()
 			return block, nil
 		}
 
