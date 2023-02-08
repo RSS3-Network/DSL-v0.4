@@ -105,7 +105,10 @@ func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message) func(t
 
 func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, blockMap map[int64]*types.Block) func(transaction *model.Transaction, i int) (*model.Transaction, error) {
 	return func(transaction *model.Transaction, i int) (*model.Transaction, error) {
-		block := blockMap[transaction.BlockNumber]
+		block, exist := blockMap[transaction.BlockNumber]
+		if !exist {
+			return nil, fmt.Errorf("block not found")
+		}
 
 		transaction.Timestamp = time.Unix(int64(block.Time()), 0)
 
