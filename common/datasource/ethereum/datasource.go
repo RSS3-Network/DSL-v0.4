@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -94,9 +96,22 @@ func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message) func(t
 
 		block, err := ethclient.BlockByNumber(ctx, big.NewInt(transaction.BlockNumber))
 		if err != nil {
-			zap.L().Error("failed to get block", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.Int64("block_number", transaction.BlockNumber))
+			zap.L().Error("failed to get block and start to check receipt", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.Int64("block_number", transaction.BlockNumber))
 
-			return nil, err
+			receipt, err := ethclient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
+			if err != nil {
+				zap.L().Error("failed to get receipt", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.Int64("block_number", transaction.BlockNumber))
+
+				return nil, err
+			}
+
+			if block, err = ethclient.BlockByNumber(ctx, receipt.BlockNumber); err != nil {
+				zap.L().Error("failed to get block finally!!", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.Int64("block_number", transaction.BlockNumber))
+
+				return nil, err
+			}
+
+			return block, nil
 		}
 
 		return block, nil
