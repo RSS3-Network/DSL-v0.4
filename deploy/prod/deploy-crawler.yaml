@@ -23,9 +23,9 @@ spec:
           command:
             - crawler
           resources:
-            requests:
-              memory: "50Mi"
-              cpu: "50m"
             limits:
-              memory: "2000Mi"
-              cpu: "500m"
+              cpu: 2000m
+              memory: 8000Mi
+            requests:
+              cpu: 50m
+              memory: 6000Mi
