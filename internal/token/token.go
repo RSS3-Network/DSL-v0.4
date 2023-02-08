@@ -367,7 +367,7 @@ func (c *Client) URI(contractAddress string, tokenID *big.Int, tokenURI string) 
 	return tokenURI, nil
 }
 
-func (c *Client) Metadata(tokenURI string) ([]byte, error) {
+func (c *Client) Metadata(ctx context.Context, tokenURI string) ([]byte, error) {
 	if strings.Contains(tokenURI, ";base64,") {
 		contents := strings.Split(tokenURI, ";base64,")
 
@@ -386,9 +386,17 @@ func (c *Client) Metadata(tokenURI string) ([]byte, error) {
 	if strings.HasPrefix(tokenURI, "ipfs://") {
 		tokenURI = strings.Replace(tokenURI, "ipfs://", "https://ipfs.rss3.page/ipfs/", 1)
 	}
-	response, err := http.Get(tokenURI)
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, tokenURI, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new request: %w", err)
+	}
+
+	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36")
+
+	response, err := c.httpClient.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("do request: %w", err)
 	}
 
 	defer func() {

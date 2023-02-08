@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/naturalselectionlabs/pregod/common/cache"
-	"github.com/shopspring/decimal"
-
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"go.uber.org/zap"
 
@@ -101,7 +101,7 @@ func (s *service) Run() error {
 					Network: protocol.NetworkPolygon,
 				}
 				if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
-					logrus.Error("failed to build transactions, ", err)
+					loggerx.Global().Error("failed to build transactions, ", zap.Error(err))
 
 					continue
 				}
@@ -132,11 +132,10 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 	var err error
 	defer func() { opentelemetry.Log(trace, nil, internalTransactions, err) }()
 
-	limit := 100
 	query := kurora.DatasetLensEventQuery{
 		Address:    &contractAddress,
 		TopicFirst: &eventHash,
-		Limit:      &limit,
+		Limit:      lo.ToPtr(100),
 	}
 
 	cacheKey := fmt.Sprintf(lensLogsCacheKey, eventHash.String())

@@ -296,7 +296,8 @@ func (s *service) Jobs() []worker.Job {
 
 func New(employer *shedlock.Employer) (worker.Worker, error) {
 	svc := service{
-		employer: employer,
+		employer:    employer,
+		tokenClient: token.New(),
 	}
 	return &svc, nil
 }
