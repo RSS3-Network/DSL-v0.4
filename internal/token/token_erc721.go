@@ -70,7 +70,7 @@ func (c *Client) ERC721(ctx context.Context, network, contractAddress string, to
 			return nil, err
 		}
 
-		if result.Metadata, err = c.Metadata(result.URI); err != nil {
+		if result.Metadata, err = c.Metadata(ctx, result.URI); err != nil {
 			loggerx.Global().Named(contractAddress).Warn("Get NFT Metadata error", zap.Error(err))
 		}
 	}
@@ -160,7 +160,7 @@ func (c *Client) ERC721Zora(ctx context.Context, network string, tokenID *big.In
 		return nil, err
 	}
 
-	result.Metadata, err = c.Metadata(result.URI)
+	result.Metadata, err = c.Metadata(ctx, result.URI)
 	if err != nil {
 		return nil, err
 	}

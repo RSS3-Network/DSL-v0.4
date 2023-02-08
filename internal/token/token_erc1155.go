@@ -43,7 +43,7 @@ func (c *Client) ERC1155(context context.Context, network, contractAddress strin
 			return nil, err
 		}
 
-		result.Metadata, err = c.Metadata(result.URI)
+		result.Metadata, err = c.Metadata(context, result.URI)
 		if err != nil {
 			loggerx.Global().Named(contractAddress).Warn("Get ERC1155 Metadata error", zap.Error(err))
 		}
