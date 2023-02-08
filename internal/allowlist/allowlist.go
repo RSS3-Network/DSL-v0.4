@@ -3,6 +3,8 @@ package allowlist
 import (
 	"strings"
 	"sync"
+
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
 var allowList = map[string]string{
@@ -27,6 +29,11 @@ var ensSpecialList = map[string]string{
 	"karl.floersch.eth": "floersch.eth",
 }
 
+// crawlerList is a list of polygon contracts whose txs has been indexed in crawler
+var crawlerList = map[string]string{
+	"0x5edebbdae7b5c79a69aacf7873796bb1ec664db8": protocol.NetworkPolygon, // matters curation
+}
+
 func init() {
 	AllowList = New()
 
@@ -45,12 +52,19 @@ func init() {
 	for address, name := range ensSpecialList {
 		EnsSpecialList.Add(address, name)
 	}
+
+	CrawlerList = New()
+
+	for address, name := range crawlerList {
+		CrawlerList.Add(address, name)
+	}
 }
 
 var (
 	AllowList      *List
 	SpamList       *List
 	EnsSpecialList *List
+	CrawlerList    *List
 )
 
 type List struct {

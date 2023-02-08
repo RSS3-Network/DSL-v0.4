@@ -14,8 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/aptos"
-
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
@@ -29,9 +27,11 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/aptos"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
@@ -64,9 +64,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
-
 	"go.uber.org/zap"
-
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -508,6 +506,11 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 	)
 
 	for _, transaction := range transactions {
+		// remove tx which has been indexed in crawler
+		if allowlist.CrawlerList.Contains(transaction.AddressTo) && strings.EqualFold(transaction.Network, allowlist.CrawlerList.Get(transaction.AddressTo)) {
+			continue
+		}
+
 		// Handle all transfers
 		for _, transfer := range transaction.Transfers {
 
