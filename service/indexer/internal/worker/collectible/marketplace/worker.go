@@ -259,5 +259,7 @@ func (i *internal) Jobs() []worker.Job {
 }
 
 func New() worker.Worker {
-	return &internal{}
+	return &internal{
+		tokenClient: token.New(),
+	}
 }
