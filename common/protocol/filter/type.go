@@ -7,10 +7,18 @@ const (
 	TransactionMint     string = "mint"
 	TransactionBurn     string = "burn"
 	TransactionApproval string = "approval"
+	TransactionMultiSig string = "multisig"
 
 	// Actions for TransactionApproval and CollectibleApproval
 	ActionApprove string = "approve"
 	ActionRevoke  string = "revoke"
+
+	ActionAddOwner        string = "add_owner"
+	ActionRemoveOwner     string = "remove_owner"
+	ActionChangeThreshold string = "change_threshold"
+	ActionExecution       string = "execution"
+	ActionRejection       string = "rejection"
+	ActionCreate          string = "create"
 
 	// exchange types
 	ExchangeWithdraw  string = "withdraw"

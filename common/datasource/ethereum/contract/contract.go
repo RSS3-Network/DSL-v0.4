@@ -1,5 +1,10 @@
 package contract
 
+import "embed"
+
+//go:embed safe/GnosisSafe.abi
+var ContractABIs embed.FS
+
 // https://eips.ethereum.org/EIPS/eip-20
 //go:generate abigen --abi ./erc20/erc20.abi --pkg erc20 --type ERC20 --out ./erc20/erc20.go
 //https://etherscan.io/address/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
@@ -97,3 +102,7 @@ package contract
 //go:generate abigen --abi ./hop/l1_bridge.abi --pkg hop --type L1Bridge --out ./hop/l1_bridge.go
 // L2 AMM Wapper https://polygonscan.com/address/0x9b0c694c6939b5ea9584e9b61c7815e8d97d9c63
 //go:generate abigen --abi ./hop/l2_amm_wrapper.abi --pkg hop --type L2AMMWapper --out ./hop/l2_amm_wrapper.go
+
+// Gnosis Safe
+// Gnosis Safe V1.3 https://etherscan.io/address/0xd9db270c1b5e3bd161e8c8503c55ceabee709552
+//go:generate abigen --abi ./safe/GnosisSafe.abi --pkg safe --type GnosisSafe --out ./safe/gnosisSafe.go

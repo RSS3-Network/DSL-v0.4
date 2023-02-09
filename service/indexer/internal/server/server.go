@@ -57,6 +57,7 @@ import (
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/multisig"
 	"github.com/samber/lo"
 
 	"go.opentelemetry.io/otel"
@@ -64,7 +65,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
+
 	"go.uber.org/zap"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -200,6 +203,7 @@ func (s *Server) Initialize() (err error) {
 		snapshot.New(),
 		crossbell.New(),
 		lens_worker.New(),
+		multisig.New(),
 		transaction.New(),
 		metaverse.New(),
 		music.New(),
