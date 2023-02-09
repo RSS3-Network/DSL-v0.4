@@ -176,7 +176,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 			return
 		}
 
-		if err := s.rabbitmqChannel.Publish(protocol.ExchangeJob, routingKey, false, false, rabbitmq.Publishing{
+		if err := s.rabbitmqChannel.PublishWithContext(ctx, protocol.ExchangeJob, routingKey, false, false, rabbitmq.Publishing{
 			ContentType: protocol.ContentTypeJSON,
 			Body:        messageData,
 		}); err != nil {
@@ -243,7 +243,7 @@ func (s *Service) PublishIndexerAssetMessage(ctx context.Context, address string
 			return
 		}
 
-		if err := s.rabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerAssetRoutingKey, false, false, rabbitmq.Publishing{
+		if err := s.rabbitmqChannel.PublishWithContext(ctx, protocol.ExchangeJob, protocol.IndexerAssetRoutingKey, false, false, rabbitmq.Publishing{
 			ContentType: protocol.ContentTypeJSON,
 			Body:        messageData,
 		}); err != nil {
