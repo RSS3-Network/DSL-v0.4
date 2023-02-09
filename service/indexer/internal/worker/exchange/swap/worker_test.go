@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/k0kubun/pp/v3"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -227,6 +228,48 @@ func Test_service_Handle(t *testing.T) {
 
 				for _, transaction := range transactions {
 					assert.Equal(t, transaction.Platform, protocol.PlatformUniswap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "pancake swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x36e2146ed16cfc590305a0df7f48690ec7900e50",
+					Network: protocol.NetworkBinanceSmartChain,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://bscscan.com/tx/0x8e957afd052e02c96db25e48abfc2a48c95f6e55a5fede6d39f6541dff5fb1b3
+						Hash:        "0x8e957afd052e02c96db25e48abfc2a48c95f6e55a5fede6d39f6541dff5fb1b3",
+						BlockNumber: 12850354,
+						Network:     protocol.NetworkBinanceSmartChain,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					_, _ = pp.Println(swap)
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "WBNB")
+					assert.Equal(t, swap.TokenTo.Symbol, "YOOSHI")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformPancakeswap)
 				}
 
 				return false

@@ -184,7 +184,7 @@ func (s *service) createRabbitmqJob(address string) error {
 			return err
 		}
 
-		if err := s.rabbitmqChannel.Publish(protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
+		if err := s.rabbitmqChannel.PublishWithContext(context.TODO(), protocol.ExchangeJob, protocol.IndexerWorkRoutingKey, false, false, rabbitmq.Publishing{
 			ContentType: protocol.ContentTypeJSON,
 			Body:        messageData,
 		}); err != nil {
