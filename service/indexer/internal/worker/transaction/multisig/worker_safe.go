@@ -196,7 +196,12 @@ func (m *MultiSign) isRejectionExecution(transaction model.Transaction) (bool, e
 		return false, fmt.Errorf("method not found: %s", "execTransaction")
 	}
 
+	// Get the input data of the transaction
 	data := sourceData.Transaction.Data()
+
+	if len(data) <= 4 {
+		return false, fmt.Errorf("invalid data length: %d", len(data))
+	}
 
 	var input ExecutionTransactionInput
 	values, err := method.Inputs.UnpackValues(data[4:])
@@ -208,6 +213,8 @@ func (m *MultiSign) isRejectionExecution(transaction model.Transaction) (bool, e
 		return false, fmt.Errorf("copy input values: %w", err)
 	}
 
+	// If the amount of the native token transfer is 0 and the data is empty,
+	// it is considered to be a transaction used to reject transactions from other owners
 	return input.Value.Cmp(big.NewInt(0)) == 0 && len(input.Data) == 0, nil
 }
 
