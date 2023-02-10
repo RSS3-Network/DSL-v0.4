@@ -250,8 +250,8 @@ func (m *MultiSign) buildGnosisSafeTransfer(ctx context.Context, transaction mod
 	}
 
 	callOptions := bind.CallOpts{
-		BlockNumber: new(big.Int).SetUint64(log.BlockNumber),
-		Context:     ctx,
+		// BlockNumber: new(big.Int).SetUint64(log.BlockNumber), // TODO Need archive node
+		Context: ctx,
 	}
 
 	owners, err := caller.GetOwners(&callOptions)

@@ -151,6 +151,40 @@ func Test_multisign_Handle(t *testing.T) {
 			},
 		},
 		{
+			name: "Gnosis Safe Execution sujiyan.eth",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x934b510d4c9103e6a87aef13b816fb080286d649", // sujiyan.eth
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0x09761989fc3f475539ae30f03115c409a605c0c674d014b03e3224cc6dc3422c
+						Hash:        "0x09761989fc3f475539ae30f03115c409a605c0c674d014b03e3224cc6dc3422c",
+						BlockNumber: 16555750,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					for _, transfer := range transaction.Transfers {
+						fmt.Println(string(transfer.Metadata))
+					}
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformGnosisSafe)
+				}
+
+				return false
+			},
+		},
+		{
 			name: "Gnosis Safe Reject Execution",
 			arguments: arguments{
 				ctx: context.Background(),
