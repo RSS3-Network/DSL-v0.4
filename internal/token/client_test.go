@@ -21,18 +21,21 @@ func init() {
 			Ethereum: &configx.RPCEndpoint{
 				WebSocket: "https://eth.llamarpc.com",
 			},
+			Polygon: &configx.RPCEndpoint{
+				WebSocket: "https://polygon.llamarpc.com",
+			},
 		},
 	}
 
 	globalEthereumClientMap, err := ethclientx.Dial(&rpcConfig, []string{
-		protocol.NetworkEthereum,
+		protocol.NetworkEthereum, protocol.NetworkPolygon,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	ethclientx.ReplaceGlobal(protocol.NetworkEthereum, globalEthereumClientMap[protocol.NetworkEthereum])
-
+	ethclientx.ReplaceGlobal(protocol.NetworkPolygon, globalEthereumClientMap[protocol.NetworkPolygon])
 	tokenClient = token.New()
 }
 
@@ -85,4 +88,16 @@ func TestClient_ERC721_403(t *testing.T) {
 
 	t.Log(erc712)
 	t.Log(string(erc712.Metadata))
+}
+
+func TestClient_NFT(t *testing.T) {
+	tokenID := big.NewInt(0)
+	//tokenID.SetString("13477934942365134845532687062228082192258615338355725056261642040781742014465", 0)
+	tokenID.SetString("41072", 0)
+
+	nft, err := tokenClient.NFT(context.Background(), protocol.NetworkEthereum, "0x06012C8CF97BEAD5DEAE237070F9587F8E7A266D", tokenID)
+	assert.NoError(t, err)
+
+	t.Log(nft)
+	t.Log(nft.Description)
 }
