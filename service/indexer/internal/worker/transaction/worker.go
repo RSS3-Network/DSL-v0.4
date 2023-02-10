@@ -64,6 +64,7 @@ func (s *service) Networks() []string {
 		protocol.NetworkCrossbell,
 		protocol.NetworkXDAI,
 		protocol.NetworkZkSync,
+		protocol.NetworkArbitrum,
 		protocol.NetworkOptimism,
 		protocol.NetworkAvalanche,
 		protocol.NetworkCelo,
