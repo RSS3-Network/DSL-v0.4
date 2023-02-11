@@ -71,6 +71,7 @@ const (
 
 var SupportLensPlatform = map[string]bool{
 	protocol.PlatformLens:                 true,
+	protocol.PlatformLensOrb:              true,
 	protocol.PlatformLensLenster:          true,
 	protocol.PlatformLensLenstube:         true,
 	protocol.PlatformLensLenstubeBytes:    true,
@@ -518,16 +519,27 @@ func (c *Client) CreatePost(ctx context.Context, lensContent *LensContent) *meta
 	if lensContent.ExternalURL != "" {
 		externalUrl, err := url.Parse(lensContent.ExternalURL)
 		if err == nil {
-			path := strings.Split(externalUrl.Path, "/")
+			post.Author = []string{
+				lensContent.ExternalURL,
+			}
 
 			switch externalUrl.Host {
 			case "lenster.xyz":
 				// lenster url example: https://lenster.xyz/u/username.lens
-				post.Author = []string{lensContent.ExternalURL, path[2]}
+				path := strings.Split(externalUrl.Path, "/")
+				post.Author = []string{
+					lensContent.ExternalURL,
+					path[2],
+				}
 			case "orb.ac":
-				// orb.ac url example: https://orb.ac/@@username
-				post.Author = []string{lensContent.ExternalURL, strings.ReplaceAll(path[1], "@", "")}
+				// orb.ac url example: https://orb.ac/@username
+				path := strings.Split(externalUrl.Path, "@")
+				post.Author = []string{
+					fmt.Sprintf("https://lenster.xyz/u/%v", path[1]),
+					path[1],
+				}
 			}
+
 		}
 	}
 
