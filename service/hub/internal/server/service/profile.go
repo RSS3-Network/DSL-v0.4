@@ -287,54 +287,56 @@ func (s *Service) BatchKuroraProfiles(c context.Context, request model.BatchGetP
 	addresses := make([]string, 0)
 
 	for _, address := range request.Address {
-		if !strings.EqualFold(ethereum.AddressGenesis.String(), address) {
+		if !strings.EqualFold(ethereum.AddressGenesis.String(), address) && name_service.IsEvmValidAddress(address) {
 			addresses = append(addresses, address)
 		}
 	}
 
-	domainsQuery := kurora.DatasetDomainQuery{
-		ReverseAddressList: addresses,
-		Limit:              lo.ToPtr(10 * model.DefaultLimit),
-	}
-
-	if len(request.Network) > 0 {
-		for i, v := range request.Network {
-			request.Network[i] = strings.ToLower(v)
+	if len(addresses) > 0 {
+		domainsQuery := kurora.DatasetDomainQuery{
+			ReverseAddressList: addresses,
+			Limit:              lo.ToPtr(10 * model.DefaultLimit),
 		}
 
-		domainsQuery.NetworkList = request.Network
-	}
+		if len(request.Network) > 0 {
+			for i, v := range request.Network {
+				request.Network[i] = strings.ToLower(v)
+			}
 
-	if len(request.Platform) > 0 {
-		domainsQuery.PlatformList = request.Platform
-	}
-
-	profiles, err := s.kuroraClient.FetchDatasetDomains(c, domainsQuery)
-	if err != nil {
-		loggerx.Global().Error("batch get profiles error", zap.Error(err))
-
-		return result, err
-	}
-
-	for _, profile := range profiles {
-		var expiredAt *time.Time
-		if profile.ExpiredAt.Year() > 2000 {
-			expiredAt = &profile.ExpiredAt
+			domainsQuery.NetworkList = request.Network
 		}
-		result = append(result, &social.Profile{
-			Address:     strings.ToLower(profile.ReverseAddress.String()),
-			Network:     profile.Network,
-			Platform:    profile.Platform,
-			Name:        profile.Name,
-			Handle:      profile.Handle,
-			Bio:         profile.Bio,
-			URL:         profile.URL,
-			ExpireAt:    expiredAt,
-			ProfileUris: profile.ProfileUris,
-			BannerUris:  profile.BannerUris,
-			SocialUris:  profile.SocialUris,
-			Source:      profile.Platform,
-		})
+
+		if len(request.Platform) > 0 {
+			domainsQuery.PlatformList = request.Platform
+		}
+
+		profiles, err := s.kuroraClient.FetchDatasetDomains(c, domainsQuery)
+		if err != nil {
+			loggerx.Global().Error("batch get profiles error", zap.Error(err))
+
+			return result, err
+		}
+
+		for _, profile := range profiles {
+			var expiredAt *time.Time
+			if profile.ExpiredAt.Year() > 2000 {
+				expiredAt = &profile.ExpiredAt
+			}
+			result = append(result, &social.Profile{
+				Address:     strings.ToLower(profile.ReverseAddress.String()),
+				Network:     profile.Network,
+				Platform:    profile.Platform,
+				Name:        profile.Name,
+				Handle:      profile.Handle,
+				Bio:         profile.Bio,
+				URL:         profile.URL,
+				ExpireAt:    expiredAt,
+				ProfileUris: profile.ProfileUris,
+				BannerUris:  profile.BannerUris,
+				SocialUris:  profile.SocialUris,
+				Source:      profile.Platform,
+			})
+		}
 	}
 
 	return result, nil
