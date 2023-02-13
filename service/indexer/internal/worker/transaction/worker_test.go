@@ -96,6 +96,7 @@ func Test_service_Networks(t *testing.T) {
 				protocol.NetworkCrossbell,
 				protocol.NetworkXDAI,
 				protocol.NetworkZkSync,
+				protocol.NetworkArbitrum,
 				protocol.NetworkOptimism,
 				protocol.NetworkAvalanche,
 				protocol.NetworkCelo,
