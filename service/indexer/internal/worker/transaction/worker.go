@@ -90,13 +90,17 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 	opt := parallel.NewOption().WithConcurrency(200)
 
-	switch message.Network {
-	case protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkBinanceSmartChain, protocol.NetworkCrossbell, protocol.NetworkXDAI, protocol.NetworkOptimism, protocol.NetworkAvalanche:
+	if lo.Contains(protocol.EthclientNetworks, message.Network) {
 		internalTransactions, err = parallel.MapWithError(transactions, s.makeEthereumHandlerFunc(ctx, message, transactions), opt)
-	case protocol.NetworkZkSync:
-		internalTransactions, err = parallel.MapWithError(transactions, s.makeZkSyncHandlerFunc(ctx, message, transactions), opt)
-	case protocol.NetworkArweave:
-		internalTransactions, err = parallel.MapWithError(transactions, s.makeArweaveHandlerFunc(ctx, message, transactions), opt)
+	} else {
+		switch message.Network {
+		case protocol.NetworkZkSync:
+			internalTransactions, err = parallel.MapWithError(transactions, s.makeZkSyncHandlerFunc(ctx, message, transactions), opt)
+		case protocol.NetworkArweave:
+			internalTransactions, err = parallel.MapWithError(transactions, s.makeArweaveHandlerFunc(ctx, message, transactions), opt)
+		default:
+			return nil, fmt.Errorf("unsupported network: %s", message.Network)
+		}
 	}
 
 	if err != nil {
