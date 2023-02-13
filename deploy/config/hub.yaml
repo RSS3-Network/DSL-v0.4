@@ -61,6 +61,8 @@ rpc:
     avalanche:
       http: ''
       websocket: ''
+    arbitrum:
+      http: ''
   alchemy:
     ethereum: ''
     polygon: ''

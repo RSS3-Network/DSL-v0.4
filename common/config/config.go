@@ -150,6 +150,7 @@ type RPCNetwork struct {
 	BinanceSmartChain *RPCEndpoint `mapstructure:"bsc"`
 	XDAI              *RPCEndpoint `mapstructure:"xdai"`
 	Crossbell         *RPCEndpoint `mapstructure:"crossbell"`
+	Arbitrum          *RPCEndpoint `mapstructure:"arbitrum"`
 	Optimism          *RPCEndpoint `mapstructure:"optimism"`
 	Avalanche         *RPCEndpoint `mapstructure:"avalanche"`
 	Celo              *RPCEndpoint `mapstructure:"celo"`
@@ -163,6 +164,7 @@ func (r RPCNetwork) network2EP() map[string]*RPCEndpoint {
 		protocol.NetworkBinanceSmartChain: r.BinanceSmartChain,
 		protocol.NetworkXDAI:              r.XDAI,
 		protocol.NetworkCrossbell:         r.Crossbell,
+		protocol.NetworkArbitrum:          r.Arbitrum,
 		protocol.NetworkOptimism:          r.Optimism,
 		protocol.NetworkAvalanche:         r.Avalanche,
 		protocol.NetworkCelo:              r.Celo,

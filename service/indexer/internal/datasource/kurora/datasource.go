@@ -34,6 +34,7 @@ func (d *Datasource) Name() string {
 func (d *Datasource) Networks() []string {
 	return []string{
 		protocol.NetworkCrossbell,
+		protocol.NetworkArbitrum,
 		protocol.NetworkOptimism,
 		protocol.NetworkAvalanche,
 		protocol.NetworkFantom,
@@ -65,7 +66,13 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 	// there will probably be some errors here.
 	// Binance Smart Chain network should be `binance_smart_chain` instead of `binance`,
 	// and Gnosis is `gnosis` instead of `xdai`.
-	network, err := constant.NetworkString(message.Network)
+	kuroraNetwork := message.Network
+
+	if kuroraNetwork == protocol.NetworkArbitrum {
+		kuroraNetwork = constant.NetworkArbitrumOne.String()
+	}
+
+	network, err := constant.NetworkString(kuroraNetwork)
 	if err != nil {
 		return nil, fmt.Errorf("invalid network: %w", err)
 	}
