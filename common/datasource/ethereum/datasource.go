@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/naturalselectionlabs/kurora/common/client/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
@@ -59,9 +59,9 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 			return nil, err
 		}
 
-		blockMap := make(map[int64]*types.Block)
+		blockMap := make(map[int64]*ethereum.Block)
 		for _, block := range blocks {
-			blockMap[block.Number().Int64()] = block
+			blockMap[block.Number.Int64()] = block
 		}
 
 		// Error topic/field count mismatch
@@ -87,31 +87,32 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 	return internalTransactions, nil
 }
 
-func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message) func(transaction *model.Transaction, i int) (*types.Block, error) {
-	return func(transaction *model.Transaction, i int) (*types.Block, error) {
-		ethclient, err := ethclientx.Global(message.Network)
+func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message) func(transaction *model.Transaction, i int) (*ethereum.Block, error) {
+	return func(transaction *model.Transaction, i int) (*ethereum.Block, error) {
+		ethereumClient, err := ethclientx.GlobalX(message.Network)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("get global ethereum client failed: %w", err)
 		}
 
-		block, err := ethclient.BlockByNumber(ctx, big.NewInt(transaction.BlockNumber))
+		block, err := ethereumClient.BlockByNumber(ctx, big.NewInt(transaction.BlockNumber))
 		if err != nil {
 			zap.L().Error("failed to get block and start to check receipt", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.Int64("block_number", transaction.BlockNumber))
 
-			receipt, err := ethclient.TransactionReceipt(ctx, common.HexToHash(transaction.Hash))
+			receipt, err := ethereumClient.ReceiptByHash(ctx, common.HexToHash(transaction.Hash))
 			if err != nil {
 				zap.L().Error("failed to get receipt", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.Int64("block_number", transaction.BlockNumber))
 
 				return nil, err
 			}
 
-			if block, err = ethclient.BlockByNumber(ctx, receipt.BlockNumber); err != nil {
+			if block, err = ethereumClient.BlockByNumber(ctx, receipt.BlockNumber); err != nil {
 				zap.L().Error("failed to get block finally!!", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.Int64("block_number", transaction.BlockNumber))
 
 				return nil, err
 			}
 
-			transaction.BlockNumber = block.Number().Int64()
+			transaction.BlockNumber = block.Number.Int64()
+
 			return block, nil
 		}
 
@@ -119,16 +120,16 @@ func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message) func(t
 	}
 }
 
-func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, blockMap map[int64]*types.Block) func(transaction *model.Transaction, i int) (*model.Transaction, error) {
+func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, blockMap map[int64]*ethereum.Block) func(transaction *model.Transaction, i int) (*model.Transaction, error) {
 	return func(transaction *model.Transaction, i int) (*model.Transaction, error) {
 		block := blockMap[transaction.BlockNumber]
 
-		transaction.Timestamp = time.Unix(int64(block.Time()), 0)
+		transaction.Timestamp = time.Unix(int64(block.Timestamp), 0)
 
-		var internalTransaction *types.Transaction
+		var internalTransaction *ethereum.Transaction
 
-		for index, blockTransaction := range block.Transactions() {
-			if blockTransaction.Hash().String() == transaction.Hash {
+		for index, blockTransaction := range block.Transactions {
+			if blockTransaction.Hash.String() == transaction.Hash {
 				transaction.Index = int64(index)
 				internalTransaction = blockTransaction
 
@@ -140,28 +141,9 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 			return nil, nil
 		}
 
-		// Supports EIP-2930 and EIP-2718 and EIP-1559 and EIP-155 and legacy transactions
-		transactionMessage, err := internalTransaction.AsMessage(types.LatestSignerForChainID(internalTransaction.ChainId()), block.BaseFee())
-		if err != nil {
-			return nil, err
-		}
-
-		if err != nil {
-			// Filter transactions in incompatible blocks
-			if err.Error() == ErrorInvalidTransactionVRSValues.Error() {
-				return nil, nil
-			}
-
-			zap.L().Error("failed to get transaction message", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
-
-			return nil, err
-		}
-
-		transaction.AddressFrom = strings.ToLower(transactionMessage.From().String())
-
-		if transactionMessage.To() != nil {
-			transaction.AddressTo = strings.ToLower(transactionMessage.To().String())
-		}
+		// No signature verification
+		transaction.AddressFrom = strings.ToLower(transaction.AddressFrom)
+		transaction.AddressTo = strings.ToLower(transaction.AddressTo)
 
 		// crawler message address is nil
 		if transaction.Source != protocol.SourceKurora && transaction.AddressFrom != "" && message.Address != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) &&
@@ -171,44 +153,65 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 
 		addressTo := AddressGenesis.String()
 
-		if internalTransaction.To() != nil {
-			addressTo = internalTransaction.To().String()
+		if internalTransaction.To != nil {
+			addressTo = internalTransaction.To.String()
 		}
 
 		transaction.AddressTo = strings.ToLower(addressTo)
 
-		ethclient, err := ethclientx.Global(message.Network)
+		ethereumClient, err := ethclientx.GlobalX(message.Network)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("get global ethereum client failed: %w", err)
 		}
 
-		receipt, err := ethclient.TransactionReceipt(ctx, internalTransaction.Hash())
+		receipt, err := ethereumClient.ReceiptByHash(ctx, internalTransaction.Hash)
 		if err != nil {
 			loggerx.Global().Error("failed to get transaction receipt", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
 
 			return nil, err
 		}
 
-		switch internalTransaction.Type() {
+		switch internalTransaction.Type {
 		case types.LegacyTxType, types.AccessListTxType:
-			fee := decimal.NewFromBigInt(internalTransaction.GasPrice(), 0).Mul(decimal.NewFromInt(int64(receipt.GasUsed))).Shift(-18)
+			fee := decimal.NewFromBigInt(internalTransaction.GasPrice, 0).Mul(decimal.NewFromInt(int64(receipt.GasUsed))).Shift(-18)
 			transaction.Fee = &fee
 		case types.DynamicFeeTxType:
-			fee := (decimal.NewFromBigInt(block.BaseFee(), 0).Add(decimal.NewFromBigInt(internalTransaction.GasTipCap(), 0))).Mul(decimal.NewFromInt(int64(receipt.GasUsed))).Shift(-18)
+			fee := (decimal.NewFromBigInt(block.BaseFee, 0).Add(decimal.NewFromBigInt(internalTransaction.GasTipCap, 0))).Mul(decimal.NewFromInt(int64(receipt.GasUsed))).Shift(-18)
 			transaction.Fee = &fee
+		}
+
+		// Transaction compatibility conversion for Arbitrum
+		raw, err := json.Marshal(internalTransaction)
+		if err != nil {
+			return nil, fmt.Errorf("marshal transaction failed: %w", err)
+		}
+
+		var originTransaction types.Transaction
+		if err := json.Unmarshal(raw, &originTransaction); err != nil {
+			return nil, fmt.Errorf("unmarshal transaction failed: %w", err)
+		}
+
+		raw, err = json.Marshal(receipt)
+		if err != nil {
+			return nil, fmt.Errorf("marshal receipt failed: %w", err)
+		}
+
+		var originReceipt types.Receipt
+		if err := json.Unmarshal(raw, &originReceipt); err != nil {
+			return nil, fmt.Errorf("unmarshal transaction failed: %w", err)
 		}
 
 		transactionSuccess := receipt.Status == types.ReceiptStatusSuccessful
 		transaction.Success = &transactionSuccess
 
 		if transaction.SourceData, err = json.Marshal(&SourceData{
-			Transaction: internalTransaction,
-			Receipt:     receipt,
+			Transaction: &originTransaction,
+			Receipt:     &originReceipt,
 		}); err != nil {
 			return nil, err
 		}
 
-		if transaction.Transfers, err = handleReceipt(ctx, message, transaction, receipt); err != nil {
+		if transaction.Transfers, err = handleReceipt(ctx, message, transaction, &originReceipt); err != nil {
 			loggerx.Global().Error("failed to handle receipt", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
 
 			return nil, err

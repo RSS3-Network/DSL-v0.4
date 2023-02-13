@@ -25,6 +25,7 @@ func (s *service) Networks() []string {
 		protocol.NetworkPolygon,           // source: alchemy, lens
 		protocol.NetworkXDAI,              // source: blockscount
 		protocol.NetworkCrossbell,         // source: kurora
+		protocol.NetworkArbitrum,          // source: kurora
 		protocol.NetworkOptimism,          // source: kurora
 		protocol.NetworkAvalanche,         // source: kurora
 		protocol.NetworkFantom,            // source: kurora

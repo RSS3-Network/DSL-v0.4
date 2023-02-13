@@ -42,6 +42,7 @@ var EthclientNetworks = []string{
 	NetworkPolygon,
 	NetworkXDAI,
 	NetworkCrossbell,
+	NetworkArbitrum,
 	NetworkOptimism,
 	NetworkAvalanche,
 	NetworkCelo,
