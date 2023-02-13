@@ -57,6 +57,7 @@ import (
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/staking"
 	"github.com/samber/lo"
 
 	"go.opentelemetry.io/otel"
@@ -191,6 +192,7 @@ func (s *Server) Initialize() (err error) {
 
 	s.workers = []worker.Worker{
 		build_transactions.New(),
+		staking.New(),
 		liquidity.New(),
 		swapWorker,
 		bridge.New(),

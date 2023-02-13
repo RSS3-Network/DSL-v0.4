@@ -12,6 +12,10 @@ const (
 	ActionApprove string = "approve"
 	ActionRevoke  string = "revoke"
 
+	StakingDeposit  string = "deposit"
+	StakingWithdraw string = "withdraw"
+	StakingCollect  string = "collect"
+
 	// exchange types
 	ExchangeWithdraw  string = "withdraw"
 	ExchangeDeposit   string = "deposit"
