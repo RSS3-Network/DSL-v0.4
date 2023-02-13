@@ -66,6 +66,8 @@ rpc:
     crossbell:
       http: ''
       websocket: ''
+    arbitrum:
+      http: ''
     optimism:
       http: ''
       websocket: ''
