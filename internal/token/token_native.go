@@ -46,6 +46,12 @@ var nativeMap = map[string]Native{
 		Logo:     "https://assets.coingecko.com/coins/images/279/large/ethereum.png",
 		Decimals: 18,
 	},
+	protocol.NetworkArbitrum: {
+		Name:     "Ethereum", // https://www.coingecko.com/en/coins/ethereum
+		Symbol:   "ETH",
+		Decimals: 18,
+		Logo:     "https://assets.coingecko.com/coins/images/279/large/ethereum.png",
+	},
 	protocol.NetworkOptimism: {
 		Name:     "Ethereum", // https://www.coingecko.com/en/coins/ethereum
 		Symbol:   "ETH",

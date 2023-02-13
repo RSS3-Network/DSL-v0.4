@@ -51,6 +51,7 @@ func (s *service) Networks() []string {
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon,
 		protocol.NetworkBinanceSmartChain,
+		protocol.NetworkArbitrum,
 		protocol.NetworkOptimism,
 		protocol.NetworkAvalanche,
 		protocol.NetworkXDAI,
@@ -296,7 +297,8 @@ func (s *service) Jobs() []worker.Job {
 
 func New(employer *shedlock.Employer) (worker.Worker, error) {
 	svc := service{
-		employer: employer,
+		employer:    employer,
+		tokenClient: token.New(),
 	}
 	return &svc, nil
 }

@@ -48,6 +48,7 @@ func (i *internal) Networks() []string {
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon,
 		protocol.NetworkBinanceSmartChain,
+		protocol.NetworkArbitrum,
 		protocol.NetworkOptimism,
 		protocol.NetworkAvalanche,
 		protocol.NetworkXDAI,
@@ -259,5 +260,7 @@ func (i *internal) Jobs() []worker.Job {
 }
 
 func New() worker.Worker {
-	return &internal{}
+	return &internal{
+		tokenClient: token.New(),
+	}
 }

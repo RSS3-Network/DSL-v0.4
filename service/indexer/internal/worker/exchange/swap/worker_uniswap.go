@@ -45,7 +45,7 @@ func (s *service) handleUniswapV2(ctx context.Context, message *protocol.Message
 		token1Value = big.NewInt(0)
 	}
 
-	if event.Amount0In.Cmp(big.NewInt(0)) == 1 {
+	if event.Amount1Out.Cmp(big.NewInt(0)) == 1 {
 		// Swap token0 to token1
 		tokenMap[token0] = token0Value.Sub(token0Value, event.Amount0In)
 		tokenMap[token1] = token1Value.Add(token1Value, event.Amount1Out)

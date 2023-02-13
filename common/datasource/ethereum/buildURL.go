@@ -18,6 +18,8 @@ func BuildScanURL(network string, transactionHash string) string {
 		return fmt.Sprintf("https://blockscout.com/xdai/mainnet/tx/%s", transactionHash)
 	case protocol.NetworkCrossbell:
 		return fmt.Sprintf("https://scan.crossbell.io/tx/%s", transactionHash)
+	case protocol.NetworkArbitrum:
+		return fmt.Sprintf("https://arbiscan.io/tx/%s", transactionHash)
 	case protocol.NetworkOptimism:
 		return fmt.Sprintf("https://optimistic.etherscan.io/tx/%s", transactionHash)
 	case protocol.NetworkAvalanche:
@@ -46,9 +48,17 @@ func BuildTokenURL(network, address, id string) []string {
 		return []string{
 			fmt.Sprintf("https://tofunft.com/nft/bsc/%s/%s", address, id),
 		}
+	case protocol.NetworkArbitrum:
+		return []string{
+			fmt.Sprintf("https://opensea.io/assets/arbitrum/%s/%s", address, id),
+		}
 	case protocol.NetworkOptimism:
 		return []string{
 			fmt.Sprintf("https://qx.app/asset/%s/%s", address, id),
+		}
+	case protocol.NetworkAvalanche:
+		return []string{
+			fmt.Sprintf("https://opensea.io/assets/avalanche/%s/%s", address, id),
 		}
 	default:
 		return []string{}

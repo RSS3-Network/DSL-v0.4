@@ -2,6 +2,7 @@ package token
 
 import (
 	"errors"
+	"net/http"
 )
 
 var (
@@ -10,8 +11,10 @@ var (
 	ErrorInvalidMetadataFormat = errors.New("invalid metadata format")
 )
 
-type Client struct{}
+type Client struct {
+	httpClient *http.Client
+}
 
 func New() *Client {
-	return &Client{}
+	return &Client{httpClient: &http.Client{}}
 }

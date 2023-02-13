@@ -166,5 +166,7 @@ func (s *service) Jobs() []worker.Job {
 }
 
 func New() worker.Worker {
-	return &service{}
+	return &service{
+		tokenClient: token.New(),
+	}
 }

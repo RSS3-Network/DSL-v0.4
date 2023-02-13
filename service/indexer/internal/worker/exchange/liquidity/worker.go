@@ -47,6 +47,7 @@ func (i *internal) Networks() []string {
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon,
 		protocol.NetworkBinanceSmartChain,
+		protocol.NetworkArbitrum,
 		protocol.NetworkOptimism,
 		protocol.NetworkAvalanche,
 		protocol.NetworkXDAI,
