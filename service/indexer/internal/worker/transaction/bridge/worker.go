@@ -44,6 +44,7 @@ func (w *Worker) Networks() []string {
 		protocol.NetworkPolygon,
 		protocol.NetworkXDAI,
 		protocol.NetworkCrossbell,
+		protocol.NetworkArbitrum,
 		protocol.NetworkOptimism,
 		protocol.NetworkAvalanche,
 		protocol.NetworkCelo,

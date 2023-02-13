@@ -147,6 +147,7 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 	networks := []string{
 		protocol.NetworkEthereum,
 		protocol.NetworkPolygon,
+		protocol.NetworkArbitrum,
 		protocol.NetworkBinanceSmartChain,
 		protocol.NetworkArweave,
 		protocol.NetworkXDAI,
