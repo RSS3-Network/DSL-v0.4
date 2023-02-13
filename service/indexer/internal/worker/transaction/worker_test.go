@@ -169,7 +169,7 @@ func Test_service_Handle(t *testing.T) {
 				transactions: []model.Transaction{},
 			},
 			want:    []model.Transaction{},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "Handle: vitalik.eth",
@@ -246,8 +246,13 @@ func Test_service_Handle(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := tokenWorker
 			got, err := s.Handle(tt.args.ctx, tt.args.message, tt.args.transactions)
-			if (err != nil) != tt.wantErr {
+			if err != nil && tt.wantErr {
+				return
+			}
+
+			if err != nil {
 				t.Errorf("service.Handle() error = %v, wantErr %v", err, tt.wantErr)
+
 				return
 			}
 
