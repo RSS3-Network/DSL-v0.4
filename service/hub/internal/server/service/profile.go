@@ -284,33 +284,74 @@ func (s *Service) GetKuroraAddress(c context.Context, request model.GetRequest) 
 func (s *Service) BatchKuroraProfiles(c context.Context, request model.BatchGetProfilesRequest) ([]*social.Profile, error) {
 	result := make([]*social.Profile, 0)
 
-	addresses := make([]string, 0)
+	addresses := make([]common.Address, 0)
+	handles := make([]string, 0)
+	handleMap := make(map[string]struct{}, 0)
+
+	query := kurora.DatasetDomainQuery{
+		Limit: lo.ToPtr(10 * model.DefaultLimit),
+	}
 
 	for _, address := range request.Address {
 		if !strings.EqualFold(ethereum.AddressGenesis.String(), address) && name_service.IsEvmValidAddress(address) {
-			addresses = append(addresses, address)
+			addresses = append(addresses, common.HexToAddress(address))
+		} else if !strings.EqualFold("", address) && strings.Contains(address, ".") {
+			handles = append(handles, address)
+			handleMap[address] = struct{}{}
+		}
+	}
+
+	if len(request.Network) > 0 {
+		for i, v := range request.Network {
+			request.Network[i] = strings.ToLower(v)
+		}
+		query.NetworkList = request.Network
+	}
+
+	if len(request.Platform) > 0 {
+		query.PlatformList = request.Platform
+	}
+
+	// deal with handles
+	if len(handles) > 0 {
+		query.HandleList = handles
+
+		handleProfiles, err := s.kuroraClient.FetchDatasetDomains(c, query)
+		if err != nil {
+			loggerx.Global().Error("batch get profiles by handles error", zap.Error(err))
+		}
+
+		for _, handleProfile := range handleProfiles {
+			if !strings.EqualFold(ethereum.AddressGenesis.String(), handleProfile.Address.String()) {
+				addresses = append(addresses, handleProfile.Address)
+
+				var expiredAt *time.Time
+				if handleProfile.ExpiredAt.Year() > 2000 {
+					expiredAt = &handleProfile.ExpiredAt
+				}
+				result = append(result, &social.Profile{
+					Address:     strings.ToLower(handleProfile.Address.String()),
+					Network:     handleProfile.Network,
+					Platform:    handleProfile.Platform,
+					Name:        handleProfile.Name,
+					Handle:      handleProfile.Handle,
+					Bio:         handleProfile.Bio,
+					URL:         handleProfile.URL,
+					ExpireAt:    expiredAt,
+					ProfileUris: handleProfile.ProfileUris,
+					BannerUris:  handleProfile.BannerUris,
+					SocialUris:  handleProfile.SocialUris,
+					Source:      handleProfile.Platform,
+				})
+			}
 		}
 	}
 
 	if len(addresses) > 0 {
-		domainsQuery := kurora.DatasetDomainQuery{
-			ReverseAddressList: addresses,
-			Limit:              lo.ToPtr(10 * model.DefaultLimit),
-		}
+		query.HandleList = []string{}
+		query.ReverseAddressList = addresses
 
-		if len(request.Network) > 0 {
-			for i, v := range request.Network {
-				request.Network[i] = strings.ToLower(v)
-			}
-
-			domainsQuery.NetworkList = request.Network
-		}
-
-		if len(request.Platform) > 0 {
-			domainsQuery.PlatformList = request.Platform
-		}
-
-		profiles, err := s.kuroraClient.FetchDatasetDomains(c, domainsQuery)
+		profiles, err := s.kuroraClient.FetchDatasetDomains(c, query)
 		if err != nil {
 			loggerx.Global().Error("batch get profiles error", zap.Error(err))
 
@@ -318,6 +359,9 @@ func (s *Service) BatchKuroraProfiles(c context.Context, request model.BatchGetP
 		}
 
 		for _, profile := range profiles {
+			if _, ok := handleMap[profile.Handle]; ok {
+				continue
+			}
 			var expiredAt *time.Time
 			if profile.ExpiredAt.Year() > 2000 {
 				expiredAt = &profile.ExpiredAt
