@@ -159,41 +159,45 @@ func (s *service) handleEthereumTransaction(ctx context.Context, message *protoc
 	}
 
 	for _, log := range sourceData.Receipt.Logs {
-		for _, topic := range log.Topics {
-			var internalTokenMap map[common.Address]*big.Int
-			switch topic {
-			case uniswap.EventHashSwapV2:
-				internalTokenMap, err = s.handleUniswapV2(ctx, message, *log, tokenMap, ethereumClient)
-			case uniswap.EventHashSwapV3:
-				internalTokenMap, err = s.handleUniswapV3(ctx, message, *log, tokenMap, ethereumClient)
-			case dodo.EventHashDODOSwap:
-				internalTokenMap, err = s.handleDODO(ctx, message, *log, tokenMap, ethereumClient)
-			case curve.EventHashAddLiquidity:
-				internalTokenMap, err = s.handleCurve3PoolAddLiquidity(ctx, message, *log, sourceData.Receipt.Logs, tokenMap, ethereumClient)
-			case curve.EventHashRemoveLiquidityOne:
-				internalTokenMap, err = s.handleCurve3PoolRemoveLiquidityOne(ctx, message, *log, sourceData.Receipt.Logs, tokenMap, ethereumClient)
-			case curve.EventHashTokenExchange:
-				internalTokenMap, err = s.handleCurve3PoolTokenExchange(ctx, message, *log, tokenMap, ethereumClient)
-			case curve.EventHashTokenExchange2:
-				internalTokenMap, err = s.handleCurve3PoolTokenExchange2(ctx, message, *log, tokenMap, ethereumClient)
-			case balancer.EventHashSwap:
-				internalTokenMap, err = s.handleBalancerSwap(ctx, message, *log, tokenMap, ethereumClient)
-			case aave.EventHashMint:
-				internalTokenMap, err = s.handleAAVEMint(ctx, message, *log, tokenMap, ethereumClient)
-			case aave.EventHashBurn:
-				internalTokenMap, err = s.handleAAVEBurn(ctx, message, *log, tokenMap, ethereumClient)
-			case masknetwork.EventSwapSuccess:
-				internalTokenMap, err = s.handleMaskEventSwapSuccess(ctx, message, *log, tokenMap, ethereumClient)
-			default:
-				continue
-			}
-
-			if err != nil {
-				return nil, err
-			}
-
-			tokenMap = internalTokenMap
+		// Filter anonymous log
+		if len(log.Topics) == 0 {
+			continue
 		}
+
+		var internalTokenMap map[common.Address]*big.Int
+
+		switch log.Topics[0] {
+		case uniswap.EventHashSwapV2:
+			internalTokenMap, err = s.handleUniswapV2(ctx, message, *log, tokenMap, ethereumClient)
+		case uniswap.EventHashSwapV3:
+			internalTokenMap, err = s.handleUniswapV3(ctx, message, *log, tokenMap, ethereumClient)
+		case dodo.EventHashDODOSwap:
+			internalTokenMap, err = s.handleDODO(ctx, message, *log, tokenMap, ethereumClient)
+		case curve.EventHashAddLiquidity:
+			internalTokenMap, err = s.handleCurve3PoolAddLiquidity(ctx, message, *log, sourceData.Receipt.Logs, tokenMap, ethereumClient)
+		case curve.EventHashRemoveLiquidityOne:
+			internalTokenMap, err = s.handleCurve3PoolRemoveLiquidityOne(ctx, message, *log, sourceData.Receipt.Logs, tokenMap, ethereumClient)
+		case curve.EventHashTokenExchange:
+			internalTokenMap, err = s.handleCurve3PoolTokenExchange(ctx, message, *log, tokenMap, ethereumClient)
+		case curve.EventHashTokenExchange2:
+			internalTokenMap, err = s.handleCurve3PoolTokenExchange2(ctx, message, *log, tokenMap, ethereumClient)
+		case balancer.EventHashSwap:
+			internalTokenMap, err = s.handleBalancerSwap(ctx, message, *log, tokenMap, ethereumClient)
+		case aave.EventHashMint:
+			internalTokenMap, err = s.handleAAVEMint(ctx, message, *log, tokenMap, ethereumClient)
+		case aave.EventHashBurn:
+			internalTokenMap, err = s.handleAAVEBurn(ctx, message, *log, tokenMap, ethereumClient)
+		case masknetwork.EventSwapSuccess:
+			internalTokenMap, err = s.handleMaskEventSwapSuccess(ctx, message, *log, tokenMap, ethereumClient)
+		default:
+			continue
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		tokenMap = internalTokenMap
 	}
 
 	if len(tokenMap) == 0 {

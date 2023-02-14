@@ -102,6 +102,11 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			}
 
 			for _, log := range sourceData.Receipt.Logs {
+				// Filter anonymous log
+				if len(log.Topics) == 0 {
+					continue
+				}
+
 				var (
 					transfer *model.Transfer
 					err      error

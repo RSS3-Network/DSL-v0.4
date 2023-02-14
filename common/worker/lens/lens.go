@@ -160,8 +160,13 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 		return nil, fmt.Errorf("failed to unmarshal source data: %w", err)
 	}
 
-	// parse log
+	// Parse logs
 	for _, log := range sourceData.Receipt.Logs {
+		// Filter anonymous log
+		if len(log.Topics) == 0 {
+			continue
+		}
+
 		lensContract, err := contract.NewEvents(log.Address, ethclient)
 		if err != nil {
 			logrus.Errorf("[lens worker] handleReceipt: new events error, %v", err)
@@ -191,6 +196,7 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 
 		var handleErr error
 		var batchTransfers []model.Transfer
+
 		switch log.Topics[0] {
 		case lens.EventHashPostCreated:
 			handleErr = c.HandlePostCreated(ctx, *lensContract, transaction, &transfer, *log)
