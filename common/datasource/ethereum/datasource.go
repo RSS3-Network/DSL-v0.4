@@ -142,8 +142,10 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 		}
 
 		// No signature verification
-		transaction.AddressFrom = strings.ToLower(transaction.AddressFrom)
-		transaction.AddressTo = strings.ToLower(transaction.AddressTo)
+		transaction.AddressFrom = strings.ToLower(internalTransaction.From.String())
+		if internalTransaction.To != nil {
+			transaction.AddressTo = strings.ToLower(internalTransaction.To.String())
+		}
 
 		// crawler message address is nil
 		if transaction.Source != protocol.SourceKurora && transaction.AddressFrom != "" && message.Address != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) &&
