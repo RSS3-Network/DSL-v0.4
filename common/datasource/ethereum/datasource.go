@@ -27,7 +27,9 @@ import (
 	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
+
 	"go.opentelemetry.io/otel"
+
 	"go.uber.org/zap"
 )
 
@@ -36,9 +38,8 @@ const (
 )
 
 var (
-	ErrorUnsupportedEvent            = errors.New("unsupported event")
-	ErrorUnrelatedEvent              = errors.New("unrelated event")
-	ErrorInvalidTransactionVRSValues = errors.New("invalid transaction v, r, s values")
+	ErrorUnsupportedEvent = errors.New("unsupported event")
+	ErrorUnrelatedEvent   = errors.New("unrelated event")
 )
 
 func BuildTransactions(ctx context.Context, message *protocol.Message, transactions []*model.Transaction) ([]*model.Transaction, error) {
@@ -49,10 +50,10 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 
 	defer opentelemetry.Log(span, message, transactions, err)
 
-	tempTransactions := make([]*model.Transaction, 0)
+	result := make([]*model.Transaction, 0)
 
-	for _, ts := range lo.Chunk(transactions, 2*MaxConcurrency) {
-		blocks, err := lop.MapWithError(ts, makeBlockHandlerFunc(ctx, message), lop.NewOption().WithConcurrency(MaxConcurrency))
+	for _, transactionsSplit := range lo.Chunk(transactions, 2*MaxConcurrency) {
+		blocks, err := lop.MapWithError(transactionsSplit, makeBlockHandlerFunc(ctx, message), lop.NewOption().WithConcurrency(MaxConcurrency))
 		if err != nil {
 			loggerx.Global().Error("failed to handle blocks", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
 
@@ -65,26 +66,21 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 		}
 
 		// Error topic/field count mismatch
-		ts, err = lop.MapWithError(ts, makeTransactionHandlerFunc(ctx, message, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
+		transactionsSplit, err = lop.MapWithError(transactionsSplit, makeTransactionHandlerFunc(ctx, message, blockMap), lop.NewOption().WithConcurrency(MaxConcurrency))
 		if err != nil {
 			loggerx.Global().Error("failed to handle transactions", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address))
 
 			return nil, err
 		}
 
-		tempTransactions = append(tempTransactions, ts...)
-
-	}
-
-	internalTransactions := make([]*model.Transaction, 0)
-
-	for _, transaction := range tempTransactions {
-		if transaction != nil {
-			internalTransactions = append(internalTransactions, transaction)
+		if transactionsSplit != nil {
+			result = append(result, lo.Filter(transactionsSplit, func(transaction *model.Transaction, i int) bool {
+				return transaction != nil
+			})...)
 		}
 	}
 
-	return internalTransactions, nil
+	return result, nil
 }
 
 func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message) func(transaction *model.Transaction, i int) (*ethereum.Block, error) {
@@ -126,40 +122,31 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 
 		transaction.Timestamp = time.Unix(int64(block.Timestamp), 0)
 
-		var internalTransaction *ethereum.Transaction
+		// Find transaction in block
+		internalTransaction, exists := lo.Find(block.Transactions, func(blockTransaction *ethereum.Transaction) bool {
+			return strings.EqualFold(blockTransaction.Hash.String(), transaction.Hash)
+		})
 
-		for index, blockTransaction := range block.Transactions {
-			if blockTransaction.Hash.String() == transaction.Hash {
-				transaction.Index = int64(index)
-				internalTransaction = blockTransaction
-
-				break
-			}
-		}
-
-		if internalTransaction == nil {
+		if !exists {
 			return nil, nil
 		}
 
 		// No signature verification
 		transaction.AddressFrom = strings.ToLower(internalTransaction.From.String())
-		if internalTransaction.To != nil {
+		if internalTransaction.To == nil {
+			transaction.AddressTo = strings.ToLower(AddressGenesis.String())
+		} else {
 			transaction.AddressTo = strings.ToLower(internalTransaction.To.String())
 		}
+
+		// Default owner
+		transaction.Owner = transaction.AddressFrom
 
 		// crawler message address is nil
 		if transaction.Source != protocol.SourceKurora && transaction.AddressFrom != "" && message.Address != "" && !strings.EqualFold(transaction.AddressFrom, message.Address) &&
 			!allowlist.AllowList.Contains(transaction.AddressFrom) && !allowlist.AllowList.Contains(transaction.AddressTo) {
 			return nil, nil
 		}
-
-		addressTo := AddressGenesis.String()
-
-		if internalTransaction.To != nil {
-			addressTo = internalTransaction.To.String()
-		}
-
-		transaction.AddressTo = strings.ToLower(addressTo)
 
 		ethereumClient, err := ethclientx.GlobalX(message.Network)
 		if err != nil {
@@ -203,14 +190,18 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 			return nil, fmt.Errorf("unmarshal transaction failed: %w", err)
 		}
 
+		// Handle receipt status
 		transactionSuccess := receipt.Status == types.ReceiptStatusSuccessful
 		transaction.Success = &transactionSuccess
 
-		if transaction.SourceData, err = json.Marshal(&SourceData{
+		// Build source data
+		sourceData := SourceData{
 			Transaction: &originTransaction,
 			Receipt:     &originReceipt,
-		}); err != nil {
-			return nil, err
+		}
+
+		if transaction.SourceData, err = json.Marshal(sourceData); err != nil {
+			return nil, fmt.Errorf("marshal source data failed: %w", err)
 		}
 
 		if transaction.Transfers, err = handleReceipt(ctx, message, transaction, &originReceipt); err != nil {
