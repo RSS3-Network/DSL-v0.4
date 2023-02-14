@@ -92,10 +92,9 @@ func TestClient_ERC721_403(t *testing.T) {
 
 func TestClient_NFT(t *testing.T) {
 	tokenID := big.NewInt(0)
-	//tokenID.SetString("13477934942365134845532687062228082192258615338355725056261642040781742014465", 0)
-	tokenID.SetString("41072", 0)
+	tokenID.SetString("35536", 0)
 
-	nft, err := tokenClient.NFT(context.Background(), protocol.NetworkEthereum, "0x06012C8CF97BEAD5DEAE237070F9587F8E7A266D", tokenID)
+	nft, err := tokenClient.NFT(context.Background(), protocol.NetworkEthereum, "0xb932a70a57673d89f4acffbe830e8ed7f75fb9e0", tokenID)
 	assert.NoError(t, err)
 
 	t.Log(nft)

@@ -506,10 +506,6 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 	)
 
 	for _, transaction := range transactions {
-		// remove tx which has been indexed in crawler
-		if allowlist.CrawlerList.Contains(transaction.AddressTo) && strings.EqualFold(transaction.Network, allowlist.CrawlerList.Get(transaction.AddressTo)) {
-			continue
-		}
 
 		// Handle all transfers
 		for _, transfer := range transaction.Transfers {
@@ -520,6 +516,11 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 			}
 
 			transfers = append(transfers, transfer)
+		}
+
+		// remove tx which has been indexed in crawler
+		if allowlist.CrawlerList.Contains(transaction.AddressTo) && strings.EqualFold(transaction.Network, allowlist.CrawlerList.Get(transaction.AddressTo)) {
+			continue
 		}
 
 		updatedTransactions = append(updatedTransactions, transaction)

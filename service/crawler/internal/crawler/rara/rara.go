@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -37,12 +36,14 @@ type service struct {
 	config       *config.Config
 	kuroraClient *kurora.Client
 	tokenClient  *token.Client
+	httpClient   *http.Client
 }
 
 func New(conf *config.Config) crawler.Crawler {
 	return &service{
 		config:      conf,
 		tokenClient: token.New(),
+		httpClient:  &http.Client{},
 	}
 }
 
@@ -98,8 +99,7 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 
 	cursor, _ := cache.Global().Get(ctx, raraCacheKey).Result()
 	query := kurora.DatasetRaraEntryQuery{
-		Limit:           &DefaultLimit,
-		TransactionHash: lo.ToPtr(common.HexToHash("0x7b51e867d2a485290cd641dd1835c030207aeea13ba427642a78234ea642e499")),
+		Limit: &DefaultLimit,
 	}
 
 	if len(cursor) > 0 {
@@ -133,27 +133,50 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 
 		network := protocol.IdToNetwork(fmt.Sprintf("%#x", entry.NftChainId.CoefficientInt64()))
 		// handle transfer
-		nft, err := s.tokenClient.NFT(ctx, network, entry.NftAddress.String(), entry.NftId.BigInt())
-		if err != nil {
-			loggerx.Global().Warn("failed to handle NFT metadata", zap.Error(err), zap.String("network", network), zap.String("transaction_hash", transaction.Hash), zap.String("address", entry.From.String()), zap.String("token", entry.NftAddress.String()))
+		var err error
 
-			continue
+		post := metadata.Post{
+			TargetURL:      ethereum.BuildTokenURL(network, entry.NftAddress.String(), entry.NftId.BigInt().String())[0],
+			TypeOnPlatform: []string{filter.SocialPost},
 		}
 
-		target := metadata.Post{
-			Title:   nft.Name,
-			Summary: ethereum.BuildTokenURL(network, entry.NftAddress.String(), entry.NftId.BigInt().String())[0],
-			Body:    nft.Description,
+		switch entry.NftAddress {
+		case CryptoKitties:
+			url := fmt.Sprintf("%s%s", "https://api.cryptokitties.co/v3/kitties/", entry.NftId)
+			ckMetadata, err := s.CkMetadata(ctx, url)
+			if err != nil {
+				loggerx.Global().Warn("failed to handle NFT metadata", zap.Error(err), zap.String("network", network), zap.String("transaction_hash", transaction.Hash), zap.String("address", entry.From.String()), zap.String("token", entry.NftAddress.String()))
+
+				continue
+			}
+			post.Title = ckMetadata.Name
+			post.Body = ckMetadata.Bio
+			post.Media = []metadata.Media{{Address: ckMetadata.Image, MimeType: "image/png"}}
+		case CryptoPunks:
+			post.Title = CryptoPunksName
+			post.Body = CryptoPunksDes
+		default:
+			nft, err := s.tokenClient.NFT(ctx, network, entry.NftAddress.String(), entry.NftId.BigInt())
+			if err != nil {
+				loggerx.Global().Warn("failed to handle NFT metadata", zap.Error(err), zap.String("network", network), zap.String("transaction_hash", transaction.Hash), zap.String("address", entry.From.String()), zap.String("token", entry.NftAddress.String()))
+
+				continue
+			}
+
+			post.Title = nft.Name
+			post.Body = nft.Description
+			post.Media = []metadata.Media{{Address: nft.Image, MimeType: "image/png"}}
 		}
 
-		post := &metadata.Post{
-			Target:         &target,
+		comment := &metadata.Post{
+			Target:         &post,
 			Body:           entry.Comment,
-			Author:         []string{fmt.Sprintf("%s%s", "https://app.rara.social/profile/", strings.ToLower(entry.From.String()))},
-			TypeOnPlatform: []string{"Comment"},
+			Tags:           entry.Tags,
+			Author:         []string{strings.ToLower(entry.From.String()), fmt.Sprintf("%s%s", "https://app.rara.social/profile/", strings.ToLower(entry.From.String()))},
+			TypeOnPlatform: []string{filter.SocialComment},
 		}
 
-		metadataRaw, err := json.Marshal(post)
+		metadataRaw, err := json.Marshal(comment)
 		if err != nil {
 			loggerx.Global().Warn("failed to handle marshall", zap.Error(err), zap.String("network", s.Network()), zap.String("transaction_hash", transaction.Hash), zap.String("address", entry.From.String()))
 
@@ -193,4 +216,35 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 	}
 
 	return internalTransactions, nil
+}
+
+type CkMetadata struct {
+	Name  string `json:"name"`
+	Bio   string `json:"bio"`
+	Image string `json:"image_url_png"`
+}
+
+func (s *service) CkMetadata(ctx context.Context, url string) (*CkMetadata, error) {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("new request: %w", err)
+	}
+
+	// request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36")
+
+	response, err := s.httpClient.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("do request: %w", err)
+	}
+
+	defer func() {
+		_ = response.Body.Close()
+	}()
+	ckMetadata := &CkMetadata{}
+	err = json.NewDecoder(response.Body).Decode(ckMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return ckMetadata, nil
 }
