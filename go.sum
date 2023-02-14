@@ -554,12 +554,16 @@ github.com/naoina/go-stringutil v0.1.0/go.mod h1:XJ2SJL9jCtBh+P9q5btrd/Ylo8XwT/h
 github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416/go.mod h1:NBIhNtsFMo3G2szEBne+bO4gS192HuIYRqfvOWb4i1E=
 github.com/naturalselectionlabs/kurora v0.25.2 h1:8go97z3pDC6nHKtEQLckMyvPw2sOL5mbBwxyQQa4h84=
 github.com/naturalselectionlabs/kurora v0.25.2/go.mod h1:Rjo2lDB/t+T9aZrFcHN1VM+YZc/1QgequEFZqUpgGhs=
+github.com/naturalselectionlabs/kurora v0.25.3 h1:ogUh4+ifwgr8y52srLOd1gNgk39J35+Qrp2YbBZmbdg=
+github.com/naturalselectionlabs/kurora v0.25.3/go.mod h1:Rjo2lDB/t+T9aZrFcHN1VM+YZc/1QgequEFZqUpgGhs=
 github.com/naturalselectionlabs/kurora v0.25.4 h1:/P1RMo2gg6tES0KRskcaM8UT2D14iso52DjBZFc22MY=
 github.com/naturalselectionlabs/kurora v0.25.4/go.mod h1:Rjo2lDB/t+T9aZrFcHN1VM+YZc/1QgequEFZqUpgGhs=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20230208132702-298e7ca82b36 h1:6kKM06Gni5etfW1vBv+iwuz4JzAgIb+maqC5ptjVn2Y=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20230208132702-298e7ca82b36/go.mod h1:l2XVJ0tRgAfox3atwg029y6ctrVr3K+87XjH0mAefAE=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20230213171304-129511988aa1 h1:U39vU7ochsL/1bzz8Jt0iQDR85r4N1uQGBDBEiy0thY=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20230213171304-129511988aa1/go.mod h1:AUjJGozBbVsLiwaJKeE9SzMeKk5HXwoe9dhkajVg75o=
+github.com/naturalselectionlabs/kurora/client v0.0.0-20230214054219-dc2d1ee12a8d h1:kkNgbD70ZshjUiCAPIL37Vq4zg58PmLApakPxkxPr3s=
+github.com/naturalselectionlabs/kurora/client v0.0.0-20230214054219-dc2d1ee12a8d/go.mod h1:AUjJGozBbVsLiwaJKeE9SzMeKk5HXwoe9dhkajVg75o=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
