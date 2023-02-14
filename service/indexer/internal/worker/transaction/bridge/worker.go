@@ -91,6 +91,11 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 			}
 
 			for _, log := range sourceData.Receipt.Logs {
+				// Filter anonymous log
+				if len(log.Topics) == 0 {
+					continue
+				}
+
 				switch log.Topics[0] {
 				case hop.EventTransferSentToL2:
 					internalTransfer, err = w.handleHopTransferSentToL2(ctx, internalTransaction, *log)
