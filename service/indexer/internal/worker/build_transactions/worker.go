@@ -12,12 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
+const Name = "buildTransaction"
+
 var _ worker.Worker = (*service)(nil)
 
 type service struct{}
 
 func (s *service) Name() string {
-	return "buildTransaction"
+	return Name
 }
 
 func (s *service) Networks() []string {

@@ -26,8 +26,6 @@ require (
 	github.com/labstack/echo-contrib v0.13.1
 	github.com/labstack/echo/v4 v4.10.0
 	github.com/lib/pq v1.10.7
-	github.com/naturalselectionlabs/kurora v0.25.2
-	github.com/naturalselectionlabs/kurora/client v0.0.0-20230208132702-298e7ca82b36
 	github.com/rabbitmq/amqp091-go v1.6.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.37.0
@@ -102,6 +100,8 @@ require (
 	github.com/multiformats/go-multibase v0.1.1 // indirect
 	github.com/multiformats/go-multihash v0.2.0 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
+	github.com/naturalselectionlabs/kurora v0.25.3 // indirect
+	github.com/naturalselectionlabs/kurora/client v0.0.0-20230214054219-dc2d1ee12a8d // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
