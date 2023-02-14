@@ -284,57 +284,103 @@ func (s *Service) GetKuroraAddress(c context.Context, request model.GetRequest) 
 func (s *Service) BatchKuroraProfiles(c context.Context, request model.BatchGetProfilesRequest) ([]*social.Profile, error) {
 	result := make([]*social.Profile, 0)
 
-	addresses := make([]string, 0)
+	addresses := make([]common.Address, 0)
+	handles := make([]string, 0)
+	handleMap := make(map[string]struct{}, 0)
 
-	for _, address := range request.Address {
-		if !strings.EqualFold(ethereum.AddressGenesis.String(), address) {
-			addresses = append(addresses, address)
-		}
+	query := kurora.DatasetDomainQuery{
+		Limit: lo.ToPtr(10 * model.DefaultLimit),
 	}
 
-	domainsQuery := kurora.DatasetDomainQuery{
-		ReverseAddressList: addresses,
-		Limit:              lo.ToPtr(10 * model.DefaultLimit),
+	for _, address := range request.Address {
+		if !strings.EqualFold(ethereum.AddressGenesis.String(), address) && name_service.IsEvmValidAddress(address) {
+			addresses = append(addresses, common.HexToAddress(address))
+		} else if !strings.EqualFold("", address) && strings.Contains(address, ".") {
+			handles = append(handles, address)
+			handleMap[address] = struct{}{}
+		}
 	}
 
 	if len(request.Network) > 0 {
 		for i, v := range request.Network {
 			request.Network[i] = strings.ToLower(v)
 		}
-
-		domainsQuery.NetworkList = request.Network
+		query.NetworkList = request.Network
 	}
 
 	if len(request.Platform) > 0 {
-		domainsQuery.PlatformList = request.Platform
+		query.PlatformList = request.Platform
 	}
 
-	profiles, err := s.kuroraClient.FetchDatasetDomains(c, domainsQuery)
-	if err != nil {
-		loggerx.Global().Error("batch get profiles error", zap.Error(err))
+	// deal with handles
+	if len(handles) > 0 {
+		query.HandleList = handles
 
-		return result, err
-	}
-
-	for _, profile := range profiles {
-		var expiredAt *time.Time
-		if profile.ExpiredAt.Year() > 2000 {
-			expiredAt = &profile.ExpiredAt
+		handleProfiles, err := s.kuroraClient.FetchDatasetDomains(c, query)
+		if err != nil {
+			loggerx.Global().Error("batch get profiles by handles error", zap.Error(err))
 		}
-		result = append(result, &social.Profile{
-			Address:     strings.ToLower(profile.ReverseAddress.String()),
-			Network:     profile.Network,
-			Platform:    profile.Platform,
-			Name:        profile.Name,
-			Handle:      profile.Handle,
-			Bio:         profile.Bio,
-			URL:         profile.URL,
-			ExpireAt:    expiredAt,
-			ProfileUris: profile.ProfileUris,
-			BannerUris:  profile.BannerUris,
-			SocialUris:  profile.SocialUris,
-			Source:      profile.Platform,
-		})
+
+		for _, handleProfile := range handleProfiles {
+			if !strings.EqualFold(ethereum.AddressGenesis.String(), handleProfile.Address.String()) {
+				addresses = append(addresses, handleProfile.Address)
+
+				var expiredAt *time.Time
+				if handleProfile.ExpiredAt.Year() > 2000 {
+					expiredAt = &handleProfile.ExpiredAt
+				}
+				result = append(result, &social.Profile{
+					Address:     strings.ToLower(handleProfile.Address.String()),
+					Network:     handleProfile.Network,
+					Platform:    handleProfile.Platform,
+					Name:        handleProfile.Name,
+					Handle:      handleProfile.Handle,
+					Bio:         handleProfile.Bio,
+					URL:         handleProfile.URL,
+					ExpireAt:    expiredAt,
+					ProfileUris: handleProfile.ProfileUris,
+					BannerUris:  handleProfile.BannerUris,
+					SocialUris:  handleProfile.SocialUris,
+					Source:      handleProfile.Platform,
+				})
+			}
+		}
+	}
+
+	if len(addresses) > 0 {
+		query.HandleList = []string{}
+		query.ReverseAddressList = addresses
+
+		profiles, err := s.kuroraClient.FetchDatasetDomains(c, query)
+		if err != nil {
+			loggerx.Global().Error("batch get profiles error", zap.Error(err))
+
+			return result, err
+		}
+
+		for _, profile := range profiles {
+			if _, ok := handleMap[profile.Handle]; ok {
+				continue
+			}
+			var expiredAt *time.Time
+			if profile.ExpiredAt.Year() > 2000 {
+				expiredAt = &profile.ExpiredAt
+			}
+			result = append(result, &social.Profile{
+				Address:     strings.ToLower(profile.ReverseAddress.String()),
+				Network:     profile.Network,
+				Platform:    profile.Platform,
+				Name:        profile.Name,
+				Handle:      profile.Handle,
+				Bio:         profile.Bio,
+				URL:         profile.URL,
+				ExpireAt:    expiredAt,
+				ProfileUris: profile.ProfileUris,
+				BannerUris:  profile.BannerUris,
+				SocialUris:  profile.SocialUris,
+				Source:      profile.Platform,
+			})
+		}
 	}
 
 	return result, nil

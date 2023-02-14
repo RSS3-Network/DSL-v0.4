@@ -242,7 +242,7 @@ func (s *service) handleEthereumOriginToken(ctx context.Context, message *protoc
 		return nil, err
 	}
 
-	// There may be malicious or defective topics in the data
+	// Filter anonymous log
 	if len(log.Topics) == 0 {
 		return nil, ErrorInvalidTopicsLength
 	}
