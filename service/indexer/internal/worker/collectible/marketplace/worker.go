@@ -102,7 +102,11 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			internalTransaction := transaction
 			internalTransaction.Transfers = make([]model.Transfer, 0)
 
-			for _, log := range sourceData.Receipt.Logs {
+			for _, log := range sourceData.Receipt.Logs { // Filter anonymous log
+				if len(log.Topics) == 0 {
+					continue
+				}
+
 				var (
 					internalTransfers []model.Transfer
 					err               error

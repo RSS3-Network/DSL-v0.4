@@ -73,6 +73,11 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		}
 
 		for _, log := range sourceData.Receipt.Logs {
+			// Filter anonymous log
+			if len(log.Topics) == 0 {
+				continue
+			}
+
 			for _, topic := range log.Topics {
 				if contractAction, exist := EventsRouterMap[topic]; exist && contractAction.Network == message.Network {
 
