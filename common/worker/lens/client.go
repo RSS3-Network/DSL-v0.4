@@ -128,7 +128,7 @@ func (c *Client) BatchGetProfiles(ctx context.Context, address string) ([]*socia
 			loggerx.Global().Error("lens graphql query error", zap.String("id", profileID.String()), zap.Error(err))
 
 			// contract
-			profile, err = c.GetProfile(nil, "", profileID)
+			profile, err = c.GetProfile(profileID)
 			if err != nil {
 				loggerx.Global().Error("lens hubContract GetProfile error", zap.String("id", profileID.String()), zap.Error(err))
 

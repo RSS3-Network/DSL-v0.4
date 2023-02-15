@@ -139,6 +139,11 @@ func (s *service) handleGitcoinEthereum(ctx context.Context, message *protocol.M
 	}
 
 	for _, log := range sourceData.Receipt.Logs {
+		// Filter anonymous log
+		if len(log.Topics) == 0 {
+			continue
+		}
+
 		if log.Topics[0] != gitcoin.EventHashDonationSent {
 			continue
 		}

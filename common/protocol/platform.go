@@ -13,6 +13,7 @@ const (
 	PlatformIQWiki         = "IQ.Wiki"
 
 	PlatformLens                 = "Lens"
+	PlatformLensOrb              = "Orb"
 	PlatformLensLenster          = "Lenster"
 	PlatformLensLenstube         = "Lenstube"
 	PlatformLensLenstubeBytes    = "lenstube-bytes"
@@ -80,6 +81,7 @@ var PlatformList = map[string][]string{
 	filter.TagSocial: {
 		PlatformMirror,
 		PlatformLens,
+		PlatformLensOrb,
 		PlatformLensLenster,
 		PlatformCrossbell,
 		PlatformCrossbellXLog,

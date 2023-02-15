@@ -117,6 +117,11 @@ func (c *Client) HandleReceipt(ctx context.Context, message *protocol.Message, t
 	internalTransfers := make([]model.Transfer, 0)
 
 	for _, log := range receipt.Logs {
+		// Filter anonymous log
+		if len(log.Topics) == 0 {
+			continue
+		}
+
 		logIndex := int64(log.Index)
 
 		transfer, exist := transferMap[logIndex]

@@ -5,11 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -26,20 +24,6 @@ import (
 
 func (c *Client) ERC20(ctx context.Context, network string, contractAddress string) (*ERC20, error) {
 	var token model.Token
-
-	tokenID := fmt.Sprintf("token_%s-%s", network, contractAddress)
-
-	// Get token from cache
-	if cache.Global() != nil {
-		exists, err := cache.GetMsgPack(ctx, tokenID, &token)
-		if err != nil {
-			return nil, fmt.Errorf("get token from cache: %w", err)
-		}
-
-		if exists {
-			return lo.ToPtr(tokenToERC20(token)), nil
-		}
-	}
 
 	// Get token from database
 	if database.Global() != nil {
@@ -85,13 +69,6 @@ func (c *Client) ERC20(ctx context.Context, network string, contractAddress stri
 
 	if result.Decimals, err = erc20Contract.Decimals(&bind.CallOpts{}); err != nil {
 		return nil, fmt.Errorf("get erc20 token decimals: %w", err)
-	}
-
-	// Set token to cache
-	if cache.Global() != nil {
-		if err := cache.SetMsgPack(ctx, tokenID, result, 24*time.Hour); err != nil {
-			zap.L().Warn("set token to cache", zap.Error(err))
-		}
 	}
 
 	return result, nil
