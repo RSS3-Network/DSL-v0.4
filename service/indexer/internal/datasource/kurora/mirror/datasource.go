@@ -114,6 +114,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 				Timestamp:   entry.Timestamp,
 				Tag:         filter.TagSocial,
 				Type:        filterType,
+				PreWash:     lo.ToPtr(true),
 				Transfers: []model.Transfer{
 					// This is a virtual transfer
 					{

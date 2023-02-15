@@ -165,6 +165,7 @@ func (s *service) getLensLogs(ctx context.Context, eventHash common.Hash, contra
 			Platform:    protocol.PlatformLens,
 			Transfers:   make([]model.Transfer, 0),
 			Source:      protocol.SourceKurora,
+			PreWash:     lo.ToPtr(true),
 		}
 
 		transactionMap[transaction.Hash] = transaction

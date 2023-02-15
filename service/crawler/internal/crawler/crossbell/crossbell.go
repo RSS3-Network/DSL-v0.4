@@ -152,6 +152,7 @@ func (s *service) GetKuroraLogs(ctx context.Context) ([]*model.Transaction, erro
 				Network:     s.Network(),
 				Source:      protocol.SourceKurora,
 				Platform:    s.Name(),
+				PreWash:     lo.ToPtr(true),
 				Transfers:   make([]model.Transfer, 0),
 			}
 		}

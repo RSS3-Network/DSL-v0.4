@@ -380,6 +380,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 			Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
 			Where("owner = ?", message.Address).
 			Where("network = ?", message.Network).
+			Where("pre_wash", false).
 			Order("timestamp DESC").
 			Limit(1).
 			First(&result).
@@ -506,11 +507,6 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 	)
 
 	for _, transaction := range transactions {
-		// remove tx which has been indexed in crawler
-		if allowlist.CrawlerList.Contains(transaction.AddressTo) && strings.EqualFold(transaction.Network, allowlist.CrawlerList.Get(transaction.AddressTo)) {
-			continue
-		}
-
 		// Handle all transfers
 		for _, transfer := range transaction.Transfers {
 
@@ -520,6 +516,11 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 			}
 
 			transfers = append(transfers, transfer)
+		}
+
+		// remove tx which has been indexed in crawler
+		if allowlist.CrawlerList.Contains(transaction.AddressTo) && strings.EqualFold(transaction.Network, allowlist.CrawlerList.Get(transaction.AddressTo)) {
+			continue
 		}
 
 		updatedTransactions = append(updatedTransactions, transaction)
@@ -677,7 +678,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 		// Get all hashes of this address on this network
 		if err := tx.
 			Model((*model.Transaction)(nil)).
-			Where("network = ? AND owner = ?", message.Network, message.Address).
+			Where("network = ? AND owner = ? AND pre_wash = ?", message.Network, message.Address, false).
 			Pluck("hash", &hashes).
 			Error; err != nil {
 			return err

@@ -135,6 +135,7 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 			AddressFrom: strings.ToLower(entry.From.String()),
 			AddressTo:   AddressCuration,
 			Success:     lo.ToPtr(true),
+			PreWash:     lo.ToPtr(true),
 			Platform:    s.Name(),
 			Source:      protocol.SourceKurora,
 		}

@@ -26,6 +26,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
+	"github.com/samber/lo"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/ratelimit"
 	"go.uber.org/zap"
@@ -210,6 +211,7 @@ func (s *service) HandleTransactions(ctx context.Context, activityList []graphql
 				Platform:    protocol.PlatformIQWiki,
 				Network:     protocol.NetworkPolygon,
 				Source:      s.Name(),
+				PreWash:     lo.ToPtr(true),
 				SourceData:  sourceData,
 				Tag:         filter.TagSocial,
 				Type:        filter.SocialWiki,

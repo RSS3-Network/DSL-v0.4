@@ -165,6 +165,7 @@ func (s *service) buildTransactions(ctx context.Context, query kurora.DatasetMir
 			Timestamp:   entry.Timestamp,
 			Tag:         filter.TagSocial,
 			Type:        filterType,
+			PreWash:     lo.ToPtr(true),
 			Transfers: []model.Transfer{
 				// This is a virtual transfer
 				{

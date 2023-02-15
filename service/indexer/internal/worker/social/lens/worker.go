@@ -13,7 +13,9 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	lens_comm "github.com/naturalselectionlabs/pregod/common/worker/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
+
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -70,6 +72,7 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 			//nolint:gocritic
 			transaction.Transfers = append(internalTransfers, transferMap[protocol.IndexVirtual])
 			transaction.Platform = protocol.PlatformLens
+			transaction.PreWash = lo.ToPtr(true)
 
 			for _, transfer := range transaction.Transfers {
 				transaction.Tag, transaction.Type = filter.UpdateTagAndType(transfer.Tag, transaction.Tag, transfer.Type, transaction.Type)
