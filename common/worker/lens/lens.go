@@ -478,8 +478,11 @@ func (c *Client) GetLensRelatedURL(ctx context.Context, profileId *big.Int, pubI
 }
 
 func (c *Client) GetLensAuthorURL(ctx context.Context, externalURL string, handle string) []string {
-	var author []string
+	if len(externalURL) == 0 && len(handle) == 0 {
+		return nil
+	}
 
+	var author []string
 	if len(externalURL) == 0 {
 		author = append(author, fmt.Sprintf("https://lenster.xyz/u/%v", handle))
 	} else {
