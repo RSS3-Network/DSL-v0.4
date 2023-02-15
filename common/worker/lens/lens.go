@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -78,8 +77,8 @@ var SupportLensPlatform = map[string]bool{
 	protocol.PlatformLensLensterCrowdfund: true,
 }
 
-func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big.Int) (*social.Profile, error) {
-	if len(address) == 0 && profileID == nil {
+func (c *Client) GetProfile(profileID *big.Int) (*social.Profile, error) {
+	if profileID == nil || profileID.Int64() == 0 {
 		return nil, fmt.Errorf("empty profile")
 	}
 
@@ -97,30 +96,11 @@ func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big
 		return nil, err
 	}
 
-	if profileID == nil {
-		profileID, err = lensHubContract.DefaultProfile(&bind.CallOpts{}, common.HexToAddress(address))
-		if err != nil {
-			loggerx.Global().Error("[common] lens: Handle DefaultProfile err", zap.Error(err))
+	owner, err := lensHubContract.OwnerOf(&bind.CallOpts{}, profileID)
+	if err != nil {
+		loggerx.Global().Error("[common] lens: OwnerOf error", zap.Error(err))
 
-			return nil, err
-		}
-	}
-
-	if profileID.Int64() == 0 {
-		loggerx.Global().Error("[common] lens: Handle getDefaultProfile is nil", zap.String("address", address))
-
-		return nil, fmt.Errorf("DefaultProfile is nil")
-	}
-
-	if len(address) == 0 {
-		owner, err := lensHubContract.OwnerOf(&bind.CallOpts{}, profileID)
-		if err != nil {
-			loggerx.Global().Error("[common] lens: OwnerOf error", zap.Error(err))
-
-			return nil, err
-		}
-
-		address = owner.String()
+		return nil, err
 	}
 
 	result, err := lensHubContract.GetProfile(&bind.CallOpts{}, profileID)
@@ -131,7 +111,7 @@ func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big
 	}
 
 	profile := &social.Profile{
-		Address:     strings.ToLower(address),
+		Address:     strings.ToLower(owner.String()),
 		Network:     protocol.NetworkPolygon,
 		Platform:    protocol.PlatformLens,
 		Source:      protocol.SourceKurora,
@@ -237,7 +217,7 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 		return err
 	}
 
-	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
+	profile, err := c.GetProfile(event.ProfileId)
 	if err != nil {
 		return err
 	}
@@ -276,7 +256,7 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 		return err
 	}
 
-	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
+	profile, err := c.GetProfile(event.ProfileId)
 	if err != nil {
 		return err
 	}
@@ -360,7 +340,7 @@ func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.
 		return err
 	}
 
-	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
+	profile, err := c.GetProfile(event.ProfileId)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))
 
@@ -405,7 +385,7 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 	transfer.AddressFrom = transaction.Owner
 
 	for index, profileID := range event.ProfileIds {
-		profile, err := c.GetProfile(transfer.BlockNumber, "", profileID)
+		profile, err := c.GetProfile(profileID)
 		if err != nil {
 			loggerx.Global().Error("[lens worker] HandleFollowed: GetProfile error", zap.Error(err))
 			return nil, err
@@ -444,7 +424,7 @@ func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract co
 		return fmt.Errorf("not supported")
 	}
 
-	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
+	profile, err := c.GetProfile(event.ProfileId)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))
 
@@ -572,7 +552,13 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 
 	switch opt.ContentType {
 	case Share:
-		postFinal.Target = c.CreatePost(ctx, &lensContent, "")
+		profile, err := c.GetProfile(opt.ProfileIdPointed)
+		if err != nil {
+			loggerx.Global().Error("[lens worker] FormatContent: GetProfile error", zap.Error(err))
+			return err
+		}
+
+		postFinal.Target = c.CreatePost(ctx, &lensContent, profile.Handle)
 
 		// get the correct type on Lens
 		if len(lensContent.Attributes) > 0 && len(c.FormatTypeOnPlatform(lensContent.Attributes[0].Value)) > 0 {
