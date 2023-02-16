@@ -123,7 +123,10 @@ func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message) func(t
 
 func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, blockMap map[int64]*ethereum.Block) func(transaction *model.Transaction, i int) (*model.Transaction, error) {
 	return func(transaction *model.Transaction, i int) (*model.Transaction, error) {
-		block := blockMap[transaction.BlockNumber]
+		block, exists := blockMap[transaction.BlockNumber]
+		if !exists {
+			return nil, nil
+		}
 
 		transaction.Timestamp = time.Unix(int64(block.Timestamp), 0)
 
@@ -131,7 +134,6 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 		internalTransaction, exists := lo.Find(block.Transactions, func(blockTransaction *ethereum.Transaction) bool {
 			return strings.EqualFold(blockTransaction.Hash.String(), transaction.Hash)
 		})
-
 		if !exists {
 			return nil, nil
 		}
