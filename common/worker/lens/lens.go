@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"net/url"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
@@ -59,6 +57,7 @@ type FormatOption struct {
 	PubIdPointed     *big.Int
 	ProfileId        *big.Int
 	PubId            *big.Int
+	Handle           string
 }
 
 const (
@@ -71,14 +70,15 @@ const (
 
 var SupportLensPlatform = map[string]bool{
 	protocol.PlatformLens:                 true,
+	protocol.PlatformLensOrb:              true,
 	protocol.PlatformLensLenster:          true,
 	protocol.PlatformLensLenstube:         true,
 	protocol.PlatformLensLenstubeBytes:    true,
 	protocol.PlatformLensLensterCrowdfund: true,
 }
 
-func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big.Int) (*social.Profile, error) {
-	if len(address) == 0 && profileID == nil {
+func (c *Client) GetProfile(profileID *big.Int) (*social.Profile, error) {
+	if profileID == nil || profileID.Int64() == 0 {
 		return nil, fmt.Errorf("empty profile")
 	}
 
@@ -96,30 +96,11 @@ func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big
 		return nil, err
 	}
 
-	if profileID == nil {
-		profileID, err = lensHubContract.DefaultProfile(&bind.CallOpts{}, common.HexToAddress(address))
-		if err != nil {
-			loggerx.Global().Error("[common] lens: Handle DefaultProfile err", zap.Error(err))
+	owner, err := lensHubContract.OwnerOf(&bind.CallOpts{}, profileID)
+	if err != nil {
+		loggerx.Global().Error("[common] lens: OwnerOf error", zap.Error(err))
 
-			return nil, err
-		}
-	}
-
-	if profileID.Int64() == 0 {
-		loggerx.Global().Error("[common] lens: Handle getDefaultProfile is nil", zap.String("address", address))
-
-		return nil, fmt.Errorf("DefaultProfile is nil")
-	}
-
-	if len(address) == 0 {
-		owner, err := lensHubContract.OwnerOf(&bind.CallOpts{}, profileID)
-		if err != nil {
-			loggerx.Global().Error("[common] lens: OwnerOf error", zap.Error(err))
-
-			return nil, err
-		}
-
-		address = owner.String()
+		return nil, err
 	}
 
 	result, err := lensHubContract.GetProfile(&bind.CallOpts{}, profileID)
@@ -130,7 +111,7 @@ func (c *Client) GetProfile(blockNumber *big.Int, address string, profileID *big
 	}
 
 	profile := &social.Profile{
-		Address:     strings.ToLower(address),
+		Address:     strings.ToLower(owner.String()),
 		Network:     protocol.NetworkPolygon,
 		Platform:    protocol.PlatformLens,
 		Source:      protocol.SourceKurora,
@@ -236,21 +217,22 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 		return err
 	}
 
+	profile, err := c.GetProfile(event.ProfileId)
+	if err != nil {
+		return err
+	}
+
 	err = c.FormatContent(ctx, &FormatOption{
 		ContentURI:  event.ContentURI,
 		ContentType: Post,
 		Transfer:    transfer,
 		ProfileId:   event.ProfileId,
 		PubId:       event.PubId,
+		Handle:      profile.Handle,
 	})
 	if err != nil {
 		loggerx.Global().Error("[lens worker] HandlePostCreated: FormatContent error", zap.Error(err))
 
-		return err
-	}
-
-	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
-	if err != nil {
 		return err
 	}
 
@@ -274,6 +256,11 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 		return err
 	}
 
+	profile, err := c.GetProfile(event.ProfileId)
+	if err != nil {
+		return err
+	}
+
 	err = c.FormatContent(ctx, &FormatOption{
 		ContentURI:       event.ContentURI,
 		ContentType:      Comment,
@@ -282,16 +269,12 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 		PubId:            event.PubId,
 		ProfileIdPointed: event.ProfileIdPointed,
 		PubIdPointed:     event.PubIdPointed,
+		Handle:           profile.Handle,
 	})
 
 	if err != nil {
 		loggerx.Global().Error("[lens worker] handleCommentCreated: FormatContent error", zap.Error(err))
 
-		return err
-	}
-
-	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
-	if err != nil {
 		return err
 	}
 
@@ -357,6 +340,13 @@ func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.
 		return err
 	}
 
+	profile, err := c.GetProfile(event.ProfileId)
+	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))
+
+		return err
+	}
+
 	err = c.FormatContent(ctx, &FormatOption{
 		ContentURI:       contentURI,
 		ContentType:      Share,
@@ -365,16 +355,10 @@ func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.
 		PubId:            event.PubId,
 		ProfileIdPointed: event.ProfileIdPointed,
 		PubIdPointed:     event.PubIdPointed,
+		Handle:           profile.Handle,
 	})
 	if err != nil {
 		loggerx.Global().Error("[lens worker] HandleMirrorCreated: FormatContent error", zap.Error(err))
-		return err
-	}
-
-	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
-	if err != nil {
-		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))
-
 		return err
 	}
 
@@ -401,7 +385,7 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 	transfer.AddressFrom = transaction.Owner
 
 	for index, profileID := range event.ProfileIds {
-		profile, err := c.GetProfile(transfer.BlockNumber, "", profileID)
+		profile, err := c.GetProfile(profileID)
 		if err != nil {
 			loggerx.Global().Error("[lens worker] HandleFollowed: GetProfile error", zap.Error(err))
 			return nil, err
@@ -440,7 +424,7 @@ func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract co
 		return fmt.Errorf("not supported")
 	}
 
-	profile, err := c.GetProfile(transfer.BlockNumber, "", event.ProfileId)
+	profile, err := c.GetProfile(event.ProfileId)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))
 
@@ -493,6 +477,30 @@ func (c *Client) GetLensRelatedURL(ctx context.Context, profileId *big.Int, pubI
 	return fmt.Sprintf("https://lenster.xyz/posts/%v-%v", string(profileIdHex), string(pubIdHex))
 }
 
+func (c *Client) GetLensAuthorURL(ctx context.Context, externalURL string, handle string) []string {
+	if len(externalURL) == 0 && len(handle) == 0 {
+		return nil
+	}
+
+	var author []string
+	if len(externalURL) == 0 {
+		author = append(author, fmt.Sprintf("https://lenster.xyz/u/%v", handle))
+	} else {
+		author = append(author, externalURL)
+	}
+
+	if len(handle) == 0 {
+		list := strings.FieldsFunc(externalURL, func(r rune) bool {
+			return r == '/' || r == '@' || r == ':'
+		})
+		author = append(author, list[len(list)-1])
+	} else {
+		author = append(author, handle)
+	}
+
+	return author
+}
+
 // GetContent get content from arweave
 func (c *Client) GetContent(ctx context.Context, uri string, lensContent *LensContent) error {
 	// get content
@@ -515,27 +523,13 @@ func (c *Client) GetContent(ctx context.Context, uri string, lensContent *LensCo
 }
 
 // CreatePost create the basic Post struct
-func (c *Client) CreatePost(ctx context.Context, lensContent *LensContent) *metadata.Post {
+func (c *Client) CreatePost(ctx context.Context, lensContent *LensContent, handle string) *metadata.Post {
 	post := &metadata.Post{
 		Body: lensContent.Content,
 	}
 
 	// handle the target post's author for lenster
-	if lensContent.ExternalURL != "" {
-		externalUrl, err := url.Parse(lensContent.ExternalURL)
-		if err == nil {
-			path := strings.Split(externalUrl.Path, "/")
-
-			switch externalUrl.Host {
-			case "lenster.xyz":
-				// lenster url example: https://lenster.xyz/u/username.lens
-				post.Author = []string{lensContent.ExternalURL, path[2]}
-			case "orb.ac":
-				// orb.ac url example: https://orb.ac/@@username
-				post.Author = []string{lensContent.ExternalURL, strings.ReplaceAll(path[1], "@", "")}
-			}
-		}
-	}
+	post.Author = c.GetLensAuthorURL(ctx, lensContent.ExternalURL, handle)
 
 	for _, media := range lensContent.Media {
 		post.Media = append(post.Media, metadata.Media{
@@ -556,35 +550,42 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 	// handle transfer fields
 	opt.Transfer.Platform = lensContent.AppId
 
-	post := c.CreatePost(ctx, &lensContent)
-	post.TypeOnPlatform = []string{opt.ContentType}
-
 	// special handling for Share and Comment
 	postFinal := &metadata.Post{}
 
 	switch opt.ContentType {
 	case Share:
-		// get the correct type on Lens
-		if len(lensContent.Attributes) > 0 {
-			post.TypeOnPlatform = []string{c.FormatTypeOnPlatform(lensContent.Attributes[0].Value)}
+		profile, err := c.GetProfile(opt.ProfileIdPointed)
+		if err != nil {
+			loggerx.Global().Error("[lens worker] FormatContent: GetProfile error", zap.Error(err))
+			return err
 		}
-		// get the pub time of the target
 
+		postFinal.Target = c.CreatePost(ctx, &lensContent, profile.Handle)
+
+		// get the correct type on Lens
+		if len(lensContent.Attributes) > 0 && len(c.FormatTypeOnPlatform(lensContent.Attributes[0].Value)) > 0 {
+			postFinal.Target.TypeOnPlatform = []string{c.FormatTypeOnPlatform(lensContent.Attributes[0].Value)}
+		}
+
+		// get the pub time of the target
 		if !lensContent.CreatedOn.IsZero() {
-			post.CreatedAt = lensContent.CreatedOn.Format(time.RFC3339)
+			postFinal.Target.CreatedAt = lensContent.CreatedOn.Format(time.RFC3339)
 		}
 
 		// target
-		postFinal.Target = post
 		postFinal.Target.ProfileID = opt.ProfileIdPointed
 		postFinal.Target.PublicationID = opt.PubIdPointed
-		post.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
+		postFinal.Target.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
 
 		// post
 		postFinal.TypeOnPlatform = []string{opt.ContentType}
+		postFinal.Author = c.GetLensAuthorURL(ctx, "", opt.Handle)
 
 	case Comment:
-		postFinal = post
+		postFinal = c.CreatePost(ctx, &lensContent, opt.Handle)
+		postFinal.TypeOnPlatform = []string{opt.ContentType}
+
 		contentURI, err := c.GetContentURI(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
 		if err != nil {
 			loggerx.Global().Error("[lens worker] FormatContent-Comment: GetContentURI error", zap.Error(err))
@@ -599,13 +600,13 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 		}
 
 		// target
-		postFinal.Target = c.CreatePost(ctx, &targetContent)
+		postFinal.Target = c.CreatePost(ctx, &targetContent, "")
 		postFinal.Target.ProfileID = opt.ProfileIdPointed
 		postFinal.Target.PublicationID = opt.PubIdPointed
 		postFinal.Target.TargetURL = c.GetLensRelatedURL(ctx, opt.ProfileIdPointed, opt.PubIdPointed)
 
 		// get the correct type on Lens
-		if len(targetContent.Attributes) > 0 {
+		if len(targetContent.Attributes) > 0 && len(c.FormatTypeOnPlatform(targetContent.Attributes[0].Value)) > 0 {
 			postFinal.Target.TypeOnPlatform = []string{c.FormatTypeOnPlatform(targetContent.Attributes[0].Value)}
 		}
 
@@ -615,7 +616,8 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 		}
 
 	default:
-		postFinal = post
+		postFinal = c.CreatePost(ctx, &lensContent, opt.Handle)
+		postFinal.TypeOnPlatform = []string{opt.ContentType}
 	}
 
 	postFinal.ProfileID = opt.ProfileId
@@ -637,5 +639,6 @@ func (c *Client) FormatTypeOnPlatform(input string) string {
 	case "post", "image", "text_only", "video":
 		return Post
 	}
-	return input
+
+	return ""
 }
