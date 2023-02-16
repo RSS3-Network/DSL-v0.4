@@ -3,7 +3,6 @@ package filter
 const (
 	TagTransaction string = "transaction"
 	TagExchange    string = "exchange"
-	TagStaking     string = "staking"
 	TagCollectible string = "collectible"
 	TagSocial      string = "social"
 	TagDonation    string = "donation"
@@ -13,7 +12,6 @@ const (
 
 var ValidTag = map[string]string{
 	TagTransaction: TagTransaction,
-	TagStaking:     TagStaking,
 	TagExchange:    TagExchange,
 	TagCollectible: TagCollectible,
 	TagSocial:      TagSocial,
@@ -24,13 +22,12 @@ var ValidTag = map[string]string{
 
 var TagPriority = map[string]int{
 	TagTransaction: 1,
-	TagStaking:     2,
-	TagExchange:    3,
-	TagCollectible: 4,
-	TagSocial:      5,
-	TagDonation:    5,
-	TagGovernance:  5,
-	TagMetaverse:   5,
+	TagExchange:    2,
+	TagCollectible: 3,
+	TagSocial:      4,
+	TagDonation:    4,
+	TagGovernance:  4,
+	TagMetaverse:   4,
 }
 
 func UpdateTagAndType(targetTag string, currentTag string, targetType string, currentType string) (string, string) {

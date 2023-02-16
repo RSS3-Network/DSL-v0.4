@@ -39,7 +39,7 @@ func (s *Staking) handleRSS3StakingDeposited(ctx context.Context, _transaction m
 		End:   _transaction.Timestamp.Add(time.Duration(event.Duration.Int64()) * time.Second).String(),
 	}
 
-	return s.buildRSS3StakingTransfer(ctx, _transaction, log, rss3.AddressStaking, event.Amount, &period, filter.StakingDeposit)
+	return s.buildRSS3StakingTransfer(ctx, _transaction, log, rss3.AddressStaking, event.Amount, &period, filter.ActionStakingDeposit)
 }
 
 func (s *Staking) handleRSS3StakingWithdrawn(ctx context.Context, transaction model.Transaction, log types.Log) (*model.Transfer, error) {
@@ -57,7 +57,7 @@ func (s *Staking) handleRSS3StakingWithdrawn(ctx context.Context, transaction mo
 		return nil, fmt.Errorf("parse Withdrawn event: %w", err)
 	}
 
-	return s.buildRSS3StakingTransfer(ctx, transaction, log, rss3.AddressStaking, event.Amount, nil, filter.StakingWithdraw)
+	return s.buildRSS3StakingTransfer(ctx, transaction, log, rss3.AddressStaking, event.Amount, nil, filter.ActionStakingWithdraw)
 }
 
 func (s *Staking) handleRSS3StakingRewardsClaimed(ctx context.Context, transaction model.Transaction, log types.Log) (*model.Transfer, error) {
@@ -75,7 +75,7 @@ func (s *Staking) handleRSS3StakingRewardsClaimed(ctx context.Context, transacti
 		return nil, fmt.Errorf("parse RewardsClaimed event: %w", err)
 	}
 
-	return s.buildRSS3StakingTransfer(ctx, transaction, log, rss3.AddressStaking, event.RewardAmount, nil, filter.StakingCollect)
+	return s.buildRSS3StakingTransfer(ctx, transaction, log, rss3.AddressStaking, event.RewardAmount, nil, filter.ActionStakingCollect)
 }
 
 func (s *Staking) buildRSS3StakingTransfer(ctx context.Context, _transaction model.Transaction, log types.Log, tokenAddress common.Address, tokenValue *big.Int, period *transaction.Period, action string) (*model.Transfer, error) {
@@ -97,6 +97,7 @@ func (s *Staking) buildRSS3StakingTransfer(ctx context.Context, _transaction mod
 	token.SetValue(decimal.NewFromBigInt(tokenValue, 0))
 
 	stakingMetadata := transaction.Staking{
+		Action: action,
 		Token:  *token,
 		Period: period,
 	}
@@ -110,8 +111,8 @@ func (s *Staking) buildRSS3StakingTransfer(ctx context.Context, _transaction mod
 		TransactionHash: _transaction.Hash,
 		Timestamp:       _transaction.Timestamp,
 		BlockNumber:     big.NewInt(_transaction.BlockNumber),
-		Tag:             filter.TagStaking,
-		Type:            action,
+		Tag:             filter.TagTransaction,
+		Type:            filter.TransactionStaking,
 		Index:           int64(log.Index),
 		AddressFrom:     _transaction.AddressFrom,
 		AddressTo:       _transaction.AddressTo,
