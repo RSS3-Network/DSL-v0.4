@@ -2,14 +2,21 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"math/big"
 	"math/rand"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	kurora "github.com/naturalselectionlabs/kurora/client"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/database/model/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"github.com/samber/lo"
@@ -175,4 +182,77 @@ func (s *Service) CheckRequestTagAndType(reqTags []string, reqTypes []string) ([
 	}
 
 	return tags, types, includePoap
+}
+
+func (s *Service) GetNftFeeds(ctx context.Context, request model.GetRequest) ([]nft.Feed, int64, error) {
+	feeds := make([]nft.Feed, 0)
+	request.Address = strings.ToLower(request.Address)
+
+	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
+		request.Limit = model.DefaultLimit
+	}
+
+	if len(request.Tag) > 0 {
+		request.Tag, request.Type, request.IncludePoap = s.CheckRequestTagAndType(request.Tag, request.Type)
+	}
+
+	raraQuery := kurora.DatasetRaraEntryQuery{
+		NftAddress: lo.ToPtr(common.HexToAddress(request.Address)),
+	}
+
+	entries, err := s.kuroraClient.FetchDatasetRara(ctx, raraQuery)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if len(entries) == 0 {
+		return feeds, 0, err
+	}
+
+	var tokenID *big.Int
+	if len(request.TokenId) > 0 {
+		tokenID = big.NewInt(0)
+		tokenID.SetString(request.TokenId, 0)
+	}
+
+	nftMap := make(map[string]*nft.Feed)
+	tokenClient := token.New()
+
+	for _, entry := range entries {
+		network := protocol.IdToNetwork(fmt.Sprintf("%#x", entry.NftChainId.CoefficientInt64()))
+		// 存在，加 action
+		if feed, ok := nftMap[entry.NftId.BigInt().String()]; ok {
+			comment := &metadata.Post{
+				Body:           entry.Comment,
+				Tags:           entry.Tags,
+				Author:         []string{strings.ToLower(entry.From.String()), fmt.Sprintf("%s%s", "https://app.rara.social/profile/", strings.ToLower(entry.From.String()))},
+				TypeOnPlatform: []string{filter.SocialComment},
+			}
+			feed.Actions = append(feed.Actions, *comment)
+		} else if len(request.TokenId) == 0 || tokenID.String() == entry.NftId.BigInt().String() {
+			nftInfo, err := tokenClient.NFT(ctx, network, entry.NftAddress.String(), entry.NftId.BigInt())
+			if err != nil {
+				return feeds, 0, err
+			}
+
+			nftMap[entry.NftId.BigInt().String()] = &nft.Feed{
+				Nft: *nftInfo,
+				Actions: []metadata.Post{
+					{
+						Body:           entry.Comment,
+						Tags:           entry.Tags,
+						Author:         []string{strings.ToLower(entry.From.String()), fmt.Sprintf("%s%s", "https://app.rara.social/profile/", strings.ToLower(entry.From.String()))},
+						TypeOnPlatform: []string{filter.SocialComment},
+					},
+				},
+				RelatedUrls: []string{fmt.Sprintf("%s/%s/%s/%s", "https://app.rara.social/nft", entry.NftChainId, strings.ToLower(entry.NftAddress.String()), entry.NftId)},
+			}
+		}
+	}
+
+	for _, nft := range nftMap {
+		feeds = append(feeds, *nft)
+	}
+
+	return feeds, int64(len(feeds)), nil
 }

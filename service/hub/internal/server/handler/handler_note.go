@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -43,33 +44,47 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 	// header into ctx
 	ctx = context.WithValue(ctx, constant.HEADER_CTX_KEY, c.Request().Header)
 
-	transactions, total, err := h.service.GetNotes(ctx, request)
-	if err != nil {
-		return InternalError(c)
-	}
-
-	if request.CountOnly {
+	// nft feed for rara
+	if strings.HasPrefix(request.Address, "nft:") {
+		request.Address = strings.Split(request.Address, "nft:")[1]
+		feeds, total, err := h.service.GetNftFeeds(ctx, request)
+		if err != nil {
+			return InternalError(c)
+		}
 		return c.JSON(http.StatusOK, &model.Response{
-			Total: &total,
+			Total:   &total,
+			Result:  feeds,
+			Message: request.Address,
+		})
+	} else {
+		transactions, total, err := h.service.GetNotes(ctx, request)
+		if err != nil {
+			return InternalError(c)
+		}
+
+		if request.CountOnly {
+			return c.JSON(http.StatusOK, &model.Response{
+				Total: &total,
+			})
+		}
+
+		var cursor string
+		if total > int64(request.Limit) {
+			cursor = transactions[len(transactions)-1].Hash
+		}
+
+		var addressStatus []dbModel.Address
+		if request.QueryStatus {
+			addressStatus, _ = dao.GetAddress(ctx, []string{request.Address})
+		}
+
+		return c.JSON(http.StatusOK, &model.Response{
+			Total:         &total,
+			Cursor:        cursor,
+			Result:        transactions,
+			AddressStatus: addressStatus,
 		})
 	}
-
-	var cursor string
-	if total > int64(request.Limit) {
-		cursor = transactions[len(transactions)-1].Hash
-	}
-
-	var addressStatus []dbModel.Address
-	if request.QueryStatus {
-		addressStatus, _ = dao.GetAddress(ctx, []string{request.Address})
-	}
-
-	return c.JSON(http.StatusOK, &model.Response{
-		Total:         &total,
-		Cursor:        cursor,
-		Result:        transactions,
-		AddressStatus: addressStatus,
-	})
 }
 
 // BatchGetNotesFunc query multiple addresses and filters

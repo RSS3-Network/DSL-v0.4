@@ -5,13 +5,15 @@ import (
 	"net/http"
 	"strings"
 
-	"go.opentelemetry.io/otel"
-
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/datasource/nftscan"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
+
+	"go.opentelemetry.io/otel"
 )
 
 type ErrorResponse struct {
@@ -87,6 +89,11 @@ func ResolveAddress(c echo.Context, address string, ignoreContract bool) (string
 		return "", result.Err
 	}
 
+	// checkout nft contract nftscan api
+	client := nftscan.NewClient()
+	if client.HasCollection(c.Request().Context(), protocol.NetworkEthereum, result.Address) || client.HasCollection(c.Request().Context(), protocol.NetworkPolygon, result.Address) {
+		return fmt.Sprintf("%s:%s", "nft", strings.ToLower(result.Address)), nil
+	}
 	// check contract
 	if !ignoreContract {
 		isContract, _ := name_service.IsEthereumContract(c.Request().Context(), result.Address)
