@@ -160,6 +160,16 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 			return nil, err
 		}
 
+		if block.BaseFee == nil {
+			block.BaseFee = big.NewInt(0)
+			loggerx.Global().Error("block baseFee is nil", zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
+		}
+
+		if internalTransaction.GasTipCap == nil {
+			internalTransaction.GasTipCap = big.NewInt(0)
+			loggerx.Global().Error("gasTipCap is nil", zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
+		}
+
 		switch internalTransaction.Type {
 		case types.LegacyTxType, types.AccessListTxType:
 			fee := decimal.NewFromBigInt(internalTransaction.GasPrice, 0).Mul(decimal.NewFromInt(int64(receipt.GasUsed))).Shift(-18)
