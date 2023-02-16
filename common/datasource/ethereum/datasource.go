@@ -60,6 +60,10 @@ func BuildTransactions(ctx context.Context, message *protocol.Message, transacti
 			return nil, err
 		}
 
+		blocks = lo.Filter(blocks, func(block *ethereum.Block, i int) bool {
+			return block != nil && block.Number != nil
+		})
+
 		blockMap := make(map[int64]*ethereum.Block)
 		for _, block := range blocks {
 			blockMap[block.Number.Int64()] = block
@@ -108,10 +112,11 @@ func makeBlockHandlerFunc(ctx context.Context, message *protocol.Message) func(t
 			}
 
 			transaction.BlockNumber = block.Number.Int64()
-
-			return block, nil
 		}
 
+		if block == nil || block.Number == nil {
+			loggerx.Global().Error("block is nil", zap.Error(err), zap.String("network", message.Network), zap.String("address", message.Address), zap.Int64("block_number", transaction.BlockNumber))
+		}
 		return block, nil
 	}
 }
@@ -160,23 +165,26 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 			return nil, err
 		}
 
-		if block.BaseFee == nil {
-			block.BaseFee = big.NewInt(0)
-			loggerx.Global().Error("block baseFee is nil", zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
-		}
-
-		if internalTransaction.GasTipCap == nil {
-			internalTransaction.GasTipCap = big.NewInt(0)
-			loggerx.Global().Error("gasTipCap is nil", zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
-		}
-
 		switch internalTransaction.Type {
 		case types.LegacyTxType, types.AccessListTxType:
 			fee := decimal.NewFromBigInt(internalTransaction.GasPrice, 0).Mul(decimal.NewFromInt(int64(receipt.GasUsed))).Shift(-18)
 			transaction.Fee = &fee
 		case types.DynamicFeeTxType:
+			if block.BaseFee == nil {
+				block.BaseFee = big.NewInt(0)
+				loggerx.Global().Error("block baseFee is nil", zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
+			}
+
+			if internalTransaction.GasTipCap == nil {
+				internalTransaction.GasTipCap = big.NewInt(0)
+				loggerx.Global().Error("gasTipCap is nil", zap.String("network", message.Network), zap.String("address", message.Address), zap.String("hash", transaction.Hash))
+			}
+
 			fee := (decimal.NewFromBigInt(block.BaseFee, 0).Add(decimal.NewFromBigInt(internalTransaction.GasTipCap, 0))).Mul(decimal.NewFromInt(int64(receipt.GasUsed))).Shift(-18)
 			transaction.Fee = &fee
+		default:
+			// L2
+			return nil, fmt.Errorf("unsupported transaction type %d", internalTransaction.Type)
 		}
 
 		// Transaction compatibility conversion for Arbitrum
