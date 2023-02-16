@@ -54,7 +54,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		return c.JSON(http.StatusOK, &model.Response{
 			Total:   &total,
 			Result:  feeds,
-			Message: request.Address,
+			Message: "NFT Address",
 		})
 	} else {
 		transactions, total, err := h.service.GetNotes(ctx, request)

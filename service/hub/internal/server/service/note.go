@@ -14,12 +14,16 @@ import (
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/database/model/nft"
+	nft_contract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"github.com/samber/lo"
+
+	"go.uber.org/zap"
 )
 
 func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbModel.Transaction, int64, error) {
@@ -230,9 +234,31 @@ func (s *Service) GetNftFeeds(ctx context.Context, request model.GetRequest) ([]
 			}
 			feed.Actions = append(feed.Actions, *comment)
 		} else if len(request.TokenId) == 0 || tokenID.String() == entry.NftId.BigInt().String() {
-			nftInfo, err := tokenClient.NFT(ctx, network, entry.NftAddress.String(), entry.NftId.BigInt())
-			if err != nil {
-				return feeds, 0, err
+			nftInfo := &token.NFT{
+				ContractAddress: strings.ToLower(entry.NftAddress.String()),
+				ID:              entry.NftId.BigInt(),
+			}
+			switch entry.NftAddress {
+			case nft_contract.CryptoKitties:
+				ckMetadata, err := nft_contract.GetCkMetadata(ctx, entry.NftId)
+				if err != nil {
+					loggerx.Global().Warn("failed to handle CK NFT metadata", zap.Error(err), zap.String("tokenID", entry.NftId.String()))
+
+					continue
+				}
+				nftInfo.Name = ckMetadata.Name
+				nftInfo.Description = ckMetadata.Bio
+				nftInfo.Image = ckMetadata.Image
+				nftInfo.Standard = "ERC721"
+			case nft_contract.CryptoPunks:
+				nftInfo.Name = nft_contract.CryptoPunksName
+				nftInfo.Description = nft_contract.CryptoPunksDes
+				nftInfo.Standard = "ERC20"
+			default:
+				nftInfo, err = tokenClient.NFT(ctx, network, entry.NftAddress.String(), entry.NftId.BigInt())
+				if err != nil {
+					return feeds, 0, err
+				}
 			}
 
 			nftMap[entry.NftId.BigInt().String()] = &nft.Feed{
@@ -250,8 +276,8 @@ func (s *Service) GetNftFeeds(ctx context.Context, request model.GetRequest) ([]
 		}
 	}
 
-	for _, nft := range nftMap {
-		feeds = append(feeds, *nft)
+	for _, nftInfo := range nftMap {
+		feeds = append(feeds, *nftInfo)
 	}
 
 	return feeds, int64(len(feeds)), nil

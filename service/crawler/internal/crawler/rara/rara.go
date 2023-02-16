@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -36,14 +37,12 @@ type service struct {
 	config       *config.Config
 	kuroraClient *kurora.Client
 	tokenClient  *token.Client
-	httpClient   *http.Client
 }
 
 func New(conf *config.Config) crawler.Crawler {
 	return &service{
 		config:      conf,
 		tokenClient: token.New(),
-		httpClient:  &http.Client{},
 	}
 }
 
@@ -141,9 +140,8 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 		}
 
 		switch entry.NftAddress {
-		case CryptoKitties:
-			url := fmt.Sprintf("%s%s", "https://api.cryptokitties.co/v3/kitties/", entry.NftId)
-			ckMetadata, err := s.CkMetadata(ctx, url)
+		case nft.CryptoKitties:
+			ckMetadata, err := nft.GetCkMetadata(ctx, entry.NftId)
 			if err != nil {
 				loggerx.Global().Warn("failed to handle NFT metadata", zap.Error(err), zap.String("network", network), zap.String("transaction_hash", transaction.Hash), zap.String("address", entry.From.String()), zap.String("token", entry.NftAddress.String()))
 
@@ -152,9 +150,9 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 			post.Title = ckMetadata.Name
 			post.Body = ckMetadata.Bio
 			post.Media = []metadata.Media{{Address: ckMetadata.Image, MimeType: "image/png"}}
-		case CryptoPunks:
-			post.Title = CryptoPunksName
-			post.Body = CryptoPunksDes
+		case nft.CryptoPunks:
+			post.Title = nft.CryptoPunksName
+			post.Body = nft.CryptoPunksDes
 		default:
 			nft, err := s.tokenClient.NFT(ctx, network, entry.NftAddress.String(), entry.NftId.BigInt())
 			if err != nil {
@@ -216,35 +214,4 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 	}
 
 	return internalTransactions, nil
-}
-
-type CkMetadata struct {
-	Name  string `json:"name"`
-	Bio   string `json:"bio"`
-	Image string `json:"image_url_png"`
-}
-
-func (s *service) CkMetadata(ctx context.Context, url string) (*CkMetadata, error) {
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("new request: %w", err)
-	}
-
-	// request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36")
-
-	response, err := s.httpClient.Do(request)
-	if err != nil {
-		return nil, fmt.Errorf("do request: %w", err)
-	}
-
-	defer func() {
-		_ = response.Body.Close()
-	}()
-	ckMetadata := &CkMetadata{}
-	err = json.NewDecoder(response.Body).Decode(ckMetadata)
-	if err != nil {
-		return nil, err
-	}
-
-	return ckMetadata, nil
 }
