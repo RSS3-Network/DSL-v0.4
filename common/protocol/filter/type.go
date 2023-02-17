@@ -19,9 +19,9 @@ const (
 	ExchangeLiquidity string = "liquidity"
 	ExchangeStaking   string = "staking"
 
-	ActionStakingDeposit  string = "deposit"
-	ActionStakingWithdraw string = "withdraw"
-	ActionStakingCollect  string = "collect"
+	ActionStakingStake   string = "stake"
+	ActionStakingUnstake string = "unstake"
+	ActionStakingClaim   string = "claim"
 
 	// Bridge types
 	BridgeWithdraw string = "withdraw"
