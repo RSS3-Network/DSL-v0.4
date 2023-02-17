@@ -16,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/samber/lo"
 )
 
 // AddedOwner(address)
@@ -28,7 +29,7 @@ func (m *MultiSign) handleGnosisSafeEventAddedOwner(ctx context.Context, transac
 
 	multiSig := metadata.MultiSig{
 		Action: filter.ActionAddOwner,
-		Owner:  &event.Owner,
+		Owner:  lo.ToPtr(event.Owner.String()),
 	}
 
 	transfer, err := m.buildGnosisSafeTransfer(ctx, transaction, log, multiSig)
@@ -49,7 +50,7 @@ func (m *MultiSign) handleGnosisSafeEventRemovedOwner(ctx context.Context, trans
 
 	multiSig := metadata.MultiSig{
 		Action: filter.ActionRemoveOwner,
-		Owner:  &event.Owner,
+		Owner:  lo.ToPtr(event.Owner.String()),
 	}
 
 	transfer, err := m.buildGnosisSafeTransfer(ctx, transaction, log, multiSig)
@@ -270,8 +271,10 @@ func (m *MultiSign) buildGnosisSafeTransfer(ctx context.Context, transaction mod
 	}
 
 	vault := metadata.Vault{
-		Address:   log.Address,
-		Owners:    owners,
+		Address: log.Address.String(),
+		Owners: lo.Map(owners, func(owner common.Address, i int) string {
+			return owner.String()
+		}),
 		Threshold: threshold,
 		Version:   version,
 	}
