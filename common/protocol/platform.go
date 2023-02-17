@@ -67,6 +67,7 @@ const (
 	PlatformHop            = "Hop"
 	PlatformCow            = "Cow"
 	PlatformMaskNetwork    = "MaskNetwork"
+	PlatformNSwap          = "NSwap"
 	PlatformRSS3           = "RSS3"
 
 	// metaverse
