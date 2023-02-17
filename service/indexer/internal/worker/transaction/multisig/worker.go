@@ -78,6 +78,13 @@ func (m *MultiSign) Handle(ctx context.Context, message *protocol.Message, trans
 				return
 			}
 
+			// Upstream may not have built the correct source data
+			if sourceData.Transaction == nil || sourceData.Receipt == nil {
+				zap.L().Error("invalid source data", zap.String("transaction_hash", transaction.Hash), zap.String("network", transaction.Network))
+
+				return
+			}
+
 			for _, log := range sourceData.Receipt.Logs {
 				transfer, err := m.handle(ctx, transaction, *log)
 				if err != nil {
