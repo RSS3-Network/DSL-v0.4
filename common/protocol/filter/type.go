@@ -7,21 +7,21 @@ const (
 	TransactionMint     string = "mint"
 	TransactionBurn     string = "burn"
 	TransactionApproval string = "approval"
-	TransactionStaking  string = "staking"
 
 	// Actions for TransactionApproval and CollectibleApproval
 	ActionApprove string = "approve"
 	ActionRevoke  string = "revoke"
-
-	ActionStakingDeposit  string = "deposit"
-	ActionStakingWithdraw string = "withdraw"
-	ActionStakingCollect  string = "collect"
 
 	// exchange types
 	ExchangeWithdraw  string = "withdraw"
 	ExchangeDeposit   string = "deposit"
 	ExchangeSwap      string = "swap"
 	ExchangeLiquidity string = "liquidity"
+	ExchangeStaking   string = "staking"
+
+	ActionStakingDeposit  string = "deposit"
+	ActionStakingWithdraw string = "withdraw"
+	ActionStakingCollect  string = "collect"
 
 	// Bridge types
 	BridgeWithdraw string = "withdraw"
