@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -39,7 +40,7 @@ func (s *Staking) handleRSS3StakingDeposited(ctx context.Context, _transaction m
 		End:   _transaction.Timestamp.Add(time.Duration(event.Duration.Int64()) * time.Second).String(),
 	}
 
-	return s.buildRSS3StakingTransfer(ctx, _transaction, log, rss3.AddressStaking, event.Amount, &period, filter.ActionStakingDeposit)
+	return s.buildRSS3StakingTransfer(ctx, _transaction, log, rss3.AddressStaking, event.Amount, &period, filter.ActionStakingStake)
 }
 
 func (s *Staking) handleRSS3StakingWithdrawn(ctx context.Context, transaction model.Transaction, log types.Log) (*model.Transfer, error) {
@@ -57,7 +58,7 @@ func (s *Staking) handleRSS3StakingWithdrawn(ctx context.Context, transaction mo
 		return nil, fmt.Errorf("parse Withdrawn event: %w", err)
 	}
 
-	return s.buildRSS3StakingTransfer(ctx, transaction, log, rss3.AddressStaking, event.Amount, nil, filter.ActionStakingWithdraw)
+	return s.buildRSS3StakingTransfer(ctx, transaction, log, rss3.AddressStaking, event.Amount, nil, filter.ActionStakingUnstake)
 }
 
 func (s *Staking) handleRSS3StakingRewardsClaimed(ctx context.Context, transaction model.Transaction, log types.Log) (*model.Transfer, error) {
@@ -75,7 +76,7 @@ func (s *Staking) handleRSS3StakingRewardsClaimed(ctx context.Context, transacti
 		return nil, fmt.Errorf("parse RewardsClaimed event: %w", err)
 	}
 
-	return s.buildRSS3StakingTransfer(ctx, transaction, log, rss3.AddressStaking, event.RewardAmount, nil, filter.ActionStakingCollect)
+	return s.buildRSS3StakingTransfer(ctx, transaction, log, rss3.AddressStaking, event.RewardAmount, nil, filter.ActionStakingClaim)
 }
 
 func (s *Staking) buildRSS3StakingTransfer(ctx context.Context, _transaction model.Transaction, log types.Log, tokenAddress common.Address, tokenValue *big.Int, period *transaction.Period, action string) (*model.Transfer, error) {
@@ -87,7 +88,7 @@ func (s *Staking) buildRSS3StakingTransfer(ctx context.Context, _transaction mod
 	if tokenAddress == ethereum.AddressGenesis {
 		token, err = s.tokenClient.NatvieToMetadata(ctx, _transaction.Network)
 	} else {
-		token, err = s.tokenClient.ERC20ToMetadata(ctx, _transaction.Network, tokenAddress.String())
+		token, err = s.tokenClient.ERC20ToMetadata(ctx, _transaction.Network, strings.ToLower(tokenAddress.String()))
 	}
 
 	if err != nil {
