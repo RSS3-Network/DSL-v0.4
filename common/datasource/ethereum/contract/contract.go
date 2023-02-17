@@ -97,3 +97,7 @@ package contract
 //go:generate abigen --abi ./hop/l1_bridge.abi --pkg hop --type L1Bridge --out ./hop/l1_bridge.go
 // L2 AMM Wapper https://polygonscan.com/address/0x9b0c694c6939b5ea9584e9b61c7815e8d97d9c63
 //go:generate abigen --abi ./hop/l2_amm_wrapper.abi --pkg hop --type L2AMMWapper --out ./hop/l2_amm_wrapper.go
+
+// RSS3
+// Staking https://etherscan.io/address/0x5301cbbedc048abac7e213184132cf982d593563
+//go:generate abigen --abi ./rss3/staking.abi --pkg rss3 --type Staking --out ./rss3/staking.go
