@@ -111,7 +111,7 @@ func (s *Staking) buildRSS3StakingTransfer(ctx context.Context, _transaction mod
 		TransactionHash: _transaction.Hash,
 		Timestamp:       _transaction.Timestamp,
 		BlockNumber:     big.NewInt(_transaction.BlockNumber),
-		Tag:             filter.ExchangeSwap,
+		Tag:             filter.TagExchange,
 		Type:            filter.ExchangeStaking,
 		Index:           int64(log.Index),
 		AddressFrom:     _transaction.AddressFrom,
