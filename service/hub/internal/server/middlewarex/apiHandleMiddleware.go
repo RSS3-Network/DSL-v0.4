@@ -89,15 +89,22 @@ func ResolveAddress(c echo.Context, address string, ignoreContract bool) (string
 		return "", result.Err
 	}
 
-	// checkout nft contract nftscan api
+	isEthContract, _ := name_service.IsEthereumContract(c.Request().Context(), result.Address, protocol.NetworkEthereum)
+	isPolygonContract, _ := name_service.IsEthereumContract(c.Request().Context(), result.Address, protocol.NetworkPolygon)
+	if !isEthContract && !isPolygonContract {
+		return strings.ToLower(result.Address), nil
+	}
+
+	// checkout nft contract using nftscan api
+	// TODO relying on the api is risky and needs an efficient way to replace it
 	client := nftscan.NewClient()
 	if client.HasCollection(c.Request().Context(), protocol.NetworkEthereum, result.Address) || client.HasCollection(c.Request().Context(), protocol.NetworkPolygon, result.Address) {
 		return fmt.Sprintf("%s:%s", "nft", strings.ToLower(result.Address)), nil
 	}
+
 	// check contract
 	if !ignoreContract {
-		isContract, _ := name_service.IsEthereumContract(c.Request().Context(), result.Address)
-		if isContract {
+		if isEthContract || isPolygonContract {
 			return "", fmt.Errorf("%s", name_service.ErrNotSupportContract)
 		}
 	}

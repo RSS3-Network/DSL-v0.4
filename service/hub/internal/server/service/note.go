@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"math/rand"
 	"strings"
@@ -12,18 +11,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	kurora "github.com/naturalselectionlabs/kurora/client"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/database/model/nft"
-	nft_contract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/nft"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
-	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
-	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"github.com/samber/lo"
-
-	"go.uber.org/zap"
 )
 
 func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbModel.Transaction, int64, error) {
@@ -188,8 +180,7 @@ func (s *Service) CheckRequestTagAndType(reqTags []string, reqTypes []string) ([
 	return tags, types, includePoap
 }
 
-func (s *Service) GetNftFeeds(ctx context.Context, request model.GetRequest) ([]nft.Feed, int64, error) {
-	feeds := make([]nft.Feed, 0)
+func (s *Service) GetNftFeeds(ctx context.Context, request model.GetRequest) ([]dbModel.Transaction, int64, error) {
 	request.Address = strings.ToLower(request.Address)
 
 	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
@@ -209,76 +200,56 @@ func (s *Service) GetNftFeeds(ctx context.Context, request model.GetRequest) ([]
 		return nil, 0, err
 	}
 
-	if len(entries) == 0 {
-		return feeds, 0, err
-	}
-
 	var tokenID *big.Int
 	if len(request.TokenId) > 0 {
 		tokenID = big.NewInt(0)
 		tokenID.SetString(request.TokenId, 0)
 	}
-
-	nftMap := make(map[string]*nft.Feed)
-	tokenClient := token.New()
+	hashes := make([]string, 0)
 
 	for _, entry := range entries {
-		network := protocol.IdToNetwork(fmt.Sprintf("%#x", entry.NftChainId.CoefficientInt64()))
-		// 存在，加 action
-		if feed, ok := nftMap[entry.NftId.BigInt().String()]; ok {
-			comment := &metadata.Post{
-				Body:           entry.Comment,
-				Tags:           entry.Tags,
-				Author:         []string{strings.ToLower(entry.From.String()), fmt.Sprintf("%s%s", "https://app.rara.social/profile/", strings.ToLower(entry.From.String()))},
-				TypeOnPlatform: []string{filter.SocialComment},
-			}
-			feed.Actions = append(feed.Actions, *comment)
-		} else if len(request.TokenId) == 0 || tokenID.String() == entry.NftId.BigInt().String() {
-			nftInfo := &token.NFT{
-				ContractAddress: strings.ToLower(entry.NftAddress.String()),
-				ID:              entry.NftId.BigInt(),
-			}
-			switch entry.NftAddress {
-			case nft_contract.CryptoKitties:
-				ckMetadata, err := nft_contract.GetCkMetadata(ctx, entry.NftId)
-				if err != nil {
-					loggerx.Global().Warn("failed to handle CK NFT metadata", zap.Error(err), zap.String("tokenID", entry.NftId.String()))
-
-					continue
-				}
-				nftInfo.Name = ckMetadata.Name
-				nftInfo.Description = ckMetadata.Bio
-				nftInfo.Image = ckMetadata.Image
-				nftInfo.Standard = "ERC721"
-			case nft_contract.CryptoPunks:
-				nftInfo.Name = nft_contract.CryptoPunksName
-				nftInfo.Description = nft_contract.CryptoPunksDes
-				nftInfo.Standard = "ERC20"
-			default:
-				nftInfo, err = tokenClient.NFT(ctx, network, entry.NftAddress.String(), entry.NftId.BigInt())
-				if err != nil {
-					return feeds, 0, err
-				}
-			}
-
-			nftMap[entry.NftId.BigInt().String()] = &nft.Feed{
-				Nft: *nftInfo,
-				Actions: []metadata.Post{
-					{
-						Body:           entry.Comment,
-						Tags:           entry.Tags,
-						Author:         []string{strings.ToLower(entry.From.String()), fmt.Sprintf("%s%s", "https://app.rara.social/profile/", strings.ToLower(entry.From.String()))},
-						TypeOnPlatform: []string{filter.SocialComment},
-					},
-				},
-				RelatedUrls: []string{fmt.Sprintf("%s/%s/%s/%s", "https://app.rara.social/nft", entry.NftChainId, strings.ToLower(entry.NftAddress.String()), entry.NftId)},
-			}
+		if len(request.TokenId) > 0 && tokenID.String() != entry.NftId.BigInt().String() {
+			continue
 		}
+		hashes = append(hashes, strings.ToLower(entry.TransactionHash.String()))
 	}
 
-	for _, nftInfo := range nftMap {
-		feeds = append(feeds, *nftInfo)
+	if len(request.TokenId) == 0 {
+		request.TokenId = "0"
 	}
 
-	return feeds, int64(len(feeds)), nil
+	transactions := make([]dbModel.Transaction, 0)
+	request.HashList = hashes
+
+	if len(request.HashList) == 0 {
+		return transactions, 0, nil
+	}
+
+	// get transactions from database
+	transactions, total, err := dao.GetTransactions(ctx, request)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// get transfers from database
+	transactionHashes := make([]string, 0)
+	for _, transactionHash := range transactions {
+		transactionHashes = append(transactionHashes, transactionHash.Hash)
+	}
+
+	transfers, err := dao.GetTransfers(ctx, transactionHashes)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	transferMap := make(map[string][]dbModel.Transfer)
+	for _, transfer := range transfers {
+		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
+	}
+
+	for index := range transactions {
+		transactions[index].Transfers = transferMap[transactions[index].Hash]
+	}
+
+	return transactions, total, nil
 }

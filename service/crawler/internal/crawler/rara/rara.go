@@ -153,6 +153,7 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 		case nft.CryptoPunks:
 			post.Title = nft.CryptoPunksName
 			post.Body = nft.CryptoPunksDes
+			post.Media = []metadata.Media{{Address: fmt.Sprintf("https://cryptopunks.app/cryptopunks/cryptopunk%s.png", entry.NftId.String()), MimeType: "image/png"}}
 		default:
 			nft, err := s.tokenClient.NFT(ctx, network, entry.NftAddress.String(), entry.NftId.BigInt())
 			if err != nil {

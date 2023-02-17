@@ -44,47 +44,47 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 	// header into ctx
 	ctx = context.WithValue(ctx, constant.HEADER_CTX_KEY, c.Request().Header)
 
+	var (
+		transactions []dbModel.Transaction
+		total        int64
+		err          error
+	)
+	response := &model.Response{}
 	// nft feed for rara
 	if strings.HasPrefix(request.Address, "nft:") {
 		request.Address = strings.Split(request.Address, "nft:")[1]
-		feeds, total, err := h.service.GetNftFeeds(ctx, request)
-		if err != nil {
-			return InternalError(c)
-		}
-		return c.JSON(http.StatusOK, &model.Response{
-			Total:   &total,
-			Result:  feeds,
-			Message: "NFT Address",
-		})
+		transactions, total, err = h.service.GetNftFeeds(ctx, request)
 	} else {
-		transactions, total, err := h.service.GetNotes(ctx, request)
-		if err != nil {
-			return InternalError(c)
-		}
-
-		if request.CountOnly {
-			return c.JSON(http.StatusOK, &model.Response{
-				Total: &total,
-			})
-		}
-
-		var cursor string
-		if total > int64(request.Limit) {
-			cursor = transactions[len(transactions)-1].Hash
-		}
+		transactions, total, err = h.service.GetNotes(ctx, request)
 
 		var addressStatus []dbModel.Address
 		if request.QueryStatus {
 			addressStatus, _ = dao.GetAddress(ctx, []string{request.Address})
 		}
 
+		response.AddressStatus = addressStatus
+	}
+
+	if err != nil {
+		return InternalError(c)
+	}
+
+	if request.CountOnly {
 		return c.JSON(http.StatusOK, &model.Response{
-			Total:         &total,
-			Cursor:        cursor,
-			Result:        transactions,
-			AddressStatus: addressStatus,
+			Total: &total,
 		})
 	}
+
+	var cursor string
+	if total > int64(request.Limit) {
+		cursor = transactions[len(transactions)-1].Hash
+	}
+
+	response.Total = &total
+	response.Cursor = cursor
+	response.Result = transactions
+
+	return c.JSON(http.StatusOK, response)
 }
 
 // BatchGetNotesFunc query multiple addresses and filters

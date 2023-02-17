@@ -42,6 +42,7 @@ type GetRequest struct {
 	Platform  []string  `query:"platform" json:"platform"`
 	Timestamp time.Time `query:"timestamp" json:"timestamp"`
 	Hash      string    `query:"hash" json:"hash"`
+	HashList  []string  `query:"hash_list" json:"hash_list"`
 	// includes POAP in the response
 	IncludePoap bool   `query:"include_poap" json:"include_poap"`
 	Refresh     bool   `query:"refresh" json:"refresh"`
