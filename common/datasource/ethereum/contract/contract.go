@@ -103,6 +103,10 @@ var ContractABIs embed.FS
 // L2 AMM Wapper https://polygonscan.com/address/0x9b0c694c6939b5ea9584e9b61c7815e8d97d9c63
 //go:generate abigen --abi ./hop/l2_amm_wrapper.abi --pkg hop --type L2AMMWapper --out ./hop/l2_amm_wrapper.go
 
+// RSS3
+// Staking https://etherscan.io/address/0x5301cbbedc048abac7e213184132cf982d593563
+//go:generate abigen --abi ./rss3/staking.abi --pkg rss3 --type Staking --out ./rss3/staking.go
+
 // Gnosis Safe
 // Gnosis Safe V1.3 https://etherscan.io/address/0xd9db270c1b5e3bd161e8c8503c55ceabee709552
 //go:generate abigen --abi ./safe/GnosisSafe.abi --pkg safe --type GnosisSafe --out ./safe/gnosisSafe.go
