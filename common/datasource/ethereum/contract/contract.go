@@ -101,3 +101,7 @@ package contract
 // NSwap
 // NSwapExchange https://etherscan.io/address/0x080fa1fb48e0b1bd251348efd02c1e7a12a931ac
 //go:generate abigen --abi ./nswap/NSwapExchange.abi --pkg nswap --type NSwapExchange --out ./nswap/NSwapExchange.go
+
+// RSS3
+// Staking https://etherscan.io/address/0x5301cbbedc048abac7e213184132cf982d593563
+//go:generate abigen --abi ./rss3/staking.abi --pkg rss3 --type Staking --out ./rss3/staking.go
