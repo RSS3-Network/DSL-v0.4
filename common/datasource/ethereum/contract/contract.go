@@ -97,3 +97,7 @@ package contract
 //go:generate abigen --abi ./hop/l1_bridge.abi --pkg hop --type L1Bridge --out ./hop/l1_bridge.go
 // L2 AMM Wapper https://polygonscan.com/address/0x9b0c694c6939b5ea9584e9b61c7815e8d97d9c63
 //go:generate abigen --abi ./hop/l2_amm_wrapper.abi --pkg hop --type L2AMMWapper --out ./hop/l2_amm_wrapper.go
+
+// NSwap
+// NSwapExchange https://etherscan.io/address/0x080fa1fb48e0b1bd251348efd02c1e7a12a931ac
+//go:generate abigen --abi ./nswap/NSwapExchange.abi --pkg nswap --type NSwapExchange --out ./nswap/NSwapExchange.go
