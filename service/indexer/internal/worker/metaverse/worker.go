@@ -3,7 +3,6 @@ package metaverse
 import (
 	"context"
 	"encoding/json"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 

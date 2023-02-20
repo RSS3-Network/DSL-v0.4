@@ -38,15 +38,15 @@ var SupportNetworks = []string{
 
 var EthclientNetworks = []string{
 	NetworkEthereum,
-	NetworkBinanceSmartChain,
-	NetworkPolygon,
-	NetworkXDAI,
-	NetworkCrossbell,
-	NetworkArbitrum,
-	NetworkOptimism,
-	NetworkAvalanche,
-	NetworkCelo,
-	NetworkFantom,
+	//NetworkBinanceSmartChain,
+	//NetworkPolygon,
+	//NetworkXDAI,
+	//NetworkCrossbell,
+	//NetworkArbitrum,
+	//NetworkOptimism,
+	//NetworkAvalanche,
+	//NetworkCelo,
+	//NetworkFantom,
 }
 
 func NetworkToID(networkName string) string {

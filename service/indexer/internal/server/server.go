@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music/sound"
 	"os"
 	"os/signal"
 	"sort"
@@ -49,11 +50,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/staking"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/metaverse"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/music"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/crossbell"
 	lens_worker "github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/social/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/transaction/bridge"
@@ -191,6 +191,7 @@ func (s *Server) Initialize() (err error) {
 
 	s.workers = []worker.Worker{
 		build_transactions.New(),
+		staking.New(),
 		liquidity.New(),
 		swapWorker,
 		bridge.New(),
@@ -198,11 +199,11 @@ func (s *Server) Initialize() (err error) {
 		poap.New(),
 		gitcoin.New(),
 		snapshot.New(),
-		crossbell.New(),
+		//crossbell.New(),
 		lens_worker.New(),
 		transaction.New(),
 		metaverse.New(),
-		music.New(),
+		sound.New(s.config.Kurora.Endpoint),
 	}
 
 	s.employer = shedlock.New()
@@ -593,7 +594,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	)
 
 	// Using workers to clean data
-	for epoch, ts := range lo.Chunk(transactions, 500) {
+	for epoch, ts := range lo.Chunk(transactions, 10) {
 		transactionsMap := make(map[string]model.Transaction)
 		for _, worker := range s.workers {
 			for _, network := range worker.Networks() {
@@ -661,7 +662,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 		}
 
 		// only update the latest 500 data
-		if len(result) >= 500 {
+		if len(result) >= 10 {
 			break
 		}
 	}
