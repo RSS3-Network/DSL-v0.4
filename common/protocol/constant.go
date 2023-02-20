@@ -16,6 +16,8 @@ const (
 	ExchangeRefresh = "pregod11.refresh"
 
 	IndexVirtual int64 = -1
+
+	LATEST_TX_HASH_KEY = "latest_tx_hash"
 )
 
 var WorkQ2RoutingKey = map[string]string{

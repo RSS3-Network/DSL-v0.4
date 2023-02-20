@@ -696,7 +696,12 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 		}
 	}
 
-	return s.upsertTransactions(ctx, message, tx, result)
+	res := s.upsertTransactions(ctx, message, tx, result)
+
+	// 这里出错不影响主流程，因此不 return
+	_ = database.SaveLatestTxHashByAddress(ctx, message.Address)
+
+	return res
 }
 
 func (s *Server) upsertAddress(ctx context.Context, address model.Address) {

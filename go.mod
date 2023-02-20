@@ -26,9 +26,12 @@ require (
 	github.com/labstack/echo-contrib v0.13.1
 	github.com/labstack/echo/v4 v4.10.0
 	github.com/lib/pq v1.10.7
+	github.com/naturalselectionlabs/kurora v0.25.3
+	github.com/naturalselectionlabs/kurora/client v0.0.0-20230214054219-dc2d1ee12a8d
 	github.com/rabbitmq/amqp091-go v1.6.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.37.0
+	github.com/scylladb/go-set v1.0.2
 	github.com/shopspring/decimal v1.3.1
 	github.com/shurcooL/graphql v0.0.0-20220606043923-3cf50f8a0a29
 	github.com/sirupsen/logrus v1.9.0
@@ -56,6 +59,7 @@ require (
 	github.com/Zilliqa/gozilliqa-sdk v1.2.0 // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.0 // indirect
+	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.2 // indirect
 	github.com/cespare/cp v1.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -100,8 +104,6 @@ require (
 	github.com/multiformats/go-multibase v0.1.1 // indirect
 	github.com/multiformats/go-multihash v0.2.0 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
-	github.com/naturalselectionlabs/kurora v0.25.3 // indirect
-	github.com/naturalselectionlabs/kurora/client v0.0.0-20230214054219-dc2d1ee12a8d // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
