@@ -14,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/nft"
+	"github.com/naturalselectionlabs/pregod/common/datasource/rara"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -103,6 +104,14 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 
 	if len(cursor) > 0 {
 		query.Cursor = &cursor
+	}
+
+	cacheMap := make(map[string]struct{})
+
+	_, err = cache.GetJson(ctx, rara.MapKey, &cacheMap)
+
+	if err != nil {
+		return nil, err
 	}
 
 	entries, err := s.kuroraClient.FetchDatasetRara(ctx, query)
@@ -205,13 +214,16 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 		transaction.Owner = strings.ToLower(entry.From.String())
 
 		internalTransactions = append(internalTransactions, &transaction)
+
+		cacheMap[strings.ToLower(entry.NftAddress.String())] = struct{}{}
 	}
 
 	// set cache
 	last, err := lo.Last(entries)
 	if err == nil {
 		cursor = kurora.LogCursor(last.TransactionHash, last.LogIndex)
-		cache.Global().Set(ctx, raraCacheKey, cursor, 7*24*time.Hour)
+		cache.Global().Set(ctx, raraCacheKey, cursor, 0)
+		_ = cache.SetJson(ctx, rara.MapKey, cacheMap, 0)
 	}
 
 	return internalTransactions, nil

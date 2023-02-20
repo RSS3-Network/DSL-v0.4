@@ -14,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	ws "github.com/naturalselectionlabs/pregod/service/hub/internal/server/websocket"
+
 	"go.opentelemetry.io/otel"
 )
 
@@ -50,6 +51,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		err          error
 	)
 	response := &model.Response{}
+
 	// nft feed for rara
 	if strings.HasPrefix(request.Address, "nft:") {
 		request.Address = strings.Split(request.Address, "nft:")[1]

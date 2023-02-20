@@ -6,10 +6,11 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/datasource/nftscan"
+	"github.com/naturalselectionlabs/pregod/common/datasource/rara"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
 
@@ -89,22 +90,21 @@ func ResolveAddress(c echo.Context, address string, ignoreContract bool) (string
 		return "", result.Err
 	}
 
-	isEthContract, _ := name_service.IsEthereumContract(c.Request().Context(), result.Address, protocol.NetworkEthereum)
-	isPolygonContract, _ := name_service.IsEthereumContract(c.Request().Context(), result.Address, protocol.NetworkPolygon)
-	if !isEthContract && !isPolygonContract {
-		return strings.ToLower(result.Address), nil
-	}
+	// Get rara nft list cach from redis
+	// TODO Need a standardized interface to check whether address is a nft
+	cacheMap := make(map[string]struct{})
+	_, err := cache.GetJson(c.Request().Context(), rara.MapKey, &cacheMap)
 
-	// checkout nft contract using nftscan api
-	// TODO relying on the api is risky and needs an efficient way to replace it
-	client := nftscan.NewClient()
-	if client.HasCollection(c.Request().Context(), protocol.NetworkEthereum, result.Address) || client.HasCollection(c.Request().Context(), protocol.NetworkPolygon, result.Address) {
-		return fmt.Sprintf("%s:%s", "nft", strings.ToLower(result.Address)), nil
+	if err == nil {
+		if _, ok := cacheMap[strings.ToLower(result.Address)]; ok {
+			return fmt.Sprintf("%s:%s", "nft", strings.ToLower(result.Address)), nil
+		}
 	}
 
 	// check contract
 	if !ignoreContract {
-		if isEthContract || isPolygonContract {
+		isEthContract, _ := name_service.IsEthereumContract(c.Request().Context(), result.Address, protocol.NetworkEthereum)
+		if isEthContract {
 			return "", fmt.Errorf("%s", name_service.ErrNotSupportContract)
 		}
 	}
