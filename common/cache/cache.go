@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"sync"
 	"time"
 
@@ -71,6 +72,25 @@ func GetMsgPack(ctx context.Context, key string, dest interface{}) (bool, error)
 
 func SetMsgPack(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
 	data, err := msgpack.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return redisClient.Set(ctx, key, data, ttl).Err()
+}
+
+func GetJson(ctx context.Context, key string, dest interface{}) (bool, error) {
+	data, err := redisClient.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, json.Unmarshal([]byte(data), dest)
+}
+
+func SetJson(ctx context.Context, key string, value interface{}, ttl time.Duration) error {
+	data, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}

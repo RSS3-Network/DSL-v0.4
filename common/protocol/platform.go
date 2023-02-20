@@ -20,6 +20,7 @@ const (
 	PlatformLensLensterCrowdfund = "Lenster Crowdfund"
 
 	PlatformMatters = "Matters"
+	PlatformRara    = "RARA"
 
 	// collectible
 	PlatformPOAP              = "POAP"
@@ -88,6 +89,7 @@ var PlatformList = map[string][]string{
 		PlatformFarcaster,
 		NetworkEIP1577,
 		PlatformIQWiki,
+		PlatformRara,
 	},
 	filter.TagCollectible: {
 		PlatformPOAP,
