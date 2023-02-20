@@ -44,6 +44,7 @@ const (
 	CollectibleMusicBuyEdition string = "buy"
 	CollectibleMusicRelease    string = "release"
 	CollectibleMusicMint       string = "mint"
+	CollectibleMusicCreate     string = "create"
 
 	// social types
 	SocialPost     string = "post"
