@@ -3,6 +3,7 @@ package main
 import (
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/server"
@@ -56,6 +57,7 @@ func main() {
 		socialRedisDB, _ := rootCommand.Flags().GetInt("socialredisdb")
 		if socialRedisDB != -1 {
 			configCrawler.Redis.DB = socialRedisDB
+			database.SetLatestTx(false)
 		}
 
 		return srv.Run()

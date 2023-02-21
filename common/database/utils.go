@@ -19,6 +19,12 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+var setLatestTx = true
+
+func SetLatestTx(b bool) {
+	setLatestTx = b
+}
+
 func UpsertTransactions(ctx context.Context, transactions []*model.Transaction, dedupTransfer bool) error {
 	dbChunkSize := 800
 	var transfers []model.Transfer
@@ -119,6 +125,10 @@ func IsMaskReq(tag, _type, network, platform []string) bool {
 // 这个场景如果一次性通过所有地址的 tx 来筛选最新的 500 条，扫描行数会非常大（百万行级别）然后排序，此时并发稍高一点的话数据库就完全没有办法处理，会非常慢
 // 如果有一百万个地址，每个地址使用 20k 的内存，这个场景下需要 20G 的 redis
 func SaveLatestTxHashByAddress(ctx context.Context, address string) error {
+	if !setLatestTx {
+		return nil
+	}
+
 	latest500Hash := []struct {
 		Hash      string    `json:"hash"`
 		Timestamp time.Time `json:"timestamp"`
