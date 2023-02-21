@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"strings"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -119,8 +120,8 @@ func IsMaskReq(tag, _type, network, platform []string) bool {
 // 如果有一百万个地址，每个地址使用 20k 的内存，这个场景下需要 20G 的 redis
 func SaveLatestTxHashByAddress(ctx context.Context, address string) error {
 	latest500Hash := []struct {
-		Hash      string `json:"hash"`
-		Timestamp int64  `json:"timestamp"`
+		Hash      string    `json:"hash"`
+		Timestamp time.Time `json:"timestamp"`
 	}{}
 	if err := Global().
 		Model((*model.Transaction)(nil)).
@@ -140,20 +141,22 @@ func SaveLatestTxHashByAddress(ctx context.Context, address string) error {
 
 		for _, tx := range latest500Hash {
 			value = append(value, &redis.Z{
-				Score:  float64(tx.Timestamp),
+				Score:  float64(tx.Timestamp.Unix()),
 				Member: tx.Hash,
 			})
 		}
 
-		if err := cache.Global().ZAdd(ctx, key, value...).Err(); err != nil {
-			loggerx.Global().Error("save latest 500 tx hash failed", zap.Error(err), zap.String("address", address))
-			return err
-		}
+		if len(value) > 0 {
+			if err := cache.Global().ZAdd(ctx, key, value...).Err(); err != nil {
+				loggerx.Global().Error("save latest 500 tx hash failed", zap.Error(err), zap.String("address", address))
+				return err
+			}
 
-		// only keep top 500 tx hash by ts
-		if err := cache.Global().ZRemRangeByRank(ctx, key, 0, -501).Err(); err != nil {
-			loggerx.Global().Error("rem old tx hash failed", zap.Error(err), zap.String("address", address))
-			return err
+			// only keep top 500 tx hash by ts
+			if err := cache.Global().ZRemRangeByRank(ctx, key, 0, -501).Err(); err != nil {
+				loggerx.Global().Error("rem old tx hash failed", zap.Error(err), zap.String("address", address))
+				return err
+			}
 		}
 
 		return nil

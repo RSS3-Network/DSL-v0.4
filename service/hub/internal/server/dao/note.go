@@ -3,7 +3,6 @@ package dao
 import (
 	"context"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/lib/pq"
@@ -101,34 +100,40 @@ func BatchGetTransactions(ctx context.Context, request model.BatchGetNotesReques
 
 		allTx := []struct {
 			Hash      string
-			Timestamp int64
+			Timestamp float64
 		}{}
 
 		for _, v := range request.Address {
 			key := strings.Join([]string{protocol.LATEST_TX_HASH_KEY, v}, ":")
 
-			hashAndTS, err := cache.Global().ZRevRange(ctx, key, 0, int64(request.Limit-1)).Result()
-			if err != nil {
+			hashAndTS, err := cache.Global().ZRevRangeWithScores(ctx, key, 0, int64(request.Limit-1)).Result()
+			if err != nil || len(hashAndTS) == 0 {
 				failed = true
 				break
 			}
-			for index, v := range hashAndTS {
-				if index%2 == 0 { // hash
-					allTx = append(allTx, struct {
-						Hash      string
-						Timestamp int64
-					}{Hash: v})
-				} else { // timestamp
-					allTx[len(allTx)-1].Timestamp, _ = strconv.ParseInt(v, 10, 64)
-				}
+			for _, v := range hashAndTS {
+				allTx = append(allTx, struct {
+					Hash      string
+					Timestamp float64
+				}{Hash: v.Member.(string), Timestamp: v.Score})
 			}
 		}
 		if !failed {
 			sort.SliceStable(allTx, func(i, j int) bool {
 				return allTx[i].Timestamp > allTx[j].Timestamp
 			})
-			latestTx := allTx[:request.Limit]
-			if err := database.Global().Where("hash IN ?", latestTx).Find(&transactions).Error; err != nil {
+			limit := request.Limit
+			if len(allTx) < limit {
+				limit = len(allTx)
+			}
+			latestTx := allTx[:limit]
+
+			latestTxHash := make([]string, 0, len(latestTx))
+			for _, v := range latestTx {
+				latestTxHash = append(latestTxHash, v.Hash)
+			}
+
+			if err := database.Global().Where("hash IN ?", latestTxHash).Find(&transactions).Error; err != nil {
 				return nil, 0, err
 			}
 			usedRedis = true
