@@ -584,7 +584,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 
 	// Sort, latest -> oldest
 	sort.SliceStable(transactions, func(i, j int) bool {
-		return transactions[i].BlockNumber < transactions[j].BlockNumber
+		return transactions[i].BlockNumber > transactions[j].BlockNumber
 	})
 
 	var (
