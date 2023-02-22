@@ -8,6 +8,7 @@ import (
 
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/stretchr/testify/assert"
@@ -37,6 +38,8 @@ func init() {
 	ethclientx.ReplaceGlobal(protocol.NetworkEthereum, globalEthereumClientMap[protocol.NetworkEthereum])
 	ethclientx.ReplaceGlobal(protocol.NetworkPolygon, globalEthereumClientMap[protocol.NetworkPolygon])
 	tokenClient = token.New()
+
+	ipfs.New("https://ipfs.rss3.page/ipfs/")
 }
 
 func TestClient_Native(t *testing.T) {
