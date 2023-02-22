@@ -1,0 +1,1938 @@
+[
+  {
+    "inputs": [],
+    "name": "AssetMatcher_Asset_Class_Mismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "AssetMatcher_Asset_Not_Supported",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "AssetMatcher_Token_Addr_Mismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "AssetMatcher_Token_ID_Mismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CurrencyManager_Already_Approved",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CurrencyManager_Currency_Zero_Address",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CurrencyManager_Not_Approved",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NSwapExchange_Cannot_0_Salt",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NSwapExchange_Fill_Amount_Cannot_0",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NSwapExchange_Maker_Taker_Mismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NSwapExchange_Only_Maker_Can_Cancel",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NSwapExchange_Order_Side_Mismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NSwapExchange_Price_Mismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NSwapExchange_Prohibit_Self_Match",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NSwapExchange_Sale_Kind_Mismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NSwapExchange_Tx_Sender_Invalid",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NSwapExchange_Unsupported_Price_Asset",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NSwapExchange_Unsupported_Token",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NSwapExchange_Wrong_ETH_Value",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrderData_Unsupported_Data_Version",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrderValidator_Cannot_0_Salt",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrderValidator_Contract_Sig_Verify_fail",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrderValidator_Has_Canceled",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrderValidator_Has_Expired",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrderValidator_Has_Not_Started",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrderValidator_Must_Have_Maker",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrderValidator_Sig_Verify_fail",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrderValidator_Unsupported_NFT_Asset",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "OrderValidator_Unsupported_Price_Asset",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ProtocolFeeManager_Fee_Exceed_Max_Protocol_Share",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ProtocolFeeManager_Fee_Receiver_Zero_Address",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RoyaltiesRegistry_ERC2981_Royalties_Exceed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RoyaltiesRegistry_Get_Royalties_Error",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RoyaltiesRegistry_Invalid_Address",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RoyaltiesRegistry_Invalid_Royalty_Value",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RoyaltiesRegistry_Not_Owner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RoyaltiesRegistry_Royalties_Limit_Exceed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RoyaltiesRegistry_Sum_Royalties_Exceed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RoyaltiesRegistry_Wrong_RoyaltiesType",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Signature_Invalid_Sig",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Signature_Invalid_Sig_Length",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Signature_Invalid_Sig_S_Value",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Signature_Invalid_Sig_V_Value",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferExecutor_Currency_Not_Approved",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferExecutor_ERC20_Failed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferExecutor_ERC721_Value_Err",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferExecutor_Unsupported_Token",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferManager_Royalty_Too_High",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TransferManager_SumOfShare_Mismatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Transfer_Eth_Fail",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "hash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "maker",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes4",
+            "name": "assetClass",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenID",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct LibAsset.AssetType",
+        "name": "priceAssetType",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes4",
+            "name": "assetClass",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenID",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct LibAsset.AssetType",
+        "name": "nftAssetType",
+        "type": "tuple"
+      }
+    ],
+    "name": "EventCancel",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "currency",
+        "type": "address"
+      }
+    ],
+    "name": "EventCurrencyApproved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "currency",
+        "type": "address"
+      }
+    ],
+    "name": "EventCurrencyRevoked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "buyHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "sellHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "buyMaker",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "sellMaker",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "priceFilled",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "nftFilled",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes4",
+            "name": "assetClass",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenID",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct LibAsset.AssetType",
+        "name": "priceAssetType",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes4",
+            "name": "assetClass",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenID",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct LibAsset.AssetType",
+        "name": "nftAssetType",
+        "type": "tuple"
+      }
+    ],
+    "name": "EventMatch",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "customAccount",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      }
+    ],
+    "name": "EventUpdatedCustomProtocolFee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "defaultFee",
+        "type": "uint256"
+      }
+    ],
+    "name": "EventUpdatedDefaultProtocolFee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "defaultFeeReceiver",
+        "type": "address"
+      }
+    ],
+    "name": "EventUpdatedDefaultProtocolFeeReceiver",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address payable",
+            "name": "receiver",
+            "type": "address"
+          },
+          {
+            "internalType": "uint96",
+            "name": "share",
+            "type": "uint96"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct LibPayInfo.PayInfo[]",
+        "name": "royalties",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "EventUpdatedRoyaltiesByToken",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newRoyaltiesLimit",
+        "type": "uint256"
+      }
+    ],
+    "name": "EventUpdatedRoyaltiesLimit",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address payable",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "EventWithdrawETH",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "version",
+        "type": "uint8"
+      }
+    ],
+    "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Paused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Unpaused",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "currency",
+        "type": "address"
+      }
+    ],
+    "name": "approveCurrency",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum LibOrder.Side",
+            "name": "side",
+            "type": "uint8"
+          },
+          {
+            "internalType": "enum LibOrder.SaleKind",
+            "name": "saleKind",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "maker",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "taker",
+            "type": "address"
+          },
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "bytes4",
+                    "name": "assetClass",
+                    "type": "bytes4"
+                  },
+                  {
+                    "internalType": "address",
+                    "name": "tokenAddress",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "tokenID",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct LibAsset.AssetType",
+                "name": "assetType",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct LibAsset.Asset",
+            "name": "nft",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "bytes4",
+                    "name": "assetClass",
+                    "type": "bytes4"
+                  },
+                  {
+                    "internalType": "address",
+                    "name": "tokenAddress",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "tokenID",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct LibAsset.AssetType",
+                "name": "assetType",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct LibAsset.Asset",
+            "name": "price",
+            "type": "tuple"
+          },
+          {
+            "internalType": "uint256",
+            "name": "salt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "start",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "end",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes4",
+            "name": "version",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "bytes",
+            "name": "extra",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct LibOrder.Order[]",
+        "name": "orders",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "batchCancel",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "enum LibOrder.Side",
+                "name": "side",
+                "type": "uint8"
+              },
+              {
+                "internalType": "enum LibOrder.SaleKind",
+                "name": "saleKind",
+                "type": "uint8"
+              },
+              {
+                "internalType": "address",
+                "name": "maker",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "taker",
+                "type": "address"
+              },
+              {
+                "components": [
+                  {
+                    "components": [
+                      {
+                        "internalType": "bytes4",
+                        "name": "assetClass",
+                        "type": "bytes4"
+                      },
+                      {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                      },
+                      {
+                        "internalType": "uint256",
+                        "name": "tokenID",
+                        "type": "uint256"
+                      }
+                    ],
+                    "internalType": "struct LibAsset.AssetType",
+                    "name": "assetType",
+                    "type": "tuple"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "value",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct LibAsset.Asset",
+                "name": "nft",
+                "type": "tuple"
+              },
+              {
+                "components": [
+                  {
+                    "components": [
+                      {
+                        "internalType": "bytes4",
+                        "name": "assetClass",
+                        "type": "bytes4"
+                      },
+                      {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                      },
+                      {
+                        "internalType": "uint256",
+                        "name": "tokenID",
+                        "type": "uint256"
+                      }
+                    ],
+                    "internalType": "struct LibAsset.AssetType",
+                    "name": "assetType",
+                    "type": "tuple"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "value",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct LibAsset.Asset",
+                "name": "price",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "salt",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "start",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "end",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bytes4",
+                "name": "version",
+                "type": "bytes4"
+              },
+              {
+                "internalType": "bytes",
+                "name": "extra",
+                "type": "bytes"
+              }
+            ],
+            "internalType": "struct LibOrder.Order",
+            "name": "sellOrder",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "enum LibOrder.Side",
+                "name": "side",
+                "type": "uint8"
+              },
+              {
+                "internalType": "enum LibOrder.SaleKind",
+                "name": "saleKind",
+                "type": "uint8"
+              },
+              {
+                "internalType": "address",
+                "name": "maker",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "taker",
+                "type": "address"
+              },
+              {
+                "components": [
+                  {
+                    "components": [
+                      {
+                        "internalType": "bytes4",
+                        "name": "assetClass",
+                        "type": "bytes4"
+                      },
+                      {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                      },
+                      {
+                        "internalType": "uint256",
+                        "name": "tokenID",
+                        "type": "uint256"
+                      }
+                    ],
+                    "internalType": "struct LibAsset.AssetType",
+                    "name": "assetType",
+                    "type": "tuple"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "value",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct LibAsset.Asset",
+                "name": "nft",
+                "type": "tuple"
+              },
+              {
+                "components": [
+                  {
+                    "components": [
+                      {
+                        "internalType": "bytes4",
+                        "name": "assetClass",
+                        "type": "bytes4"
+                      },
+                      {
+                        "internalType": "address",
+                        "name": "tokenAddress",
+                        "type": "address"
+                      },
+                      {
+                        "internalType": "uint256",
+                        "name": "tokenID",
+                        "type": "uint256"
+                      }
+                    ],
+                    "internalType": "struct LibAsset.AssetType",
+                    "name": "assetType",
+                    "type": "tuple"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "value",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct LibAsset.Asset",
+                "name": "price",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "salt",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "start",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "end",
+                "type": "uint256"
+              },
+              {
+                "internalType": "bytes4",
+                "name": "version",
+                "type": "bytes4"
+              },
+              {
+                "internalType": "bytes",
+                "name": "extra",
+                "type": "bytes"
+              }
+            ],
+            "internalType": "struct LibOrder.Order",
+            "name": "buyOrder",
+            "type": "tuple"
+          },
+          {
+            "internalType": "bytes",
+            "name": "signature",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct NSwapExchange.MatchDetails[]",
+        "name": "matchDetails",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "batchMatch",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "bytes4",
+            "name": "assetClass",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenID",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct LibAsset.AssetType[]",
+        "name": "assets",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "batchTransferERC721",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum LibOrder.Side",
+            "name": "side",
+            "type": "uint8"
+          },
+          {
+            "internalType": "enum LibOrder.SaleKind",
+            "name": "saleKind",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "maker",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "taker",
+            "type": "address"
+          },
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "bytes4",
+                    "name": "assetClass",
+                    "type": "bytes4"
+                  },
+                  {
+                    "internalType": "address",
+                    "name": "tokenAddress",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "tokenID",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct LibAsset.AssetType",
+                "name": "assetType",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct LibAsset.Asset",
+            "name": "nft",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "bytes4",
+                    "name": "assetClass",
+                    "type": "bytes4"
+                  },
+                  {
+                    "internalType": "address",
+                    "name": "tokenAddress",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "tokenID",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct LibAsset.AssetType",
+                "name": "assetType",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct LibAsset.Asset",
+            "name": "price",
+            "type": "tuple"
+          },
+          {
+            "internalType": "uint256",
+            "name": "salt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "start",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "end",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes4",
+            "name": "version",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "bytes",
+            "name": "extra",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct LibOrder.Order",
+        "name": "order",
+        "type": "tuple"
+      }
+    ],
+    "name": "cancel",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "clearRoyaltiesType",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "defaultProtocolFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "defaultProtocolFeeReceiver",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "fillsStat",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "getProtocolFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRoyalties",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address payable",
+            "name": "receiver",
+            "type": "address"
+          },
+          {
+            "internalType": "uint96",
+            "name": "share",
+            "type": "uint96"
+          }
+        ],
+        "internalType": "struct LibPayInfo.PayInfo[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "getRoyaltiesType",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getRoyaltiesView",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address payable",
+            "name": "receiver",
+            "type": "address"
+          },
+          {
+            "internalType": "uint96",
+            "name": "share",
+            "type": "uint96"
+          }
+        ],
+        "internalType": "struct LibPayInfo.PayInfo[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "currencies",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "defaultProtocolFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "defaultFeeRecipient",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "newRoyaltiesLimit",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "EIP712Name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "EIP712Version",
+        "type": "string"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "currency",
+        "type": "address"
+      }
+    ],
+    "name": "isCurrencyApproved",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum LibOrder.Side",
+            "name": "side",
+            "type": "uint8"
+          },
+          {
+            "internalType": "enum LibOrder.SaleKind",
+            "name": "saleKind",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "maker",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "taker",
+            "type": "address"
+          },
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "bytes4",
+                    "name": "assetClass",
+                    "type": "bytes4"
+                  },
+                  {
+                    "internalType": "address",
+                    "name": "tokenAddress",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "tokenID",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct LibAsset.AssetType",
+                "name": "assetType",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct LibAsset.Asset",
+            "name": "nft",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "bytes4",
+                    "name": "assetClass",
+                    "type": "bytes4"
+                  },
+                  {
+                    "internalType": "address",
+                    "name": "tokenAddress",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "tokenID",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct LibAsset.AssetType",
+                "name": "assetType",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct LibAsset.Asset",
+            "name": "price",
+            "type": "tuple"
+          },
+          {
+            "internalType": "uint256",
+            "name": "salt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "start",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "end",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes4",
+            "name": "version",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "bytes",
+            "name": "extra",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct LibOrder.Order",
+        "name": "sell",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "enum LibOrder.Side",
+            "name": "side",
+            "type": "uint8"
+          },
+          {
+            "internalType": "enum LibOrder.SaleKind",
+            "name": "saleKind",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "maker",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "taker",
+            "type": "address"
+          },
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "bytes4",
+                    "name": "assetClass",
+                    "type": "bytes4"
+                  },
+                  {
+                    "internalType": "address",
+                    "name": "tokenAddress",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "tokenID",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct LibAsset.AssetType",
+                "name": "assetType",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct LibAsset.Asset",
+            "name": "nft",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "components": [
+                  {
+                    "internalType": "bytes4",
+                    "name": "assetClass",
+                    "type": "bytes4"
+                  },
+                  {
+                    "internalType": "address",
+                    "name": "tokenAddress",
+                    "type": "address"
+                  },
+                  {
+                    "internalType": "uint256",
+                    "name": "tokenID",
+                    "type": "uint256"
+                  }
+                ],
+                "internalType": "struct LibAsset.AssetType",
+                "name": "assetType",
+                "type": "tuple"
+              },
+              {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct LibAsset.Asset",
+            "name": "price",
+            "type": "tuple"
+          },
+          {
+            "internalType": "uint256",
+            "name": "salt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "start",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "end",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes4",
+            "name": "version",
+            "type": "bytes4"
+          },
+          {
+            "internalType": "bytes",
+            "name": "extra",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct LibOrder.Order",
+        "name": "buy",
+        "type": "tuple"
+      },
+      {
+        "internalType": "bytes",
+        "name": "signature",
+        "type": "bytes"
+      }
+    ],
+    "name": "matchOrders",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paused",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "protocolFee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "currency",
+        "type": "address"
+      }
+    ],
+    "name": "revokeCurrency",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "royaltiesByToken",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "isByToken",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "royaltiesLimit",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "royaltiesType",
+    "outputs": [
+      {
+        "internalType": "enum RoyaltiesManager.RoyaltyType",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "newDefaultProtocolFee",
+        "type": "uint256"
+      }
+    ],
+    "name": "setDefaultProtocolFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "newDefaultProtocolFeeReceiver",
+        "type": "address"
+      }
+    ],
+    "name": "setDefaultProtocolFeeReceiver",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "newProtocolFee",
+        "type": "uint256"
+      }
+    ],
+    "name": "setProtocolFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address payable",
+            "name": "receiver",
+            "type": "address"
+          },
+          {
+            "internalType": "uint96",
+            "name": "share",
+            "type": "uint96"
+          }
+        ],
+        "internalType": "struct LibPayInfo.PayInfo[]",
+        "name": "royalties",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "setRoyaltiesByToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "newRoyaltiesType",
+        "type": "uint256"
+      }
+    ],
+    "name": "setRoyaltiesType",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "unpause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "newRoyaltiesLimit",
+        "type": "uint256"
+      }
+    ],
+    "name": "updateRoyaltiesLimit",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "viewApprovedCurrency",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "viewCountApprovedCurrencies",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "recipient",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdrawETH",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

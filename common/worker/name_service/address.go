@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
-	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"go.uber.org/zap"
 )
@@ -18,12 +17,12 @@ func IsEvmValidAddress(address string) bool {
 	return re.MatchString(address)
 }
 
-func IsEthereumContract(ctx context.Context, address string) (bool, error) {
+func IsEthereumContract(ctx context.Context, address, network string) (bool, error) {
 	tracer := otel.Tracer("IsEthereumContract")
 	_, httpSnap := tracer.Start(ctx, "name_service")
 	defer httpSnap.End()
 
-	ethClient, err := ethclientx.Global(protocol.NetworkEthereum)
+	ethClient, err := ethclientx.Global(network)
 	if err != nil {
 		return false, err
 	}

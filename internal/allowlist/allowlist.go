@@ -32,6 +32,7 @@ var ensSpecialList = map[string]string{
 // crawlerList is a list of polygon contracts whose txs has been indexed in crawler
 var crawlerList = map[string]string{
 	"0x5edebbdae7b5c79a69aacf7873796bb1ec664db8": protocol.NetworkPolygon, // matters curation
+	"0xE5BA5c73378BC8Da94738CB04490680ae3eab88C": protocol.NetworkPolygon, // rara social
 }
 
 func init() {
