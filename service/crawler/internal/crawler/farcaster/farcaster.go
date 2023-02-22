@@ -153,7 +153,7 @@ func (s *service) GetKuroraCasts(ctx context.Context) ([]*model.Transaction, err
 	last, _ := lo.Last(casts)
 
 	cursor = last.Hash.String()
-	cache.Global().Set(ctx, farcasterCacheKey, cursor, 0)
+	cache.Global().Set(ctx, farcasterCacheKey, cursor, 7*24*time.Hour)
 
 	return transactions, nil
 }
