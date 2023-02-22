@@ -221,7 +221,7 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 	last, err := lo.Last(entries)
 	if err == nil {
 		cursor = kurora.LogCursor(last.TransactionHash, last.LogIndex)
-		cache.Global().Set(ctx, mattersCacheKey, cursor, 0)
+		cache.Global().Set(ctx, mattersCacheKey, cursor, 7*24*time.Hour)
 	}
 
 	return internalTransactions, nil
