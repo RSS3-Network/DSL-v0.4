@@ -42,14 +42,12 @@ type GetRequest struct {
 	Platform  []string  `query:"platform" json:"platform"`
 	Timestamp time.Time `query:"timestamp" json:"timestamp"`
 	Hash      string    `query:"hash" json:"hash"`
-	HashList  []string  `query:"hash_list" json:"hash_list"`
 	// includes POAP in the response
-	IncludePoap bool   `query:"include_poap" json:"include_poap"`
-	Refresh     bool   `query:"refresh" json:"refresh"`
-	Reindex     bool   `query:"reindex" json:"reindex"`
-	Page        int    `query:"page" json:"page"`
-	QueryStatus bool   `query:"query_status" json:"query_status"`
-	TokenId     string `query:"token_id" json:"token_id"`
+	IncludePoap bool `query:"include_poap" json:"include_poap"`
+	Refresh     bool `query:"refresh" json:"refresh"`
+	Reindex     bool `query:"reindex" json:"reindex"`
+	Page        int  `query:"page" json:"page"`
+	QueryStatus bool `query:"query_status" json:"query_status"`
 	// returns a count of transactions only
 	CountOnly bool `query:"count_only" json:"count_only"`
 }
