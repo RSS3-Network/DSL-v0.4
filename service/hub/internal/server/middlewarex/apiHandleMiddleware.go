@@ -5,16 +5,13 @@ import (
 	"net/http"
 	"strings"
 
+	"go.opentelemetry.io/otel"
+
 	"github.com/labstack/echo/v4"
-	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/constant"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/datasource/rara"
-	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
-
-	"go.opentelemetry.io/otel"
 )
 
 type ErrorResponse struct {
@@ -90,21 +87,10 @@ func ResolveAddress(c echo.Context, address string, ignoreContract bool) (string
 		return "", result.Err
 	}
 
-	// Get rara nft list cach from redis
-	// TODO Need a standardized interface to check whether address is a nft
-	cacheMap := make(map[string]struct{})
-	_, err := cache.GetJson(c.Request().Context(), rara.MapKey, &cacheMap)
-
-	if err == nil {
-		if _, ok := cacheMap[strings.ToLower(result.Address)]; ok {
-			return fmt.Sprintf("%s:%s", "nft", strings.ToLower(result.Address)), nil
-		}
-	}
-
 	// check contract
 	if !ignoreContract {
-		isEthContract, _ := name_service.IsEthereumContract(c.Request().Context(), result.Address, protocol.NetworkEthereum)
-		if isEthContract {
+		isContract, _ := name_service.IsEthereumContract(c.Request().Context(), result.Address)
+		if isContract {
 			return "", fmt.Errorf("%s", name_service.ErrNotSupportContract)
 		}
 	}

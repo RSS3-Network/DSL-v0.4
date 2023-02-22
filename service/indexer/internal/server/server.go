@@ -49,7 +49,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/staking"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/swap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/governance/snapshot"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/metaverse"
@@ -192,7 +191,6 @@ func (s *Server) Initialize() (err error) {
 
 	s.workers = []worker.Worker{
 		build_transactions.New(),
-		staking.New(),
 		liquidity.New(),
 		swapWorker,
 		bridge.New(),

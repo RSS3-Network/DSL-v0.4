@@ -8,7 +8,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/element"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/gem"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/nswap"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/quix"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/tofunft"
@@ -33,5 +32,4 @@ var platformMap = map[common.Address]string{
 	blur.AddressMarketplace:         protocol.PlatformBlur,
 	blur.AddressMarketplace2:        protocol.PlatformBlur,
 	element.AddressExchange:         protocol.PlatformElement,
-	nswap.AddressExchange:           protocol.PlatformNSwap,
 }
