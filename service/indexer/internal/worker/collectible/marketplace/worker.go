@@ -15,6 +15,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/blur"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/element"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/looksrare"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/nswap"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/quix"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/tofunft"
@@ -131,6 +132,8 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 					internalTransfers, err = i.handleElementERC721SellOrderFilled(ctx, transaction, log)
 				case element.EventERC1155SellOrderFilled:
 					internalTransfers, err = i.handleElementERC1155SellOrderFilled(ctx, transaction, log)
+				case nswap.EventHashEventMatch:
+					internalTransfers, err = i.handleNSwapEventMatch(ctx, transaction, log)
 				default:
 					continue
 				}
