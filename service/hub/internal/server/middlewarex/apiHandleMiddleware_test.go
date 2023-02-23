@@ -8,10 +8,12 @@ import (
 	"testing"
 
 	"github.com/labstack/echo/v4"
+	"github.com/naturalselectionlabs/pregod/common/cache"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 )
 
 func init() {
@@ -49,6 +51,10 @@ func init() {
 	for network, ethereumClient := range globalEthereumClientMap {
 		ethclientx.ReplaceGlobal(network, ethereumClient)
 	}
+
+	config.Initialize()
+	redisClient, _ := cache.Dial(config.ConfigHub.Redis)
+	cache.ReplaceGlobal(redisClient)
 }
 
 func TestResolveAddress(t *testing.T) {

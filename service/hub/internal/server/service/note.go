@@ -2,11 +2,14 @@ package service
 
 import (
 	"context"
+	"math/big"
 	"math/rand"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	kurora "github.com/naturalselectionlabs/kurora/client"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -175,4 +178,78 @@ func (s *Service) CheckRequestTagAndType(reqTags []string, reqTypes []string) ([
 	}
 
 	return tags, types, includePoap
+}
+
+func (s *Service) GetNftFeeds(ctx context.Context, request model.GetRequest) ([]dbModel.Transaction, int64, error) {
+	request.Address = strings.ToLower(request.Address)
+
+	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
+		request.Limit = model.DefaultLimit
+	}
+
+	if len(request.Tag) > 0 {
+		request.Tag, request.Type, request.IncludePoap = s.CheckRequestTagAndType(request.Tag, request.Type)
+	}
+
+	raraQuery := kurora.DatasetRaraEntryQuery{
+		NftAddress: lo.ToPtr(common.HexToAddress(request.Address)),
+	}
+
+	entries, err := s.kuroraClient.FetchDatasetRara(ctx, raraQuery)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var tokenID *big.Int
+	if len(request.TokenId) > 0 {
+		tokenID = big.NewInt(0)
+		tokenID.SetString(request.TokenId, 0)
+	}
+	hashes := make([]string, 0)
+
+	for _, entry := range entries {
+		if len(request.TokenId) > 0 && tokenID.String() != entry.NftId.BigInt().String() {
+			continue
+		}
+		hashes = append(hashes, strings.ToLower(entry.TransactionHash.String()))
+	}
+
+	if len(request.TokenId) == 0 {
+		request.TokenId = "0"
+	}
+
+	transactions := make([]dbModel.Transaction, 0)
+	request.HashList = hashes
+
+	if len(request.HashList) == 0 {
+		return transactions, 0, nil
+	}
+
+	// get transactions from database
+	transactions, total, err := dao.GetTransactions(ctx, request)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// get transfers from database
+	transactionHashes := make([]string, 0)
+	for _, transactionHash := range transactions {
+		transactionHashes = append(transactionHashes, transactionHash.Hash)
+	}
+
+	transfers, err := dao.GetTransfers(ctx, transactionHashes)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	transferMap := make(map[string][]dbModel.Transfer)
+	for _, transfer := range transfers {
+		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
+	}
+
+	for index := range transactions {
+		transactions[index].Transfers = transferMap[transactions[index].Hash]
+	}
+
+	return transactions, total, nil
 }
