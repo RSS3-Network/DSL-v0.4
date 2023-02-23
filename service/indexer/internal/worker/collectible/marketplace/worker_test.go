@@ -16,12 +16,19 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
+
+	"go.uber.org/zap"
 )
 
 var once sync.Once
 
 func initialize(t *testing.T) {
 	once.Do(func() {
+		logger, err := zap.NewDevelopment()
+		assert.NoError(t, err)
+
+		zap.ReplaceGlobals(logger)
+
 		config.Initialize()
 
 		ethereumClientMap, err := ethclientx.Dial(config.ConfigIndexer.RPC, protocol.EthclientNetworks)
@@ -725,6 +732,47 @@ func Test_internal_Handle(t *testing.T) {
 
 				for _, transaction := range transactions {
 					if !assert.Equal(t, transaction.Platform, protocol.PlatformElement) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "nswap match",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0xf15d6d4e89a757223708de8a1e753a20834a6a17", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0xc5347a6f415b16511ac433b122aea1f10c36cd9069dde4577dbd9ebaa69a41cb
+						Hash:        "0xc5347a6f415b16511ac433b122aea1f10c36cd9069dde4577dbd9ebaa69a41cb",
+						BlockNumber: 16573933,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+
+				for _, transaction := range transactions {
+					zap.L().Info("", zap.Any("transaction", transaction))
+
+					assert.Len(t, transaction.Transfers, 1)
+				}
+
+				for _, transaction := range transactions {
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformNSwap) {
 						return false
 					}
 				}

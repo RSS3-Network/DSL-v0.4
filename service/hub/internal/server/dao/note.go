@@ -23,8 +23,11 @@ func GetTransactions(ctx context.Context, request model.GetRequest) ([]dbModel.T
 	total := int64(0)
 	sql := database.Global().
 		Model(&dbModel.Transaction{}).
-		Where("owner = ?", request.Address). // address was already converted to lowercase
-		Where("success IS TRUE")             // Hide failed transactions
+		Where("success IS TRUE") // Hide failed transactions
+
+	if len(request.TokenId) == 0 {
+		sql.Where("owner = ?", request.Address) // address was already converted to lowercase
+	}
 
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
@@ -70,6 +73,10 @@ func GetTransactions(ctx context.Context, request model.GetRequest) ([]dbModel.T
 
 	if request.Timestamp.Unix() > 0 {
 		sql = sql.Where("timestamp > ?", request.Timestamp)
+	}
+
+	if len(request.HashList) > 0 {
+		sql = sql.Where("hash IN?", request.HashList)
 	}
 
 	if err := sql.Count(&total).Limit(request.Limit).Offset(request.Page * request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
