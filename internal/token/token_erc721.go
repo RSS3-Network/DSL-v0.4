@@ -156,13 +156,15 @@ func (c *Client) ERC721Zora(ctx context.Context, network string, tokenID *big.In
 		return nil, err
 	}
 
-	if result.URI, err = zoraContract.TokenMetadataURI(&bind.CallOpts{}, tokenID); err != nil {
-		return nil, err
-	}
+	if tokenID != nil {
+		if result.URI, err = zoraContract.TokenMetadataURI(&bind.CallOpts{}, tokenID); err != nil {
+			return nil, err
+		}
 
-	result.Metadata, err = c.Metadata(ctx, result.URI)
-	if err != nil {
-		return nil, err
+		result.Metadata, err = c.Metadata(ctx, result.URI)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var metadata Metadata
