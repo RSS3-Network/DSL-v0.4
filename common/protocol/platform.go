@@ -76,6 +76,8 @@ const (
 	PlatformAavegotchi = "Aavegotchi"
 	PlatformCarv       = "Carv"
 	PlatformPlanetIX   = "PlanetIX"
+
+	PlatformGnosisSafe = "Gnosis Safe"
 )
 
 var PlatformList = map[string][]string{
