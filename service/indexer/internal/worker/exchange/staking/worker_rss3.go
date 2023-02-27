@@ -40,7 +40,7 @@ func (s *Staking) handleRSS3StakingDeposited(ctx context.Context, _transaction m
 		End:   _transaction.Timestamp.Add(time.Duration(event.Duration.Int64()) * time.Second).String(),
 	}
 
-	return s.buildRSS3StakingTransfer(ctx, _transaction, log, rss3.AddressStaking, event.Amount, &period, filter.ActionStakingStake)
+	return s.buildRSS3StakingTransfer(ctx, _transaction, log, rss3.AddressRSS3, event.Amount, &period, filter.ActionStakingStake)
 }
 
 func (s *Staking) handleRSS3StakingWithdrawn(ctx context.Context, transaction model.Transaction, log types.Log) (*model.Transfer, error) {
@@ -58,7 +58,7 @@ func (s *Staking) handleRSS3StakingWithdrawn(ctx context.Context, transaction mo
 		return nil, fmt.Errorf("parse Withdrawn event: %w", err)
 	}
 
-	return s.buildRSS3StakingTransfer(ctx, transaction, log, rss3.AddressStaking, event.Amount, nil, filter.ActionStakingUnstake)
+	return s.buildRSS3StakingTransfer(ctx, transaction, log, rss3.AddressRSS3, event.Amount, nil, filter.ActionStakingUnstake)
 }
 
 func (s *Staking) handleRSS3StakingRewardsClaimed(ctx context.Context, transaction model.Transaction, log types.Log) (*model.Transfer, error) {
@@ -76,7 +76,7 @@ func (s *Staking) handleRSS3StakingRewardsClaimed(ctx context.Context, transacti
 		return nil, fmt.Errorf("parse RewardsClaimed event: %w", err)
 	}
 
-	return s.buildRSS3StakingTransfer(ctx, transaction, log, rss3.AddressStaking, event.RewardAmount, nil, filter.ActionStakingClaim)
+	return s.buildRSS3StakingTransfer(ctx, transaction, log, rss3.AddressRSS3, event.RewardAmount, nil, filter.ActionStakingClaim)
 }
 
 func (s *Staking) buildRSS3StakingTransfer(ctx context.Context, _transaction model.Transaction, log types.Log, tokenAddress common.Address, tokenValue *big.Int, period *transaction.Period, action string) (*model.Transfer, error) {
