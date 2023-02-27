@@ -1,5 +1,10 @@
 package contract
 
+import "embed"
+
+//go:embed safe/GnosisSafe.abi
+var ContractABIs embed.FS
+
 // https://eips.ethereum.org/EIPS/eip-20
 //go:generate abigen --abi ./erc20/erc20.abi --pkg erc20 --type ERC20 --out ./erc20/erc20.go
 //https://etherscan.io/address/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
@@ -105,3 +110,7 @@ package contract
 // RSS3
 // Staking https://etherscan.io/address/0x5301cbbedc048abac7e213184132cf982d593563
 //go:generate abigen --abi ./rss3/staking.abi --pkg rss3 --type Staking --out ./rss3/staking.go
+
+// Gnosis Safe
+// Gnosis Safe V1.3 https://etherscan.io/address/0xd9db270c1b5e3bd161e8c8503c55ceabee709552
+//go:generate abigen --abi ./safe/GnosisSafe.abi --pkg safe --type GnosisSafe --out ./safe/gnosisSafe.go
