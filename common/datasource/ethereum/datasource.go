@@ -167,6 +167,14 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 			return nil, err
 		}
 
+		// Compatible with Arbitrum Transaction types
+		// https://github.com/OffchainLabs/go-ethereum/blob/01cc043469b25ca03a296be256aae2082c161bd7/core/types/transaction.go#L43-L55
+		if lo.Contains([]uint64{
+			100, 101, 102, 104, 105, 106, 120,
+		}, internalTransaction.Type) {
+			internalTransaction.Type = types.LegacyTxType
+		}
+
 		switch internalTransaction.Type {
 		case types.LegacyTxType, types.AccessListTxType:
 			fee := decimal.NewFromBigInt(internalTransaction.GasPrice, 0).Mul(decimal.NewFromInt(int64(receipt.GasUsed))).Shift(-18)
@@ -186,7 +194,7 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 			transaction.Fee = &fee
 		default:
 			// L2
-			return nil, fmt.Errorf("unsupported transaction type %d", internalTransaction.Type)
+			return nil, fmt.Errorf("unsupported transaction type %d: %s", internalTransaction.Type, internalTransaction.Hash)
 		}
 
 		// Transaction compatibility conversion for Arbitrum
