@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -19,7 +21,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 	lenscontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
-	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils"
@@ -118,7 +119,7 @@ func (c *Client) GetProfile(profileID *big.Int) (*social.Profile, error) {
 		Name:        result.Handle,
 		Handle:      result.Handle,
 		URL:         fmt.Sprintf("https://lenster.xyz/u/%v", result.Handle),
-		ProfileUris: []string{ipfs.GetDirectURL(result.ImageURI)},
+		ProfileUris: []string{metadata_url.GetDirectURL(result.ImageURI)},
 	}
 
 	return profile, nil
@@ -306,7 +307,7 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 		Action:      filter.SocialCreate,
 		URL:         fmt.Sprintf("https://lenster.xyz/u/%v", event.Handle),
 		Handle:      event.Handle,
-		ProfileUris: []string{ipfs.GetDirectURL(event.ImageURI)},
+		ProfileUris: []string{metadata_url.GetDirectURL(event.ImageURI)},
 	}
 
 	rawMetadata, err := json.Marshal(&profile)
@@ -504,7 +505,7 @@ func (c *Client) GetLensAuthorURL(ctx context.Context, externalURL string, handl
 // GetContent get content from arweave
 func (c *Client) GetContent(ctx context.Context, uri string, lensContent *LensContent) error {
 	// get content
-	content, err := ipfs.GetFileByURL(uri)
+	content, err := metadata_url.GetFileByURL(uri)
 	if err != nil {
 		logrus.Errorf("[lens worker] handleReceipt: getContent error, %v, ipfs: %v", err, uri)
 		return err
@@ -533,7 +534,7 @@ func (c *Client) CreatePost(ctx context.Context, lensContent *LensContent, handl
 
 	for _, media := range lensContent.Media {
 		post.Media = append(post.Media, metadata.Media{
-			Address:  ipfs.GetDirectURL(media.Item),
+			Address:  metadata_url.GetDirectURL(media.Item),
 			MimeType: media.Type,
 		})
 	}

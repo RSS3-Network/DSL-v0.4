@@ -1,9 +1,11 @@
-package ipfs
+package metadata_url
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -21,12 +23,24 @@ func New(ipfs string) {
 	}
 }
 
-func GetDirectURL(url string) string {
-	if s := strings.Split(url, "/ipfs/"); len(s) == 2 {
-		url = IPFSClient.internalIPFS + s[1]
+func GetDirectURL(directURL string) string {
+	if s := strings.Split(directURL, "/ipfs/"); len(s) == 2 {
+		directURL = IPFSClient.internalIPFS + s[1]
 	}
 
-	return strings.Replace(url, "ipfs://", IPFSClient.internalIPFS, 1)
+	contentURL, err := url.Parse(directURL)
+	if err != nil {
+		return directURL
+	}
+
+	switch contentURL.Scheme {
+	case "ar":
+		directURL = fmt.Sprintf("https://arweave.net/%s", contentURL.Host)
+	case "ipfs":
+		directURL = IPFSClient.internalIPFS + contentURL.Host
+	}
+
+	return directURL
 }
 
 func GetFileByURL(url string) ([]byte, error) {

@@ -13,7 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
-	"github.com/naturalselectionlabs/pregod/common/ipfs"
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
@@ -65,7 +65,7 @@ func (s *Server) Initialize() (err error) {
 
 	cache.ReplaceGlobal(redisClient)
 
-	ipfs.New(config.ConfigHub.RPC.IPFS.IO)
+	metadata_url.New(config.ConfigHub.RPC.IPFS.IO)
 
 	ethereumClientMap, err := ethclientx.Dial(config.ConfigHub.RPC, []string{protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkCrossbell, protocol.NetworkBinanceSmartChain, protocol.NetworkAvalanche})
 	if err != nil {

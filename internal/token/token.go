@@ -11,9 +11,10 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
-	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 
@@ -65,8 +66,8 @@ func (e *ERC721) ToNFT(tokenID *big.Int) (*NFT, error) {
 		Description:     metadata.Description,
 		ContractAddress: e.ContractAddress,
 		ID:              tokenID,
-		Image:           ipfs.GetDirectURL(metadata.Image),
-		ImageData:       ipfs.GetDirectURL(metadata.ImageData),
+		Image:           metadata_url.GetDirectURL(metadata.Image),
+		ImageData:       metadata_url.GetDirectURL(metadata.ImageData),
 		Attributes:      MetadataToAttributes(metadata),
 		Standard:        protocol.TokenStandardERC721,
 		BackgroundColor: metadata.BackgroundColor,
@@ -116,8 +117,8 @@ func (e ERC1155) ToNFT(tokenID *big.Int) (*NFT, error) {
 		Description:     metadata.Description,
 		ContractAddress: e.ContractAddress,
 		ID:              tokenID,
-		Image:           ipfs.GetDirectURL(metadata.Image),
-		ImageData:       ipfs.GetDirectURL(metadata.ImageData),
+		Image:           metadata_url.GetDirectURL(metadata.Image),
+		ImageData:       metadata_url.GetDirectURL(metadata.ImageData),
 		Attributes:      MetadataToAttributes(metadata),
 		Standard:        protocol.TokenStandardERC1155,
 		BackgroundColor: metadata.BackgroundColor,
@@ -180,7 +181,7 @@ func (n NFT) ToMetadata() (*metadata.Token, error) {
 	}
 
 	if strings.HasPrefix(n.Image, "ipfs://") {
-		result.Image = ipfs.GetDirectURL(n.Image)
+		result.Image = metadata_url.GetDirectURL(n.Image)
 	}
 
 	return result, nil

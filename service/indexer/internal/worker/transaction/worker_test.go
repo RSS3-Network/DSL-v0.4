@@ -3,10 +3,11 @@ package transaction
 import (
 	"context"
 	"encoding/json"
-	"github.com/lib/pq"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/lib/pq"
 
 	"github.com/alecthomas/repr"
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -15,7 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
-	"github.com/naturalselectionlabs/pregod/common/ipfs"
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
@@ -37,7 +38,7 @@ func init() {
 
 	cache.Dial(config.ConfigIndexer.Redis)
 
-	ipfs.New("https://ipfs.rss3.page/ipfs/")
+	metadata_url.New("https://ipfs.rss3.page/ipfs/")
 
 	rpcConfig := &configx.RPC{
 		General: configx.RPCNetwork{
