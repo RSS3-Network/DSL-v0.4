@@ -9,8 +9,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
+
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
-	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	lop "github.com/samber/lo/parallel"
 
@@ -176,7 +177,7 @@ func (c *Client) GetProfileByProfileID(ctx context.Context, profileID *big.Int) 
 	}
 
 	if url := string(resp.Profile.Picture.MediaSet.Original.URL); len(url) > 0 {
-		profile.ProfileUris = append(profile.ProfileUris, ipfs.GetDirectURL(url))
+		profile.ProfileUris = append(profile.ProfileUris, metadata_url.GetDirectURL(url))
 	}
 
 	return profile, nil

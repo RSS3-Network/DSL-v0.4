@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -19,7 +21,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/event"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/periphery"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
-	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
@@ -276,7 +277,7 @@ func (c *characterHandler) buildNoteMetadata(ctx context.Context, transaction *m
 		return nil, nil, nil, err
 	}
 
-	contentData, err := ipfs.GetFileByURL(note.ContentUri)
+	contentData, err := metadata_url.GetFileByURL(note.ContentUri)
 	if err != nil {
 		return nil, nil, nil, err
 	}

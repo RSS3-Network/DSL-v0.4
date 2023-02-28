@@ -14,7 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
-	"github.com/naturalselectionlabs/pregod/common/ipfs"
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -65,7 +65,7 @@ func (c *Client) GetProfile(address string) ([]*social.Profile, error) {
 			URL:      fmt.Sprintf("https://crossbell.io/@%v", crossbell.Handle),
 		}
 
-		content, err := ipfs.GetFileByURL(crossbell.URI)
+		content, err := metadata_url.GetFileByURL(crossbell.URI)
 		if err != nil {
 			logrus.Errorf("[common] crossbell: ipfs.GetFileByURL err, %v, uri: %v", err, crossbell.URI)
 
@@ -81,7 +81,7 @@ func (c *Client) GetProfile(address string) ([]*social.Profile, error) {
 
 		if len(metadata.Image) > 0 {
 			profile.Name = metadata.Name
-			profile.ProfileUris = []string{ipfs.GetDirectURL(metadata.Image)}
+			profile.ProfileUris = []string{metadata_url.GetDirectURL(metadata.Image)}
 			result = append(result, profile)
 			return
 		}
@@ -96,7 +96,7 @@ func (c *Client) GetProfile(address string) ([]*social.Profile, error) {
 		profile.Name = crossbellProfile.Name
 		profile.Bio = crossbellProfile.Bio
 		for _, avatar := range crossbellProfile.Avatars {
-			profile.ProfileUris = append(profile.ProfileUris, ipfs.GetDirectURL(avatar))
+			profile.ProfileUris = append(profile.ProfileUris, metadata_url.GetDirectURL(avatar))
 		}
 
 		mutex.Lock()
