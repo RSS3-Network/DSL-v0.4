@@ -11,7 +11,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
-	"github.com/naturalselectionlabs/pregod/common/ipfs"
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/samber/lo"
@@ -38,7 +38,7 @@ func initialize(t *testing.T) {
 			ethclientx.ReplaceGlobal(network, ethereumClient)
 		}
 
-		ipfs.New("https://ipfs.rss3.page/ipfs/")
+		metadata_url.New("https://ipfs.rss3.page/ipfs/")
 	})
 }
 

@@ -7,12 +7,13 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
+
 	configx "github.com/naturalselectionlabs/pregod/common/config"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/alchemy"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
-	"github.com/naturalselectionlabs/pregod/common/ipfs"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
@@ -123,7 +124,7 @@ func (d *Datasource) getNFTs(ctx context.Context, message *protocol.Message) (as
 
 			asset.Image = nft.Metadata.Image
 			if strings.HasPrefix(asset.Image, "ipfs://") {
-				asset.Image = ipfs.GetDirectURL(asset.Image)
+				asset.Image = metadata_url.GetDirectURL(asset.Image)
 			}
 
 			asset.RelatedUrls = append(asset.RelatedUrls, ethereum.BuildTokenURL(message.Network, asset.TokenAddress, tokenID.String())...)
