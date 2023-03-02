@@ -19,7 +19,7 @@ type Asset struct {
 	Attributes    json.RawMessage `gorm:"column:attributes;type:jsonb" json:"attributes,omitempty"`
 	Image         string          `gorm:"column:image;type:text" json:"image"`
 	RelatedUrls   pq.StringArray  `gorm:"column:related_urls;type:text[]" json:"related_urls"`
-	Timestamp     time.Time       `gorm:"column:timestamp;index" json:"timestamp"`
+	Timestamp     time.Time       `gorm:"column:timestamp;index;type:timestamp" json:"timestamp"`
 	CreatedAt     time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index" json:"-"`
 	UpdatedAt     time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index" json:"-"`
 }

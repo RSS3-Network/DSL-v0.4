@@ -22,7 +22,7 @@ type SnapshotProposal struct {
 	SpaceID     string          `gorm:"column:space_id" json:"space_id"`
 	Author      string          `gorm:"column:author;index" json:"author"`
 	Metadata    json.RawMessage `gorm:"column:metadata;type:jsonb" json:"metadata"`
-	DateCreated time.Time       `gorm:"column:date_created;index:index_note_date_created" json:"date_created"`
+	DateCreated time.Time       `gorm:"column:date_created;index:index_note_date_created;type:timestamp" json:"date_created"`
 	CreatedAt   time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index"`
 	UpdatedAt   time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index"`
 }
@@ -37,7 +37,7 @@ type SnapshotVote struct {
 	Choice      json.RawMessage `gorm:"column:choice;type:jsonb" json:"choice"`
 	ProposalID  string          `gorm:"column:proposal_id" json:"proposal_id"`
 	SpaceID     string          `gorm:"column:space_id" json:"space_id"`
-	DateCreated time.Time       `gorm:"column:date_created;index:index_note_date_created" json:"date_created"`
+	DateCreated time.Time       `gorm:"column:date_created;index:index_note_date_created;type:timestamp" json:"date_created"`
 	CreatedAt   time.Time       `gorm:"column:created_at;autoCreateTime;not null;default:now();index"`
 	UpdatedAt   time.Time       `gorm:"column:updated_at;autoUpdateTime;not null;default:now();index"`
 }

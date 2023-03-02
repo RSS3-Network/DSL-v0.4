@@ -114,7 +114,7 @@ func (s *Server) Initialize() (err error) {
 		)),
 	))
 
-	databaseClient, err := database.Dial(s.config.Postgres.String(), false)
+	databaseClient, err := database.Dial(s.config.Postgres.String(), true)
 	if err != nil {
 		return err
 	}
@@ -384,10 +384,10 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	if !message.Reindex {
 		if err := database.Global().
 			Model((*model.Transaction)(nil)).
-			Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
+			Select("COALESCE(\"timestamp\", 'epoch'::\"timestamp\") AS \"timestamp\", COALESCE(block_number, 0) AS block_number").
 			Where("owner = ?", message.Address).
 			Where("network = ?", message.Network).
-			Order("timestamp DESC").
+			Order("\"timestamp\" DESC").
 			Limit(1).
 			First(&result).
 			Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {

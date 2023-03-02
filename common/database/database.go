@@ -25,7 +25,7 @@ var tables = []any{
 	&exchange.SwapPool{},
 	&exchange.CexWallet{},
 	&transaction.Token{},
-	&transaction.CoinMarketCapCoinInfo{},
+	// &transaction.CoinMarketCapCoinInfo{},
 	&governance.SnapshotSpace{},
 	&governance.SnapshotProposal{},
 	&governance.SnapshotVote{},

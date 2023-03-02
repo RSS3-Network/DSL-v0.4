@@ -28,7 +28,7 @@ type Postgres struct {
 
 func (p *Postgres) String() string {
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+		"postgres://%s:%s@%s:%d/%s",
 		p.User, p.Password, p.Host, p.Port, p.Database,
 	)
 }

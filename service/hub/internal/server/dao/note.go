@@ -37,7 +37,7 @@ func GetTransactions(ctx context.Context, request model.GetRequest) ([]dbModel.T
 			return nil, 0, err
 		}
 
-		sql = sql.Where("timestamp < ? OR (timestamp = ? AND index < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)
+		sql = sql.Where("timestamp < ? OR (timestamp = ? AND \"index\" < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)
 	}
 
 	if len(request.Hash) > 0 {
@@ -79,7 +79,7 @@ func GetTransactions(ctx context.Context, request model.GetRequest) ([]dbModel.T
 		sql = sql.Where("hash IN?", request.HashList)
 	}
 
-	if err := sql.Count(&total).Limit(request.Limit).Offset(request.Page * request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
+	if err := sql.Count(&total).Limit(request.Limit).Offset(request.Page * request.Limit).Order("timestamp DESC, \"index\" DESC").Find(&transactions).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -108,7 +108,7 @@ func BatchGetTransactions(ctx context.Context, request model.BatchGetNotesReques
 			return nil, 0, err
 		}
 
-		sql = sql.Where("timestamp < ? OR (timestamp = ? AND index < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)
+		sql = sql.Where("timestamp < ? OR (timestamp = ? AND \"index\" < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)
 	}
 
 	if len(request.Tag) > 0 {
@@ -142,7 +142,7 @@ func BatchGetTransactions(ctx context.Context, request model.BatchGetNotesReques
 		sql = sql.Where("timestamp > ?", request.Timestamp)
 	}
 
-	if err := sql.Count(&total).Limit(request.Limit).Offset(request.Page * request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
+	if err := sql.Count(&total).Limit(request.Limit).Offset(request.Page * request.Limit).Order("timestamp DESC, \"index\" DESC").Find(&transactions).Error; err != nil {
 		return nil, 0, err
 	}
 
