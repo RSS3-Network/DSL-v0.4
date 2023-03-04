@@ -70,6 +70,8 @@ const (
 	PlatformMaskNetwork    = "MaskNetwork"
 	PlatformNSwap          = "NSwap"
 	PlatformRSS3           = "RSS3"
+	PlatformNouns          = "Nouns"
+	PlatformFoundation     = "Foundation"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
@@ -97,6 +99,8 @@ var PlatformList = map[string][]string{
 		PlatformPOAP,
 		PlatformGalaxy,
 		PlatformEns,
+		PlatformNouns,
+		PlatformFoundation,
 	},
 	filter.TagDonation: {
 		PlatformGitcoin,

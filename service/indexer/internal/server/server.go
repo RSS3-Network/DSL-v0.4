@@ -14,9 +14,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/metadata_url"
-
 	"github.com/lib/pq"
+	kurora_client "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -24,6 +23,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/databeat"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -46,6 +46,7 @@ import (
 	rabbitmqx "github.com/naturalselectionlabs/pregod/service/indexer/internal/rabbitmq"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/build_transactions"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/auction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/marketplace"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
@@ -67,9 +68,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
-
 	"go.uber.org/zap"
-
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -180,6 +179,11 @@ func (s *Server) Initialize() (err error) {
 		aptos.New(),
 	}
 
+	kuroraClient, err := kurora_client.Dial(context.Background(), s.config.Kurora.Endpoint)
+	if err != nil {
+		return fmt.Errorf("dial kurora: %w", err)
+	}
+
 	swapWorker, err := swap.New(s.employer)
 	if err != nil {
 		return err
@@ -200,6 +204,7 @@ func (s *Server) Initialize() (err error) {
 		liquidity.New(),
 		swapWorker,
 		bridge.New(),
+		auction.New(kuroraClient),
 		marketplace.New(),
 		poap.New(),
 		gitcoin.New(),

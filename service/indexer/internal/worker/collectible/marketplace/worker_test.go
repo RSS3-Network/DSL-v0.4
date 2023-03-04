@@ -781,6 +781,88 @@ func Test_internal_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "foundation buy",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x2b615388171efa3814d0ba59c9433189d5f9c5f5", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0x51f18408dc529ab73542b904befa7750424ff14dc1a85167bfe2c5764771e7cf
+						Hash:        "0x51f18408dc529ab73542b904befa7750424ff14dc1a85167bfe2c5764771e7cf",
+						BlockNumber: 16752548,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+
+				for _, transaction := range transactions {
+					zap.L().Info("", zap.Any("transaction", transaction))
+
+					assert.Len(t, transaction.Transfers, 1)
+				}
+
+				for _, transaction := range transactions {
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformFoundation) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "foundation offer",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x0c5b0a9a9ceca8566b9d866eb5c34359ab3943eb", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0x3cf496b22dec1a969d30bcb0a7d8e28034ae1f9e6e13fcbc832c187b857f847c
+						Hash:        "0x3cf496b22dec1a969d30bcb0a7d8e28034ae1f9e6e13fcbc832c187b857f847c",
+						BlockNumber: 16752515,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+
+				for _, transaction := range transactions {
+					zap.L().Info("", zap.Any("transaction", transaction))
+
+					assert.Len(t, transaction.Transfers, 1)
+				}
+
+				for _, transaction := range transactions {
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformFoundation) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {

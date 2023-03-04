@@ -114,3 +114,7 @@ var ContractABIs embed.FS
 // Gnosis Safe
 // Gnosis Safe V1.3 https://etherscan.io/address/0xd9db270c1b5e3bd161e8c8503c55ceabee709552
 //go:generate abigen --abi ./safe/GnosisSafe.abi --pkg safe --type GnosisSafe --out ./safe/gnosisSafe.go
+
+// Foundation
+// Foundation Market https://etherscan.io/address/0xcda72070e455bb31c7690a170224ce43623d0b6f
+//go:generate abigen --abi ./foundation/NFTMarket.abi --pkg foundation --type Foundation --out ./foundation/foundation.go

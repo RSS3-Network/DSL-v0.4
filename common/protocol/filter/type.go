@@ -52,6 +52,15 @@ const (
 	CollectiblePoap     string = "poap"
 	CollectibleApproval string = "approval"
 	CollectibleMusic    string = "music"
+	CollectibleAuction  string = "auction"
+
+	// actions for Collectible-Auction
+	CollectibleAuctionCreate     string = "create"
+	CollectibleAuctionBid        string = "bid"
+	CollectibleAuctionCancel     string = "cancel"
+	CollectibleAuctionFinalize   string = "finalize"
+	CollectibleAuctionInvalidate string = "invalidate"
+	CollectibleAuctionUpdate     string = "update"
 
 	// sub-types for Music
 	CollectibleMusicBuyEdition string = "buy"
@@ -112,6 +121,7 @@ var ValidTypeMap = map[string][]string{
 	},
 	TagCollectible: {
 		CollectibleTransfer,
+		CollectibleAuction,
 		CollectibleTrade,
 		CollectibleMint,
 		CollectibleBurn,
