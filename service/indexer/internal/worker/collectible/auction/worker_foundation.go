@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strings"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	kurora "github.com/naturalselectionlabs/kurora/client"
@@ -46,14 +48,45 @@ func (i *internal) handleFoundationTransactions(ctx context.Context, message *pr
 		if err != nil {
 			return nil, fmt.Errorf("nouns transactions: %w", err)
 		}
+		// 并行处理
+		var (
+			limiter = make(chan struct{}, ThreadSize)
+			nftMap  = make(map[string]*metadata.Token, 0)
+
+			waitGroup sync.WaitGroup
+			locker    sync.Mutex
+		)
 
 		for _, event := range events {
-			nft, err := i.tokenClient.NFTToMetadata(ctx, message.Network, event.NftAddress.String(), event.NftId.BigInt())
-			if err != nil {
-				zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", event.TransactionHash.String()), zap.Stringer("contract_address", event.NftAddress), zap.Stringer("token_id", event.NftId))
+			limiter <- struct{}{}
+			waitGroup.Add(1)
 
-				return nil, fmt.Errorf("nft to metadata: %w", err)
+			go func(nftKey, address string, tokenId *big.Int) {
+				defer func() {
+					<-limiter
+					waitGroup.Done()
+				}()
+
+				nft, err := i.tokenClient.NFTToMetadata(ctx, message.Network, address, tokenId)
+				if err != nil {
+					zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", nftKey), zap.String("contract_address", address), zap.Stringer("token_id", tokenId))
+
+					return
+				}
+
+				locker.Lock()
+				nftMap[nftKey] = nft
+				locker.Unlock()
+			}(fmt.Sprintf("%v-%v", event.TransactionHash.String(), event.LogIndex), event.NftAddress.String(), event.NftId.BigInt())
+		}
+
+		waitGroup.Wait()
+		for _, event := range events {
+			if _, ok := nftMap[fmt.Sprintf("%v-%v", event.TransactionHash.String(), event.LogIndex)]; !ok {
+				continue
 			}
+
+			nft := nftMap[fmt.Sprintf("%v-%v", event.TransactionHash.String(), event.LogIndex)]
 
 			nft.Action = event.EventType
 			nft.StartTime = &event.Timestamp
@@ -66,7 +99,11 @@ func (i *internal) handleFoundationTransactions(ctx context.Context, message *pr
 				return nil, fmt.Errorf("get native token: %w", err)
 			}
 
-			costValue := decimal.NewFromBigInt(event.CreatorAmountInETH.BigInt().Add(event.FeeInETH.BigInt(), event.OwnerInETH.BigInt()), 0)
+			sum := event.CreatorAmountInETH.BigInt()
+			sum = sum.Add(sum, event.FeeInETH.BigInt())
+			sum = sum.Add(sum, event.OwnerInETH.BigInt())
+
+			costValue := decimal.NewFromBigInt(sum, 0)
 			costValueDisplay := costValue.Shift(-int32(nativeToken.Decimals))
 
 			cost := &metadata.Token{
@@ -79,13 +116,6 @@ func (i *internal) handleFoundationTransactions(ctx context.Context, message *pr
 				ValueDisplay: &costValueDisplay,
 			}
 
-			nft.Cost = cost
-
-			metadataRaw, err := json.Marshal(nft)
-			if err != nil {
-				return nil, fmt.Errorf("marshal metadata: %w", err)
-			}
-
 			var from, to string
 
 			switch event.EventType {
@@ -93,8 +123,18 @@ func (i *internal) handleFoundationTransactions(ctx context.Context, message *pr
 				from, to = strings.ToLower(event.Seller.String()), strings.ToLower(event.From.String())
 			case filter.CollectibleAuctionBid:
 				from, to = strings.ToLower(event.From.String()), strings.ToLower(event.Seller.String())
-			case filter.CollectibleAuctionCreate, filter.CollectibleAuctionCancel, filter.CollectibleAuctionUpdate, filter.CollectibleAuctionInvalidate:
+			case filter.CollectibleAuctionCreate, filter.CollectibleAuctionUpdate:
 				from, to = strings.ToLower(event.From.String()), strings.ToLower(foundation.AddressFoundationMarket.String())
+			case filter.CollectibleAuctionCancel, filter.CollectibleAuctionInvalidate:
+				from, to = strings.ToLower(event.From.String()), strings.ToLower(foundation.AddressFoundationMarket.String())
+				cost = nil
+			}
+
+			nft.Cost = cost
+
+			metadataRaw, err := json.Marshal(nft)
+			if err != nil {
+				return nil, fmt.Errorf("marshal metadata: %w", err)
 			}
 
 			transfer := model.Transfer{
@@ -110,7 +150,7 @@ func (i *internal) handleFoundationTransactions(ctx context.Context, message *pr
 				Tag:             filter.TagCollectible,
 				Type:            filter.CollectibleAuction,
 				RelatedUrls: ethereum.BuildURL(
-					[]string{utils.GetTxHashURL(message.Network, event.TransactionHash.String()), fmt.Sprintf("%s/%s/%s/%v", "https://foundation.app/", event.Seller.String(), event.NftAddress.String(), event.NftId)},
+					[]string{utils.GetTxHashURL(message.Network, event.TransactionHash.String()), fmt.Sprintf("%s/%s/%s/%v", "https://foundation.app", event.Seller.String(), event.NftAddress.String(), event.NftId)},
 					ethereum.BuildTokenURL(message.Network, event.NftAddress.String(), event.NftId.String())...,
 				),
 			}

@@ -48,7 +48,12 @@ func (i *internal) handleFoundationOfferAccept(ctx context.Context, transaction 
 
 	// This contract can only buy NFTs with native tokens,
 	// and only one at a time
-	if nft.Cost, err = i.buildCost(ctx, transaction.Network, ethereum.AddressGenesis, event.CreatorRev); err != nil {
+
+	sum := event.SellerRev
+	sum = sum.Add(sum, event.TotalFees)
+	sum = sum.Add(sum, event.CreatorRev)
+
+	if nft.Cost, err = i.buildCost(ctx, transaction.Network, ethereum.AddressGenesis, sum); err != nil {
 		zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.Stringer("contract_address", event.NftContract), zap.Stringer("value", event.TokenId))
 
 		return nil, fmt.Errorf("build cost: %w", err)
@@ -96,7 +101,12 @@ func (i *internal) handleFoundationBuyAccept(ctx context.Context, transaction mo
 
 	// This contract can only buy NFTs with native tokens,
 	// and only one at a time
-	if nft.Cost, err = i.buildCost(ctx, transaction.Network, ethereum.AddressGenesis, event.CreatorRev); err != nil {
+
+	sum := event.SellerRev
+	sum = sum.Add(sum, event.TotalFees)
+	sum = sum.Add(sum, event.CreatorRev)
+
+	if nft.Cost, err = i.buildCost(ctx, transaction.Network, ethereum.AddressGenesis, sum); err != nil {
 		zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.Stringer("contract_address", event.NftContract), zap.Stringer("value", event.TokenId))
 
 		return nil, fmt.Errorf("build cost: %w", err)

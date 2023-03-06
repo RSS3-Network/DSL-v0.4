@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strings"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	kurora "github.com/naturalselectionlabs/kurora/client"
@@ -45,13 +47,45 @@ func (i *internal) handleNounsTransactions(ctx context.Context, message *protoco
 			return nil, fmt.Errorf("nouns transactions: %w", err)
 		}
 
-		for _, event := range events {
-			nft, err := i.tokenClient.NFTToMetadata(ctx, message.Network, event.NftAddress.String(), event.NftId.BigInt())
-			if err != nil {
-				zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", event.TransactionHash.String()), zap.Stringer("contract_address", event.NftAddress), zap.Stringer("token_id", event.NftId))
+		var (
+			limiter = make(chan struct{}, ThreadSize)
+			nftMap  = make(map[string]*metadata.Token, 0)
 
-				return nil, fmt.Errorf("nft to metadata: %w", err)
+			waitGroup sync.WaitGroup
+			locker    sync.Mutex
+		)
+
+		for _, event := range events {
+			limiter <- struct{}{}
+			waitGroup.Add(1)
+
+			go func(nftKey, address string, tokenId *big.Int) {
+				defer func() {
+					<-limiter
+					waitGroup.Done()
+				}()
+
+				nft, err := i.tokenClient.NFTToMetadata(ctx, message.Network, address, tokenId)
+				if err != nil {
+					zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", nftKey), zap.String("contract_address", address), zap.Stringer("token_id", tokenId))
+
+					return
+				}
+
+				locker.Lock()
+				nftMap[nftKey] = nft
+				locker.Unlock()
+			}(fmt.Sprintf("%v-%v", event.TransactionHash.String(), event.LogIndex), event.NftAddress.String(), event.NftId.BigInt())
+		}
+
+		waitGroup.Wait()
+
+		for _, event := range events {
+			if _, ok := nftMap[fmt.Sprintf("%v-%v", event.TransactionHash.String(), event.LogIndex)]; !ok {
+				continue
 			}
+
+			nft := nftMap[fmt.Sprintf("%v-%v", event.TransactionHash.String(), event.LogIndex)]
 
 			nft.Action = event.EventType
 			nft.StartTime = &event.StartTime

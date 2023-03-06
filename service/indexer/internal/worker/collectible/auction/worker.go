@@ -9,13 +9,15 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+
+	"go.uber.org/zap"
 )
 
 var _ worker.Worker = (*internal)(nil)
 
 const (
 	SourceName = "auction"
-	ThreadSize = 20
+	ThreadSize = 200
 )
 
 type internal struct {
@@ -72,6 +74,8 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			}
 
 			if err != nil {
+				zap.L().Warn("handle transactions", zap.Error(err), zap.String("platform", auctionPlatform))
+
 				return
 			}
 
