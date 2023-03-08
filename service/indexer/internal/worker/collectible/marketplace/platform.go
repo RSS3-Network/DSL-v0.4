@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/quix"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/tofunft"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/zora"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
@@ -34,4 +35,5 @@ var platformMap = map[common.Address]string{
 	blur.AddressMarketplace2:        protocol.PlatformBlur,
 	element.AddressExchange:         protocol.PlatformElement,
 	nswap.AddressExchange:           protocol.PlatformNSwap,
+	zora.AddressAsks:                protocol.PlatformZora,
 }
