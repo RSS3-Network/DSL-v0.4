@@ -70,6 +70,7 @@ const (
 	PlatformMaskNetwork    = "MaskNetwork"
 	PlatformNSwap          = "NSwap"
 	PlatformRSS3           = "RSS3"
+	PlatformZora           = "Zora"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
@@ -97,6 +98,19 @@ var PlatformList = map[string][]string{
 		PlatformPOAP,
 		PlatformGalaxy,
 		PlatformEns,
+		PlatformOpenSea,
+		PlatformGem,
+		PlatformQuix,
+		PlatformLooksRare,
+		PlatformTofuNFT,
+		PlatformBlur,
+		PlatformElement,
+		PlatformNSwap,
+		PlatformSpaceID,
+		PlatformUnstoppableDomain,
+		PlatformAvvy,
+		PlatformSound,
+		PlatformZora,
 	},
 	filter.TagDonation: {
 		PlatformGitcoin,
@@ -114,5 +128,11 @@ var PlatformList = map[string][]string{
 		PlatformAAVE,
 		PlatformCurve,
 		PlatformTraderJoe,
+		PlatformQuickSwap,
+		PlatformRainbow,
+		PlatformSpookySwap,
+		PlatformParaswap,
+		PlatformDODO,
+		PlatformVelodrome,
 	},
 }

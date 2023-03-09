@@ -114,3 +114,7 @@ var ContractABIs embed.FS
 // Gnosis Safe
 // Gnosis Safe V1.3 https://etherscan.io/address/0xd9db270c1b5e3bd161e8c8503c55ceabee709552
 //go:generate abigen --abi ./safe/GnosisSafe.abi --pkg safe --type GnosisSafe --out ./safe/gnosisSafe.go
+
+// ZORA
+// Asks https://etherscan.io/address/0x6170b3c3a54c3d8c854934cbc314ed479b2b29a3
+//go:generate abigen --abi ./zora/asks.abi --pkg zora --type Zora --out ./zora/asks.go
