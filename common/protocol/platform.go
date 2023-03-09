@@ -70,6 +70,7 @@ const (
 	PlatformMaskNetwork    = "MaskNetwork"
 	PlatformNSwap          = "NSwap"
 	PlatformRSS3           = "RSS3"
+	PlatformZora           = "Zora"
 	PlatformNouns          = "Nouns"
 	PlatformFoundation     = "Foundation"
 

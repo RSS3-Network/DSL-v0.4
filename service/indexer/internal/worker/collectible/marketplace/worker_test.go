@@ -782,6 +782,47 @@ func Test_internal_Handle(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "zora ask",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0xb4fe3175e95c862837e72befe95cb09599ec8a22", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0x65b9afe83ce9868810e722217f7b71c8b03eb2bf6187736cc77a8e4475a5b453
+						Hash:        "0x65b9afe83ce9868810e722217f7b71c8b03eb2bf6187736cc77a8e4475a5b453",
+						BlockNumber: 16712826,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+
+				for _, transaction := range transactions {
+					zap.L().Info("", zap.Any("transaction", transaction))
+
+					assert.Len(t, transaction.Transfers, 1)
+				}
+
+				for _, transaction := range transactions {
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformZora) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "foundation buy",
 			arguments: arguments{
 				ctx: context.Background(),

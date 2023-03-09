@@ -20,6 +20,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/opensea"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/quix"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/tofunft"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/zora"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
@@ -135,6 +136,8 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 					internalTransfers, err = i.handleElementERC1155SellOrderFilled(ctx, transaction, log)
 				case nswap.EventHashEventMatch:
 					internalTransfers, err = i.handleNSwapEventMatch(ctx, transaction, log)
+				case zora.EventAskFilled:
+					internalTransfers, err = i.handleZoraAskFilled(ctx, transaction, log)
 				case foundation.EventBuyPriceAccepted:
 					internalTransfers, err = i.handleFoundationBuyAccept(ctx, transaction, log)
 				case foundation.EventOfferAccepted:
