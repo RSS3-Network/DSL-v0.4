@@ -13,4 +13,5 @@ type Config struct {
 	RPC           *configx.RPC           `mapstructure:"rpc"`
 	Kurora        *configx.Kurora        `mapstructure:"kurora"`
 	EIP1577       *configx.EIP1577       `mapstructure:"eip1577"`
+	Sound         *configx.Sound         `mapstructure:"sound"`
 }

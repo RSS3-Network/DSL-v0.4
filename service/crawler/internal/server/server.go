@@ -5,6 +5,17 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/crossbell"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/eip1577"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/farcaster"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/iqwiki"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/lens"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/matters"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/mirror"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/rara"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/sound"
+
 	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 
 	_ "github.com/lib/pq"
@@ -18,15 +29,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/crossbell"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/eip1577"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/farcaster"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/iqwiki"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/lens"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/matters"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/mirror"
-	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/rara"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 	"github.com/sirupsen/logrus"
 
@@ -138,6 +140,11 @@ func (s *Server) Initialize() (err error) {
 
 	s.employer = shedlock.New()
 
+	sound, err := sound.New(s.config)
+	if err != nil {
+		return err
+	}
+
 	s.crawlers = []crawler.Crawler{
 		ens.New(s.rabbitmqChannel, s.employer, s.config),
 		lens.New(s.config),
@@ -148,6 +155,7 @@ func (s *Server) Initialize() (err error) {
 		crossbell.New(s.config),
 		matters.New(s.config),
 		rara.New(s.config),
+		sound,
 	}
 
 	return nil

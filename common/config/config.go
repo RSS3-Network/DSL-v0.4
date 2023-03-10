@@ -157,6 +157,10 @@ type RPCNetwork struct {
 	Fantom            *RPCEndpoint `mapstructure:"fantom"`
 }
 
+type Sound struct {
+	APIKey string `mapstructure:"apikey"`
+}
+
 func (r RPCNetwork) network2EP() map[string]*RPCEndpoint {
 	return map[string]*RPCEndpoint{
 		protocol.NetworkEthereum:          r.Ethereum,
