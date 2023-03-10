@@ -128,6 +128,10 @@ type EIP1577 struct {
 	Endpoint string `mapstructure:"endpoint"`
 }
 
+type NFTScan struct {
+	APIKey string `mapstructure:"apiKey"`
+}
+
 type Gateway struct {
 	EthEndpoint string `mapstructure:"ethendpoint"`
 }
