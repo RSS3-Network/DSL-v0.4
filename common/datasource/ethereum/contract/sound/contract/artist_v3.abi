@@ -1,5 +1,10 @@
 [
   {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -53,6 +58,31 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "enum ArtistV3.TimeType",
+        "name": "timeType",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "editionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint32",
+        "name": "newTime",
+        "type": "uint32"
+      }
+    ],
+    "name": "AuctionTimeSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "uint256",
         "name": "editionId",
@@ -93,6 +123,18 @@
         "internalType": "uint32",
         "name": "endTime",
         "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "permissionedQuantity",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "signerAddress",
+        "type": "address"
       }
     ],
     "name": "EditionCreated",
@@ -146,6 +188,44 @@
       }
     ],
     "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "editionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "permissionedQuantity",
+        "type": "uint32"
+      }
+    ],
+    "name": "PermissionedQuantitySet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "editionId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "signerAddress",
+        "type": "address"
+      }
+    ],
+    "name": "SignerAddressSet",
     "type": "event"
   },
   {
@@ -216,6 +296,11 @@
         "internalType": "uint256",
         "name": "_editionId",
         "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "_signature",
+        "type": "bytes"
       }
     ],
     "name": "buyEdition",
@@ -267,6 +352,16 @@
         "internalType": "uint32",
         "name": "_endTime",
         "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "_permissionedQuantity",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "_signerAddress",
+        "type": "address"
       }
     ],
     "name": "createEdition",
@@ -283,6 +378,19 @@
       }
     ],
     "name": "depositedForEdition",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "editionCount",
     "outputs": [
       {
         "internalType": "uint256",
@@ -337,6 +445,16 @@
         "internalType": "uint32",
         "name": "endTime",
         "type": "uint32"
+      },
+      {
+        "internalType": "uint32",
+        "name": "permissionedQuantity",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "signerAddress",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -356,44 +474,6 @@
         "internalType": "address",
         "name": "",
         "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_editionId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getOwnersOfEdition",
-    "outputs": [
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_editionId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getTokenIdsOfEdition",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
       }
     ],
     "stateMutability": "view",
@@ -502,6 +582,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "_tokenIds",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "ownersOfTokenIds",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "renounceOwnership",
     "outputs": [],
@@ -512,7 +611,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_editionId",
+        "name": "_tokenId",
         "type": "uint256"
       },
       {
@@ -633,6 +732,42 @@
       },
       {
         "internalType": "uint32",
+        "name": "_permissionedQuantity",
+        "type": "uint32"
+      }
+    ],
+    "name": "setPermissionedQuantity",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_editionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "_newSignerAddress",
+        "type": "address"
+      }
+    ],
+    "name": "setSignerAddress",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_editionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
         "name": "_startTime",
         "type": "uint32"
       }
@@ -678,7 +813,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "_tokenId",
         "type": "uint256"
       }
     ],
