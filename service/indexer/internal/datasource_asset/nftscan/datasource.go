@@ -17,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	"github.com/samber/lo"
+	"github.com/shopspring/decimal"
 
 	"go.uber.org/zap"
 )
@@ -66,6 +67,10 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 			if metadata.Description == "" {
 				metadata.Description = collection.Description
+			}
+
+			if asset.OwnTimestamp.Equal(decimal.Zero) {
+				asset.OwnTimestamp = asset.MintTimestamp
 			}
 
 			if strings.HasPrefix(metadata.Image, "ipfs://") {

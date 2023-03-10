@@ -37,16 +37,17 @@ type Collection struct {
 }
 
 type Asset struct {
-	TokenID      decimal.Decimal `json:"token_id"`
-	ERCType      string          `json:"erc_type"`
-	Amount       decimal.Decimal `json:"amount"`
-	Owner        string          `json:"owner"`
-	OwnTimestamp decimal.Decimal `json:"own_timestamp"`
-	TokenURI     string          `json:"token_uri"`
-	MetadataJSON string          `json:"metadata_json"`
-	Name         string          `json:"name"`
-	ImageURI     string          `json:"image_uri"`
-	Attributes   []Attribute     `json:"attributes"`
+	TokenID       decimal.Decimal `json:"token_id"`
+	ERCType       string          `json:"erc_type"`
+	Amount        decimal.Decimal `json:"amount"`
+	Owner         string          `json:"owner"`
+	OwnTimestamp  decimal.Decimal `json:"own_timestamp"`
+	MintTimestamp decimal.Decimal `json:"mint_timestamp"`
+	TokenURI      string          `json:"token_uri"`
+	MetadataJSON  string          `json:"metadata_json"`
+	Name          string          `json:"name"`
+	ImageURI      string          `json:"image_uri"`
+	Attributes    []Attribute     `json:"attributes"`
 }
 
 type Attribute struct {
