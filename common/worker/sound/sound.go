@@ -4,9 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"net/http"
+	"time"
+
 	"github.com/Khan/genqlient/graphql"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -25,9 +30,6 @@ import (
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"math/big"
-	"net/http"
-	"time"
 )
 
 //go:generate go run -mod=mod github.com/Khan/genqlient ./schema/genqlient.yaml
@@ -99,7 +101,7 @@ func GetEditionNfts(ctx context.Context, contractAddress string, editionId strin
 		}
 
 		if !response.GetReleaseContract().NftsPaginated.PageInfo.HasNextPage {
-			return nfts, nil
+			break
 		}
 
 		cursor = response.GetReleaseContract().NftsPaginated.PageInfo.EndCursor
@@ -158,41 +160,13 @@ func HandleReceipt(ctx context.Context, transaction *model.Transaction) (results
 		var transfers []model.Transfer
 		switch log.Topics[0] {
 		case sound.EventHashEditionCreatedV1:
-			artistContract, err := contract.NewArtist(log.Address, client)
-			if err != nil {
-				loggerx.Global().Error("sound: new artist contract error", zap.Error(err))
-
-				continue
-			}
-
-			transfers, err = HandleEditionCreatedV1(ctx, artistContract, log, &transfer)
+			transfers, err = HandleEditionCreatedV1(ctx, client, log, &transfer)
 		case sound.EventHashEditionCreatedV3:
-			artistContract, err := contract.NewArtistV3(log.Address, client)
-			if err != nil {
-				loggerx.Global().Error("sound: new artist v3 contract error", zap.Error(err))
-
-				continue
-			}
-
-			transfers, err = HandleEditionCreatedV3(ctx, artistContract, log, &transfer)
+			transfers, err = HandleEditionCreatedV3(ctx, client, log, &transfer)
 		case sound.EventHashEditionPurchasedV3:
-			artistContract, err := contract.NewArtistV3(log.Address, client)
-			if err != nil {
-				loggerx.Global().Error("sound: new artist v3 contract error", zap.Error(err))
-
-				continue
-			}
-
-			err = HandleEditionPurchasedV3(ctx, artistContract, log, &transfer)
+			err = HandleEditionPurchasedV3(ctx, client, log, &transfer)
 		case sound.EventHashEditionPurchasedV5:
-			artistContract, err := contract.NewArtistV5(log.Address, client)
-			if err != nil {
-				loggerx.Global().Error("sound: new artist v5 contract error", zap.Error(err))
-
-				continue
-			}
-
-			err = HandleEditionPurchasedV5(ctx, artistContract, log, &transfer)
+			err = HandleEditionPurchasedV5(ctx, client, log, &transfer)
 		default:
 			continue
 		}
@@ -213,11 +187,18 @@ func HandleReceipt(ctx context.Context, transaction *model.Transaction) (results
 	return results, nil
 }
 
-func HandleEditionCreatedV1(ctx context.Context, artistContract *contract.Artist, log *types.Log, transfer *model.Transfer) (transfers []model.Transfer, err error) {
+func HandleEditionCreatedV1(ctx context.Context, client *ethclient.Client, log *types.Log, transfer *model.Transfer) (transfers []model.Transfer, err error) {
 	tracer := otel.Tracer("sound")
 	_, trace := tracer.Start(ctx, "sound:HandleEditionCreatedV1")
 
 	defer func() { opentelemetry.Log(trace, log, transfers, err) }()
+
+	artistContract, err := contract.NewArtist(log.Address, client)
+	if err != nil {
+		loggerx.Global().Error("sound: new artist contract error", zap.Error(err))
+
+		return nil, err
+	}
 
 	event, err := artistContract.ParseEditionCreated(*log)
 	if err != nil {
@@ -250,19 +231,26 @@ func HandleEditionCreatedV1(ctx context.Context, artistContract *contract.Artist
 
 		releaseTransfer := *transfer
 		releaseTransfer.Index = int64(index)
-		releaseTransfer.Metadata, err = json.Marshal(metadata)
-		releaseTransfer.RelatedUrls = append(transfer.RelatedUrls, edition.GetReleaseContract().OpenseaUrl)
+		releaseTransfer.Metadata, _ = json.Marshal(metadata)
+		releaseTransfer.RelatedUrls = append(releaseTransfer.RelatedUrls, edition.GetReleaseContract().OpenseaUrl)
 		transfers = append(transfers, releaseTransfer)
 	}
 
 	return transfers, nil
 }
 
-func HandleEditionCreatedV3(ctx context.Context, artistContract *contract.ArtistV3, log *types.Log, transfer *model.Transfer) (transfers []model.Transfer, err error) {
+func HandleEditionCreatedV3(ctx context.Context, client *ethclient.Client, log *types.Log, transfer *model.Transfer) (transfers []model.Transfer, err error) {
 	tracer := otel.Tracer("sound")
 	_, trace := tracer.Start(ctx, "sound:HandleEditionCreatedV3")
 
 	defer func() { opentelemetry.Log(trace, log, transfers, err) }()
+
+	artistContract, err := contract.NewArtistV3(log.Address, client)
+	if err != nil {
+		loggerx.Global().Error("sound: new artist v3 contract error", zap.Error(err))
+
+		return nil, err
+	}
 
 	event, err := artistContract.ParseEditionCreated(*log)
 	if err != nil {
@@ -292,20 +280,27 @@ func HandleEditionCreatedV3(ctx context.Context, artistContract *contract.Artist
 
 		releaseTransfer := *transfer
 		releaseTransfer.Index = int64(index)
-		releaseTransfer.Metadata, err = json.Marshal(metadata)
-		releaseTransfer.RelatedUrls = append(transfer.RelatedUrls, edition.GetReleaseContract().OpenseaUrl)
+		releaseTransfer.Metadata, _ = json.Marshal(metadata)
+		releaseTransfer.RelatedUrls = append(releaseTransfer.RelatedUrls, edition.GetReleaseContract().OpenseaUrl)
 		transfers = append(transfers, releaseTransfer)
 	}
 
 	return transfers, nil
 }
 
-func HandleEditionPurchasedV3(ctx context.Context, artistContract *contract.ArtistV3, log *types.Log, transfer *model.Transfer) (err error) {
+func HandleEditionPurchasedV3(ctx context.Context, client *ethclient.Client, log *types.Log, transfer *model.Transfer) (err error) {
 	tracer := otel.Tracer("sound")
 	_, trace := tracer.Start(ctx, "sound:HandleEditionPurchasedV3")
 
 	defer func() { opentelemetry.Log(trace, log, transfer, err) }()
 
+	artistContract, err := contract.NewArtistV3(log.Address, client)
+	if err != nil {
+		loggerx.Global().Error("sound: new artist v3 contract error", zap.Error(err))
+
+		return err
+	}
+
 	// parse event
 	event, err := artistContract.ParseEditionPurchased(*log)
 	if err != nil {
@@ -335,17 +330,24 @@ func HandleEditionPurchasedV3(ctx context.Context, artistContract *contract.Arti
 	value, _ := decimal.NewFromString(edition.GetReleaseContract().Price)
 	metadata.Cost.Value = lo.ToPtr(value)
 	metadata.Cost.ValueDisplay = lo.ToPtr(value.Shift(-int32(metadata.Cost.Decimals)))
-	transfer.Metadata, err = json.Marshal(metadata)
+	transfer.Metadata, _ = json.Marshal(metadata)
 	transfer.RelatedUrls = append(transfer.RelatedUrls, edition.GetReleaseContract().OpenseaUrl)
 	return nil
 }
 
-func HandleEditionPurchasedV5(ctx context.Context, artistContract *contract.ArtistV5, log *types.Log, transfer *model.Transfer) (err error) {
+func HandleEditionPurchasedV5(ctx context.Context, client *ethclient.Client, log *types.Log, transfer *model.Transfer) (err error) {
 	tracer := otel.Tracer("sound")
 	_, trace := tracer.Start(ctx, "sound:HandleEditionPurchasedV5")
 
 	defer func() { opentelemetry.Log(trace, log, transfer, err) }()
 
+	artistContract, err := contract.NewArtistV5(log.Address, client)
+	if err != nil {
+		loggerx.Global().Error("sound: new artist v5 contract error", zap.Error(err))
+
+		return err
+	}
+
 	// parse event
 	event, err := artistContract.ParseEditionPurchased(*log)
 	if err != nil {
@@ -375,7 +377,7 @@ func HandleEditionPurchasedV5(ctx context.Context, artistContract *contract.Arti
 	value, _ := decimal.NewFromString(edition.GetReleaseContract().Price)
 	metadata.Cost.Value = lo.ToPtr(value)
 	metadata.Cost.ValueDisplay = lo.ToPtr(value.Shift(-int32(metadata.Cost.Decimals)))
-	transfer.Metadata, err = json.Marshal(metadata)
+	transfer.Metadata, _ = json.Marshal(metadata)
 	transfer.RelatedUrls = append(transfer.RelatedUrls, edition.GetReleaseContract().OpenseaUrl)
 	return nil
 }

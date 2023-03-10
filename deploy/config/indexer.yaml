@@ -88,3 +88,6 @@ rpc:
   ipfs:
     io: ''
     internal: ''
+
+sound:
+  apiKey: ''
