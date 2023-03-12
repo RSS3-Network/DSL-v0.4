@@ -2,13 +2,19 @@ package auction
 
 import (
 	"context"
+	"math/big"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/common"
 	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/element"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/shopspring/decimal"
 
 	"go.uber.org/zap"
 )
@@ -69,6 +75,8 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				internalTransactions, err = i.handleNounsTransactions(ctx, message)
 			case protocol.PlatformFoundation:
 				internalTransactions, err = i.handleFoundationTransactions(ctx, message)
+			case protocol.PlatformZora:
+				internalTransactions, err = i.handleZoraTransactions(ctx, message)
 			default:
 				return
 			}
@@ -88,6 +96,51 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	waitGroup.Wait()
 
 	return resTransactions, nil
+}
+
+func (i *internal) buildCost(ctx context.Context, network string, address common.Address, value *big.Int) (*metadata.Token, error) {
+	var costToken metadata.Token
+
+	if address == ethereum.AddressGenesis || address == element.AddressNativeToken {
+		nativeToken, err := i.tokenClient.Native(ctx, network)
+		if err != nil {
+			return nil, err
+		}
+
+		costValue := decimal.NewFromBigInt(value, 0)
+		costValueDisplay := costValue.Shift(-int32(nativeToken.Decimals))
+
+		costToken = metadata.Token{
+			Name:         nativeToken.Name,
+			Symbol:       nativeToken.Symbol,
+			Decimals:     nativeToken.Decimals,
+			Standard:     protocol.TokenStandardNative,
+			Image:        nativeToken.Logo,
+			Value:        &costValue,
+			ValueDisplay: &costValueDisplay,
+		}
+	} else {
+		erc20Token, err := i.tokenClient.ERC20(ctx, network, address.String())
+		if err != nil {
+			return nil, err
+		}
+
+		costValue := decimal.NewFromBigInt(value, 0)
+		costValueDisplay := costValue.Shift(-int32(erc20Token.Decimals))
+
+		costToken = metadata.Token{
+			Name:            erc20Token.Name,
+			Symbol:          erc20Token.Symbol,
+			Decimals:        erc20Token.Decimals,
+			Standard:        protocol.TokenStandardERC20,
+			ContractAddress: erc20Token.ContractAddress,
+			Image:           erc20Token.Logo,
+			Value:           &costValue,
+			ValueDisplay:    &costValueDisplay,
+		}
+	}
+
+	return &costToken, nil
 }
 
 func (i *internal) Jobs() []worker.Job {

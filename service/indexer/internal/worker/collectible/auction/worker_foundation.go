@@ -19,7 +19,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/samber/lo"
-	"github.com/shopspring/decimal"
 
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -46,9 +45,9 @@ func (i *internal) handleFoundationTransactions(ctx context.Context, message *pr
 	for first := true; foundationQuery.Cursor != nil || first; first = false {
 		events, err := i.kuroraClient.FetchDatasetFoundationEvents(ctx, foundationQuery)
 		if err != nil {
-			return nil, fmt.Errorf("nouns transactions: %w", err)
+			return nil, fmt.Errorf("foundation transactions: %w", err)
 		}
-		// 并行处理
+
 		var (
 			limiter = make(chan struct{}, ThreadSize)
 			nftMap  = make(map[string]*metadata.Token, 0)
@@ -94,26 +93,16 @@ func (i *internal) handleFoundationTransactions(ctx context.Context, message *pr
 				nft.EndTime = &event.Expired
 			}
 
-			nativeToken, err := i.tokenClient.Native(context.Background(), message.Network)
-			if err != nil {
-				return nil, fmt.Errorf("get native token: %w", err)
-			}
-
 			sum := event.CreatorAmountInETH.BigInt()
 			sum = sum.Add(sum, event.FeeInETH.BigInt())
 			sum = sum.Add(sum, event.OwnerInETH.BigInt())
 
-			costValue := decimal.NewFromBigInt(sum, 0)
-			costValueDisplay := costValue.Shift(-int32(nativeToken.Decimals))
+			cost, err := i.buildCost(ctx, message.Network, ethereum.AddressGenesis, sum)
 
-			cost := &metadata.Token{
-				Name:         nativeToken.Name,
-				Symbol:       nativeToken.Symbol,
-				Decimals:     nativeToken.Decimals,
-				Standard:     protocol.TokenStandardNative,
-				Image:        nativeToken.Logo,
-				Value:        &costValue,
-				ValueDisplay: &costValueDisplay,
+			if err != nil {
+				zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", event.TransactionHash.String()), zap.Stringer("contract_address", event.NftAddress), zap.Stringer("id", event.NftId))
+
+				continue
 			}
 
 			var from, to string
