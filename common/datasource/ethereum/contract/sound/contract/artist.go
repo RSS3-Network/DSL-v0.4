@@ -30,7 +30,7 @@ var (
 
 // ArtistMetaData contains all meta data concerning the Artist contract.
 var ArtistMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"approved\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"ApprovalForAll\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"enumArtistV3.TimeType\",\"name\":\"timeType\",\"type\":\"uint8\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"editionId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint32\",\"name\":\"newTime\",\"type\":\"uint32\"}],\"name\":\"AuctionTimeSet\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"editionId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"fundingRecipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"quantity\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"royaltyBPS\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"startTime\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"endTime\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"permissionedQuantity\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"signerAddress\",\"type\":\"address\"}],\"name\":\"EditionCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"editionId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"numSold\",\"type\":\"uint32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"}],\"name\":\"EditionPurchased\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"editionId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"permissionedQuantity\",\"type\":\"uint32\"}],\"name\":\"PermissionedQuantitySet\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"editionId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"signerAddress\",\"type\":\"address\"}],\"name\":\"SignerAddressSet\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_signature\",\"type\":\"bytes\"}],\"name\":\"buyEdition\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"contractURI\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"addresspayable\",\"name\":\"_fundingRecipient\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_price\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"_quantity\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"_royaltyBPS\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"_startTime\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"_endTime\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"_permissionedQuantity\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"_signerAddress\",\"type\":\"address\"}],\"name\":\"createEdition\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"depositedForEdition\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"editionCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"editions\",\"outputs\":[{\"internalType\":\"addresspayable\",\"name\":\"fundingRecipient\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"numSold\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"quantity\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"royaltyBPS\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"startTime\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"endTime\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"permissionedQuantity\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"signerAddress\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getApproved\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_artistId\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"_name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_symbol\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_baseURI\",\"type\":\"string\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"isApprovedForAll\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"ownerOf\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256[]\",\"name\":\"_tokenIds\",\"type\":\"uint256[]\"}],\"name\":\"ownersOfTokenIds\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_tokenId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_salePrice\",\"type\":\"uint256\"}],\"name\":\"royaltyInfo\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"fundingRecipient\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"royaltyAmount\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"_endTime\",\"type\":\"uint32\"}],\"name\":\"setEndTime\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"_permissionedQuantity\",\"type\":\"uint32\"}],\"name\":\"setPermissionedQuantity\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"_newSignerAddress\",\"type\":\"address\"}],\"name\":\"setSignerAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"_startTime\",\"type\":\"uint32\"}],\"name\":\"setStartTime\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"_interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"tokenToEdition\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"tokenURI\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"}],\"name\":\"withdrawFunds\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"withdrawnForEdition\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
+	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"approved\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"ApprovalForAll\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"editionId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"fundingRecipient\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"quantity\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"royaltyBPS\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"startTime\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"endTime\",\"type\":\"uint32\"}],\"name\":\"EditionCreated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"editionId\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"numSold\",\"type\":\"uint32\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"}],\"name\":\"EditionPurchased\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"}],\"name\":\"buyEdition\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"contractURI\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"addresspayable\",\"name\":\"_fundingRecipient\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_price\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"_quantity\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"_royaltyBPS\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"_startTime\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"_endTime\",\"type\":\"uint32\"}],\"name\":\"createEdition\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"depositedForEdition\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"editions\",\"outputs\":[{\"internalType\":\"addresspayable\",\"name\":\"fundingRecipient\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"numSold\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"quantity\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"royaltyBPS\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"startTime\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"endTime\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getApproved\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"}],\"name\":\"getOwnersOfEdition\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"}],\"name\":\"getTokenIdsOfEdition\",\"outputs\":[{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_artistId\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"_name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_symbol\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"_baseURI\",\"type\":\"string\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"isApprovedForAll\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"ownerOf\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_salePrice\",\"type\":\"uint256\"}],\"name\":\"royaltyInfo\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"fundingRecipient\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"royaltyAmount\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"_endTime\",\"type\":\"uint32\"}],\"name\":\"setEndTime\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"_startTime\",\"type\":\"uint32\"}],\"name\":\"setStartTime\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"_interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"tokenToEdition\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_tokenId\",\"type\":\"uint256\"}],\"name\":\"tokenURI\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_editionId\",\"type\":\"uint256\"}],\"name\":\"withdrawFunds\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"withdrawnForEdition\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]",
 }
 
 // ArtistABI is the input ABI used to generate the binding from.
@@ -272,64 +272,29 @@ func (_Artist *ArtistCallerSession) DepositedForEdition(arg0 *big.Int) (*big.Int
 	return _Artist.Contract.DepositedForEdition(&_Artist.CallOpts, arg0)
 }
 
-// EditionCount is a free data retrieval call binding the contract method 0x4bf44026.
-//
-// Solidity: function editionCount() view returns(uint256)
-func (_Artist *ArtistCaller) EditionCount(opts *bind.CallOpts) (*big.Int, error) {
-	var out []interface{}
-	err := _Artist.contract.Call(opts, &out, "editionCount")
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// EditionCount is a free data retrieval call binding the contract method 0x4bf44026.
-//
-// Solidity: function editionCount() view returns(uint256)
-func (_Artist *ArtistSession) EditionCount() (*big.Int, error) {
-	return _Artist.Contract.EditionCount(&_Artist.CallOpts)
-}
-
-// EditionCount is a free data retrieval call binding the contract method 0x4bf44026.
-//
-// Solidity: function editionCount() view returns(uint256)
-func (_Artist *ArtistCallerSession) EditionCount() (*big.Int, error) {
-	return _Artist.Contract.EditionCount(&_Artist.CallOpts)
-}
-
 // Editions is a free data retrieval call binding the contract method 0x279c806e.
 //
-// Solidity: function editions(uint256 ) view returns(address fundingRecipient, uint256 price, uint32 numSold, uint32 quantity, uint32 royaltyBPS, uint32 startTime, uint32 endTime, uint32 permissionedQuantity, address signerAddress)
+// Solidity: function editions(uint256 ) view returns(address fundingRecipient, uint256 price, uint32 numSold, uint32 quantity, uint32 royaltyBPS, uint32 startTime, uint32 endTime)
 func (_Artist *ArtistCaller) Editions(opts *bind.CallOpts, arg0 *big.Int) (struct {
-	FundingRecipient     common.Address
-	Price                *big.Int
-	NumSold              uint32
-	Quantity             uint32
-	RoyaltyBPS           uint32
-	StartTime            uint32
-	EndTime              uint32
-	PermissionedQuantity uint32
-	SignerAddress        common.Address
+	FundingRecipient common.Address
+	Price            *big.Int
+	NumSold          uint32
+	Quantity         uint32
+	RoyaltyBPS       uint32
+	StartTime        uint32
+	EndTime          uint32
 }, error) {
 	var out []interface{}
 	err := _Artist.contract.Call(opts, &out, "editions", arg0)
 
 	outstruct := new(struct {
-		FundingRecipient     common.Address
-		Price                *big.Int
-		NumSold              uint32
-		Quantity             uint32
-		RoyaltyBPS           uint32
-		StartTime            uint32
-		EndTime              uint32
-		PermissionedQuantity uint32
-		SignerAddress        common.Address
+		FundingRecipient common.Address
+		Price            *big.Int
+		NumSold          uint32
+		Quantity         uint32
+		RoyaltyBPS       uint32
+		StartTime        uint32
+		EndTime          uint32
 	})
 	if err != nil {
 		return *outstruct, err
@@ -342,8 +307,6 @@ func (_Artist *ArtistCaller) Editions(opts *bind.CallOpts, arg0 *big.Int) (struc
 	outstruct.RoyaltyBPS = *abi.ConvertType(out[4], new(uint32)).(*uint32)
 	outstruct.StartTime = *abi.ConvertType(out[5], new(uint32)).(*uint32)
 	outstruct.EndTime = *abi.ConvertType(out[6], new(uint32)).(*uint32)
-	outstruct.PermissionedQuantity = *abi.ConvertType(out[7], new(uint32)).(*uint32)
-	outstruct.SignerAddress = *abi.ConvertType(out[8], new(common.Address)).(*common.Address)
 
 	return *outstruct, err
 
@@ -351,34 +314,30 @@ func (_Artist *ArtistCaller) Editions(opts *bind.CallOpts, arg0 *big.Int) (struc
 
 // Editions is a free data retrieval call binding the contract method 0x279c806e.
 //
-// Solidity: function editions(uint256 ) view returns(address fundingRecipient, uint256 price, uint32 numSold, uint32 quantity, uint32 royaltyBPS, uint32 startTime, uint32 endTime, uint32 permissionedQuantity, address signerAddress)
+// Solidity: function editions(uint256 ) view returns(address fundingRecipient, uint256 price, uint32 numSold, uint32 quantity, uint32 royaltyBPS, uint32 startTime, uint32 endTime)
 func (_Artist *ArtistSession) Editions(arg0 *big.Int) (struct {
-	FundingRecipient     common.Address
-	Price                *big.Int
-	NumSold              uint32
-	Quantity             uint32
-	RoyaltyBPS           uint32
-	StartTime            uint32
-	EndTime              uint32
-	PermissionedQuantity uint32
-	SignerAddress        common.Address
+	FundingRecipient common.Address
+	Price            *big.Int
+	NumSold          uint32
+	Quantity         uint32
+	RoyaltyBPS       uint32
+	StartTime        uint32
+	EndTime          uint32
 }, error) {
 	return _Artist.Contract.Editions(&_Artist.CallOpts, arg0)
 }
 
 // Editions is a free data retrieval call binding the contract method 0x279c806e.
 //
-// Solidity: function editions(uint256 ) view returns(address fundingRecipient, uint256 price, uint32 numSold, uint32 quantity, uint32 royaltyBPS, uint32 startTime, uint32 endTime, uint32 permissionedQuantity, address signerAddress)
+// Solidity: function editions(uint256 ) view returns(address fundingRecipient, uint256 price, uint32 numSold, uint32 quantity, uint32 royaltyBPS, uint32 startTime, uint32 endTime)
 func (_Artist *ArtistCallerSession) Editions(arg0 *big.Int) (struct {
-	FundingRecipient     common.Address
-	Price                *big.Int
-	NumSold              uint32
-	Quantity             uint32
-	RoyaltyBPS           uint32
-	StartTime            uint32
-	EndTime              uint32
-	PermissionedQuantity uint32
-	SignerAddress        common.Address
+	FundingRecipient common.Address
+	Price            *big.Int
+	NumSold          uint32
+	Quantity         uint32
+	RoyaltyBPS       uint32
+	StartTime        uint32
+	EndTime          uint32
 }, error) {
 	return _Artist.Contract.Editions(&_Artist.CallOpts, arg0)
 }
@@ -412,6 +371,68 @@ func (_Artist *ArtistSession) GetApproved(tokenId *big.Int) (common.Address, err
 // Solidity: function getApproved(uint256 tokenId) view returns(address)
 func (_Artist *ArtistCallerSession) GetApproved(tokenId *big.Int) (common.Address, error) {
 	return _Artist.Contract.GetApproved(&_Artist.CallOpts, tokenId)
+}
+
+// GetOwnersOfEdition is a free data retrieval call binding the contract method 0x13dd2960.
+//
+// Solidity: function getOwnersOfEdition(uint256 _editionId) view returns(address[])
+func (_Artist *ArtistCaller) GetOwnersOfEdition(opts *bind.CallOpts, _editionId *big.Int) ([]common.Address, error) {
+	var out []interface{}
+	err := _Artist.contract.Call(opts, &out, "getOwnersOfEdition", _editionId)
+
+	if err != nil {
+		return *new([]common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]common.Address)).(*[]common.Address)
+
+	return out0, err
+
+}
+
+// GetOwnersOfEdition is a free data retrieval call binding the contract method 0x13dd2960.
+//
+// Solidity: function getOwnersOfEdition(uint256 _editionId) view returns(address[])
+func (_Artist *ArtistSession) GetOwnersOfEdition(_editionId *big.Int) ([]common.Address, error) {
+	return _Artist.Contract.GetOwnersOfEdition(&_Artist.CallOpts, _editionId)
+}
+
+// GetOwnersOfEdition is a free data retrieval call binding the contract method 0x13dd2960.
+//
+// Solidity: function getOwnersOfEdition(uint256 _editionId) view returns(address[])
+func (_Artist *ArtistCallerSession) GetOwnersOfEdition(_editionId *big.Int) ([]common.Address, error) {
+	return _Artist.Contract.GetOwnersOfEdition(&_Artist.CallOpts, _editionId)
+}
+
+// GetTokenIdsOfEdition is a free data retrieval call binding the contract method 0x74e79189.
+//
+// Solidity: function getTokenIdsOfEdition(uint256 _editionId) view returns(uint256[])
+func (_Artist *ArtistCaller) GetTokenIdsOfEdition(opts *bind.CallOpts, _editionId *big.Int) ([]*big.Int, error) {
+	var out []interface{}
+	err := _Artist.contract.Call(opts, &out, "getTokenIdsOfEdition", _editionId)
+
+	if err != nil {
+		return *new([]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]*big.Int)).(*[]*big.Int)
+
+	return out0, err
+
+}
+
+// GetTokenIdsOfEdition is a free data retrieval call binding the contract method 0x74e79189.
+//
+// Solidity: function getTokenIdsOfEdition(uint256 _editionId) view returns(uint256[])
+func (_Artist *ArtistSession) GetTokenIdsOfEdition(_editionId *big.Int) ([]*big.Int, error) {
+	return _Artist.Contract.GetTokenIdsOfEdition(&_Artist.CallOpts, _editionId)
+}
+
+// GetTokenIdsOfEdition is a free data retrieval call binding the contract method 0x74e79189.
+//
+// Solidity: function getTokenIdsOfEdition(uint256 _editionId) view returns(uint256[])
+func (_Artist *ArtistCallerSession) GetTokenIdsOfEdition(_editionId *big.Int) ([]*big.Int, error) {
+	return _Artist.Contract.GetTokenIdsOfEdition(&_Artist.CallOpts, _editionId)
 }
 
 // IsApprovedForAll is a free data retrieval call binding the contract method 0xe985e9c5.
@@ -538,46 +559,15 @@ func (_Artist *ArtistCallerSession) OwnerOf(tokenId *big.Int) (common.Address, e
 	return _Artist.Contract.OwnerOf(&_Artist.CallOpts, tokenId)
 }
 
-// OwnersOfTokenIds is a free data retrieval call binding the contract method 0x52f5c2e4.
-//
-// Solidity: function ownersOfTokenIds(uint256[] _tokenIds) view returns(address[])
-func (_Artist *ArtistCaller) OwnersOfTokenIds(opts *bind.CallOpts, _tokenIds []*big.Int) ([]common.Address, error) {
-	var out []interface{}
-	err := _Artist.contract.Call(opts, &out, "ownersOfTokenIds", _tokenIds)
-
-	if err != nil {
-		return *new([]common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([]common.Address)).(*[]common.Address)
-
-	return out0, err
-
-}
-
-// OwnersOfTokenIds is a free data retrieval call binding the contract method 0x52f5c2e4.
-//
-// Solidity: function ownersOfTokenIds(uint256[] _tokenIds) view returns(address[])
-func (_Artist *ArtistSession) OwnersOfTokenIds(_tokenIds []*big.Int) ([]common.Address, error) {
-	return _Artist.Contract.OwnersOfTokenIds(&_Artist.CallOpts, _tokenIds)
-}
-
-// OwnersOfTokenIds is a free data retrieval call binding the contract method 0x52f5c2e4.
-//
-// Solidity: function ownersOfTokenIds(uint256[] _tokenIds) view returns(address[])
-func (_Artist *ArtistCallerSession) OwnersOfTokenIds(_tokenIds []*big.Int) ([]common.Address, error) {
-	return _Artist.Contract.OwnersOfTokenIds(&_Artist.CallOpts, _tokenIds)
-}
-
 // RoyaltyInfo is a free data retrieval call binding the contract method 0x2a55205a.
 //
-// Solidity: function royaltyInfo(uint256 _tokenId, uint256 _salePrice) view returns(address fundingRecipient, uint256 royaltyAmount)
-func (_Artist *ArtistCaller) RoyaltyInfo(opts *bind.CallOpts, _tokenId *big.Int, _salePrice *big.Int) (struct {
+// Solidity: function royaltyInfo(uint256 _editionId, uint256 _salePrice) view returns(address fundingRecipient, uint256 royaltyAmount)
+func (_Artist *ArtistCaller) RoyaltyInfo(opts *bind.CallOpts, _editionId *big.Int, _salePrice *big.Int) (struct {
 	FundingRecipient common.Address
 	RoyaltyAmount    *big.Int
 }, error) {
 	var out []interface{}
-	err := _Artist.contract.Call(opts, &out, "royaltyInfo", _tokenId, _salePrice)
+	err := _Artist.contract.Call(opts, &out, "royaltyInfo", _editionId, _salePrice)
 
 	outstruct := new(struct {
 		FundingRecipient common.Address
@@ -596,22 +586,22 @@ func (_Artist *ArtistCaller) RoyaltyInfo(opts *bind.CallOpts, _tokenId *big.Int,
 
 // RoyaltyInfo is a free data retrieval call binding the contract method 0x2a55205a.
 //
-// Solidity: function royaltyInfo(uint256 _tokenId, uint256 _salePrice) view returns(address fundingRecipient, uint256 royaltyAmount)
-func (_Artist *ArtistSession) RoyaltyInfo(_tokenId *big.Int, _salePrice *big.Int) (struct {
+// Solidity: function royaltyInfo(uint256 _editionId, uint256 _salePrice) view returns(address fundingRecipient, uint256 royaltyAmount)
+func (_Artist *ArtistSession) RoyaltyInfo(_editionId *big.Int, _salePrice *big.Int) (struct {
 	FundingRecipient common.Address
 	RoyaltyAmount    *big.Int
 }, error) {
-	return _Artist.Contract.RoyaltyInfo(&_Artist.CallOpts, _tokenId, _salePrice)
+	return _Artist.Contract.RoyaltyInfo(&_Artist.CallOpts, _editionId, _salePrice)
 }
 
 // RoyaltyInfo is a free data retrieval call binding the contract method 0x2a55205a.
 //
-// Solidity: function royaltyInfo(uint256 _tokenId, uint256 _salePrice) view returns(address fundingRecipient, uint256 royaltyAmount)
-func (_Artist *ArtistCallerSession) RoyaltyInfo(_tokenId *big.Int, _salePrice *big.Int) (struct {
+// Solidity: function royaltyInfo(uint256 _editionId, uint256 _salePrice) view returns(address fundingRecipient, uint256 royaltyAmount)
+func (_Artist *ArtistCallerSession) RoyaltyInfo(_editionId *big.Int, _salePrice *big.Int) (struct {
 	FundingRecipient common.Address
 	RoyaltyAmount    *big.Int
 }, error) {
-	return _Artist.Contract.RoyaltyInfo(&_Artist.CallOpts, _tokenId, _salePrice)
+	return _Artist.Contract.RoyaltyInfo(&_Artist.CallOpts, _editionId, _salePrice)
 }
 
 // SupportsInterface is a free data retrieval call binding the contract method 0x01ffc9a7.
@@ -678,10 +668,10 @@ func (_Artist *ArtistCallerSession) Symbol() (string, error) {
 
 // TokenToEdition is a free data retrieval call binding the contract method 0x602787ed.
 //
-// Solidity: function tokenToEdition(uint256 _tokenId) view returns(uint256)
-func (_Artist *ArtistCaller) TokenToEdition(opts *bind.CallOpts, _tokenId *big.Int) (*big.Int, error) {
+// Solidity: function tokenToEdition(uint256 ) view returns(uint256)
+func (_Artist *ArtistCaller) TokenToEdition(opts *bind.CallOpts, arg0 *big.Int) (*big.Int, error) {
 	var out []interface{}
-	err := _Artist.contract.Call(opts, &out, "tokenToEdition", _tokenId)
+	err := _Artist.contract.Call(opts, &out, "tokenToEdition", arg0)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -695,16 +685,16 @@ func (_Artist *ArtistCaller) TokenToEdition(opts *bind.CallOpts, _tokenId *big.I
 
 // TokenToEdition is a free data retrieval call binding the contract method 0x602787ed.
 //
-// Solidity: function tokenToEdition(uint256 _tokenId) view returns(uint256)
-func (_Artist *ArtistSession) TokenToEdition(_tokenId *big.Int) (*big.Int, error) {
-	return _Artist.Contract.TokenToEdition(&_Artist.CallOpts, _tokenId)
+// Solidity: function tokenToEdition(uint256 ) view returns(uint256)
+func (_Artist *ArtistSession) TokenToEdition(arg0 *big.Int) (*big.Int, error) {
+	return _Artist.Contract.TokenToEdition(&_Artist.CallOpts, arg0)
 }
 
 // TokenToEdition is a free data retrieval call binding the contract method 0x602787ed.
 //
-// Solidity: function tokenToEdition(uint256 _tokenId) view returns(uint256)
-func (_Artist *ArtistCallerSession) TokenToEdition(_tokenId *big.Int) (*big.Int, error) {
-	return _Artist.Contract.TokenToEdition(&_Artist.CallOpts, _tokenId)
+// Solidity: function tokenToEdition(uint256 ) view returns(uint256)
+func (_Artist *ArtistCallerSession) TokenToEdition(arg0 *big.Int) (*big.Int, error) {
+	return _Artist.Contract.TokenToEdition(&_Artist.CallOpts, arg0)
 }
 
 // TokenURI is a free data retrieval call binding the contract method 0xc87b56dd.
@@ -821,46 +811,46 @@ func (_Artist *ArtistTransactorSession) Approve(to common.Address, tokenId *big.
 	return _Artist.Contract.Approve(&_Artist.TransactOpts, to, tokenId)
 }
 
-// BuyEdition is a paid mutator transaction binding the contract method 0xabccf3dd.
+// BuyEdition is a paid mutator transaction binding the contract method 0xbd8616ec.
 //
-// Solidity: function buyEdition(uint256 _editionId, bytes _signature) payable returns()
-func (_Artist *ArtistTransactor) BuyEdition(opts *bind.TransactOpts, _editionId *big.Int, _signature []byte) (*types.Transaction, error) {
-	return _Artist.contract.Transact(opts, "buyEdition", _editionId, _signature)
+// Solidity: function buyEdition(uint256 _editionId) payable returns()
+func (_Artist *ArtistTransactor) BuyEdition(opts *bind.TransactOpts, _editionId *big.Int) (*types.Transaction, error) {
+	return _Artist.contract.Transact(opts, "buyEdition", _editionId)
 }
 
-// BuyEdition is a paid mutator transaction binding the contract method 0xabccf3dd.
+// BuyEdition is a paid mutator transaction binding the contract method 0xbd8616ec.
 //
-// Solidity: function buyEdition(uint256 _editionId, bytes _signature) payable returns()
-func (_Artist *ArtistSession) BuyEdition(_editionId *big.Int, _signature []byte) (*types.Transaction, error) {
-	return _Artist.Contract.BuyEdition(&_Artist.TransactOpts, _editionId, _signature)
+// Solidity: function buyEdition(uint256 _editionId) payable returns()
+func (_Artist *ArtistSession) BuyEdition(_editionId *big.Int) (*types.Transaction, error) {
+	return _Artist.Contract.BuyEdition(&_Artist.TransactOpts, _editionId)
 }
 
-// BuyEdition is a paid mutator transaction binding the contract method 0xabccf3dd.
+// BuyEdition is a paid mutator transaction binding the contract method 0xbd8616ec.
 //
-// Solidity: function buyEdition(uint256 _editionId, bytes _signature) payable returns()
-func (_Artist *ArtistTransactorSession) BuyEdition(_editionId *big.Int, _signature []byte) (*types.Transaction, error) {
-	return _Artist.Contract.BuyEdition(&_Artist.TransactOpts, _editionId, _signature)
+// Solidity: function buyEdition(uint256 _editionId) payable returns()
+func (_Artist *ArtistTransactorSession) BuyEdition(_editionId *big.Int) (*types.Transaction, error) {
+	return _Artist.Contract.BuyEdition(&_Artist.TransactOpts, _editionId)
 }
 
-// CreateEdition is a paid mutator transaction binding the contract method 0x73aaf879.
+// CreateEdition is a paid mutator transaction binding the contract method 0x3fafef29.
 //
-// Solidity: function createEdition(address _fundingRecipient, uint256 _price, uint32 _quantity, uint32 _royaltyBPS, uint32 _startTime, uint32 _endTime, uint32 _permissionedQuantity, address _signerAddress) returns()
-func (_Artist *ArtistTransactor) CreateEdition(opts *bind.TransactOpts, _fundingRecipient common.Address, _price *big.Int, _quantity uint32, _royaltyBPS uint32, _startTime uint32, _endTime uint32, _permissionedQuantity uint32, _signerAddress common.Address) (*types.Transaction, error) {
-	return _Artist.contract.Transact(opts, "createEdition", _fundingRecipient, _price, _quantity, _royaltyBPS, _startTime, _endTime, _permissionedQuantity, _signerAddress)
+// Solidity: function createEdition(address _fundingRecipient, uint256 _price, uint32 _quantity, uint32 _royaltyBPS, uint32 _startTime, uint32 _endTime) returns()
+func (_Artist *ArtistTransactor) CreateEdition(opts *bind.TransactOpts, _fundingRecipient common.Address, _price *big.Int, _quantity uint32, _royaltyBPS uint32, _startTime uint32, _endTime uint32) (*types.Transaction, error) {
+	return _Artist.contract.Transact(opts, "createEdition", _fundingRecipient, _price, _quantity, _royaltyBPS, _startTime, _endTime)
 }
 
-// CreateEdition is a paid mutator transaction binding the contract method 0x73aaf879.
+// CreateEdition is a paid mutator transaction binding the contract method 0x3fafef29.
 //
-// Solidity: function createEdition(address _fundingRecipient, uint256 _price, uint32 _quantity, uint32 _royaltyBPS, uint32 _startTime, uint32 _endTime, uint32 _permissionedQuantity, address _signerAddress) returns()
-func (_Artist *ArtistSession) CreateEdition(_fundingRecipient common.Address, _price *big.Int, _quantity uint32, _royaltyBPS uint32, _startTime uint32, _endTime uint32, _permissionedQuantity uint32, _signerAddress common.Address) (*types.Transaction, error) {
-	return _Artist.Contract.CreateEdition(&_Artist.TransactOpts, _fundingRecipient, _price, _quantity, _royaltyBPS, _startTime, _endTime, _permissionedQuantity, _signerAddress)
+// Solidity: function createEdition(address _fundingRecipient, uint256 _price, uint32 _quantity, uint32 _royaltyBPS, uint32 _startTime, uint32 _endTime) returns()
+func (_Artist *ArtistSession) CreateEdition(_fundingRecipient common.Address, _price *big.Int, _quantity uint32, _royaltyBPS uint32, _startTime uint32, _endTime uint32) (*types.Transaction, error) {
+	return _Artist.Contract.CreateEdition(&_Artist.TransactOpts, _fundingRecipient, _price, _quantity, _royaltyBPS, _startTime, _endTime)
 }
 
-// CreateEdition is a paid mutator transaction binding the contract method 0x73aaf879.
+// CreateEdition is a paid mutator transaction binding the contract method 0x3fafef29.
 //
-// Solidity: function createEdition(address _fundingRecipient, uint256 _price, uint32 _quantity, uint32 _royaltyBPS, uint32 _startTime, uint32 _endTime, uint32 _permissionedQuantity, address _signerAddress) returns()
-func (_Artist *ArtistTransactorSession) CreateEdition(_fundingRecipient common.Address, _price *big.Int, _quantity uint32, _royaltyBPS uint32, _startTime uint32, _endTime uint32, _permissionedQuantity uint32, _signerAddress common.Address) (*types.Transaction, error) {
-	return _Artist.Contract.CreateEdition(&_Artist.TransactOpts, _fundingRecipient, _price, _quantity, _royaltyBPS, _startTime, _endTime, _permissionedQuantity, _signerAddress)
+// Solidity: function createEdition(address _fundingRecipient, uint256 _price, uint32 _quantity, uint32 _royaltyBPS, uint32 _startTime, uint32 _endTime) returns()
+func (_Artist *ArtistTransactorSession) CreateEdition(_fundingRecipient common.Address, _price *big.Int, _quantity uint32, _royaltyBPS uint32, _startTime uint32, _endTime uint32) (*types.Transaction, error) {
+	return _Artist.Contract.CreateEdition(&_Artist.TransactOpts, _fundingRecipient, _price, _quantity, _royaltyBPS, _startTime, _endTime)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0xabfc83a0.
@@ -987,48 +977,6 @@ func (_Artist *ArtistSession) SetEndTime(_editionId *big.Int, _endTime uint32) (
 // Solidity: function setEndTime(uint256 _editionId, uint32 _endTime) returns()
 func (_Artist *ArtistTransactorSession) SetEndTime(_editionId *big.Int, _endTime uint32) (*types.Transaction, error) {
 	return _Artist.Contract.SetEndTime(&_Artist.TransactOpts, _editionId, _endTime)
-}
-
-// SetPermissionedQuantity is a paid mutator transaction binding the contract method 0x52e25bf2.
-//
-// Solidity: function setPermissionedQuantity(uint256 _editionId, uint32 _permissionedQuantity) returns()
-func (_Artist *ArtistTransactor) SetPermissionedQuantity(opts *bind.TransactOpts, _editionId *big.Int, _permissionedQuantity uint32) (*types.Transaction, error) {
-	return _Artist.contract.Transact(opts, "setPermissionedQuantity", _editionId, _permissionedQuantity)
-}
-
-// SetPermissionedQuantity is a paid mutator transaction binding the contract method 0x52e25bf2.
-//
-// Solidity: function setPermissionedQuantity(uint256 _editionId, uint32 _permissionedQuantity) returns()
-func (_Artist *ArtistSession) SetPermissionedQuantity(_editionId *big.Int, _permissionedQuantity uint32) (*types.Transaction, error) {
-	return _Artist.Contract.SetPermissionedQuantity(&_Artist.TransactOpts, _editionId, _permissionedQuantity)
-}
-
-// SetPermissionedQuantity is a paid mutator transaction binding the contract method 0x52e25bf2.
-//
-// Solidity: function setPermissionedQuantity(uint256 _editionId, uint32 _permissionedQuantity) returns()
-func (_Artist *ArtistTransactorSession) SetPermissionedQuantity(_editionId *big.Int, _permissionedQuantity uint32) (*types.Transaction, error) {
-	return _Artist.Contract.SetPermissionedQuantity(&_Artist.TransactOpts, _editionId, _permissionedQuantity)
-}
-
-// SetSignerAddress is a paid mutator transaction binding the contract method 0x56dee996.
-//
-// Solidity: function setSignerAddress(uint256 _editionId, address _newSignerAddress) returns()
-func (_Artist *ArtistTransactor) SetSignerAddress(opts *bind.TransactOpts, _editionId *big.Int, _newSignerAddress common.Address) (*types.Transaction, error) {
-	return _Artist.contract.Transact(opts, "setSignerAddress", _editionId, _newSignerAddress)
-}
-
-// SetSignerAddress is a paid mutator transaction binding the contract method 0x56dee996.
-//
-// Solidity: function setSignerAddress(uint256 _editionId, address _newSignerAddress) returns()
-func (_Artist *ArtistSession) SetSignerAddress(_editionId *big.Int, _newSignerAddress common.Address) (*types.Transaction, error) {
-	return _Artist.Contract.SetSignerAddress(&_Artist.TransactOpts, _editionId, _newSignerAddress)
-}
-
-// SetSignerAddress is a paid mutator transaction binding the contract method 0x56dee996.
-//
-// Solidity: function setSignerAddress(uint256 _editionId, address _newSignerAddress) returns()
-func (_Artist *ArtistTransactorSession) SetSignerAddress(_editionId *big.Int, _newSignerAddress common.Address) (*types.Transaction, error) {
-	return _Artist.Contract.SetSignerAddress(&_Artist.TransactOpts, _editionId, _newSignerAddress)
 }
 
 // SetStartTime is a paid mutator transaction binding the contract method 0xfbab9e04.
@@ -1431,152 +1379,6 @@ func (_Artist *ArtistFilterer) ParseApprovalForAll(log types.Log) (*ArtistApprov
 	return event, nil
 }
 
-// ArtistAuctionTimeSetIterator is returned from FilterAuctionTimeSet and is used to iterate over the raw logs and unpacked data for AuctionTimeSet events raised by the Artist contract.
-type ArtistAuctionTimeSetIterator struct {
-	Event *ArtistAuctionTimeSet // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *ArtistAuctionTimeSetIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(ArtistAuctionTimeSet)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(ArtistAuctionTimeSet)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *ArtistAuctionTimeSetIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *ArtistAuctionTimeSetIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// ArtistAuctionTimeSet represents a AuctionTimeSet event raised by the Artist contract.
-type ArtistAuctionTimeSet struct {
-	TimeType  uint8
-	EditionId *big.Int
-	NewTime   uint32
-	Raw       types.Log // Blockchain specific contextual infos
-}
-
-// FilterAuctionTimeSet is a free log retrieval operation binding the contract event 0x494264d1227744d2d86690c5355813b007a13955626b261c2e02901a73f6f90c.
-//
-// Solidity: event AuctionTimeSet(uint8 timeType, uint256 editionId, uint32 indexed newTime)
-func (_Artist *ArtistFilterer) FilterAuctionTimeSet(opts *bind.FilterOpts, newTime []uint32) (*ArtistAuctionTimeSetIterator, error) {
-
-	var newTimeRule []interface{}
-	for _, newTimeItem := range newTime {
-		newTimeRule = append(newTimeRule, newTimeItem)
-	}
-
-	logs, sub, err := _Artist.contract.FilterLogs(opts, "AuctionTimeSet", newTimeRule)
-	if err != nil {
-		return nil, err
-	}
-	return &ArtistAuctionTimeSetIterator{contract: _Artist.contract, event: "AuctionTimeSet", logs: logs, sub: sub}, nil
-}
-
-// WatchAuctionTimeSet is a free log subscription operation binding the contract event 0x494264d1227744d2d86690c5355813b007a13955626b261c2e02901a73f6f90c.
-//
-// Solidity: event AuctionTimeSet(uint8 timeType, uint256 editionId, uint32 indexed newTime)
-func (_Artist *ArtistFilterer) WatchAuctionTimeSet(opts *bind.WatchOpts, sink chan<- *ArtistAuctionTimeSet, newTime []uint32) (event.Subscription, error) {
-
-	var newTimeRule []interface{}
-	for _, newTimeItem := range newTime {
-		newTimeRule = append(newTimeRule, newTimeItem)
-	}
-
-	logs, sub, err := _Artist.contract.WatchLogs(opts, "AuctionTimeSet", newTimeRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(ArtistAuctionTimeSet)
-				if err := _Artist.contract.UnpackLog(event, "AuctionTimeSet", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseAuctionTimeSet is a log parse operation binding the contract event 0x494264d1227744d2d86690c5355813b007a13955626b261c2e02901a73f6f90c.
-//
-// Solidity: event AuctionTimeSet(uint8 timeType, uint256 editionId, uint32 indexed newTime)
-func (_Artist *ArtistFilterer) ParseAuctionTimeSet(log types.Log) (*ArtistAuctionTimeSet, error) {
-	event := new(ArtistAuctionTimeSet)
-	if err := _Artist.contract.UnpackLog(event, "AuctionTimeSet", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
 // ArtistEditionCreatedIterator is returned from FilterEditionCreated and is used to iterate over the raw logs and unpacked data for EditionCreated events raised by the Artist contract.
 type ArtistEditionCreatedIterator struct {
 	Event *ArtistEditionCreated // Event containing the contract specifics and raw log
@@ -1646,21 +1448,19 @@ func (it *ArtistEditionCreatedIterator) Close() error {
 
 // ArtistEditionCreated represents a EditionCreated event raised by the Artist contract.
 type ArtistEditionCreated struct {
-	EditionId            *big.Int
-	FundingRecipient     common.Address
-	Price                *big.Int
-	Quantity             uint32
-	RoyaltyBPS           uint32
-	StartTime            uint32
-	EndTime              uint32
-	PermissionedQuantity uint32
-	SignerAddress        common.Address
-	Raw                  types.Log // Blockchain specific contextual infos
+	EditionId        *big.Int
+	FundingRecipient common.Address
+	Price            *big.Int
+	Quantity         uint32
+	RoyaltyBPS       uint32
+	StartTime        uint32
+	EndTime          uint32
+	Raw              types.Log // Blockchain specific contextual infos
 }
 
-// FilterEditionCreated is a free log retrieval operation binding the contract event 0xb56f9ba6a8af17a142f8ad372c6fc283e81d8c6193b86afe7f6ca901acd698f3.
+// FilterEditionCreated is a free log retrieval operation binding the contract event 0xb3131d7d301f8caeb40981cffc627b1fdf324b5e4a23845b61c1a6ad2a25f385.
 //
-// Solidity: event EditionCreated(uint256 indexed editionId, address fundingRecipient, uint256 price, uint32 quantity, uint32 royaltyBPS, uint32 startTime, uint32 endTime, uint32 permissionedQuantity, address signerAddress)
+// Solidity: event EditionCreated(uint256 indexed editionId, address fundingRecipient, uint256 price, uint32 quantity, uint32 royaltyBPS, uint32 startTime, uint32 endTime)
 func (_Artist *ArtistFilterer) FilterEditionCreated(opts *bind.FilterOpts, editionId []*big.Int) (*ArtistEditionCreatedIterator, error) {
 
 	var editionIdRule []interface{}
@@ -1675,9 +1475,9 @@ func (_Artist *ArtistFilterer) FilterEditionCreated(opts *bind.FilterOpts, editi
 	return &ArtistEditionCreatedIterator{contract: _Artist.contract, event: "EditionCreated", logs: logs, sub: sub}, nil
 }
 
-// WatchEditionCreated is a free log subscription operation binding the contract event 0xb56f9ba6a8af17a142f8ad372c6fc283e81d8c6193b86afe7f6ca901acd698f3.
+// WatchEditionCreated is a free log subscription operation binding the contract event 0xb3131d7d301f8caeb40981cffc627b1fdf324b5e4a23845b61c1a6ad2a25f385.
 //
-// Solidity: event EditionCreated(uint256 indexed editionId, address fundingRecipient, uint256 price, uint32 quantity, uint32 royaltyBPS, uint32 startTime, uint32 endTime, uint32 permissionedQuantity, address signerAddress)
+// Solidity: event EditionCreated(uint256 indexed editionId, address fundingRecipient, uint256 price, uint32 quantity, uint32 royaltyBPS, uint32 startTime, uint32 endTime)
 func (_Artist *ArtistFilterer) WatchEditionCreated(opts *bind.WatchOpts, sink chan<- *ArtistEditionCreated, editionId []*big.Int) (event.Subscription, error) {
 
 	var editionIdRule []interface{}
@@ -1717,9 +1517,9 @@ func (_Artist *ArtistFilterer) WatchEditionCreated(opts *bind.WatchOpts, sink ch
 	}), nil
 }
 
-// ParseEditionCreated is a log parse operation binding the contract event 0xb56f9ba6a8af17a142f8ad372c6fc283e81d8c6193b86afe7f6ca901acd698f3.
+// ParseEditionCreated is a log parse operation binding the contract event 0xb3131d7d301f8caeb40981cffc627b1fdf324b5e4a23845b61c1a6ad2a25f385.
 //
-// Solidity: event EditionCreated(uint256 indexed editionId, address fundingRecipient, uint256 price, uint32 quantity, uint32 royaltyBPS, uint32 startTime, uint32 endTime, uint32 permissionedQuantity, address signerAddress)
+// Solidity: event EditionCreated(uint256 indexed editionId, address fundingRecipient, uint256 price, uint32 quantity, uint32 royaltyBPS, uint32 startTime, uint32 endTime)
 func (_Artist *ArtistFilterer) ParseEditionCreated(log types.Log) (*ArtistEditionCreated, error) {
 	event := new(ArtistEditionCreated)
 	if err := _Artist.contract.UnpackLog(event, "EditionCreated", log); err != nil {
@@ -2041,286 +1841,6 @@ func (_Artist *ArtistFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, s
 func (_Artist *ArtistFilterer) ParseOwnershipTransferred(log types.Log) (*ArtistOwnershipTransferred, error) {
 	event := new(ArtistOwnershipTransferred)
 	if err := _Artist.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// ArtistPermissionedQuantitySetIterator is returned from FilterPermissionedQuantitySet and is used to iterate over the raw logs and unpacked data for PermissionedQuantitySet events raised by the Artist contract.
-type ArtistPermissionedQuantitySetIterator struct {
-	Event *ArtistPermissionedQuantitySet // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *ArtistPermissionedQuantitySetIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(ArtistPermissionedQuantitySet)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(ArtistPermissionedQuantitySet)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *ArtistPermissionedQuantitySetIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *ArtistPermissionedQuantitySetIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// ArtistPermissionedQuantitySet represents a PermissionedQuantitySet event raised by the Artist contract.
-type ArtistPermissionedQuantitySet struct {
-	EditionId            *big.Int
-	PermissionedQuantity uint32
-	Raw                  types.Log // Blockchain specific contextual infos
-}
-
-// FilterPermissionedQuantitySet is a free log retrieval operation binding the contract event 0x1de856603e1e748b6f6726e7a51520fe7c63e9b801b8e4b2f8de1a02ae0a8dae.
-//
-// Solidity: event PermissionedQuantitySet(uint256 editionId, uint32 permissionedQuantity)
-func (_Artist *ArtistFilterer) FilterPermissionedQuantitySet(opts *bind.FilterOpts) (*ArtistPermissionedQuantitySetIterator, error) {
-
-	logs, sub, err := _Artist.contract.FilterLogs(opts, "PermissionedQuantitySet")
-	if err != nil {
-		return nil, err
-	}
-	return &ArtistPermissionedQuantitySetIterator{contract: _Artist.contract, event: "PermissionedQuantitySet", logs: logs, sub: sub}, nil
-}
-
-// WatchPermissionedQuantitySet is a free log subscription operation binding the contract event 0x1de856603e1e748b6f6726e7a51520fe7c63e9b801b8e4b2f8de1a02ae0a8dae.
-//
-// Solidity: event PermissionedQuantitySet(uint256 editionId, uint32 permissionedQuantity)
-func (_Artist *ArtistFilterer) WatchPermissionedQuantitySet(opts *bind.WatchOpts, sink chan<- *ArtistPermissionedQuantitySet) (event.Subscription, error) {
-
-	logs, sub, err := _Artist.contract.WatchLogs(opts, "PermissionedQuantitySet")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(ArtistPermissionedQuantitySet)
-				if err := _Artist.contract.UnpackLog(event, "PermissionedQuantitySet", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParsePermissionedQuantitySet is a log parse operation binding the contract event 0x1de856603e1e748b6f6726e7a51520fe7c63e9b801b8e4b2f8de1a02ae0a8dae.
-//
-// Solidity: event PermissionedQuantitySet(uint256 editionId, uint32 permissionedQuantity)
-func (_Artist *ArtistFilterer) ParsePermissionedQuantitySet(log types.Log) (*ArtistPermissionedQuantitySet, error) {
-	event := new(ArtistPermissionedQuantitySet)
-	if err := _Artist.contract.UnpackLog(event, "PermissionedQuantitySet", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// ArtistSignerAddressSetIterator is returned from FilterSignerAddressSet and is used to iterate over the raw logs and unpacked data for SignerAddressSet events raised by the Artist contract.
-type ArtistSignerAddressSetIterator struct {
-	Event *ArtistSignerAddressSet // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *ArtistSignerAddressSetIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(ArtistSignerAddressSet)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(ArtistSignerAddressSet)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *ArtistSignerAddressSetIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *ArtistSignerAddressSetIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// ArtistSignerAddressSet represents a SignerAddressSet event raised by the Artist contract.
-type ArtistSignerAddressSet struct {
-	EditionId     *big.Int
-	SignerAddress common.Address
-	Raw           types.Log // Blockchain specific contextual infos
-}
-
-// FilterSignerAddressSet is a free log retrieval operation binding the contract event 0x73b6ab337f7463563f035a0b9f885872e16ad1b5043b679cdf802cfcbaa3a534.
-//
-// Solidity: event SignerAddressSet(uint256 editionId, address indexed signerAddress)
-func (_Artist *ArtistFilterer) FilterSignerAddressSet(opts *bind.FilterOpts, signerAddress []common.Address) (*ArtistSignerAddressSetIterator, error) {
-
-	var signerAddressRule []interface{}
-	for _, signerAddressItem := range signerAddress {
-		signerAddressRule = append(signerAddressRule, signerAddressItem)
-	}
-
-	logs, sub, err := _Artist.contract.FilterLogs(opts, "SignerAddressSet", signerAddressRule)
-	if err != nil {
-		return nil, err
-	}
-	return &ArtistSignerAddressSetIterator{contract: _Artist.contract, event: "SignerAddressSet", logs: logs, sub: sub}, nil
-}
-
-// WatchSignerAddressSet is a free log subscription operation binding the contract event 0x73b6ab337f7463563f035a0b9f885872e16ad1b5043b679cdf802cfcbaa3a534.
-//
-// Solidity: event SignerAddressSet(uint256 editionId, address indexed signerAddress)
-func (_Artist *ArtistFilterer) WatchSignerAddressSet(opts *bind.WatchOpts, sink chan<- *ArtistSignerAddressSet, signerAddress []common.Address) (event.Subscription, error) {
-
-	var signerAddressRule []interface{}
-	for _, signerAddressItem := range signerAddress {
-		signerAddressRule = append(signerAddressRule, signerAddressItem)
-	}
-
-	logs, sub, err := _Artist.contract.WatchLogs(opts, "SignerAddressSet", signerAddressRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(ArtistSignerAddressSet)
-				if err := _Artist.contract.UnpackLog(event, "SignerAddressSet", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseSignerAddressSet is a log parse operation binding the contract event 0x73b6ab337f7463563f035a0b9f885872e16ad1b5043b679cdf802cfcbaa3a534.
-//
-// Solidity: event SignerAddressSet(uint256 editionId, address indexed signerAddress)
-func (_Artist *ArtistFilterer) ParseSignerAddressSet(log types.Log) (*ArtistSignerAddressSet, error) {
-	event := new(ArtistSignerAddressSet)
-	if err := _Artist.contract.UnpackLog(event, "SignerAddressSet", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
