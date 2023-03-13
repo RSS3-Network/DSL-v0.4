@@ -14,8 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/metadata_url"
-
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
@@ -24,6 +22,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/databeat"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -42,7 +41,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
-	alchemy_asset "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/alchemy"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/nftscan"
 	rabbitmqx "github.com/naturalselectionlabs/pregod/service/indexer/internal/rabbitmq"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/build_transactions"
@@ -235,13 +234,19 @@ func (s *Server) Initialize() (err error) {
 	}
 
 	// asset
-	alchemyAssetDatasource, err := alchemy_asset.New(s.config.RPC)
-	if err != nil {
-		return err
-	}
+	// alchemyAssetDatasource, err := alchemy_asset.New(s.config.RPC)
+	// if err != nil {
+	//	return err
+	//}
 
-	s.datasourcesAsset = []datasource_asset.Datasource{
-		alchemyAssetDatasource,
+	// NFTScan datasource
+	if s.config.NFTScan != nil {
+		datasourceNFTScan, err := nftscan.New(context.TODO(), *s.config.NFTScan)
+		if err != nil {
+			return fmt.Errorf("create nftscan datasource: %w", err)
+		}
+
+		s.datasourcesAsset = append(s.datasourcesAsset, datasourceNFTScan)
 	}
 
 	return nil
