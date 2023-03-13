@@ -95,6 +95,6 @@ func TestGetWordsCountPercentileByAddress(t *testing.T) {
 
 	count, percentage, err := dao.GetWordsCountPercentileByAddress("0x00")
 	assert.NoError(t, err)
-	assert.EqualValues(t, 2 + 2 + 5, count)
+	assert.EqualValues(t, 2+2+5, count)
 	assert.EqualValues(t, 30, percentage)
 }

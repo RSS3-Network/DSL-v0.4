@@ -1,0 +1,32 @@
+query ReleaseContract($contractAddress: Address!, $editionId: String) {
+  releaseContract(contractAddress: $contractAddress, editionId: $editionId) {
+    coverImage{
+      url
+    }
+    openseaUrl
+    price
+    totalSupply
+  }
+}
+
+query ReleaseNfts($contractAddress: Address!, $editionId: String, $after: String) {
+  releaseContract(contractAddress: $contractAddress, editionId: $editionId) {
+    coverImage{
+      url
+    }
+    openseaUrl
+    price
+    totalSupply
+    nftsPaginated(pagination: {first: 50, after: $after}) {
+      edges{
+        node {
+          tokenId
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+    }
+  }
+}

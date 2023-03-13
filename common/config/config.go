@@ -128,6 +128,10 @@ type EIP1577 struct {
 	Endpoint string `mapstructure:"endpoint"`
 }
 
+type NFTScan struct {
+	APIKey string `mapstructure:"apiKey"`
+}
+
 type Gateway struct {
 	EthEndpoint string `mapstructure:"ethendpoint"`
 }
@@ -155,6 +159,10 @@ type RPCNetwork struct {
 	Avalanche         *RPCEndpoint `mapstructure:"avalanche"`
 	Celo              *RPCEndpoint `mapstructure:"celo"`
 	Fantom            *RPCEndpoint `mapstructure:"fantom"`
+}
+
+type Sound struct {
+	APIKey string `mapstructure:"apikey"`
 }
 
 func (r RPCNetwork) network2EP() map[string]*RPCEndpoint {

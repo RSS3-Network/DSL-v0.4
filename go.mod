@@ -1,6 +1,6 @@
 module github.com/naturalselectionlabs/pregod
 
-go 1.18
+go 1.19
 
 // https://github.com/samber/lo/pull/43
 // https://github.com/samber/lo/pull/81
@@ -26,8 +26,8 @@ require (
 	github.com/labstack/echo-contrib v0.14.1
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/lib/pq v1.10.7
-	github.com/naturalselectionlabs/kurora v0.41.0
-	github.com/naturalselectionlabs/kurora/client v0.0.0-20230310200322-2f12151ff58a
+	github.com/naturalselectionlabs/kurora v0.43.0
+	github.com/naturalselectionlabs/kurora/client v0.0.0-20230313105824-25f75bab48a1
 	github.com/rabbitmq/amqp091-go v1.6.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.37.0

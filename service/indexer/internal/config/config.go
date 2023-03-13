@@ -20,6 +20,7 @@ type Config struct {
 	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
 	Infura        *configx.Infura        `mapstructure:"infura"`
 	EIP1577       *configx.EIP1577       `mapstructure:"eip1577"`
+	NFTScan       *configx.NFTScan       `mapstructure:"nftscan"`
 	RPC           *configx.RPC           `mapstructure:"rpc"`
 }
 
