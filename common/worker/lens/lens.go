@@ -11,8 +11,8 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	kurora "github.com/naturalselectionlabs/kurora/common/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
@@ -465,17 +465,7 @@ func (c *Client) GetContentURI(ctx context.Context, profileId *big.Int, pubId *b
 }
 
 func (c *Client) GetLensRelatedURL(ctx context.Context, profileId *big.Int, pubId *big.Int) string {
-	profileIdHex := []byte(hexutil.EncodeBig(profileId))
-	pubIdHex := []byte(hexutil.EncodeBig(pubId))
-
-	if len(profileIdHex)%2 == 1 {
-		profileIdHex = append(profileIdHex[:2], append([]byte("0"), profileIdHex[2:]...)...)
-	}
-	if len(pubIdHex)%2 == 1 {
-		pubIdHex = append(pubIdHex[:2], append([]byte("0"), pubIdHex[2:]...)...)
-	}
-
-	return fmt.Sprintf("https://lenster.xyz/posts/%v-%v", string(profileIdHex), string(pubIdHex))
+	return fmt.Sprintf("https://lenster.xyz/posts/%v-%v", kurora.EncodeID(profileId), kurora.EncodeID(pubId))
 }
 
 func (c *Client) GetLensAuthorURL(ctx context.Context, externalURL string, handle string) []string {
@@ -495,9 +485,11 @@ func (c *Client) GetLensAuthorURL(ctx context.Context, externalURL string, handl
 			return r == '/' || r == '@' || r == ':'
 		})
 		author = append(author, list[len(list)-1])
-	} else {
-		author = append(author, handle)
+
+		return author
 	}
+
+	author = append(author, handle)
 
 	return author
 }
@@ -507,12 +499,14 @@ func (c *Client) GetContent(ctx context.Context, uri string, lensContent *LensCo
 	// get content
 	content, err := metadata_url.GetFileByURL(uri)
 	if err != nil {
-		logrus.Errorf("[lens worker] handleReceipt: getContent error, %v, ipfs: %v", err, uri)
+		loggerx.Global().Error("[lens worker] GetContent: get file failed", zap.Error(err), zap.String("ipfs", uri))
+
 		return err
 	}
 
 	if err = json.Unmarshal(content, &lensContent); err != nil {
-		logrus.Errorf("[lens worker] handleReceipt: json unmarshal error, %v, json: %v, ipfs: %v", err, string(content), uri)
+		loggerx.Global().Error("[lens worker] GetContent: json unmarshal error", zap.Error(err), zap.String("json", string(content)), zap.String("ipfs", uri))
+
 		return err
 	}
 
@@ -546,8 +540,10 @@ func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 	err := c.GetContent(ctx, opt.ContentURI, &lensContent)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] FormatContent: GetContent error", zap.Error(err))
+
 		return err
 	}
+
 	// handle transfer fields
 	opt.Transfer.Platform = lensContent.AppId
 
