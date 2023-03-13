@@ -92,7 +92,6 @@ func (i *internal) handleZoraTransactions(ctx context.Context, message *protocol
 			}
 
 			cost, err := i.buildCost(ctx, message.Network, event.TokenAddress, event.AmountToken.BigInt())
-
 			if err != nil {
 				zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", event.TransactionHash.String()), zap.Stringer("contract_address", event.NftAddress), zap.Stringer("id", event.NftId))
 

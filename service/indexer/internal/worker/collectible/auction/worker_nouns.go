@@ -91,7 +91,6 @@ func (i *internal) handleNounsTransactions(ctx context.Context, message *protoco
 			nft.EndTime = &event.EndTime
 
 			cost, err := i.buildCost(ctx, message.Network, ethereum.AddressGenesis, event.Amount.BigInt())
-
 			if err != nil {
 				zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", event.TransactionHash.String()), zap.Stringer("contract_address", event.NftAddress), zap.Stringer("id", event.NftId))
 

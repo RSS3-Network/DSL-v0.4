@@ -98,7 +98,6 @@ func (i *internal) handleFoundationTransactions(ctx context.Context, message *pr
 			sum = sum.Add(sum, event.OwnerInETH.BigInt())
 
 			cost, err := i.buildCost(ctx, message.Network, ethereum.AddressGenesis, sum)
-
 			if err != nil {
 				zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", event.TransactionHash.String()), zap.Stringer("contract_address", event.NftAddress), zap.Stringer("id", event.NftId))
 
