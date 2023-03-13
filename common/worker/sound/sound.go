@@ -310,7 +310,7 @@ func HandleEditionPurchasedV3(ctx context.Context, client *ethclient.Client, log
 	}
 
 	// get edition information
-	edition, err := GetEditionInfo(ctx, log.Address.String(), event.TokenId.String())
+	edition, err := GetEditionInfo(ctx, log.Address.String(), event.EditionId.String())
 	if err != nil {
 		loggerx.Global().Error("failed to get edition info", zap.Error(err), zap.String("contract", log.Address.String()), zap.String("token_id", event.TokenId.String()))
 
@@ -357,7 +357,7 @@ func HandleEditionPurchasedV5(ctx context.Context, client *ethclient.Client, log
 	}
 
 	// get edition information
-	edition, err := GetEditionInfo(ctx, log.Address.String(), event.TokenId.String())
+	edition, err := GetEditionInfo(ctx, log.Address.String(), event.EditionId.String())
 	if err != nil {
 		loggerx.Global().Error("failed to get edition info", zap.Error(err), zap.String("contract", log.Address.String()), zap.String("token_id", event.TokenId.String()))
 

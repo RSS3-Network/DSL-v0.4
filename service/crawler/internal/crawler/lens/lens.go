@@ -24,7 +24,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
-	lens_comm "github.com/naturalselectionlabs/pregod/common/worker/lens"
+	worker "github.com/naturalselectionlabs/pregod/common/worker/lens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/samber/lo"
@@ -40,15 +40,15 @@ var (
 )
 
 type service struct {
-	config           *config.Config
-	kuroraClient     *kurora.Client
-	commWorkerClient *lens_comm.Client
+	config       *config.Config
+	kuroraClient *kurora.Client
+	lensWorker   *worker.Client
 }
 
 func New(config *config.Config) crawler.Crawler {
 	crawler := &service{
-		config:           config,
-		commWorkerClient: lens_comm.New(),
+		config:     config,
+		lensWorker: worker.New(),
 	}
 
 	return crawler
@@ -85,21 +85,16 @@ func (s *service) Run() error {
 				}
 
 				if len(transactions) == 0 {
-					time.Sleep(10 * time.Minute)
+					time.Sleep(1 * time.Minute)
 
 					continue
 				}
-
-				// deduplicate data
-				// transactions, err = database.DeduplicateTransactions(ctx, transactions)
-				// if err != nil || len(transactions) == 0 {
-				// 	continue
-				// }
 
 				// build transaction
 				message := &protocol.Message{
 					Network: protocol.NetworkPolygon,
 				}
+
 				if transactions, err = ethereum.BuildTransactions(ctx, message, transactions); err != nil {
 					loggerx.Global().Error("failed to build transactions, ", zap.Error(err))
 
@@ -197,10 +192,9 @@ func (s *service) getInternalTransaction(ctx context.Context, transactions []*mo
 
 		// Empty transfer data to avoid data duplication
 		transaction.Transfers = make([]model.Transfer, 0)
-		transaction.Transfers = append(transaction.Transfers, transferMap[protocol.IndexVirtual])
 
 		// get receipt
-		internalTransfers, err := s.commWorkerClient.HandleReceipt(ctx, transaction)
+		internalTransfers, err := s.lensWorker.HandleReceipt(ctx, transaction)
 		if err != nil {
 			logrus.Errorf("[lens worker] handleReceipt error, %v", err)
 
