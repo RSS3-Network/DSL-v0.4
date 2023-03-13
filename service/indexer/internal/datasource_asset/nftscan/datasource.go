@@ -22,10 +22,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	Source = "NFTScan"
-)
-
 var _ datasource_asset.Datasource = (*Datasource)(nil)
 
 type Datasource struct {
@@ -33,7 +29,7 @@ type Datasource struct {
 }
 
 func (d *Datasource) Name() string {
-	return Source
+	return protocol.SourceNFTScan
 }
 
 func (d *Datasource) Networks() []string {
@@ -88,7 +84,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 				TokenID:       asset.TokenID.String(),
 				TokenStandard: strings.ToUpper(asset.ERCType), // ERC721 or ERC1155
 				Owner:         message.Address,
-				Source:        Source,
+				Source:        protocol.SourceNFTScan,
 				Title:         metadata.Name,
 				Description:   metadata.Description,
 				Image:         metadata.ImageURL,

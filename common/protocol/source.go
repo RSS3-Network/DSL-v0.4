@@ -10,6 +10,7 @@ const (
 	SourceMoralis    = "moralis"
 	SourceZksync     = "zksync"
 	SourceAptos      = "aptos"
+	SourceNFTScan    = "NFTScan"
 
 	DatasourceLimit = 1000
 )
