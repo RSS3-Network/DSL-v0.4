@@ -15,8 +15,8 @@ import (
 func Example() {
 	// log_models.go
 	var UserRegisteredLog = DataModel{
-		Name:    "user-user_registered",
-		Fields:  []string{"user_id", "created_at", "reg_source", "username", "nickname"},
+		Name:   "user-user_registered",
+		Fields: []string{"user_id", "created_at", "reg_source", "username", "nickname"},
 	}
 	// anywhere
 	UserRegisteredLog.Beat(map[string]interface{}{
@@ -30,8 +30,8 @@ func Example() {
 
 func TestDatabeat(t *testing.T) {
 	UserRegisteredLog := DataModel{
-		Name:    "bayuser-user_registered",
-		Fields:  []string{"user_id", "created_at", "reg_source", "username", "nickname"},
+		Name:   "bayuser-user_registered",
+		Fields: []string{"user_id", "created_at", "reg_source", "username", "nickname"},
 	}
 
 	var buf bytes.Buffer

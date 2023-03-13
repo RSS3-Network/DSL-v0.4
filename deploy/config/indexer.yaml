@@ -88,3 +88,5 @@ rpc:
   ipfs:
     io: ''
     internal: ''
+nftscan:
+  apiKey: ''
