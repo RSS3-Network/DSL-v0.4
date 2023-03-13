@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine AS BUILDER
+FROM golang:1.19-alpine AS BUILDER
 
 WORKDIR /rss3-pregod
 COPY . .
