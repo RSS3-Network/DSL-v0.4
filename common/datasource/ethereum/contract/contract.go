@@ -118,3 +118,7 @@ var ContractABIs embed.FS
 // ZORA
 // Asks https://etherscan.io/address/0x6170b3c3a54c3d8c854934cbc314ed479b2b29a3
 //go:generate abigen --abi ./zora/asks.abi --pkg zora --type Zora --out ./zora/asks.go
+
+// Foundation
+// Foundation Market https://etherscan.io/address/0xcda72070e455bb31c7690a170224ce43623d0b6f
+//go:generate abigen --abi ./foundation/NFTMarket.abi --pkg foundation --type Foundation --out ./foundation/foundation.go

@@ -71,6 +71,8 @@ const (
 	PlatformNSwap          = "NSwap"
 	PlatformRSS3           = "RSS3"
 	PlatformZora           = "Zora"
+	PlatformNouns          = "Nouns"
+	PlatformFoundation     = "Foundation"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
@@ -111,6 +113,8 @@ var PlatformList = map[string][]string{
 		PlatformAvvy,
 		PlatformSound,
 		PlatformZora,
+		PlatformNouns,
+		PlatformFoundation,
 	},
 	filter.TagDonation: {
 		PlatformGitcoin,
