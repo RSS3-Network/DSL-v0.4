@@ -112,6 +112,7 @@ var ValidTypeMap = map[string][]string{
 		TransactionMint,
 		TransactionBurn,
 		TransactionApproval,
+		TransactionMultiSig,
 	},
 	TagExchange: {
 		ExchangeWithdraw,
