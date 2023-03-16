@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/shopspring/decimal"
@@ -23,6 +24,8 @@ func init() {
 // TODO Token constructor
 type Token struct {
 	Action          string           `json:"action,omitempty"`
+	StartTime       *time.Time       `json:"start_time,omitempty"`
+	EndTime         *time.Time       `json:"end_time,omitempty"`
 	Name            string           `json:"name"`
 	Collection      string           `json:"collection,omitempty"` // ERC-1155
 	Symbol          string           `json:"symbol"`
