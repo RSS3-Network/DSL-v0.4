@@ -20,7 +20,7 @@ func init() {
 	rpcConfig := configx.RPC{
 		General: configx.RPCNetwork{
 			Ethereum: &configx.RPCEndpoint{
-				WebSocket: "https://eth.llamarpc.com",
+				WebSocket: "wss://eth-mainnet.blastapi.io/ce352140-fd9b-40a1-ad6a-5c5d0ae4d48d",
 			},
 			Polygon: &configx.RPCEndpoint{
 				WebSocket: "https://polygon.llamarpc.com",
@@ -95,9 +95,9 @@ func TestClient_ERC721_403(t *testing.T) {
 
 func TestClient_NFT(t *testing.T) {
 	tokenID := big.NewInt(0)
-	tokenID.SetString("35536", 0)
+	tokenID.SetString("957", 0)
 
-	nft, err := tokenClient.NFT(context.Background(), protocol.NetworkEthereum, "0xb932a70a57673d89f4acffbe830e8ed7f75fb9e0", tokenID)
+	nft, err := tokenClient.NFT(context.Background(), protocol.NetworkEthereum, "0x826a63550d536822fcfca64b4b118cc459cf1652", tokenID)
 	assert.NoError(t, err)
 
 	t.Log(nft)

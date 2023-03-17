@@ -348,12 +348,11 @@ func PropertiesToAttributes(properties map[string]any) (attributeMap map[string]
 }
 
 func (c *Client) URI(contractAddress string, tokenID *big.Int, tokenURI string) (string, error) {
-	if strings.HasPrefix(tokenURI, "ipfs://") {
-		// TODO Move it to config
-		tokenURI = strings.Replace(tokenURI, "ipfs://", "https://ipfs.rss3.page/ipfs/", 1)
-	} else if strings.Contains(tokenURI, ";base64,") {
+	if strings.Contains(tokenURI, ";base64,") {
 		return tokenURI, nil
 	}
+
+	tokenURI = metadata_url.GetDirectURL(tokenURI)
 
 	switch common.HexToAddress(contractAddress) {
 	case common.HexToAddress("0x2953399124F0cBB46d2CbACD8A89cF0599974963"): // OpenSea Collections (OPENSTORE)
@@ -384,9 +383,7 @@ func (c *Client) Metadata(ctx context.Context, tokenURI string) ([]byte, error) 
 		return result, nil
 	}
 
-	if strings.HasPrefix(tokenURI, "ipfs://") {
-		tokenURI = strings.Replace(tokenURI, "ipfs://", "https://ipfs.rss3.page/ipfs/", 1)
-	}
+	tokenURI = metadata_url.GetDirectURL(tokenURI)
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, tokenURI, nil)
 	if err != nil {
