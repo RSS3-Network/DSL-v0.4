@@ -73,6 +73,7 @@ const (
 	PlatformZora           = "Zora"
 	PlatformNouns          = "Nouns"
 	PlatformFoundation     = "Foundation"
+	PlatformZerion         = "Zerion"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
@@ -138,5 +139,6 @@ var PlatformList = map[string][]string{
 		PlatformParaswap,
 		PlatformDODO,
 		PlatformVelodrome,
+		PlatformZerion,
 	},
 }
