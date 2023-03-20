@@ -22,6 +22,7 @@ var UnsupportedPlatform = errors.New("unsupported platform")
 
 var platformMap = map[common.Address]string{
 	opensea.AddressSeaport:             protocol.PlatformOpenSea,
+	opensea.AddressSeaportOneDotFour:   protocol.PlatformOpenSea,
 	opensea.AddressWyvernExchangeV1:    protocol.PlatformOpenSea,
 	opensea.AddressWyvernExchangeV2:    protocol.PlatformOpenSea,
 	quix.AddressSeaport:                protocol.PlatformQuix,
