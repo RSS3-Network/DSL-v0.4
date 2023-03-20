@@ -694,6 +694,43 @@ func Test_internal_Handle(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "Blur bulk execute",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0xf293436e8b4f15715d1058d58d026fcb9121e558", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0x65824b7f59e7db0ba6f9380547bdb01902b23ded76597850f8208e20538899c7
+						Hash:        "0x65824b7f59e7db0ba6f9380547bdb01902b23ded76597850f8208e20538899c7",
+						BlockNumber: 16865308,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+
+				for _, transaction := range transactions {
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformBlur) {
+						return false
+					}
+
+					assert.NotEmpty(t, len(transaction.Transfers))
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "element erc-721",
 			arguments: arguments{
 				ctx: context.Background(),
