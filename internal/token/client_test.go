@@ -23,7 +23,7 @@ func init() {
 	rpcConfig := configx.RPC{
 		General: configx.RPCNetwork{
 			Ethereum: &configx.RPCEndpoint{
-				WebSocket: "wss://eth-mainnet.blastapi.io/ce352140-fd9b-40a1-ad6a-5c5d0ae4d48d",
+				WebSocket: "https://eth.llamarpc.com",
 			},
 			Polygon: &configx.RPCEndpoint{
 				WebSocket: "https://polygon.llamarpc.com",
