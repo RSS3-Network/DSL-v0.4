@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	Key = "polygon_staking_validators"
+	Key      = "polygon_staking_validators"
+	Endpoint = "https://staking-api.polygon.technology"
 )
 
 var _ worker.Job = (*Job)(nil)
@@ -42,7 +43,9 @@ func (j *Job) Run(_ worker.RenewalFunc) error {
 	)
 
 	for first := true; first || total > offset+limit; first = false {
-		httpRequest, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("https://sentinel.matic.network/api/v2/validators?limit=%d&offset%d", limit, offset), nil)
+		requestURL := fmt.Sprintf("%s/api/v2/validators?limit=%d&offset=%d&sortBy=delegatedStake", Endpoint, limit, offset)
+
+		httpRequest, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
 		if err != nil {
 			return fmt.Errorf("new request: %w", err)
 		}
