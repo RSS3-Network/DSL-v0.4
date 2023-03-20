@@ -2,6 +2,8 @@ package bridge
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -262,6 +264,46 @@ func Test_worker_Handle(t *testing.T) {
 		//	},
 		//	wantErr: assert.NoError,
 		//},
+		{
+			name: "Socket",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x0a92d84093c2faed1528c433f1244536f5544026", // Unknown
+					Network: protocol.NetworkOptimism,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://optimistic.etherscan.io/tx/0xaaba01b2f9f579a61f5c897bf4fc05b2dac348776a5672ff5a25afe8e7123151
+						Hash:        "0xaaba01b2f9f579a61f5c897bf4fc05b2dac348776a5672ff5a25afe8e7123151",
+						BlockNumber: 82378453,
+						Network:     protocol.NetworkOptimism,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+
+				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
+					result, err := json.Marshal(transaction)
+					assert.NoError(t, err)
+
+					fmt.Println(string(result))
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformSocket)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {

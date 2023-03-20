@@ -122,3 +122,9 @@ var ContractABIs embed.FS
 // Foundation
 // Foundation Market https://etherscan.io/address/0xcda72070e455bb31c7690a170224ce43623d0b6f
 //go:generate abigen --abi ./foundation/NFTMarket.abi --pkg foundation --type Foundation --out ./foundation/foundation.go
+
+// Socket
+// Registry https://etherscan.io/address/0xc30141b657f4216252dc59af2e7cdb9d8792e1b0
+//go:generate abigen --abi ./socket/registry.abi --pkg socket --type Registry --out ./socket/registry.go
+// Bridge https://optimistic.etherscan.io/address/0x9d39fc627a6d9d9f8c831c16995b209548cc3401
+//go:generate abigen --abi ./socket/bridge.abi --pkg socket --type Bridge --out ./socket/bridge.go

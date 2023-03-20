@@ -8,6 +8,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/hop"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/optimism"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/polygon"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/socket"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
@@ -79,6 +80,9 @@ var addressesMap = map[string][]common.Address{
 	},
 	arbitrum.PlatformInboxNova: {
 		arbitrum.AddressInboxNova,
+	},
+	protocol.PlatformSocket: {
+		socket.AddressRegistry,
 	},
 }
 

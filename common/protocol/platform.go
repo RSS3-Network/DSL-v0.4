@@ -74,6 +74,7 @@ const (
 	PlatformNouns          = "Nouns"
 	PlatformFoundation     = "Foundation"
 	PlatformZerion         = "Zerion"
+	PlatformSocket         = "Socket"
 
 	// metaverse
 	PlatformMars4      = "Mars4"

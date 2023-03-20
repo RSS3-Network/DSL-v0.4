@@ -18,6 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/hop"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/optimism"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/polygon"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/socket"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
@@ -119,6 +120,8 @@ func (w *Worker) Handle(ctx context.Context, message *protocol.Message, transact
 					internalTransfer, err = w.handlePolygonLockedMintableERC20(ctx, internalTransaction, *log)
 				case polygon.EventHashExitedEther:
 					internalTransfer, err = w.handlePolygonExitedEther(ctx, internalTransaction, *log)
+				case socket.EventHashBridgeSend:
+					internalTransfer, err = w.handleSocketSend(ctx, internalTransaction, *log)
 				default:
 					continue
 				}
