@@ -180,18 +180,22 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 			return nil, err
 		}
 
-		if len(profiles) > 0 && profiles[0].Address != ethereum.AddressGenesis {
-			request.Address = profiles[0].Address.String()
+		for _, profile := range profiles {
+			if profile.Address == ethereum.AddressGenesis {
+				continue
+			}
+			request.Address = profile.Address.String()
 
-			result, err = s.GetKuroraAddress(c, request)
+			tempRes, err := s.GetKuroraAddress(c, request)
 			if err != nil {
 				return nil, err
 			}
 
-			if profiles[0].ReverseAddress != profiles[0].Address {
-				profile := profiles[0]
+			result = append(result, tempRes...)
+
+			if profile.ReverseAddress != profile.Address {
 				var expiredAt *time.Time
-				if profile.ExpiredAt.Year() > 2000 {
+				if !profile.ExpiredAt.IsZero() {
 					expiredAt = &profile.ExpiredAt
 				}
 				result = append(result, &social.Profile{
@@ -259,7 +263,7 @@ func (s *Service) GetKuroraAddress(c context.Context, request model.GetRequest) 
 
 	for _, profile := range profiles {
 		var expiredAt *time.Time
-		if profile.ExpiredAt.Year() > 2000 {
+		if !profile.ExpiredAt.IsZero() {
 			expiredAt = &profile.ExpiredAt
 		}
 		result = append(result, &social.Profile{
@@ -326,7 +330,7 @@ func (s *Service) BatchKuroraProfiles(c context.Context, request model.BatchGetP
 				addresses = append(addresses, handleProfile.Address)
 
 				var expiredAt *time.Time
-				if handleProfile.ExpiredAt.Year() > 2000 {
+				if !handleProfile.ExpiredAt.IsZero() {
 					expiredAt = &handleProfile.ExpiredAt
 				}
 				result = append(result, &social.Profile{
@@ -363,7 +367,7 @@ func (s *Service) BatchKuroraProfiles(c context.Context, request model.BatchGetP
 				continue
 			}
 			var expiredAt *time.Time
-			if profile.ExpiredAt.Year() > 2000 {
+			if !profile.ExpiredAt.IsZero() {
 				expiredAt = &profile.ExpiredAt
 			}
 			result = append(result, &social.Profile{
