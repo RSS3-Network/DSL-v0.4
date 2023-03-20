@@ -447,6 +447,40 @@ func Test_service_Handle(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "KyberSwap Meta Aggregation Router v2 swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x8ff006ecdd4867f9670e8d724243f7e0619abb66", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0xde46a6bb1fc7834dde4d01428c88f84d65a607f4dc11b7f3dd710e86b7d226a8
+						Hash:        "0xde46a6bb1fc7834dde4d01428c88f84d65a607f4dc11b7f3dd710e86b7d226a8",
+						BlockNumber: 16802196,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, protocol.PlatformKyberSwap, transaction.Platform)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "spookswap swap",
 			fields: fields{
 				employer: shedlock.New(),
