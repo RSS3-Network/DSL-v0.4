@@ -447,6 +447,40 @@ func Test_service_Handle(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "KyberSwap Meta Aggregation Router v2 swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x8ff006ecdd4867f9670e8d724243f7e0619abb66", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0xde46a6bb1fc7834dde4d01428c88f84d65a607f4dc11b7f3dd710e86b7d226a8
+						Hash:        "0xde46a6bb1fc7834dde4d01428c88f84d65a607f4dc11b7f3dd710e86b7d226a8",
+						BlockNumber: 16802196,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, protocol.PlatformKyberSwap, transaction.Platform)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "spookswap swap",
 			fields: fields{
 				employer: shedlock.New(),
@@ -897,6 +931,50 @@ func Test_service_Handle(t *testing.T) {
 					assert.Equal(t, swap.TokenTo.Symbol, "TITAN")
 
 					assert.Equal(t, transaction.Platform, protocol.PlatformMaskNetwork)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Zerion swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x934b510d4c9103e6a87aef13b816fb080286d649", // suji.eth
+					Network: protocol.NetworkOptimism,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://optimistic.etherscan.io/tx/0xcdb923764fa73faaafcb82da4673b3c28b3dde60ed80e7a62f5b4e0babfc4a7c
+						Hash:        "0xcdb923764fa73faaafcb82da4673b3c28b3dde60ed80e7a62f5b4e0babfc4a7c",
+						BlockNumber: 78464514,
+						Network:     protocol.NetworkOptimism,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Equal(t, len(transactions), 1)
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "WETH")
+					assert.Equal(t, swap.TokenTo.Symbol, "COLLAB")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformZerion)
 				}
 
 				return false

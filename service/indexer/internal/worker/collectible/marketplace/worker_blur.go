@@ -45,17 +45,18 @@ func (i *internal) handleBlurOrdersMatched(ctx context.Context, transaction mode
 		tokenValue      *big.Int
 	)
 
-	if event.Buy.Price.Cmp(decimal.Zero.BigInt()) == 0 {
-		collection = event.Sell.Collection
-		collectionID = event.Sell.TokenId
-		collectionValue = event.Sell.Amount
-		token = event.Buy.PaymentToken
-		tokenValue = event.Buy.Price
-	} else {
+	// Determine the direction of buy and sale
+	if event.Sell.Side == 0 {
 		collection = event.Buy.Collection
 		collectionID = event.Buy.TokenId
 		collectionValue = event.Buy.Amount
 		token = event.Buy.PaymentToken
+		tokenValue = event.Buy.Price
+	} else {
+		collection = event.Sell.Collection
+		collectionID = event.Sell.TokenId
+		collectionValue = event.Sell.Amount
+		token = event.Sell.PaymentToken
 		tokenValue = event.Sell.Price
 	}
 

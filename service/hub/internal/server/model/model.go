@@ -46,7 +46,6 @@ type GetRequest struct {
 	// includes POAP in the response
 	IncludePoap bool   `query:"include_poap" json:"include_poap"`
 	Refresh     bool   `query:"refresh" json:"refresh"`
-	Reindex     bool   `query:"reindex" json:"reindex"`
 	Page        int    `query:"page" json:"page"`
 	QueryStatus bool   `query:"query_status" json:"query_status"`
 	TokenId     string `query:"token_id" json:"token_id"`

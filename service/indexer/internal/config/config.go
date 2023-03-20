@@ -30,6 +30,7 @@ func Initialize() {
 	viper.SetConfigName("indexer")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("/etc/pregod/")
+	viper.AddConfigPath("$HOME/.config/pregod")
 	viper.AddConfigPath("$HOME/.pregod/")
 	viper.AddConfigPath("./deploy/config/")
 	// `opentelemetry.host` -> `CONFIG_ENV_OPENTELEMETRY_HOST`

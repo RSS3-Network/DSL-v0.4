@@ -152,6 +152,11 @@ var (
 		Protocol: "MaskNetwork ITO",
 	}
 
+	zerion = Router{
+		Name:     protocol.PlatformZerion,
+		Protocol: "Zerion",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -205,7 +210,8 @@ var (
 		strings.ToLower("0x00000000009726632680FB29d3F7A9734E3010E2"): rainbow, // Rainbow
 		// KyberSwap
 		// https://docs.kyberswap.com/
-		strings.ToLower("0x617Dee16B86534a5d792A4d7A62FB491B544111E"): kyberSwapAggregator, // Aggregator
+		strings.ToLower("0x617Dee16B86534a5d792A4d7A62FB491B544111E"): kyberSwapAggregator, // Meta Aggregation Router
+		strings.ToLower("0x6131B5fae19EA4f9D964eAc0408E4408b66337b5"): kyberSwapElastic,    // Meta Aggregation Router V2
 		strings.ToLower("0xC1e7dFE73E1598E3910EF4C7845B68A9Ab6F4c83"): kyberSwapElastic,    // Elastic
 		strings.ToLower("0x1c87257f5e8609940bc751a07bb085bb7f8cdbe6"): kyberSwapClassic,    // Classic Ethereum
 		strings.ToLower("0xEaE47c5D99f7B31165a7f0c5f7E0D6afA25CFd55"): kyberSwapClassic,    // Classic Arbitrum
@@ -247,5 +253,7 @@ var (
 		strings.ToLower("0x9008D19f58AAbD9eD0D60971565AA8510560ab41"): cowSwap,
 		// MaskNetwork
 		strings.ToLower(masknetwork.AddressHappyTokenPool.String()): maskNetwork,
+		// Zerion
+		strings.ToLower("0xd7F1Dd5D49206349CaE8b585fcB0Ce3D96f1696F"): zerion,
 	}
 )
