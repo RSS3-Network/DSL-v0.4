@@ -152,6 +152,11 @@ var (
 		Protocol: "MaskNetwork ITO",
 	}
 
+	zerion = Router{
+		Name:     protocol.PlatformZerion,
+		Protocol: "Zerion",
+	}
+
 	routerMap = map[string]Router{
 		// Uniswap V2
 		strings.ToLower("0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"): routerUniswapV2, // Uniswap V2 1
@@ -248,5 +253,7 @@ var (
 		strings.ToLower("0x9008D19f58AAbD9eD0D60971565AA8510560ab41"): cowSwap,
 		// MaskNetwork
 		strings.ToLower(masknetwork.AddressHappyTokenPool.String()): maskNetwork,
+		// Zerion
+		strings.ToLower("0xd7F1Dd5D49206349CaE8b585fcB0Ce3D96f1696F"): zerion,
 	}
 )

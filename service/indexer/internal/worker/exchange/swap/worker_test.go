@@ -937,6 +937,50 @@ func Test_service_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "Zerion swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x934b510d4c9103e6a87aef13b816fb080286d649", // suji.eth
+					Network: protocol.NetworkOptimism,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://optimistic.etherscan.io/tx/0xcdb923764fa73faaafcb82da4673b3c28b3dde60ed80e7a62f5b4e0babfc4a7c
+						Hash:        "0xcdb923764fa73faaafcb82da4673b3c28b3dde60ed80e7a62f5b4e0babfc4a7c",
+						BlockNumber: 78464514,
+						Network:     protocol.NetworkOptimism,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Equal(t, len(transactions), 1)
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "WETH")
+					assert.Equal(t, swap.TokenTo.Symbol, "COLLAB")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformZerion)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {
