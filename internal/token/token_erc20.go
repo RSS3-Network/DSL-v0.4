@@ -13,6 +13,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/blur"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/maker"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -25,14 +26,21 @@ import (
 
 func (c *Client) ERC20(ctx context.Context, network string, contractAddress string) (*ERC20, error) {
 	// Special handle non-standard tokens
-	// nolint:gocritic
 	switch {
 	case network == protocol.NetworkEthereum && strings.EqualFold(contractAddress, blur.AddressPool.String()):
 		return &ERC20{
 			Name:            "Blur Pool",
 			Symbol:          "Blur Pool", // No symbol function implemented
 			Decimals:        18,
-			ContractAddress: contractAddress,
+			ContractAddress: strings.ToLower(contractAddress),
+		}, nil
+	case network == protocol.NetworkEthereum && strings.EqualFold(contractAddress, maker.AddressToken.String()):
+		return &ERC20{
+			Name:            "Maker", // Return value type is not string
+			Symbol:          "MKR",   // Return value type is not string
+			Decimals:        18,
+			ContractAddress: strings.ToLower(contractAddress),
+			Logo:            "https://assets.coingecko.com/coins/images/1364/large/Mark_Maker.png",
 		}, nil
 	}
 
