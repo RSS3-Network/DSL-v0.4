@@ -25,6 +25,7 @@ import (
 
 func (c *Client) ERC20(ctx context.Context, network string, contractAddress string) (*ERC20, error) {
 	// Special handle non-standard tokens
+	// nolint:gocritic
 	switch {
 	case network == protocol.NetworkEthereum && strings.EqualFold(contractAddress, blur.AddressPool.String()):
 		return &ERC20{
