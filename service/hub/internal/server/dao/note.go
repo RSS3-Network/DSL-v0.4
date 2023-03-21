@@ -22,6 +22,7 @@ func GetTransactions(ctx context.Context, request model.GetRequest) ([]dbModel.T
 	transactions := make([]dbModel.Transaction, 0)
 	total := int64(0)
 	sql := database.Global().
+		WithContext(ctx).
 		Model(&dbModel.Transaction{}).
 		Where("success IS TRUE") // Hide failed transactions
 
@@ -96,6 +97,7 @@ func BatchGetTransactions(ctx context.Context, request model.BatchGetNotesReques
 	total := int64(0)
 
 	sql := database.Global().
+		WithContext(ctx).
 		Model(&dbModel.Transaction{}).
 		Where("owner IN ?", request.Address).
 		Where("success IS TRUE") // Hide failed transactions
@@ -150,15 +152,15 @@ func BatchGetTransactions(ctx context.Context, request model.BatchGetNotesReques
 }
 
 // getTransfers get transfer data from database
-func GetTransfers(c context.Context, transactionHashes []string) ([]dbModel.Transfer, error) {
+func GetTransfers(ctx context.Context, transactionHashes []string) ([]dbModel.Transfer, error) {
 	tracer := otel.Tracer("getTransfers")
-	_, postgresSnap := tracer.Start(c, "postgres")
+	_, postgresSnap := tracer.Start(ctx, "postgres")
 
 	defer postgresSnap.End()
 
 	transfers := make([]dbModel.Transfer, 0)
 
-	sql := database.Global().Model(&dbModel.Transfer{})
+	sql := database.Global().WithContext(ctx).Model(&dbModel.Transfer{})
 
 	if err := sql.
 		Where("transaction_hash IN (SELECT * FROM UNNEST(?::TEXT[]))", pq.Array(transactionHashes)).
@@ -167,4 +169,23 @@ func GetTransfers(c context.Context, transactionHashes []string) ([]dbModel.Tran
 	}
 
 	return transfers, nil
+}
+
+func GetTransactionByHash(ctx context.Context, request model.GetTransactionRequest) (dbModel.Transaction, error) {
+	tracer := otel.Tracer("getTransactionByHash")
+	_, postgresSnap := tracer.Start(ctx, "postgres")
+
+	defer postgresSnap.End()
+
+	var transaction dbModel.Transaction
+
+	sql := database.Global().WithContext(ctx).Model(&dbModel.Transaction{})
+
+	if err := sql.
+		Where("hash = ?", request.Hash).
+		First(&transaction).Error; err != nil {
+		return dbModel.Transaction{}, err
+	}
+
+	return transaction, nil
 }

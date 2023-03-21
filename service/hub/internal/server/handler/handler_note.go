@@ -247,3 +247,30 @@ func (h *Handler) GetNotesWsFunc(c echo.Context) error {
 
 	return nil
 }
+
+func (h *Handler) GetTransactionByHashFunc(c echo.Context) error {
+	go h.apiReport(model.GetTransactionByHash, c)
+	tracer := otel.Tracer("GetTransactionByHashFunc")
+	ctx, httpSnap := tracer.Start(c.Request().Context(), "GetTransactionByHashFunc:http")
+
+	defer httpSnap.End()
+
+	request := model.GetTransactionRequest{}
+
+	if err := c.Bind(&request); err != nil {
+		return BadRequest(c)
+	}
+
+	if err := c.Validate(&request); err != nil {
+		return err
+	}
+
+	transaction, err := h.service.GetTransactionByHash(ctx, request)
+	if err != nil {
+		return ErrorResp(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &model.Response{
+		Result: transaction,
+	})
+}
