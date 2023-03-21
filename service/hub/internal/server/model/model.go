@@ -10,12 +10,13 @@ const (
 	DefaultLimit = 500
 
 	// path
-	GetNotes        = "/notes/"
-	PostNotes       = "/notes"
-	PostSocialNotes = "/notes/social"
-	GetProfiles     = "/profiles/"
-	PostProfiles    = "/profiles"
-	GetNS           = "/ns/"
+	GetNotes             = "/notes/"
+	PostNotes            = "/notes"
+	PostSocialNotes      = "/notes/social"
+	GetProfiles          = "/profiles/"
+	PostProfiles         = "/profiles"
+	GetNS                = "/ns/"
+	GetTransactionByHash = "/tx/"
 
 	EsIndex = "pregod-v1-visit-path"
 
@@ -46,7 +47,6 @@ type GetRequest struct {
 	// includes POAP in the response
 	IncludePoap bool   `query:"include_poap" json:"include_poap"`
 	Refresh     bool   `query:"refresh" json:"refresh"`
-	Reindex     bool   `query:"reindex" json:"reindex"`
 	Page        int    `query:"page" json:"page"`
 	QueryStatus bool   `query:"query_status" json:"query_status"`
 	TokenId     string `query:"token_id" json:"token_id"`
@@ -103,6 +103,10 @@ type BatchGetProfilesRequest struct {
 
 type APIKeyRequest struct {
 	Address string `json:"address" validate:"required"`
+}
+
+type GetTransactionRequest struct {
+	Hash string `param:"hash" validate:"required"`
 }
 
 // exchange

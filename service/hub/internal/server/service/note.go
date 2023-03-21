@@ -57,7 +57,7 @@ func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbM
 
 	// publish mq message
 	if len(request.Cursor) == 0 && (request.Refresh || len(transactions) == 0) {
-		s.PublishIndexerMessage(ctx, protocol.Message{Address: request.Address, Reindex: request.Reindex})
+		s.PublishIndexerMessage(ctx, protocol.Message{Address: request.Address})
 	}
 
 	return transactions, total, nil
@@ -252,4 +252,20 @@ func (s *Service) GetNftFeeds(ctx context.Context, request model.GetRequest) ([]
 	}
 
 	return transactions, total, nil
+}
+
+func (s *Service) GetTransactionByHash(ctx context.Context, request model.GetTransactionRequest) (dbModel.Transaction, error) {
+	transaction, err := dao.GetTransactionByHash(ctx, request)
+	if err != nil {
+		return dbModel.Transaction{}, err
+	}
+
+	transfers, err := dao.GetTransfers(ctx, []string{transaction.Hash})
+	if err != nil {
+		return dbModel.Transaction{}, err
+	}
+
+	transaction.Transfers = transfers
+
+	return transaction, nil
 }

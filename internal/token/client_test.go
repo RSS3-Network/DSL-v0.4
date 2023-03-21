@@ -2,13 +2,16 @@ package token_test
 
 import (
 	"context"
-	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 	"log"
 	"math/big"
+	"strings"
 	"testing"
 
 	configx "github.com/naturalselectionlabs/pregod/common/config"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/blur"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/maker"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/stretchr/testify/assert"
@@ -50,10 +53,45 @@ func TestClient_Native(t *testing.T) {
 }
 
 func TestClient_ERC20(t *testing.T) {
-	erc20, err := tokenClient.ERC20(context.Background(), protocol.NetworkEthereum, "0xc98d64da73a6616c42117b582e832812e7b8d57f")
-	assert.NoError(t, err)
+	testcases := []struct {
+		name            string
+		network         string
+		contractAddress string
+		want            *token.ERC20
+	}{
+		{
+			name:            "Blur pool",
+			network:         protocol.NetworkEthereum,
+			contractAddress: blur.AddressPool.String(),
+			want: &token.ERC20{
+				Name:            "Blur Pool",
+				Symbol:          "Blur Pool",
+				Decimals:        18,
+				ContractAddress: strings.ToLower(blur.AddressPool.String()),
+			},
+		},
+		{
+			name:            "Maker",
+			network:         protocol.NetworkEthereum,
+			contractAddress: maker.AddressToken.String(),
+			want: &token.ERC20{
+				Name:            "Maker", // Return value type is not string
+				Symbol:          "MKR",   // Return value type is not string
+				Decimals:        18,
+				ContractAddress: strings.ToLower(maker.AddressToken.String()),
+				Logo:            "https://assets.coingecko.com/coins/images/1364/large/Mark_Maker.png",
+			},
+		},
+	}
 
-	t.Log(erc20)
+	for _, testcase := range testcases {
+		t.Run(testcase.name, func(t *testing.T) {
+			result, err := tokenClient.ERC20(context.Background(), testcase.network, testcase.contractAddress)
+			assert.NoError(t, err)
+
+			assert.Equal(t, testcase.want, result)
+		})
+	}
 }
 
 // 0x712b9720b37bd206ed938a5fff4ca48cb89643ba 231
@@ -95,9 +133,9 @@ func TestClient_ERC721_403(t *testing.T) {
 
 func TestClient_NFT(t *testing.T) {
 	tokenID := big.NewInt(0)
-	tokenID.SetString("35536", 0)
+	tokenID.SetString("957", 0)
 
-	nft, err := tokenClient.NFT(context.Background(), protocol.NetworkEthereum, "0xb932a70a57673d89f4acffbe830e8ed7f75fb9e0", tokenID)
+	nft, err := tokenClient.NFT(context.Background(), protocol.NetworkEthereum, "0x826a63550d536822fcfca64b4b118cc459cf1652", tokenID)
 	assert.NoError(t, err)
 
 	t.Log(nft)

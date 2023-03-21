@@ -14,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lib/pq"
 	kurora_client "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
@@ -390,18 +389,16 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		BlockNumber int64     `gorm:"column:block_number"`
 	}
 
-	if !message.Reindex {
-		if err := database.Global().
-			Model((*model.Transaction)(nil)).
-			Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
-			Where("owner = ?", message.Address).
-			Where("network = ?", message.Network).
-			Order("timestamp DESC").
-			Limit(1).
-			First(&result).
-			Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
-		}
+	if err := database.Global().
+		Model((*model.Transaction)(nil)).
+		Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
+		Where("owner = ?", message.Address).
+		Where("network = ?", message.Network).
+		Order("timestamp DESC").
+		Limit(1).
+		First(&result).
+		Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
 	}
 
 	message.Timestamp = result.Timestamp
@@ -684,31 +681,6 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 
 	// Open a database transaction
 	tx := database.Global().WithContext(ctx).Begin()
-
-	// Delete data from this address and reindex it
-	if message.Reindex {
-		var hashes []string
-
-		// TODO Use the owner to replace hashes field
-		// Get all hashes of this address on this network
-		if err := tx.
-			Model((*model.Transaction)(nil)).
-			Where("network = ? AND owner = ?", message.Network, message.Address).
-			Pluck("hash", &hashes).
-			Error; err != nil {
-			return err
-		}
-
-		if err := tx.Where("network = ? AND hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transaction{}).Error; err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		if err := tx.Where("network = ? AND transaction_hash IN (SELECT * FROM UNNEST(?::TEXT[]))", message.Network, pq.Array(hashes)).Delete(&model.Transfer{}).Error; err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
 
 	return s.upsertTransactions(ctx, message, tx, result)
 }

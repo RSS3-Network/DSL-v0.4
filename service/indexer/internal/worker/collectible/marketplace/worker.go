@@ -228,7 +228,8 @@ func (i *internal) buildTradeTransfer(transaction model.Transaction, index int64
 func (i *internal) buildCost(ctx context.Context, network string, address common.Address, value *big.Int) (*metadata.Token, error) {
 	var costToken metadata.Token
 
-	if address == ethereum.AddressGenesis || address == element.AddressNativeToken {
+	switch {
+	case address == ethereum.AddressGenesis || address == element.AddressNativeToken:
 		nativeToken, err := i.tokenClient.Native(ctx, network)
 		if err != nil {
 			return nil, err
@@ -246,7 +247,7 @@ func (i *internal) buildCost(ctx context.Context, network string, address common
 			Value:        &costValue,
 			ValueDisplay: &costValueDisplay,
 		}
-	} else {
+	default:
 		erc20Token, err := i.tokenClient.ERC20(ctx, network, address.String())
 		if err != nil {
 			return nil, err
