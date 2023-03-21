@@ -5,18 +5,20 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/farcaster"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/foundation"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/iqwiki"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/lens"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/matters"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/mirror"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/nouns"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/rara"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/sound"
-
-	"github.com/naturalselectionlabs/pregod/common/metadata_url"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/zora"
 
 	_ "github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/cache"
@@ -156,6 +158,9 @@ func (s *Server) Initialize() (err error) {
 		matters.New(s.config),
 		rara.New(s.config),
 		sound,
+		zora.New(s.config),
+		nouns.New(s.config),
+		foundation.New(s.config),
 	}
 
 	return nil
