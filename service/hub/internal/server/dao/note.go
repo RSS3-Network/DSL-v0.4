@@ -183,7 +183,6 @@ func GetTransactionByHash(ctx context.Context, request model.GetTransactionReque
 
 	if err := sql.
 		Where("hash = ?", request.Hash).
-		Where("network = ?", request.Network).
 		First(&transaction).Error; err != nil {
 		return dbModel.Transaction{}, err
 	}

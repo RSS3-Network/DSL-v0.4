@@ -253,3 +253,19 @@ func (s *Service) GetNftFeeds(ctx context.Context, request model.GetRequest) ([]
 
 	return transactions, total, nil
 }
+
+func (s *Service) GetTransactionByHash(ctx context.Context, request model.GetTransactionRequest) (dbModel.Transaction, error) {
+	transaction, err := dao.GetTransactionByHash(ctx, request)
+	if err != nil {
+		return dbModel.Transaction{}, err
+	}
+
+	transfers, err := dao.GetTransfers(ctx, []string{transaction.Hash})
+	if err != nil {
+		return dbModel.Transaction{}, err
+	}
+
+	transaction.Transfers = transfers
+
+	return transaction, nil
+}
