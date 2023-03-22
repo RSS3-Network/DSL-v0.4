@@ -7,11 +7,11 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-//go:generate abigen --abi ./profile/profile.abi --pkg profile --type Profile --out ./profile/profile.go
-//go:generate abigen --abi ./character/character.abi --pkg character --type Character --out ./character/character.go
-//go:generate abigen --abi ./periphery/periphery.abi --pkg periphery --type Periphery --out ./periphery/periphery.go
-//go:generate abigen --abi ./linklist/linklist.abi --pkg linklist --type LinkList --out ./linklist/linklist.go
-//go:generate abigen --abi ./event/event.abi --pkg event --type Event --out ./event/event.go
+//go:generate go run -mod=mod github.com/ethereum/go-ethereum/cmd/abigen --abi ./profile/profile.abi --pkg profile --type Profile --out ./profile/profile.go
+//go:generate go run -mod=mod github.com/ethereum/go-ethereum/cmd/abigen --abi ./character/character.abi --pkg character --type Character --out ./character/character.go
+//go:generate go run -mod=mod github.com/ethereum/go-ethereum/cmd/abigen --abi ./periphery/periphery.abi --pkg periphery --type Periphery --out ./periphery/periphery.go
+//go:generate go run -mod=mod github.com/ethereum/go-ethereum/cmd/abigen --abi ./linklist/linklist.abi --pkg linklist --type LinkList --out ./linklist/linklist.go
+//go:generate go run -mod=mod github.com/ethereum/go-ethereum/cmd/abigen --abi ./event/event.abi --pkg event --type Event --out ./event/event.go
 
 const (
 	// BrokenBlockNumber is the block height of the contract non-compatible upgrade

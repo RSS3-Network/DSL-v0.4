@@ -5,9 +5,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-//go:generate abigen --abi ./contract/artist.abi --pkg contract --type Artist --out ./contract/artist.go
-//go:generate abigen --abi ./contract/artist_v3.abi --pkg contract --type ArtistV3 --out ./contract/artist_v3.go
-//go:generate abigen --abi ./contract/artist_v5.abi --pkg contract --type ArtistV5 --out ./contract/artist_v5.go
+//go:generate go run -mod=mod github.com/ethereum/go-ethereum/cmd/abigen --abi ./contract/artist.abi --pkg contract --type Artist --out ./contract/artist.go
+//go:generate go run -mod=mod github.com/ethereum/go-ethereum/cmd/abigen --abi ./contract/artist_v3.abi --pkg contract --type ArtistV3 --out ./contract/artist_v3.go
+//go:generate go run -mod=mod github.com/ethereum/go-ethereum/cmd/abigen --abi ./contract/artist_v5.abi --pkg contract --type ArtistV5 --out ./contract/artist_v5.go
 
 var (
 	// AddressArtistCreator https://etherscan.io/address/0x78E3aDc0E811e4f93BD9F1f9389b923c9A3355c2#code

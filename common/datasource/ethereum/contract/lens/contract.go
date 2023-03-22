@@ -5,8 +5,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-//go:generate abigen --abi ./events.abi --pkg contract --type Events --out ./events.go
-//go:generate abigen --abi ./ILensHub.abi --pkg contract --type ILensHub --out ./iLensHub.go
+//go:generate go run -mod=mod github.com/ethereum/go-ethereum/cmd/abigen --abi ./events.abi --pkg contract --type Events --out ./events.go
+//go:generate go run -mod=mod github.com/ethereum/go-ethereum/cmd/abigen --abi ./ILensHub.abi --pkg contract --type ILensHub --out ./iLensHub.go
 
 var (
 	HubProxyContractAddress     = common.HexToAddress("0xdb46d1dc155634fbc732f92e853b10b288ad5a1d")

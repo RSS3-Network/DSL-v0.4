@@ -26,6 +26,7 @@ var (
 	_ = common.Big1
 	_ = types.BloomLookup
 	_ = event.NewSubscription
+	_ = abi.ConvertType
 )
 
 // ArtistMetaData contains all meta data concerning the Artist contract.
@@ -134,11 +135,11 @@ func NewArtistFilterer(address common.Address, filterer bind.ContractFilterer) (
 
 // bindArtist binds a generic wrapper to an already deployed contract.
 func bindArtist(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := abi.JSON(strings.NewReader(ArtistABI))
+	parsed, err := ArtistMetaData.GetAbi()
 	if err != nil {
 		return nil, err
 	}
-	return bind.NewBoundContract(address, parsed, caller, transactor, filterer), nil
+	return bind.NewBoundContract(address, *parsed, caller, transactor, filterer), nil
 }
 
 // Call invokes the (constant) contract method with params as input values and

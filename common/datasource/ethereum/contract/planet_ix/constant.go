@@ -5,7 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-//go:generate abigen --abi ./contract/marketplace.abi --pkg contract --type Marketplace --out ./contract/marketplace.go
+//go:generate go run -mod=mod github.com/ethereum/go-ethereum/cmd/abigen --abi ./contract/marketplace.abi --pkg contract --type Marketplace --out ./contract/marketplace.go
 
 var (
 	PlanetIXMarketplaceContractAddress = common.HexToAddress("0x5a98e7ce0f72995fdc13d91255443f374c1299a6")
