@@ -181,7 +181,7 @@ func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *pro
 	internalTransactions := make([]model.Transaction, 0)
 
 	result, err := d.getAssestTransactionAndLogs(ctx, message, parameter)
-	//Deprecated result, err := eth_etl.GetAssetTransfers(context.Background(), parameter)
+	// Deprecated result, err := eth_etl.GetAssetTransfers(context.Background(), parameter)
 	defer func() { opentelemetry.Log(trace, message, len(internalTransactions), err) }()
 
 	if err != nil {
