@@ -164,6 +164,11 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	ethereumDatasource, err := eth_etl.New(context.Background(), s.config.Kurora.Endpoint)
+	if err != nil {
+		return err
+	}
+
 	s.datasources = []datasource.Datasource{
 		kuroraDatasource,
 		mirrorDatasource,
@@ -171,7 +176,7 @@ func (s *Server) Initialize() (err error) {
 		moralis.New(s.config.Moralis.Key),
 		blockscoutDatasource,
 		zksync.New(),
-		eth_etl.New(),
+		ethereumDatasource,
 		eip1577.New(s.employer),
 		lensDatasource,
 		aptos.New(),

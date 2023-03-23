@@ -29,6 +29,7 @@ type Transfer struct {
 	Value    float64        `gorm:"column:value"`
 }
 
+// Deprecated: use kurora query getAssestTransactionAndLogs instead
 func GetAssetTransfers(ctx context.Context, parameter GetAssetTransfersParameter) (*GetAssetTransfersResult, error) {
 	result := GetAssetTransfersResult{}
 	fromAddress := common.HexToAddress(parameter.FromAddress)
