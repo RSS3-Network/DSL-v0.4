@@ -113,7 +113,7 @@ func (s *service) handleFoundationAuctions(ctx context.Context) ([]*model.Transa
 	cursor, _ := cache.Global().Get(ctx, foundationCacheKey).Result()
 
 	query := kurora.DatasetFoundationEventQuery{
-		Type:  lo.ToPtr(0), // // type auction
+		Type:  lo.ToPtr(0), // type auction
 		Limit: lo.ToPtr(100),
 	}
 
