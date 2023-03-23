@@ -29,6 +29,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
+
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -101,14 +102,18 @@ func (s *service) Run() error {
 func (s *service) handleFoundationAuctions(ctx context.Context) ([]*model.Transaction, string, error) {
 	tracer := otel.Tracer("foundation")
 	_, trace := tracer.Start(ctx, "foundation:handleFoundationAuctions")
-	var transactions []*model.Transaction
-	var err error
-	transactionsMap := make(map[common.Hash]*model.Transaction, 0)
+	var (
+		transactions []*model.Transaction
+		err          error
+
+		transactionsMap = make(map[common.Hash]*model.Transaction, 0)
+	)
 	defer func() { opentelemetry.Log(trace, nil, transactions, err) }()
 
 	cursor, _ := cache.Global().Get(ctx, foundationCacheKey).Result()
 
 	query := kurora.DatasetFoundationEventQuery{
+		Type:  lo.ToPtr(0), // // type auction
 		Limit: lo.ToPtr(100),
 	}
 
@@ -126,18 +131,33 @@ func (s *service) handleFoundationAuctions(ctx context.Context) ([]*model.Transa
 	loggerx.Global().Info("foundation: kuroraClient FetchDatasetFoundationEvents result", zap.Int("len", len(events)), zap.String("cursor", cursor))
 
 	var (
-		limiter = make(chan struct{}, 10)
-		nftMap  = make(map[string]*metadata.Token, 0)
+		limiter     = make(chan struct{}, 10)
+		metaDataMap = make(map[string]*metadata.Token, 0)
+		nftMap      = make(map[string]*struct {
+			address common.Address
+			tokenId *big.Int
+		}, 0)
 
 		waitGroup sync.WaitGroup
 		locker    sync.Mutex
 	)
 
 	for _, event := range events {
+		key := fmt.Sprintf("%v-%v", event.NftAddress.String(), event.NftId.BigInt())
+		if _, ok := nftMap[key]; ok {
+			continue
+		}
+		nftMap[key] = &struct {
+			address common.Address
+			tokenId *big.Int
+		}{address: event.NftAddress, tokenId: event.NftId.BigInt()}
+	}
+
+	for _, nftData := range nftMap {
 		limiter <- struct{}{}
 		waitGroup.Add(1)
 
-		go func(nftKey, address string, tokenId *big.Int) {
+		go func(address string, tokenId *big.Int) {
 			defer func() {
 				<-limiter
 				waitGroup.Done()
@@ -145,24 +165,25 @@ func (s *service) handleFoundationAuctions(ctx context.Context) ([]*model.Transa
 
 			nft, err := s.tokenClient.NFTToMetadata(ctx, s.Network(), address, tokenId)
 			if err != nil {
-				zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", nftKey), zap.String("contract_address", address), zap.Stringer("token_id", tokenId))
+				zap.L().Error("nft to metadata", zap.Error(err), zap.String("contract_address", address), zap.Stringer("token_id", tokenId))
 
 				return
 			}
 
 			locker.Lock()
-			nftMap[nftKey] = nft
+			metaDataMap[fmt.Sprintf("%v-%v", address, tokenId)] = nft
 			locker.Unlock()
-		}(fmt.Sprintf("%v-%v", event.TransactionHash.String(), event.LogIndex), event.NftAddress.String(), event.NftId.BigInt())
+		}(nftData.address.String(), nftData.tokenId)
 	}
 
 	waitGroup.Wait()
 	for _, event := range events {
-		if _, ok := nftMap[fmt.Sprintf("%v-%v", event.TransactionHash.String(), event.LogIndex)]; !ok {
+		key := fmt.Sprintf("%v-%v", event.NftAddress.String(), event.NftId.BigInt())
+		if _, ok := metaDataMap[key]; !ok {
 			continue
 		}
 
-		nft := nftMap[fmt.Sprintf("%v-%v", event.TransactionHash.String(), event.LogIndex)]
+		nft := metaDataMap[key]
 
 		nft.Action = event.EventType
 		nft.StartTime = &event.Timestamp
