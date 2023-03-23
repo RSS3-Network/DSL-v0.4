@@ -156,8 +156,14 @@ func (c *Client) ERC721Zora(ctx context.Context, network string, tokenID *big.In
 		return nil, err
 	}
 
+	var image string
+
 	if tokenID != nil {
 		if result.URI, err = zoraContract.TokenMetadataURI(&bind.CallOpts{}, tokenID); err != nil {
+			return nil, err
+		}
+
+		if image, err = zoraContract.TokenURI(&bind.CallOpts{}, tokenID); err != nil {
 			return nil, err
 		}
 
@@ -171,6 +177,15 @@ func (c *Client) ERC721Zora(ctx context.Context, network string, tokenID *big.In
 
 	if err := json.Unmarshal(result.Metadata, &metadata); err != nil {
 		return nil, err
+	}
+
+	if image != "" {
+		metadata.Image = image
+
+		result.Metadata, err = json.Marshal(metadata)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &result, nil
