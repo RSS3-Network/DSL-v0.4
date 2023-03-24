@@ -27,6 +27,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/samber/lo"
+	lop "github.com/samber/lo/parallel"
 	"github.com/shopspring/decimal"
 
 	"go.opentelemetry.io/otel"
@@ -82,7 +83,7 @@ func (s *service) Run() error {
 		}
 
 		if len(transactions) == 0 {
-			time.Sleep(1 * time.Hour)
+			time.Sleep(1 * time.Minute)
 
 			continue
 		}
@@ -96,6 +97,12 @@ func (s *service) Run() error {
 		// set cache
 		cache.Global().Set(ctx, zoraCacheKey, cacheInfo, 7*24*time.Hour)
 	}
+}
+
+type nftMetadata struct {
+	Address  common.Address
+	TokenId  *big.Int
+	Metadata *metadata.Token
 }
 
 func (s *service) handleZoraAuctions(ctx context.Context) ([]*model.Transaction, string, error) {
@@ -130,59 +137,54 @@ func (s *service) handleZoraAuctions(ctx context.Context) ([]*model.Transaction,
 	loggerx.Global().Info("zora: kuroraClient FetchDatasetZoraEvents result", zap.Int("len", len(events)), zap.String("cursor", cursor))
 
 	var (
-		limiter     = make(chan struct{}, 10)
-		metaDataMap = make(map[string]*metadata.Token, 0)
-		nftMap      = make(map[string]*struct {
-			address common.Address
-			tokenId *big.Int
-		}, 0)
-
-		waitGroup sync.WaitGroup
-		locker    sync.Mutex
+		metaDataMap = make(map[string]*nftMetadata, 0)
+		nftList     = make([]*nftMetadata, 0)
+		locker      sync.Mutex
 	)
 
 	for _, event := range events {
 		key := fmt.Sprintf("%v-%v", event.NftAddress.String(), event.NftId.BigInt())
-		if _, ok := nftMap[key]; ok {
+		if _, ok := metaDataMap[key]; ok {
 			continue
 		}
-		nftMap[key] = &struct {
-			address common.Address
-			tokenId *big.Int
-		}{address: event.NftAddress, tokenId: event.NftId.BigInt()}
+
+		nft := &nftMetadata{event.NftAddress, event.NftId.BigInt(), nil}
+
+		metaDataMap[key] = nft
+
+		nftList = append(nftList, nft)
 	}
 
-	for _, nftData := range nftMap {
-		limiter <- struct{}{}
-		waitGroup.Add(1)
+	opt := lop.NewOption().WithConcurrency(10)
+	lop.ForEach(nftList, func(nftData *nftMetadata, i int) {
+		address := nftData.Address.String()
+		tokenId := nftData.TokenId
 
-		go func(address string, tokenId *big.Int) {
-			defer func() {
-				<-limiter
-				waitGroup.Done()
-			}()
+		metaData, err := s.tokenClient.NFTToMetadata(ctx, s.Network(), address, tokenId)
+		if err != nil {
+			zap.L().Error("nft to metadata", zap.Error(err), zap.String("contract_address", address), zap.Stringer("token_id", tokenId))
 
-			nft, err := s.tokenClient.NFTToMetadata(ctx, s.Network(), address, tokenId)
-			if err != nil {
-				zap.L().Error("nft to metadata", zap.Error(err), zap.String("contract_address", address), zap.Stringer("token_id", tokenId))
+			return
+		}
 
-				return
-			}
+		locker.Lock()
+		metaDataMap[fmt.Sprintf("%v-%v", address, tokenId)].Metadata = metaData
+		locker.Unlock()
+	}, opt)
 
-			locker.Lock()
-			metaDataMap[fmt.Sprintf("%v-%v", address, tokenId)] = nft
-			locker.Unlock()
-		}(nftData.address.String(), nftData.tokenId)
-	}
-
-	waitGroup.Wait()
 	for _, event := range events {
 		key := fmt.Sprintf("%v-%v", event.NftAddress.String(), event.NftId.BigInt())
 		if _, ok := metaDataMap[key]; !ok {
 			continue
 		}
 
-		nft := metaDataMap[key]
+		nftData := metaDataMap[key]
+
+		if nftData.Metadata == nil {
+			continue
+		}
+
+		nft := nftData.Metadata
 
 		nft.Action = event.EventType
 		nft.StartTime = &event.Timestamp

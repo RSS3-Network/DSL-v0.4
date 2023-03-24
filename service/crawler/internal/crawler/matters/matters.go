@@ -75,7 +75,7 @@ func (s *service) Run() error {
 		}
 
 		if len(transactions) == 0 {
-			time.Sleep(30 * time.Minute)
+			time.Sleep(1 * time.Minute)
 
 			continue
 		}
