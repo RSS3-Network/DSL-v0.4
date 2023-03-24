@@ -9,24 +9,43 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/samber/lo"
-	"github.com/shopspring/decimal"
-	"golang.org/x/sync/errgroup"
-
 	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/kurora/constant"
-	"github.com/naturalselectionlabs/pregod/internal/allowlist"
-
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
-	eth_etl "github.com/naturalselectionlabs/pregod/common/datasource/pregod_etl/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/naturalselectionlabs/pregod/internal/allowlist"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource"
+	"github.com/samber/lo"
+	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
+
+const (
+	DefaultTransactionLimit = 30000
+	DefaultTransferLimit    = 10000
+)
+
+type GetAssetTransfersParameter struct {
+	FromBlock   int64  `json:"fromBlock,omitempty"`
+	FromAddress string `json:"fromAddress,omitempty"`
+}
+
+type GetAssetTransfersResult struct {
+	Transfers []Transfer
+}
+
+type Transfer struct {
+	BlockNum int64          `gorm:"column:block_number"`
+	Hash     common.Hash    `gorm:"column:hash"`
+	From     common.Address `gorm:"column:from_address"`
+	To       []byte         `gorm:"column:to_address"`
+	Value    float64        `gorm:"column:value"`
+}
 
 var _ datasource.Datasource = &Datasource{}
 
@@ -45,8 +64,8 @@ func (d *Datasource) Networks() []string {
 }
 
 func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]model.Transaction, error) {
-	tracer := otel.Tracer("datasource_etl")
-	ctx, trace := tracer.Start(ctx, "datasource_etl:Handle")
+	tracer := otel.Tracer("datasource_ethereum")
+	ctx, trace := tracer.Start(ctx, "datasource_ethereum:Handle")
 
 	transactions := make([]*model.Transaction, 0)
 	var err error
@@ -89,13 +108,13 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 }
 
 func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *protocol.Message) (map[string]model.Transaction, error) {
-	tracer := otel.Tracer("datasource_etl")
-	ctx, trace := tracer.Start(ctx, "datasource_etl:getAllAssetTransferHashes")
+	tracer := otel.Tracer("datasource_ethereum")
+	ctx, trace := tracer.Start(ctx, "datasource_ethereum:getAllAssetTransferHashes")
 	internalTransactionMap := make(map[string]model.Transaction)
 	var err error
 	defer func() { opentelemetry.Log(trace, message, internalTransactionMap, err) }()
 
-	parameter := eth_etl.GetAssetTransfersParameter{
+	parameter := GetAssetTransfersParameter{
 		FromAddress: strings.ToLower(message.Address),
 		FromBlock:   message.BlockNumber,
 	}
@@ -113,15 +132,15 @@ func (d *Datasource) getAllAssetTransferHashes(ctx context.Context, message *pro
 	return internalTransactionMap, nil
 }
 
-func (d *Datasource) getAssestTransactionAndLogs(ctx context.Context, message *protocol.Message, parameter eth_etl.GetAssetTransfersParameter) (*eth_etl.GetAssetTransfersResult, error) {
-	result := new(eth_etl.GetAssetTransfersResult)
+func (d *Datasource) getAssestTransactionAndLogs(ctx context.Context, message *protocol.Message, parameter GetAssetTransfersParameter) (*GetAssetTransfersResult, error) {
+	result := new(GetAssetTransfersResult)
 	var mu sync.Mutex
 	var eg errgroup.Group
 	eg.Go(func() error {
 		txns, err := d.kuroraClient.FetchEthereumTransactions(ctx, constant.NetworkEthereum, kurora.EthereumTransactionQuery{
 			From:            lo.ToPtr[common.Address](common.BytesToAddress([]byte(parameter.FromAddress))),
 			BlockNumberFrom: lo.ToPtr[decimal.Decimal](decimal.New(int64(parameter.FromBlock), 0)),
-			Limit:           lo.ToPtr[int](eth_etl.DefaultTransactionLimit),
+			Limit:           lo.ToPtr[int](DefaultTransactionLimit),
 		})
 		if err != nil {
 			loggerx.Global().Error("failed to fetch ethereum transactions", zap.Error(err))
@@ -129,7 +148,7 @@ func (d *Datasource) getAssestTransactionAndLogs(ctx context.Context, message *p
 		}
 		mu.Lock()
 		for i := range txns {
-			result.Transfers = append(result.Transfers, eth_etl.Transfer{
+			result.Transfers = append(result.Transfers, Transfer{
 				BlockNum: txns[i].BlockNumber.IntPart(),
 				Hash:     txns[i].Hash,
 				From:     txns[i].From,
@@ -147,7 +166,7 @@ func (d *Datasource) getAssestTransactionAndLogs(ctx context.Context, message *p
 			BlockNumberFrom: lo.ToPtr[decimal.Decimal](decimal.New(int64(parameter.FromBlock), 0)),
 			TopicFirst:      lo.ToPtr[common.Hash](erc20.EventHashTransfer),
 			TopicThird:      lo.ToPtr[common.Hash](common.BytesToHash([]byte(parameter.FromAddress))),
-			Limit:           lo.ToPtr[int](eth_etl.DefaultTransferLimit),
+			Limit:           lo.ToPtr[int](DefaultTransferLimit),
 		})
 		if err != nil {
 			loggerx.Global().Error("failed to fetch ethereum logs", zap.Error(err))
@@ -156,7 +175,7 @@ func (d *Datasource) getAssestTransactionAndLogs(ctx context.Context, message *p
 		mu.Lock()
 		for i := range ethereumLogs {
 			value, _ := hexutil.DecodeUint64(ethereumLogs[i].Data.String())
-			result.Transfers = append(result.Transfers, eth_etl.Transfer{
+			result.Transfers = append(result.Transfers, Transfer{
 				BlockNum: ethereumLogs[i].BlockNumber.IntPart(),
 				Hash:     ethereumLogs[i].TransactionHash,
 				From:     common.BytesToAddress(ethereumLogs[i].TopicSecond.Bytes()),
@@ -175,13 +194,13 @@ func (d *Datasource) getAssestTransactionAndLogs(ctx context.Context, message *p
 	return result, eg.Wait()
 }
 
-func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *protocol.Message, parameter eth_etl.GetAssetTransfersParameter) ([]model.Transaction, error) {
-	tracer := otel.Tracer("datasource_etl")
-	_, trace := tracer.Start(ctx, "datasource_etl:Handle")
+func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *protocol.Message, parameter GetAssetTransfersParameter) ([]model.Transaction, error) {
+	tracer := otel.Tracer("datasource_ethereum")
+	_, trace := tracer.Start(ctx, "datasource_ethereum:Handle")
 	internalTransactions := make([]model.Transaction, 0)
 
 	result, err := d.getAssestTransactionAndLogs(ctx, message, parameter)
-	// Deprecated result, err := eth_etl.GetAssetTransfers(context.Background(), parameter)
+	// Deprecated result, err := GetAssetTransfers(context.Background(), parameter)
 	defer func() { opentelemetry.Log(trace, message, len(internalTransactions), err) }()
 
 	if err != nil {
