@@ -14,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	kurora_client "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -45,7 +44,6 @@ import (
 	rabbitmqx "github.com/naturalselectionlabs/pregod/service/indexer/internal/rabbitmq"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/build_transactions"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/auction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/marketplace"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
@@ -177,11 +175,6 @@ func (s *Server) Initialize() (err error) {
 		aptos.New(),
 	}
 
-	kuroraClient, err := kurora_client.Dial(context.Background(), s.config.Kurora.Endpoint)
-	if err != nil {
-		return fmt.Errorf("dial kurora: %w", err)
-	}
-
 	swapWorker, err := swap.New(s.employer)
 	if err != nil {
 		return err
@@ -202,7 +195,6 @@ func (s *Server) Initialize() (err error) {
 		liquidity.New(),
 		swapWorker,
 		bridge.New(),
-		auction.New(kuroraClient),
 		marketplace.New(),
 		poap.New(),
 		gitcoin.New(),
