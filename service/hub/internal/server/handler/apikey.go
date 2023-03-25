@@ -22,7 +22,7 @@ func (h *Handler) PostAPIKeyFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := model.APIKeyRequest{}
+	request := model.GetAPIKeyRequest{}
 
 	if err := c.Bind(&request); err != nil {
 		return BadRequest(c)
@@ -60,7 +60,7 @@ func (h *Handler) GetAPIKeyFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := model.APIKeyRequest{}
+	request := model.PostAPIKeyRequest{}
 
 	if err := c.Bind(&request); err != nil {
 		return BadRequest(c)
