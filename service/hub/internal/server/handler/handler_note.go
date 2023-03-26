@@ -118,7 +118,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	for i, v := range request.Address {
 		address, err := middlewarex.ResolveAddress(c, v, request.IgnoreContract)
 		if err != nil {
-			return ErrorResp(c, err)
+			return ErrorResp(c, err, ErrorCodeNotSupportContract)
 		}
 		request.Address[i] = address
 	}
@@ -191,7 +191,7 @@ func (h *Handler) BatchGetSocialNotesFunc(c echo.Context) error {
 	for i, v := range request.Address {
 		address, err := middlewarex.ResolveAddress(c, v, true)
 		if err != nil {
-			return ErrorResp(c, err)
+			return ErrorResp(c, err, ErrorCodeNotSupportContract)
 		}
 		request.Address[i] = address
 	}
@@ -267,7 +267,7 @@ func (h *Handler) GetTransactionByHashFunc(c echo.Context) error {
 
 	transaction, err := h.service.GetTransactionByHash(ctx, request)
 	if err != nil {
-		return ErrorResp(c, err)
+		return ErrorResp(c, err, ErrorCodeGetTransactionByHashWrong)
 	}
 
 	return c.JSON(http.StatusOK, &model.Response{
