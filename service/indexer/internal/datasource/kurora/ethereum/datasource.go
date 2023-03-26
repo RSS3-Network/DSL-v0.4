@@ -148,11 +148,15 @@ func (d *Datasource) getAssestTransactionAndLogs(ctx context.Context, message *p
 		}
 		mu.Lock()
 		for i := range txns {
+			toBytes := make([]byte, 0)
+			if txns[i].To != nil {
+				toBytes = (*txns[i].To)[:]
+			}
 			result.Transfers = append(result.Transfers, Transfer{
 				BlockNum: txns[i].BlockNumber.IntPart(),
 				Hash:     txns[i].Hash,
 				From:     txns[i].From,
-				To:       (*txns[i].To)[:],
+				To:       toBytes,
 				Value:    float64(txns[i].Value.IntPart()),
 			})
 		}
@@ -175,11 +179,12 @@ func (d *Datasource) getAssestTransactionAndLogs(ctx context.Context, message *p
 		mu.Lock()
 		for i := range ethereumLogs {
 			value, _ := hexutil.DecodeUint64(ethereumLogs[i].Data.String())
+			to := common.BytesToAddress(ethereumLogs[i].TopicSecond.Bytes())
 			result.Transfers = append(result.Transfers, Transfer{
 				BlockNum: ethereumLogs[i].BlockNumber.IntPart(),
 				Hash:     ethereumLogs[i].TransactionHash,
 				From:     common.BytesToAddress(ethereumLogs[i].TopicSecond.Bytes()),
-				To:       ethereumLogs[i].TopicThird.Bytes(),
+				To:       to[:],
 				Value:    float64(value),
 			})
 		}
