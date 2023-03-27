@@ -29,6 +29,7 @@ var platformMap = map[common.Address]string{
 	quix.AddressExchangeV5:             protocol.PlatformQuix,
 	quix.AddressWrapperSeaportProxy:    protocol.PlatformQuix,
 	looksrare.AddressExchange:          protocol.PlatformLooksRare,
+	looksrare.AddressAggregator:        protocol.PlatformLooksRare,
 	gem.AddressSwap1:                   protocol.PlatformGem,
 	gem.AddressSwap2:                   protocol.PlatformGem,
 	uniswap.AddressUniversalRouter:     protocol.PlatformUniswap,
