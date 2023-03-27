@@ -23,9 +23,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
-
 	"go.opentelemetry.io/otel"
-
 	"go.uber.org/zap"
 )
 
