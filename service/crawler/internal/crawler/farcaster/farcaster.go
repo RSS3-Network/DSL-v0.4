@@ -64,15 +64,10 @@ func (s *service) Run() error {
 	}
 
 	for {
-		transactions, err := s.GetKuroraCasts(ctx)
+		transactions, cacheInfo, err := s.GetKuroraCasts(ctx)
 		if err != nil {
 			loggerx.Global().Error("farcaster: GetKuroraCasts error", zap.Error(err), zap.String("endpoint", s.config.Kurora.Endpoint))
 			return err
-		}
-
-		err = database.UpsertTransactions(ctx, transactions, true)
-		if err != nil {
-			continue
 		}
 
 		if len(transactions) == 0 {
@@ -80,10 +75,17 @@ func (s *service) Run() error {
 
 			continue
 		}
+
+		err = database.UpsertTransactions(ctx, transactions, true)
+		if err != nil {
+			continue
+		}
+
+		cache.Global().Set(ctx, farcasterCacheKey, cacheInfo, 0)
 	}
 }
 
-func (s *service) GetKuroraCasts(ctx context.Context) ([]*model.Transaction, error) {
+func (s *service) GetKuroraCasts(ctx context.Context) ([]*model.Transaction, string, error) {
 	var err error
 	transactions := make([]*model.Transaction, 0)
 
@@ -97,7 +99,7 @@ func (s *service) GetKuroraCasts(ctx context.Context) ([]*model.Transaction, err
 	casts, err := s.kuroraClient.FetchDatasetFarcasterCasts(ctx, query)
 	if err != nil {
 		loggerx.Global().Error("farcaster: kuroraClient FetchDatasetFarcasterCasts error", zap.Error(err), zap.String("cursor", cursor))
-		return nil, err
+		return nil, cursor, err
 	}
 
 	loggerx.Global().Info("farcaster: kuroraClient FetchDatasetFarcasterCasts result", zap.Int("len", len(casts)), zap.String("cursor", cursor))
@@ -147,15 +149,14 @@ func (s *service) GetKuroraCasts(ctx context.Context) ([]*model.Transaction, err
 	wg.Wait()
 
 	if len(casts) == 0 {
-		return transactions, nil
+		return transactions, cursor, nil
 	}
 	// set cache
 	last, _ := lo.Last(casts)
 
 	cursor = last.Hash.String()
-	cache.Global().Set(ctx, farcasterCacheKey, cursor, 0)
 
-	return transactions, nil
+	return transactions, cursor, nil
 }
 
 func (s *service) buildTransactions(ctx context.Context, cast Cast) ([]*model.Transaction, error) {
