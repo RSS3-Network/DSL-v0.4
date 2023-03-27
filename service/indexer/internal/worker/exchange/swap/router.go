@@ -179,7 +179,10 @@ var (
 		strings.ToLower("0x1421bDe4B10e8dd459b3BCb598810B1337D56842"): routerSushiSwap, // SushiSwap Celo
 		// PancakeSwap
 		// https://docs.pancakeswap.finance/code/smart-contracts/pancakeswap-exchange/router-v2
-		strings.ToLower("0x10ED43C718714eb63d5aA57B78B54704E256024E"): pancakeSwap, // PancakeSwap V2
+		strings.ToLower("0x10ED43C718714eb63d5aA57B78B54704E256024E"): pancakeSwap, // PancakeSwap V2 Binanace Smart Chain
+		strings.ToLower("0xEfF92A263d31888d860bD50809A8D171709b7b1c"): pancakeSwap, // PancakeSwap V2 Ethereum
+		// https://docs.pancakeswap.finance/code/smart-contracts/pancakeswap-exchange/smart-router
+		strings.ToLower("0x64D74e1EAAe3176744b5767b93B7Bee39Cf7898F"): pancakeSwap, // PancakeSwap Smart Router
 		// 1inch
 		// https://etherscan.io/accounts/label/1inch-exchange
 		strings.ToLower("0x11111254369792b2ca5d084ab5eea397ca8fa48b"): oneinchV1, // 1inch V1
