@@ -215,7 +215,7 @@ func (s *service) buildTransactions(ctx context.Context, cast Cast) ([]*model.Tr
 						Network:         s.Network(),
 						Platform:        s.Name(),
 						Source:          protocol.SourceKurora,
-						RelatedUrls:     []string{fmt.Sprintf("https://www.discove.xyz/casts/%s", cast.Hash)},
+						RelatedUrls:     []string{fmt.Sprintf("https://www.discove.xyz/casts/%s", strings.ToLower(common.HexToAddress(cast.Hash.String()).String()))},
 					},
 				},
 			}
@@ -307,7 +307,7 @@ func (s *service) buildTransactions(ctx context.Context, cast Cast) ([]*model.Tr
 						Network:         s.Network(),
 						Platform:        s.Name(),
 						Source:          protocol.SourceKurora,
-						RelatedUrls:     []string{fmt.Sprintf("https://www.discove.xyz/casts/%s", cast.Hash)},
+						RelatedUrls:     []string{fmt.Sprintf("https://www.discove.xyz/casts/%s", strings.ToLower(common.HexToAddress(cast.Hash.String()).String()))},
 					},
 				},
 			}
