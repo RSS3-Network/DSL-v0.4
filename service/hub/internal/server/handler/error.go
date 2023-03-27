@@ -15,16 +15,21 @@ type ErrorResponse struct {
 
 const (
 	ErrorCodeBadRequest                = 1001
-	ErrorCodeBadParams                 = 1002
-	ErrorCodeAddressIsEmpty            = 1003
-	ErrorCodeAddressIsInvalid          = 1004
-	ErrorCodeInternalError             = 1005
-	ErrorCodeNotSupportContract        = 1006
-	ErrorCodeGetTransactionByHashWrong = 1007
+	ErrorCodeValidateFailed            = 1002
+	ErrorCodeBadParams                 = 1003
+	ErrorCodeAddressIsEmpty            = 1004
+	ErrorCodeAddressIsInvalid          = 1005
+	ErrorCodeInternalError             = 1006
+	ErrorCodeNotSupportContract        = 1008
+	ErrorCodeGetTransactionByHashError = 1009
+	ErrorCodeKeyAlreadyExists          = 1010
+	ErrorCodeSigToPubError             = 1011
+	ErrorCodeAddressIsNotMatch         = 1012
+	ErrorCodeInvalidExchangeType       = 1013
 )
 
-func ErrorResp(c echo.Context, err error, errorCode int) error {
-	return c.JSON(http.StatusBadRequest, &ErrorResponse{
+func ErrorResp(c echo.Context, err error, httpCode, errorCode int) error {
+	return c.JSON(httpCode, &ErrorResponse{
 		Error:     err.Error(),
 		ErrorCode: errorCode,
 	})
@@ -34,6 +39,13 @@ func BadRequest(c echo.Context) error {
 	return c.JSON(http.StatusBadRequest, &ErrorResponse{
 		Error:     "Please check your request and try again.",
 		ErrorCode: ErrorCodeBadRequest,
+	})
+}
+
+func ValidateFailed(c echo.Context) error {
+	return c.JSON(http.StatusBadRequest, &ErrorResponse{
+		Error:     "Please check your request validation and try again.",
+		ErrorCode: ErrorCodeValidateFailed,
 	})
 }
 
@@ -52,7 +64,7 @@ func AddressIsEmpty(c echo.Context) error {
 }
 
 func AddressIsInvalid(c echo.Context) error {
-	return c.JSON(http.StatusOK, &ErrorResponse{
+	return c.JSON(http.StatusBadRequest, &ErrorResponse{
 		Error:     "The address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address.",
 		ErrorCode: ErrorCodeAddressIsInvalid,
 	})

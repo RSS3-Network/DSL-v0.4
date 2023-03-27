@@ -26,14 +26,14 @@ func (h *Handler) GetProfilesFunc(c echo.Context) error {
 	}
 
 	if err := c.Validate(&request); err != nil {
-		return err
+		return ValidateFailed(c)
 	}
 
 	go h.filterReport(model.GetProfiles, request, c)
 
 	profileList, err := h.service.GetProfiles(ctx, request)
 	if err != nil {
-		return InternalError(c)
+		return ErrorResp(c, err, http.StatusInternalServerError, ErrorCodeInternalError)
 	}
 
 	total := int64(len(profileList))
@@ -57,7 +57,7 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 	}
 
 	if err := c.Validate(&request); err != nil {
-		return err
+		return ValidateFailed(c)
 	}
 
 	go h.filterReport(model.PostProfiles, request, c)
@@ -68,7 +68,7 @@ func (h *Handler) BatchGetProfilesFunc(c echo.Context) error {
 
 	profileList, err := h.service.BatchGetProfiles(ctx, request)
 	if err != nil {
-		return InternalError(c)
+		return ErrorResp(c, err, http.StatusInternalServerError, ErrorCodeInternalError)
 	}
 
 	total := int64(len(profileList))
@@ -92,14 +92,14 @@ func (h *Handler) GetProfilesFunc2(c echo.Context) error {
 	}
 
 	if err := c.Validate(&request); err != nil {
-		return err
+		return ValidateFailed(c)
 	}
 
 	go h.filterReport(model.GetProfiles, request, c)
 
 	profileList, err := h.service.GetKuroraProfiles(ctx, request)
 	if err != nil {
-		return InternalError(c)
+		return ErrorResp(c, err, http.StatusInternalServerError, ErrorCodeInternalError)
 	}
 
 	total := int64(len(profileList))
@@ -123,7 +123,7 @@ func (h *Handler) BatchGetProfilesFunc2(c echo.Context) error {
 	}
 
 	if err := c.Validate(&request); err != nil {
-		return err
+		return ValidateFailed(c)
 	}
 
 	go h.filterReport(model.PostProfiles, request, c)
@@ -134,7 +134,7 @@ func (h *Handler) BatchGetProfilesFunc2(c echo.Context) error {
 
 	profileList, err := h.service.BatchKuroraProfiles(ctx, request)
 	if err != nil {
-		return InternalError(c)
+		return ErrorResp(c, err, http.StatusInternalServerError, ErrorCodeInternalError)
 	}
 
 	total := int64(len(profileList))
