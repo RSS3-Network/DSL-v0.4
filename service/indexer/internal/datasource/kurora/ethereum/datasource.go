@@ -138,7 +138,7 @@ func (d *Datasource) getAssestTransactionAndLogs(ctx context.Context, message *p
 	var eg errgroup.Group
 	eg.Go(func() error {
 		txns, err := d.kuroraClient.FetchEthereumTransactions(ctx, constant.NetworkEthereum, kurora.EthereumTransactionQuery{
-			From:            lo.ToPtr[common.Address](common.BytesToAddress([]byte(parameter.FromAddress))),
+			From:            lo.ToPtr[common.Address](common.HexToAddress(parameter.FromAddress)),
 			BlockNumberFrom: lo.ToPtr[decimal.Decimal](decimal.New(int64(parameter.FromBlock), 0)),
 			Limit:           lo.ToPtr[int](DefaultTransactionLimit),
 		})
@@ -169,7 +169,7 @@ func (d *Datasource) getAssestTransactionAndLogs(ctx context.Context, message *p
 		ethereumLogs, err := d.kuroraClient.FetchEthereumLogs(ctx, constant.NetworkEthereum, kurora.EthereumLogQuery{
 			BlockNumberFrom: lo.ToPtr[decimal.Decimal](decimal.New(int64(parameter.FromBlock), 0)),
 			TopicFirst:      lo.ToPtr[common.Hash](erc20.EventHashTransfer),
-			TopicThird:      lo.ToPtr[common.Hash](common.BytesToHash([]byte(parameter.FromAddress))),
+			TopicThird:      lo.ToPtr[common.Hash](common.HexToHash(parameter.FromAddress)),
 			Limit:           lo.ToPtr[int](DefaultTransferLimit),
 		})
 		if err != nil {
@@ -179,12 +179,11 @@ func (d *Datasource) getAssestTransactionAndLogs(ctx context.Context, message *p
 		mu.Lock()
 		for i := range ethereumLogs {
 			value, _ := hexutil.DecodeUint64(ethereumLogs[i].Data.String())
-			to := common.BytesToAddress(ethereumLogs[i].TopicSecond.Bytes())
 			result.Transfers = append(result.Transfers, Transfer{
 				BlockNum: ethereumLogs[i].BlockNumber.IntPart(),
 				Hash:     ethereumLogs[i].TransactionHash,
-				From:     common.BytesToAddress(ethereumLogs[i].TopicSecond.Bytes()),
-				To:       to[:],
+				From:     common.HexToAddress(ethereumLogs[i].TopicSecond.Hex()),
+				To:       ethereumLogs[i].TopicThird.Bytes(),
 				Value:    float64(value),
 			})
 		}
