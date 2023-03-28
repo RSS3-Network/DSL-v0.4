@@ -20,12 +20,12 @@ const (
 	ErrorCodeAddressIsEmpty            = 1004
 	ErrorCodeAddressIsInvalid          = 1005
 	ErrorCodeInternalError             = 1006
-	ErrorCodeNotSupportContract        = 1008
-	ErrorCodeGetTransactionByHashError = 1009
-	ErrorCodeKeyAlreadyExists          = 1010
-	ErrorCodeSigToPubError             = 1011
-	ErrorCodeAddressIsNotMatch         = 1012
-	ErrorCodeInvalidExchangeType       = 1013
+	ErrorCodeNotSupportContract        = 1007
+	ErrorCodeGetTransactionByHashError = 1008
+	ErrorCodeKeyAlreadyExists          = 1009
+	ErrorCodeSigToPubError             = 1010
+	ErrorCodeAddressIsNotMatch         = 1011
+	ErrorCodeInvalidExchangeType       = 1012
 )
 
 func ErrorResp(c echo.Context, err error, httpCode, errorCode int) error {
