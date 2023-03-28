@@ -5,11 +5,13 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
+	kurora_client "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	lens_comm "github.com/naturalselectionlabs/pregod/common/worker/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
@@ -88,8 +90,16 @@ func (s *service) Jobs() []worker.Job {
 	return []worker.Job{}
 }
 
-func New() worker.Worker {
-	return &service{
+func New(ctx context.Context, endpoint string) (worker.Worker, error) {
+
+	s := &service{
 		commWorkerClient: lens_comm.New(),
 	}
+	kc, err := kurora_client.Dial(ctx, endpoint)
+	if err != nil {
+		loggerx.Global().Error(" kurora Dial error", zap.Error(err))
+		return nil, err
+	}
+	s.commWorkerClient.WithKuroraClient(kc)
+	return s, nil
 }

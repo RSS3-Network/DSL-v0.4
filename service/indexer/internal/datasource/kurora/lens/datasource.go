@@ -206,5 +206,7 @@ func New(ctx context.Context, endpoint string) (datasource.Datasource, error) {
 		return nil, err
 	}
 
+	internalDatasource.lensClient.WithKuroraClient(internalDatasource.kuroraClient)
+
 	return &internalDatasource, nil
 }

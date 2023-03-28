@@ -189,6 +189,11 @@ func (s *Server) Initialize() (err error) {
 		ethclientx.ReplaceGlobal(network, client)
 	}
 
+	lensWorker, err := lens_worker.New(context.Background(), s.config.Kurora.Endpoint)
+	if err != nil {
+		return err
+	}
+
 	s.workers = []worker.Worker{
 		build_transactions.New(),
 		staking.New(),
@@ -200,7 +205,7 @@ func (s *Server) Initialize() (err error) {
 		gitcoin.New(),
 		snapshot.New(),
 		crossbell.New(),
-		lens_worker.New(),
+		lensWorker,
 		multisig.New(),
 		transaction.New(),
 		metaverse.New(),

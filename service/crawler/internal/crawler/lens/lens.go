@@ -54,6 +54,11 @@ func New(config *config.Config) crawler.Crawler {
 	return crawler
 }
 
+func (s *service) WithKuroraClient(c *kurora.Client) *service {
+	s.kuroraClient = c
+	return s
+}
+
 func (s *service) Name() string {
 	return protocol.PlatformLens
 }
@@ -67,6 +72,8 @@ func (s *service) Run() error {
 		logrus.Errorf("[lens] kuroraClient NewClient error, %v", err)
 		return err
 	}
+
+	s.lensWorker.WithKuroraClient(s.kuroraClient)
 
 	var wg sync.WaitGroup
 	for eventHash, contractAddress := range lens.SupportLensEvents {
