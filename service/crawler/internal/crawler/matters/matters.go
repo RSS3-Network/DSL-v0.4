@@ -67,7 +67,7 @@ func (s *service) Run() error {
 	}
 
 	for {
-		transactions, err := s.HandleKuroraEntries(ctx)
+		transactions, cacheInfo, err := s.HandleKuroraEntries(ctx)
 		if err != nil {
 			loggerx.Global().Error("matters: HandleKuroraEntries error", zap.Error(err), zap.String("endpoint", s.config.Kurora.Endpoint))
 
@@ -85,10 +85,13 @@ func (s *service) Run() error {
 		if err != nil {
 			continue
 		}
+
+		// set cache
+		cache.Global().Set(ctx, mattersCacheKey, cacheInfo, 7*24*time.Hour)
 	}
 }
 
-func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction, error) {
+func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction, string, error) {
 	tracer := otel.Tracer("matters")
 	_, trace := tracer.Start(ctx, "matters:HandleKuroraEntries")
 	var internalTransactions []*model.Transaction
@@ -107,7 +110,7 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 	entries, err := s.kuroraClient.FetchDatasetMattersEntries(ctx, query)
 	if err != nil {
 		loggerx.Global().Error("matters: kuroraClient FetchDatasetMattersEntries error", zap.Error(err))
-		return nil, err
+		return nil, cursor, err
 	}
 
 	loggerx.Global().Info("matters: kuroraClient FetchDatasetMattersEntries result", zap.Int("len", len(entries)), zap.String("cursor", cursor))
@@ -221,8 +224,7 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 	last, err := lo.Last(entries)
 	if err == nil {
 		cursor = kurora.LogCursor(last.TransactionHash, last.LogIndex)
-		cache.Global().Set(ctx, mattersCacheKey, cursor, 0)
 	}
 
-	return internalTransactions, nil
+	return internalTransactions, cursor, nil
 }
