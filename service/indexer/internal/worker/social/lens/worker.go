@@ -91,7 +91,6 @@ func (s *service) Jobs() []worker.Job {
 }
 
 func New(ctx context.Context, endpoint string) (worker.Worker, error) {
-
 	s := &service{
 		commWorkerClient: lens_comm.New(),
 	}
