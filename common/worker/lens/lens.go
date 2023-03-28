@@ -464,11 +464,6 @@ func (c *Client) HandleCollectNFTTransferred(ctx context.Context, lensContract c
 		return err
 	}
 
-	// ignore mint
-	if event.From == ethereum.AddressGenesis {
-		return nil
-	}
-
 	defer func() {
 		if err != nil {
 			// ipfs as back up choice to fetch metadata if failed to fetch from db
