@@ -492,7 +492,8 @@ func (c *Client) HandleCollectNFTTransferred(ctx context.Context, lensContract c
 			}
 
 			transaction.Owner = strings.ToLower(event.To.String())
-			transfer.AddressFrom = transaction.Owner
+			transfer.AddressFrom = strings.ToLower(event.From.String())
+			transfer.AddressTo = transaction.Owner
 
 			transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 			transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialMint, transfer.Type)
