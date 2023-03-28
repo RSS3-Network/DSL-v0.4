@@ -54,11 +54,6 @@ func New(config *config.Config) crawler.Crawler {
 	return crawler
 }
 
-func (s *service) WithKuroraClient(c *kurora.Client) *service {
-	s.kuroraClient = c
-	return s
-}
-
 func (s *service) Name() string {
 	return protocol.PlatformLens
 }
