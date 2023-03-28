@@ -69,7 +69,7 @@ func (s *service) Run() error {
 	}
 
 	for {
-		transactions, err := s.HandleKuroraEntries(ctx)
+		transactions, cacheInfo, cacheMap, err := s.HandleKuroraEntries(ctx)
 		if err != nil {
 			loggerx.Global().Error("rara: HandleKuroraEntries error", zap.Error(err), zap.String("endpoint", s.config.Kurora.Endpoint))
 
@@ -77,7 +77,7 @@ func (s *service) Run() error {
 		}
 
 		if len(transactions) == 0 {
-			time.Sleep(1 * time.Hour)
+			time.Sleep(1 * time.Minute)
 
 			continue
 		}
@@ -87,10 +87,14 @@ func (s *service) Run() error {
 		if err != nil {
 			continue
 		}
+
+		// set cache
+		cache.Global().Set(ctx, raraCacheKey, cacheInfo, 7*24*time.Hour)
+		_ = cache.SetJson(ctx, rara.MapKey, cacheMap, 0)
 	}
 }
 
-func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction, error) {
+func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction, string, map[string]struct{}, error) {
 	tracer := otel.Tracer("rara")
 	_, trace := tracer.Start(ctx, "rara:HandleKuroraEntries")
 	var internalTransactions []*model.Transaction
@@ -111,13 +115,13 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 	_, err = cache.GetJson(ctx, rara.MapKey, &cacheMap)
 
 	if err != nil {
-		return nil, err
+		return nil, cursor, cacheMap, err
 	}
 
 	entries, err := s.kuroraClient.FetchDatasetRara(ctx, query)
 	if err != nil {
 		loggerx.Global().Error("rara: kuroraClient FetchDatasetMattersEntries error", zap.Error(err))
-		return nil, err
+		return nil, cursor, cacheMap, err
 	}
 
 	loggerx.Global().Info("rara: kuroraClient FetchDatasetMattersEntries result", zap.Int("len", len(entries)), zap.String("cursor", cursor))
@@ -222,9 +226,7 @@ func (s *service) HandleKuroraEntries(ctx context.Context) ([]*model.Transaction
 	last, err := lo.Last(entries)
 	if err == nil {
 		cursor = kurora.LogCursor(last.TransactionHash, last.LogIndex)
-		cache.Global().Set(ctx, raraCacheKey, cursor, 0)
-		_ = cache.SetJson(ctx, rara.MapKey, cacheMap, 0)
 	}
 
-	return internalTransactions, nil
+	return internalTransactions, cursor, cacheMap, nil
 }

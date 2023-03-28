@@ -13,7 +13,7 @@ type ErrorResponse struct {
 }
 
 func ErrorResp(c echo.Context, err error) error {
-	return c.JSON(http.StatusOK, &ErrorResponse{
+	return c.JSON(http.StatusBadRequest, &ErrorResponse{
 		Error: err.Error(),
 	})
 }
