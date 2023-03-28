@@ -9,42 +9,71 @@ import (
 )
 
 type ErrorResponse struct {
-	Error string `json:"error"`
+	Error     string `json:"error"`
+	ErrorCode int    `json:"error_code"`
 }
 
-func ErrorResp(c echo.Context, err error) error {
-	return c.JSON(http.StatusBadRequest, &ErrorResponse{
-		Error: err.Error(),
+const (
+	ErrorCodeBadRequest                = 1001
+	ErrorCodeValidateFailed            = 1002
+	ErrorCodeBadParams                 = 1003
+	ErrorCodeAddressIsEmpty            = 1004
+	ErrorCodeAddressIsInvalid          = 1005
+	ErrorCodeInternalError             = 1006
+	ErrorCodeNotSupportContract        = 1007
+	ErrorCodeGetTransactionByHashError = 1008
+	ErrorCodeKeyAlreadyExists          = 1009
+	ErrorCodeSigToPubError             = 1010
+	ErrorCodeAddressIsNotMatch         = 1011
+	ErrorCodeInvalidExchangeType       = 1012
+)
+
+func ErrorResp(c echo.Context, err error, httpCode, errorCode int) error {
+	return c.JSON(httpCode, &ErrorResponse{
+		Error:     err.Error(),
+		ErrorCode: errorCode,
 	})
 }
 
 func BadRequest(c echo.Context) error {
 	return c.JSON(http.StatusBadRequest, &ErrorResponse{
-		Error: "Please check your request and try again.",
+		Error:     "Please check your request and try again.",
+		ErrorCode: ErrorCodeBadRequest,
+	})
+}
+
+func ValidateFailed(c echo.Context) error {
+	return c.JSON(http.StatusBadRequest, &ErrorResponse{
+		Error:     "Please check your request validation and try again.",
+		ErrorCode: ErrorCodeValidateFailed,
 	})
 }
 
 func BadParams(c echo.Context, tag []string, typeX []string) error {
 	return c.JSON(http.StatusBadRequest, &ErrorResponse{
-		Error: fmt.Sprintf("Please check your param combination and try again. Tag: %s. Type: %s", tag, typeX),
+		Error:     fmt.Sprintf("Please check your param combination and try again. Tag: %s. Type: %s", tag, typeX),
+		ErrorCode: ErrorCodeBadParams,
 	})
 }
 
 func AddressIsEmpty(c echo.Context) error {
 	return c.JSON(http.StatusBadRequest, &ErrorResponse{
-		Error: "At least one address is required",
+		Error:     "At least one address is required",
+		ErrorCode: ErrorCodeAddressIsEmpty,
 	})
 }
 
 func AddressIsInvalid(c echo.Context) error {
-	return c.JSON(http.StatusOK, &ErrorResponse{
-		Error: "The address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address.",
+	return c.JSON(http.StatusBadRequest, &ErrorResponse{
+		Error:     "The address provided is invalid. You can use a 0x, ENS, Crossbell, or Lens address.",
+		ErrorCode: ErrorCodeAddressIsInvalid,
 	})
 }
 
 func InternalError(c echo.Context) error {
 	return c.JSON(http.StatusInternalServerError, &ErrorResponse{
-		Error: "An internal error has occurred, please try again later.",
+		Error:     "An internal error has occurred, please try again later.",
+		ErrorCode: ErrorCodeInternalError,
 	})
 }
 

@@ -22,7 +22,7 @@ func (h *Handler) GetWrappedFunc(c echo.Context) error {
 	}
 
 	if err := c.Validate(&request); err != nil {
-		return err
+		return ValidateFailed(c)
 	}
 
 	request.Address = name_service.ReverseResolveAll(c.Request().Context(), request.Address, false).Address
@@ -35,7 +35,7 @@ func (h *Handler) GetWrappedFunc(c echo.Context) error {
 
 	err := h.service.GetWrapped(ctx, request, &result)
 	if err != nil {
-		return InternalError(c)
+		return ErrorResp(c, err, http.StatusInternalServerError, ErrorCodeInternalError)
 	}
 
 	return c.JSON(http.StatusOK, &model.Response{

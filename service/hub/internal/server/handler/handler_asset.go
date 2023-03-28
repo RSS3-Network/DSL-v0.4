@@ -26,12 +26,12 @@ func (h *Handler) GetAssetsFunc(c echo.Context) error {
 	}
 
 	if err := c.Validate(&request); err != nil {
-		return err
+		return ValidateFailed(c)
 	}
 
 	assetList, total, err := h.service.GetAssets(ctx, request)
 	if err != nil {
-		return InternalError(c)
+		return ErrorResp(c, err, http.StatusInternalServerError, ErrorCodeInternalError)
 	}
 
 	if len(assetList) == 0 {
