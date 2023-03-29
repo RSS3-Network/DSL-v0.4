@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	DefaultLimit = 500
+	DefaultLimit       = 500
+	DefaultActionLimit = 30
 
 	// path
 	GetNotes             = "/notes/"
@@ -51,7 +52,8 @@ type GetRequest struct {
 	QueryStatus bool   `query:"query_status" json:"query_status"`
 	TokenId     string `query:"token_id" json:"token_id"`
 	// returns a count of transactions only
-	CountOnly bool `query:"count_only" json:"count_only"`
+	CountOnly   bool `query:"count_only" json:"count_only"`
+	ActionLimit int  `query:"action_limit" json:"action_limit"`
 }
 
 type GetAssetRequest struct {
@@ -80,6 +82,7 @@ type BatchGetNotesRequest struct {
 	QueryStatus    bool      `json:"query_status"`
 	CountOnly      bool      `json:"count_only"`
 	IgnoreContract bool      `json:"ignore_contract"`
+	ActionLimit    int       `query:"action_limit" json:"action_limit"`
 }
 
 type BatchGetSocialNotesRequest struct {

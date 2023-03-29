@@ -21,10 +21,6 @@ import (
 func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbModel.Transaction, int64, error) {
 	request.Address = strings.ToLower(request.Address)
 
-	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
-		request.Limit = model.DefaultLimit
-	}
-
 	if len(request.Tag) > 0 {
 		request.Tag, request.Type, request.IncludePoap = s.CheckRequestTagAndType(request.Tag, request.Type)
 	}
@@ -48,7 +44,9 @@ func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbM
 
 	transferMap := make(map[string][]dbModel.Transfer)
 	for _, transfer := range transfers {
-		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
+		if len(transferMap[transfer.TransactionHash]) < request.ActionLimit {
+			transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
+		}
 	}
 
 	for index := range transactions {
@@ -64,10 +62,6 @@ func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbM
 }
 
 func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotesRequest) ([]dbModel.Transaction, int64, error) {
-	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
-		request.Limit = model.DefaultLimit
-	}
-
 	if len(request.Tag) > 0 {
 		request.Tag, request.Type, request.IncludePoap = s.CheckRequestTagAndType(request.Tag, request.Type)
 	}
@@ -89,7 +83,9 @@ func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotes
 
 	transferMap := make(map[string][]dbModel.Transfer)
 	for _, transfer := range transfers {
-		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
+		if len(transferMap[transfer.TransactionHash]) < request.ActionLimit {
+			transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
+		}
 	}
 
 	for index := range transactions {
