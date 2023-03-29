@@ -359,6 +359,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		})
 
 		// upsert address status
+		addressStatus.Address = message.Address
 		go s.upsertAddress(ctx, addressStatus)
 	}()
 
@@ -374,22 +375,21 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 	defer handlerSpan.End()
 
-	// get address status
-	addressStatus, _ = database.GetAddress(message.Address)
-
 	ethclient, err := ethclientx.Global(message.Network)
-	if err != nil {
-		return err
-	}
-
-	nonce, err := ethclient.NonceAt(context.Background(), common.HexToAddress(message.Address), nil)
 	if err == nil {
-		currentNonce := addressStatus.NonceMap[message.Network]
-		addressStatus.NonceMap = make(map[string]int64)
-		if currentNonce == int64(nonce) {
-			return nil
+		// get address status
+		addressStatus, _ = database.GetAddress(message.Address)
+
+		nonce, err := ethclient.NonceAt(context.Background(), common.HexToAddress(message.Address), nil)
+		if err == nil {
+			if addressStatus.NonceMap[message.Network] == int64(nonce) {
+				return nil
+			}
+
+			addressStatus.NonceMap = map[string]int64{
+				message.Network: int64(nonce),
+			}
 		}
-		addressStatus.NonceMap[message.Network] = int64(nonce)
 	}
 
 	loggerx.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
@@ -707,6 +707,10 @@ func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 
 	address.IndexingNetworks = make([]string, 0)
 	address.DoneNetworks = make([]string, 0)
+	if address.NonceMap == nil {
+		address.NonceMap = make(map[string]int64)
+	}
+
 	for _, network := range protocol.SupportNetworks {
 		key := fmt.Sprintf("indexer:%v:%v", address.Address, network)
 		n, err := cache.Global().Exists(ctx, key).Result()
@@ -725,6 +729,7 @@ func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 	}
 
 	currentAddress, _ := database.GetAddress(address.Address)
+
 	for network, nonce := range currentAddress.NonceMap {
 		if _, exists := address.NonceMap[network]; !exists {
 			address.NonceMap[network] = nonce
