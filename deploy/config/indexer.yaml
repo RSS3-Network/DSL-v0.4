@@ -68,6 +68,7 @@ rpc:
       websocket: ''
     arbitrum:
       http: ''
+      websocket: ''
     optimism:
       http: ''
       websocket: ''
