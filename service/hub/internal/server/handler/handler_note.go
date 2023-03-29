@@ -42,6 +42,14 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 		go h.filterReport(model.GetNotes, request, c)
 	}
 
+	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
+		request.Limit = model.DefaultLimit
+	}
+
+	if request.ActionLimit <= 0 {
+		request.ActionLimit = model.DefaultActionLimit
+	}
+
 	// header into ctx
 	ctx = context.WithValue(ctx, constant.HEADER_CTX_KEY, c.Request().Header)
 
@@ -115,6 +123,15 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	if len(request.Address) > model.DefaultLimit {
 		request.Address = request.Address[:model.DefaultLimit]
 	}
+
+	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
+		request.Limit = model.DefaultLimit
+	}
+
+	if request.ActionLimit <= 0 {
+		request.ActionLimit = model.DefaultActionLimit
+	}
+
 	for i, v := range request.Address {
 		address, err := middlewarex.ResolveAddress(c, v, request.IgnoreContract)
 		if err != nil {
