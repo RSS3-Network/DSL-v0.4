@@ -203,7 +203,18 @@ func (s *service) getInternalTransaction(ctx context.Context, transactions []*mo
 			return
 		}
 
-		transaction.Transfers = append(transaction.Transfers, internalTransfers...)
+		for _, transfer := range internalTransfers {
+			// ignore neither `from_address` nor `to_address` is owner in lens mint(collect nft) event
+			if strings.EqualFold(transfer.Network, protocol.NetworkPolygon) && strings.EqualFold(transfer.Platform, protocol.PlatformLensLenster) &&
+				strings.EqualFold(transfer.Tag, filter.TagSocial) && strings.EqualFold(transfer.Type, filter.SocialMint) &&
+				!strings.EqualFold(transfer.AddressFrom, transaction.Owner) && !strings.EqualFold(transfer.AddressTo, transaction.Owner) {
+				loggerx.Global().Warn("[lens worker] HandleReceipt: ignore neither `from_address` nor `to_address` is owner in lens mint(collect nft) event", zap.Any("transfers", transfer),
+					zap.Any("transaction", transaction))
+				continue
+			}
+
+			transaction.Transfers = append(transaction.Transfers, transfer)
+		}
 
 		for _, transfer := range transaction.Transfers {
 			if transaction.Tag == "" {

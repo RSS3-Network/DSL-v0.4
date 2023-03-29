@@ -464,9 +464,9 @@ func (c *Client) HandleCollectNFTTransferred(ctx context.Context, lensContract c
 		return err
 	}
 
+	// ipfs as back up choice to fetch metadata if failed to fetch from db
 	defer func() {
 		if err != nil {
-			// ipfs as back up choice to fetch metadata if failed to fetch from db
 			contentURI, err := c.GetContentURI(ctx, event.ProfileId, event.PubId)
 			if err != nil {
 				loggerx.Global().Error("[lens worker] HandleMirrorCreated: GetContentURI error", zap.Error(err))
@@ -516,12 +516,21 @@ func (c *Client) HandleCollectNFTTransferred(ctx context.Context, lensContract c
 		loggerx.Global().Error("[lens worker] HandleCollectNFTTransferred: FetchDatasetLensPublications error", zap.Any("publications", pubs), zap.Error(err))
 		return err
 	}
-	transfer.Metadata, err = json.Marshal(pubs[0])
-	if err != nil {
-		loggerx.Global().Error("[lens worker] HandleCollectNFTTransferred: json marshal error", zap.Error(err))
 
+	profile, err := c.GetProfile(event.ProfileId)
+	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))
 		return err
 	}
+
+	err = c.FormatContent(ctx, &FormatOption{
+		ContentURI:  pubs[0].ContentURI,
+		ContentType: Post,
+		Transfer:    transfer,
+		ProfileId:   event.ProfileId,
+		PubId:       event.PubId,
+		Handle:      profile.Handle,
+	})
 
 	transaction.Owner = strings.ToLower(event.To.String())
 	transfer.AddressFrom = strings.ToLower(event.From.String())
