@@ -89,6 +89,7 @@ func ErrorFunc(err error, c echo.Context) {
 	}
 
 	_ = c.JSON(httpCode, &ErrorResponse{
-		Error: strings.ToLower(errorMessage),
+		Error:     strings.ToLower(errorMessage),
+		ErrorCode: ErrorCodeBadRequest,
 	})
 }
