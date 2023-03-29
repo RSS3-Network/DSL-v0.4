@@ -3,6 +3,7 @@ package database
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -132,4 +133,20 @@ func transfersMap2Array(transfersMap map[string]model.Transfer) []model.Transfer
 	}
 
 	return transfers
+}
+
+func GetAddress(address string) (model.Address, error) {
+	var addressStatus model.Address
+
+	sql := Global().Model(model.Address{})
+
+	if err := sql.
+		Where("address = ?", address).
+		First(&addressStatus).Error; err != nil {
+		return model.Address{Address: address}, err
+	}
+
+	_ = json.Unmarshal(addressStatus.Nonce, &addressStatus.NonceMap)
+
+	return addressStatus, nil
 }

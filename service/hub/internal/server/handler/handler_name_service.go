@@ -24,7 +24,7 @@ func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 	}
 
 	if err := c.Validate(&request); err != nil {
-		return err
+		return ValidateFailed(c)
 	}
 
 	if len(request.Address) == 0 {

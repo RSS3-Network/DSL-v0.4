@@ -67,7 +67,7 @@ func (s *Server) Initialize() (err error) {
 
 	metadata_url.New(config.ConfigHub.RPC.IPFS.IO)
 
-	ethereumClientMap, err := ethclientx.Dial(config.ConfigHub.RPC, []string{protocol.NetworkEthereum, protocol.NetworkPolygon, protocol.NetworkCrossbell, protocol.NetworkBinanceSmartChain, protocol.NetworkAvalanche})
+	ethereumClientMap, err := ethclientx.Dial(config.ConfigHub.RPC, protocol.EthclientNetworks)
 	if err != nil {
 		return err
 	}

@@ -18,8 +18,13 @@ import (
 )
 
 type ErrorResponse struct {
-	Error string `json:"error"`
+	Error     string `json:"error"`
+	ErrorCode int    `json:"error_code"`
 }
+
+const (
+	ErrorCodeAddressIsInvalid = 1005
+)
 
 func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -27,7 +32,8 @@ func APIMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		if address != "" {
 			if address, err := ResolveAddress(c, address, false); err != nil {
 				return c.JSON(http.StatusOK, &ErrorResponse{
-					Error: err.Error(),
+					Error:     err.Error(),
+					ErrorCode: ErrorCodeAddressIsInvalid,
 				})
 			} else {
 				c.SetParamValues(address)

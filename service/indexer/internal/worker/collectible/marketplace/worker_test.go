@@ -404,6 +404,45 @@ func Test_internal_Handle(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "LooksRare Aggregator execute",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x6d0267156f1c6ce44caa4bf129b76009d3d41830", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0x6d18b33acdbfba717ffe8c11831cbe7fda5a1dd2b7e90f6d2ae3af1b503fac1d
+						Hash:        "0x6d18b33acdbfba717ffe8c11831cbe7fda5a1dd2b7e90f6d2ae3af1b503fac1d",
+						BlockNumber: 16912582,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.NotEmpty(t, transactions)
+
+				for _, transaction := range transactions {
+					_, _ = pp.Println(transaction)
+
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformLooksRare) {
+						return false
+					}
+
+					assert.Len(t, transaction.Transfers, 1)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "quix seaport",
 			arguments: arguments{
 				ctx: context.Background(),

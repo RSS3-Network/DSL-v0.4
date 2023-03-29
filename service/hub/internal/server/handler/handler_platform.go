@@ -21,7 +21,7 @@ func (h *Handler) GetPlatformListFunc(c echo.Context) error {
 
 	request := model.GetPlatformRequest{}
 	if err := c.Bind(&request); err != nil {
-		return InternalError(c)
+		return BadRequest(c)
 	}
 
 	request.PlatformType = strings.ToLower(request.PlatformType)
