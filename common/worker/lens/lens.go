@@ -734,3 +734,21 @@ func (c *Client) FormatTypeOnPlatform(input string) string {
 
 	return ""
 }
+
+// Filter Lens Mint Transfer, ignore neither `from_address` nor `to_address` is owner in lens mint(collect nft) event
+// eg. Two Transfers In Same Transaction: 0x00 -> Proxy, Proxy -> Owner
+// `Ignore` 0x00 -> Proxy and `Keep` Proxy -> Owner
+func (c *Client) FilterLensTransfer(owner string, internalTransfers []model.Transfer) []model.Transfer {
+	filterResult := make([]model.Transfer, 0)
+	for _, transfer := range internalTransfers {
+		// ignore neither `from_address` nor `to_address` is owner in lens mint(collect nft) event
+		if strings.EqualFold(transfer.Tag, filter.TagSocial) && strings.EqualFold(transfer.Type, filter.SocialMint) &&
+			!strings.EqualFold(transfer.AddressFrom, owner) && !strings.EqualFold(transfer.AddressTo, owner) {
+			loggerx.Global().Warn("[lens worker] HandleReceipt: ignore neither `from_address` nor `to_address` is owner in lens mint(collect nft) event", zap.Any("transfers", transfer),
+				zap.Any("transaction owner", owner))
+			continue
+		}
+		filterResult = append(filterResult, transfer)
+	}
+	return filterResult
+}
