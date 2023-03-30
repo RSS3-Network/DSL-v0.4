@@ -16,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/aave"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/balancer"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/benddao"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lido"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/polygon"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
@@ -151,6 +152,10 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 					transfer, err = i.handlePolygonStakingDelegatorClaimedRewards(ctx, message, transaction, *log, platform)
 				case balancer.EventPoolBalanceChanged:
 					transfer, err = i.handleBalancerPoolBalanceChanged(ctx, message, transaction, *log, platform)
+				case benddao.EventLendPoolDeposit:
+					transfer, err = i.handleBendDAODeposit(ctx, message, transaction, *log, platform)
+				case benddao.EventLendPoolWithdraw:
+					transfer, err = i.handleBendDAOWithdraw(ctx, message, transaction, *log, platform)
 				default:
 					continue
 				}
