@@ -36,10 +36,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
 	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/nftscan"
@@ -191,6 +191,11 @@ func (s *Server) Initialize() (err error) {
 		ethclientx.ReplaceGlobal(network, client)
 	}
 
+	lensWorker, err := lens_worker.New(context.Background(), s.config.Kurora.Endpoint)
+	if err != nil {
+		return err
+	}
+
 	s.workers = []worker.Worker{
 		build_transactions.New(),
 		staking.New(),
@@ -202,7 +207,7 @@ func (s *Server) Initialize() (err error) {
 		gitcoin.New(),
 		snapshot.New(),
 		crossbell.New(),
-		lens_worker.New(),
+		lensWorker,
 		multisig.New(),
 		transaction.New(),
 		metaverse.New(),

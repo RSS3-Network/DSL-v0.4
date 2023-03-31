@@ -68,6 +68,8 @@ func (s *service) Run() error {
 		return err
 	}
 
+	s.lensWorker.WithKuroraClient(s.kuroraClient)
+
 	var wg sync.WaitGroup
 	for eventHash, contractAddress := range lens.SupportLensEvents {
 		wg.Add(1)
@@ -201,7 +203,7 @@ func (s *service) getInternalTransaction(ctx context.Context, transactions []*mo
 			return
 		}
 
-		transaction.Transfers = append(transaction.Transfers, internalTransfers...)
+		transaction.Transfers = s.lensWorker.FilterLensTransfer(transaction.Owner, internalTransfers)
 
 		for _, transfer := range transaction.Transfers {
 			if transaction.Tag == "" {
