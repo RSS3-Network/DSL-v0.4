@@ -270,7 +270,6 @@ func (s *service) handleZoraAuctions(ctx context.Context) ([]*model.Transaction,
 	last, err := lo.Last(events)
 	if err == nil {
 		cursor = kurora.LogCursor(last.TransactionHash, last.LogIndex)
-		cache.Global().Set(ctx, zoraCacheKey, cursor, 0)
 	}
 
 	for _, transaction := range transactionsMap {
