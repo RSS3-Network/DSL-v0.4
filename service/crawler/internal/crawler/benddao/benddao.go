@@ -112,6 +112,9 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 		transactions []*model.Transaction
 		err          error
 	)
+
+	transactionMap := make(map[string]*model.Transaction, 0)
+
 	defer func() { opentelemetry.Log(trace, nil, transactions, err) }()
 
 	cursor, _ := cache.Global().Get(ctx, benddaoCacheKey).Result()
@@ -141,7 +144,7 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 
 	for _, event := range events {
 		key := fmt.Sprintf("%v-%v", event.NftAddress.String(), event.NftId.BigInt())
-		if _, ok := metaDataMap[key]; ok {
+		if _, ok := metaDataMap[key]; ok || (event.Type == Liquidity && event.EventType != LoadCreate) {
 			continue
 		}
 
@@ -171,17 +174,6 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 
 	for _, event := range events {
 		key := fmt.Sprintf("%v-%v", event.NftAddress.String(), event.NftId.BigInt())
-		if _, ok := metaDataMap[key]; !ok {
-			continue
-		}
-
-		nftData := metaDataMap[key]
-
-		if nftData.Metadata == nil {
-			continue
-		}
-
-		nft := nftData.Metadata
 
 		var (
 			feedTag   string
@@ -193,6 +185,18 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 
 		switch event.Type {
 		case Auction:
+			if _, ok := metaDataMap[key]; !ok {
+				continue
+			}
+
+			nftData := metaDataMap[key]
+
+			if nftData.Metadata == nil {
+				continue
+			}
+
+			nft := nftData.Metadata
+
 			feedTag = filter.TagCollectible
 			feedType = filter.CollectibleAuction
 
@@ -251,6 +255,18 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 
 			switch event.EventType {
 			case LoadCreate:
+				if _, ok := metaDataMap[key]; !ok {
+					continue
+				}
+
+				nftData := metaDataMap[key]
+
+				if nftData.Metadata == nil {
+					continue
+				}
+
+				nft := nftData.Metadata
+
 				addressTo = strings.ToLower(benddao.AddressBendDAO.String())
 
 				// supply nft
@@ -385,13 +401,20 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 			Transfers:   transfers,
 		}
 
-		transactions = append(transactions, transaction)
-
+		if _, ok := transactionMap[strings.ToLower(event.TransactionHash.String())]; !ok {
+			transactionMap[strings.ToLower(event.TransactionHash.String())] = transaction
+		} else {
+			transactionMap[strings.ToLower(event.TransactionHash.String())].Transfers = append(transactionMap[strings.ToLower(event.TransactionHash.String())].Transfers, transfers...)
+		}
 	}
 
 	last, err := lo.Last(events)
 	if err == nil {
 		cursor = kurora.LogCursor(last.TransactionHash, last.LogIndex)
+	}
+
+	for _, tx := range transactionMap {
+		transactions = append(transactions, tx)
 	}
 
 	return transactions, cursor, nil
