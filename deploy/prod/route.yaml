@@ -12,10 +12,20 @@ spec:
     services:
     - name: pregod-1-1-hub-api
       port: 80
+      serversTransport: "pregod-1-1-hub"
     middlewares:
       - name: pregod-1-1-hub-ratelimit
       - name: pregod-1-1-hub-cors
       - name: rm-prefix-v1
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: ServersTransport
+metadata:
+  name: pregod-1-1-hub
+  namespace: pregod
+spec:
+  forwardingTimeouts:
+    responseHeaderTimeout: 120s
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
