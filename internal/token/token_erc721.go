@@ -19,12 +19,19 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/sirupsen/logrus"
+	
 	"go.uber.org/zap"
 )
 
 var (
 	ENSContractAddress        = strings.ToLower("0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85")
 	WrappedCryptopunksAddress = strings.ToLower("0xb7F7F6C52F2e2fdb1963Eab30438024864c313F6")
+	MoonbirdsAddress          = strings.ToLower("0x23581767a106ae21c074b2276D25e5C3e136a68b")
+
+	contractToURI = map[string]string{
+		WrappedCryptopunksAddress: "https://wrappedpunks.com:3000/api/punks/metadata/",
+		MoonbirdsAddress:          "https://live---metadata-5covpqijaa-uc.a.run.app/metadata/",
+	}
 )
 
 func (c *Client) ERC721(ctx context.Context, network, contractAddress string, tokenID *big.Int) (*ERC721, error) {
@@ -64,8 +71,8 @@ func (c *Client) ERC721(ctx context.Context, network, contractAddress string, to
 	if tokenID != nil {
 		var tokenURI string
 
-		if network == protocol.NetworkEthereum && strings.ToLower(contractAddress) == WrappedCryptopunksAddress {
-			tokenURI = fmt.Sprintf("%s%v", "https://wrappedpunks.com:3000/api/punks/metadata/", tokenID)
+		if _, ok := contractToURI[strings.ToLower(contractAddress)]; ok && network == protocol.NetworkEthereum {
+			tokenURI = fmt.Sprintf("%s%v", contractToURI[strings.ToLower(contractAddress)], tokenID)
 		} else {
 			tokenURI, err = erc721Contract.TokenURI(&bind.CallOpts{}, tokenID)
 			if err != nil {
