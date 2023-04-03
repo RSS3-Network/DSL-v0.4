@@ -21,6 +21,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/element"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/internal/token"
@@ -89,7 +90,7 @@ func (s *service) Run() error {
 		}
 
 		// insert db
-		err = database.UpsertTransactions(ctx, transactions, true)
+		err = database.UpsertTransactions(ctx, transactions, false)
 		if err != nil {
 			continue
 		}
@@ -238,7 +239,7 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 					Tag:             feedTag,
 					Type:            feedType,
 					RelatedUrls: ethereum.BuildURL(
-						[]string{fmt.Sprintf("%s/%s/%v/", "https://www.benddao.xyz/en/auctions/bid/", strings.ToLower(event.NftAddress.String()), event.NftId)},
+						[]string{utils.GetTxHashURL(s.Network(), event.TransactionHash.String()), fmt.Sprintf("%s/%s/%v/", "https://www.benddao.xyz/en/auctions/bid/", strings.ToLower(event.NftAddress.String()), event.NftId)},
 						ethereum.BuildTokenURL(s.Network(), event.NftAddress.String(), event.NftId.String())...,
 					),
 				})
@@ -296,8 +297,8 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 						Source:          protocol.SourceKurora,
 						Tag:             feedTag,
 						Type:            feedType,
-						RelatedUrls: ethereum.BuildURL(
-							ethereum.BuildTokenURL(s.Network(), event.NftAddress.String(), event.NftId.String()),
+						RelatedUrls: ethereum.BuildURL(ethereum.BuildTokenURL(s.Network(), event.NftAddress.String(), event.NftId.String()),
+							utils.GetTxHashURL(s.Network(), event.TransactionHash.String()),
 						),
 					})
 
@@ -324,10 +325,9 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 						Tag:             feedTag,
 						Type:            feedType,
 						RelatedUrls: ethereum.BuildURL(
-							ethereum.BuildTokenURL(s.Network(), event.NftAddress.String(), event.NftId.String()),
+							[]string{utils.GetTxHashURL(s.Network(), event.TransactionHash.String())},
 						),
 					})
-
 			case LoadRepay:
 				addressTo = strings.ToLower(benddao.AddressBendDAO.String())
 				metadataRaw, err := s.buildLiquidityMetadata(ctx, filter.ExchangeLiquidityRepay, map[*token.ERC20]*big.Int{
@@ -352,7 +352,7 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 						Tag:             feedTag,
 						Type:            feedType,
 						RelatedUrls: ethereum.BuildURL(
-							ethereum.BuildTokenURL(s.Network(), event.NftAddress.String(), event.NftId.String()),
+							[]string{utils.GetTxHashURL(s.Network(), event.TransactionHash.String())},
 						),
 					})
 			case LoadBorrow:
@@ -379,7 +379,7 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 						Tag:             feedTag,
 						Type:            feedType,
 						RelatedUrls: ethereum.BuildURL(
-							ethereum.BuildTokenURL(s.Network(), event.NftAddress.String(), event.NftId.String()),
+							[]string{utils.GetTxHashURL(s.Network(), event.TransactionHash.String())},
 						),
 					})
 			}
