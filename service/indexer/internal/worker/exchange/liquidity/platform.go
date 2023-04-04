@@ -3,7 +3,6 @@ package liquidity
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/balancer"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/benddao"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lido"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spookyswap"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/uniswap"
@@ -66,11 +65,6 @@ var (
 		Protocol: uniswap.ProtocolUniswapV2,
 	}
 
-	platformBendDAO = Platform{
-		Name:     protocol.PlatformBendDAO,
-		Protocol: "BendDAO",
-	}
-
 	platformMap = map[common.Address]Platform{
 		// Uniswap V3
 		common.HexToAddress("0xC36442b4a4522E871399CD717aBDD847Ab11FE88"): platformUniswapV3, // Uniswap V3 Positions NFT
@@ -92,7 +86,5 @@ var (
 		balancer.AddressVault: platformBalancer, // Balancer Vault
 		// SpookySwap
 		spookyswap.AddressLiquidityBrewer: platformSpookySwap, // SpookySwap Liquidity Brewer
-
-		benddao.AddressBendDAO: platformBendDAO, // BendDAO WETHGateway
 	}
 )

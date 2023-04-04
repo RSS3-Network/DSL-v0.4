@@ -19,7 +19,6 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/sirupsen/logrus"
-	
 	"go.uber.org/zap"
 )
 
