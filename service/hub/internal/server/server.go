@@ -48,7 +48,7 @@ func (s *Server) Initialize() (err error) {
 	database.ReplaceGlobal(databaseClient)
 
 	// Compatible with old configuration
-	if config.ConfigHub.Postgres.SocialDB != "" {
+	if config.ConfigHub.Postgres.SocialDBURL != "" {
 		socialDatabaseClient, err := database.Dial(config.ConfigHub.Postgres.SocialString(), false)
 		if err != nil {
 			panic(err)

@@ -18,12 +18,12 @@ type HTTP struct {
 var _ fmt.Stringer = &Postgres{}
 
 type Postgres struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	Database string `mapstructure:"database"`
-	SocialDB string `mapstructure:"socialdb"`
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	User        string `mapstructure:"user"`
+	Password    string `mapstructure:"password"`
+	Database    string `mapstructure:"database"`
+	SocialDBURL string `mapstructure:"socialdburl"`
 }
 
 func (p *Postgres) String() string {
@@ -34,10 +34,7 @@ func (p *Postgres) String() string {
 }
 
 func (p *Postgres) SocialString() string {
-	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		p.User, p.Password, p.Host, p.Port, p.SocialDB,
-	)
+	return p.SocialDBURL
 }
 
 var _ fmt.Stringer = &PostgresEtl{}

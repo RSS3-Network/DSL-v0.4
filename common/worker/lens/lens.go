@@ -3,15 +3,19 @@ package lens
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/metadata_url"
+	"github.com/samber/lo"
+	"github.com/shopspring/decimal"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
+	kurora_client "github.com/naturalselectionlabs/kurora/client"
 	kurora "github.com/naturalselectionlabs/kurora/common/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -68,6 +72,8 @@ const (
 
 	NotSupportedError = "not supported"
 )
+
+var ErrorNotFoundInKurora = errors.New("not found")
 
 var SupportLensPlatform = map[string]bool{
 	protocol.PlatformLens:                 true,
@@ -192,6 +198,8 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			batchTransfers, handleErr = c.HandleFollowed(ctx, *lensContract, transaction, &transfer, *log)
 		case lens.EventHashFollowNFTTransferred:
 			handleErr = c.HandleFollowNFTTransferred(ctx, *lensContract, transaction, &transfer, *log)
+		case lens.EventHashCollectNFTTransferred:
+			handleErr = c.HandleCollectNFTTransferred(ctx, *lensContract, transaction, &transfer, *log)
 		default:
 			continue
 		}
@@ -448,6 +456,93 @@ func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract co
 	return nil
 }
 
+func (c *Client) HandleCollectNFTTransferred(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (err error) {
+	event, err := lensContract.EventsFilterer.ParseCollectNFTTransferred(log)
+	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: ParseFollowNFTTransferred error", zap.Error(err))
+
+		return err
+	}
+
+	// ipfs as back up choice to fetch metadata if failed to fetch from db
+	defer func() {
+		if err != nil {
+			contentURI, err := c.GetContentURI(ctx, event.ProfileId, event.PubId)
+			if err != nil {
+				loggerx.Global().Error("[lens worker] HandleMirrorCreated: GetContentURI error", zap.Error(err))
+			}
+
+			profile, err := c.GetProfile(event.ProfileId)
+			if err != nil {
+				loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))
+				return
+			}
+
+			err = c.FormatContent(ctx, &FormatOption{
+				ContentURI:  contentURI,
+				ContentType: Post,
+				Transfer:    transfer,
+				ProfileId:   event.ProfileId,
+				PubId:       event.PubId,
+				Handle:      profile.Handle,
+			})
+			if err != nil {
+				loggerx.Global().Error("[lens worker] HandleMirrorCreated: FormatContent error", zap.Error(err))
+				return
+			}
+
+			transaction.Owner = strings.ToLower(event.To.String())
+			transfer.AddressFrom = strings.ToLower(event.From.String())
+			transfer.AddressTo = transaction.Owner
+
+			transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
+			transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialMint, transfer.Type)
+			transfer.RelatedUrls = append(transfer.RelatedUrls, c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId))
+		}
+	}()
+
+	pubs, err := c.KuroraClient.FetchDatasetLensPublications(ctx, kurora_client.DatasetLensPublicationQuery{
+		ProfileID:     lo.ToPtr[decimal.Decimal](decimal.NewFromBigInt(event.ProfileId, 0)),
+		PublicationID: lo.ToPtr[decimal.Decimal](decimal.NewFromBigInt(event.PubId, 0)),
+		Limit:         lo.ToPtr[int](1),
+	})
+	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleCollectNFTTransferred: FetchDatasetLensPublications error", zap.Error(err))
+		return err
+	}
+
+	if len(pubs) != 1 {
+		err = ErrorNotFoundInKurora
+		loggerx.Global().Error("[lens worker] HandleCollectNFTTransferred: FetchDatasetLensPublications error", zap.Any("publications", pubs), zap.Error(err))
+		return err
+	}
+
+	profile, err := c.GetProfile(event.ProfileId)
+	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))
+		return err
+	}
+
+	err = c.FormatContent(ctx, &FormatOption{
+		ContentURI:  pubs[0].ContentURI,
+		ContentType: Post,
+		Transfer:    transfer,
+		ProfileId:   event.ProfileId,
+		PubId:       event.PubId,
+		Handle:      profile.Handle,
+	})
+
+	transaction.Owner = strings.ToLower(event.To.String())
+	transfer.AddressFrom = strings.ToLower(event.From.String())
+	transfer.AddressTo = transaction.Owner
+
+	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
+	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialMint, transfer.Type)
+	transfer.RelatedUrls = append(transfer.RelatedUrls, c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId))
+
+	return nil
+}
+
 func (c *Client) GetContentURI(ctx context.Context, profileId *big.Int, pubId *big.Int) (string, error) {
 	// rpc
 	ethclient, err := ethclientx.Global(protocol.NetworkPolygon)
@@ -638,4 +733,22 @@ func (c *Client) FormatTypeOnPlatform(input string) string {
 	}
 
 	return ""
+}
+
+// Filter Lens Mint Transfer, ignore neither `from_address` nor `to_address` is owner in lens mint(collect nft) event
+// eg. Two Transfers In Same Transaction: 0x00 -> Proxy, Proxy -> Owner
+// `Ignore` 0x00 -> Proxy and `Keep` Proxy -> Owner
+func (c *Client) FilterLensTransfer(owner string, internalTransfers []model.Transfer) []model.Transfer {
+	filterResult := make([]model.Transfer, 0)
+	for _, transfer := range internalTransfers {
+		// ignore neither `from_address` nor `to_address` is owner in lens mint(collect nft) event
+		if strings.EqualFold(transfer.Tag, filter.TagSocial) && strings.EqualFold(transfer.Type, filter.SocialMint) &&
+			!strings.EqualFold(transfer.AddressFrom, owner) && !strings.EqualFold(transfer.AddressTo, owner) {
+			loggerx.Global().Warn("[lens worker] HandleReceipt: ignore neither `from_address` nor `to_address` is owner in lens mint(collect nft) event", zap.Any("transfers", transfer),
+				zap.Any("transaction owner", owner))
+			continue
+		}
+		filterResult = append(filterResult, transfer)
+	}
+	return filterResult
 }

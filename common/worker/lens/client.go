@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	kurora_client "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
@@ -22,6 +23,7 @@ import (
 )
 
 type Client struct {
+	KuroraClient  *kurora_client.Client
 	graphqlClient *graphql.Client
 	httpClient    *http.Client
 }
@@ -38,6 +40,11 @@ func New() *Client {
 		httpClient:    http.DefaultClient,
 	}
 	return client
+}
+
+func (c *Client) WithKuroraClient(kuroraClient *kurora_client.Client) *Client {
+	c.KuroraClient = kuroraClient
+	return c
 }
 
 // profiles request

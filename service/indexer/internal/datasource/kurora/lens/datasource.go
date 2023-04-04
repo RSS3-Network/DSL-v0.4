@@ -23,9 +23,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
-
 	"go.opentelemetry.io/otel"
-
 	"go.uber.org/zap"
 )
 
@@ -207,6 +205,8 @@ func New(ctx context.Context, endpoint string) (datasource.Datasource, error) {
 		loggerx.Global().Error(" kurora Dial error", zap.Error(err))
 		return nil, err
 	}
+
+	internalDatasource.lensClient.WithKuroraClient(internalDatasource.kuroraClient)
 
 	return &internalDatasource, nil
 }
