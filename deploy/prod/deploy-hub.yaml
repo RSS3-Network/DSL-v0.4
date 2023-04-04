@@ -23,8 +23,8 @@ spec:
             - secretRef:
                 name: pregod-1-1
           env:
-            - name: CONFIG_ENV_POSTGRES_SOCIALDB
-              value: social
+            - name: CONFIG_ENV_POSTGRES_SOCIALDBURL
+              value: ${CONFIG_ENV_POSTGRES_SOCIALDBURL}
           command:
             - hub
           ports:
