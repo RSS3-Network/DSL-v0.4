@@ -13,6 +13,7 @@ type Message struct {
 	BlockNumber int64     `json:"block_number"`
 	IgnoreNote  bool      `json:"ignore_note"`
 	Retry       int       `json:"retry"`
+	IsUpdate    bool      `json:"is_update"`
 }
 
 type RefreshMessage struct {
