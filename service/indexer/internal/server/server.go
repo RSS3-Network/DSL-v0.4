@@ -368,7 +368,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 		// upsert address status
 		addressStatus.Address = message.Address
-		go s.upsertAddress(ctx, addressStatus, message)
+		go s.upsertAddress(ctx, addressStatus, len(transactions) == 0)
 	}()
 
 	// convert address to lowercase
@@ -557,10 +557,6 @@ func (s *Server) upsertTransactions(ctx context.Context, message *protocol.Messa
 		updatedTransactions = append(updatedTransactions, transaction)
 	}
 
-	if len(updatedTransactions) > 0 && len(transfers) > 0 {
-		message.IsUpdate = true
-	}
-
 	for _, ts := range lo.Chunk(updatedTransactions, dbChunkSize) {
 		if err = tx.
 			Clauses(clause.OnConflict{
@@ -708,7 +704,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	return s.upsertTransactions(ctx, message, tx, result)
 }
 
-func (s *Server) upsertAddress(ctx context.Context, address model.Address, message *protocol.Message) {
+func (s *Server) upsertAddress(ctx context.Context, address model.Address, isValid bool) {
 	lockKey := "address:" + address.Address
 	if err := s.employer.WaitForLock(ctx, lockKey, time.Minute); err != nil {
 		loggerx.Global().Error("failed to acquire redis lock", zap.Error(err), zap.String("address", address.Address))
@@ -748,7 +744,7 @@ func (s *Server) upsertAddress(ctx context.Context, address model.Address, messa
 		}
 	}
 
-	if message.IsUpdate {
+	if isValid {
 		address.Nonce, _ = json.Marshal(address.NonceMap)
 	} else {
 		address.Nonce = currentAddress.Nonce
