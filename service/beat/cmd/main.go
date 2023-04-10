@@ -50,7 +50,7 @@ const (
 								WHERE relname = 'profiles';`
 
 	profilesPerPlatformSQL = `SELECT platform, count(1) AS count
-						FROM (SELECT platform, address FROM dataset_domains.domains TABLESAMPLE SYSTEM(10)) AS temp
+						FROM dataset_domains.domains
 						WHERE address != '\x0000000000000000000000000000000000000000'
 						GROUP BY platform;`
 
@@ -96,10 +96,6 @@ func beat(cmd *cobra.Command, args []string) error {
 	}
 	if err := config.ConfigBeat.DtatbaseEtlClient.Raw(profilesPerPlatformSQL).Scan(&profilesPerPlatform).Error; err != nil {
 		return err
-	}
-	// 10% sample in SQL, so we need to multiply by 10
-	for i := range profilesPerPlatform {
-		profilesPerPlatform[i].Count *= 10
 	}
 
 	// top 20 addresses

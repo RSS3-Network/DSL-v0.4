@@ -19,6 +19,11 @@ spec:
               envFrom:
                 - secretRef:
                     name: pregod-1-1
+              env:
+                - name: CONFIG_ENV_ETHEREUMETL_HOST
+                  value: cockroachdb.default
+                - name: CONFIG_ENV_ETHEREUMETL_PORT
+                  value: "26257"
               command:
                 - beat
               resources:
