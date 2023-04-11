@@ -122,3 +122,7 @@ var ContractABIs embed.FS
 // Foundation
 // Foundation Market https://etherscan.io/address/0xcda72070e455bb31c7690a170224ce43623d0b6f
 //go:generate abigen --abi ./foundation/NFTMarket.abi --pkg foundation --type Foundation --out ./foundation/foundation.go
+
+// BendDAO
+// LendPool https://etherscan.io/address/0x70b97A0da65C15dfb0FFA02aEE6FA36e507C2762
+//go:generate abigen --abi ./benddao/lendpool.abi --pkg benddao --type BendDAO --out ./benddao/lendpool.go
