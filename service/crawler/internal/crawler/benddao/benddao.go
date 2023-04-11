@@ -121,7 +121,7 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 	cursor, _ := cache.Global().Get(ctx, benddaoCacheKey).Result()
 
 	query := kurora.DatasetBendDAOEventQuery{
-		Limit: lo.ToPtr(10),
+		Limit: lo.ToPtr(100),
 	}
 
 	if len(cursor) > 0 {
