@@ -51,7 +51,7 @@ func Initialize() {
 	if err != nil {
 		panic(err)
 	}
-	ConfigBeat.DtatbaseEtlClient, err = database.Dial(ConfigBeat.EthereumEtl.String(), false)
+	ConfigBeat.DtatbaseEtlClient, err = database.Dial(ConfigBeat.EthereumEtl.StringNoParam(), false)
 	if err != nil {
 		panic(err)
 	}

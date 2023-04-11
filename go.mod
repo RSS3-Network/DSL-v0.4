@@ -27,8 +27,8 @@ require (
 	github.com/labstack/echo-contrib v0.14.1
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/lib/pq v1.10.7
-	github.com/naturalselectionlabs/kurora v0.46.1
-	github.com/naturalselectionlabs/kurora/client v0.0.0-20230404124558-26b2daaca1d4
+	github.com/naturalselectionlabs/kurora v0.46.4
+	github.com/naturalselectionlabs/kurora/client v0.0.0-20230406234127-be7b34dcce2d
 	github.com/rabbitmq/amqp091-go v1.6.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.38.1
