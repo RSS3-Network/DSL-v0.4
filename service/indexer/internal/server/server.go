@@ -344,8 +344,11 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		}
 	}(cctx)
 
-	var transactions []model.Transaction
-	var addressStatus model.Address
+	var (
+		transactions  []model.Transaction
+		addressStatus model.Address
+	)
+
 	defer func() {
 		cancel()
 		s.employer.UnLock(lockKey)
@@ -365,7 +368,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 		// upsert address status
 		addressStatus.Address = message.Address
-		go s.upsertAddress(ctx, addressStatus)
+		go s.upsertAddress(ctx, addressStatus, len(transactions) == 0)
 	}()
 
 	// convert address to lowercase
@@ -701,7 +704,7 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	return s.upsertTransactions(ctx, message, tx, result)
 }
 
-func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
+func (s *Server) upsertAddress(ctx context.Context, address model.Address, isValid bool) {
 	lockKey := "address:" + address.Address
 	if err := s.employer.WaitForLock(ctx, lockKey, time.Minute); err != nil {
 		loggerx.Global().Error("failed to acquire redis lock", zap.Error(err), zap.String("address", address.Address))
@@ -741,7 +744,11 @@ func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 		}
 	}
 
-	address.Nonce, _ = json.Marshal(address.NonceMap)
+	if isValid {
+		address.Nonce, _ = json.Marshal(address.NonceMap)
+	} else {
+		address.Nonce = currentAddress.Nonce
+	}
 
 	if err := database.Global().
 		Model(model.Address{}).
