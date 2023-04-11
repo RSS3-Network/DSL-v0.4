@@ -70,7 +70,7 @@ func (s *service) Run() error {
 
 	s.kuroraClient, err = kurora.Dial(ctx, s.config.Kurora.Endpoint, kurora.WithHTTPClient(http.DefaultClient))
 	if err != nil {
-		loggerx.Global().Error("foundation: kurora.Dial error", zap.Error(err), zap.String("endpoint", s.config.Kurora.Endpoint))
+		loggerx.Global().Error("bendDAO: kurora.Dial error", zap.Error(err), zap.String("endpoint", s.config.Kurora.Endpoint))
 
 		return err
 	}
@@ -78,7 +78,7 @@ func (s *service) Run() error {
 	for {
 		transactions, cacheInfo, err := s.handleBendDAOEvents(ctx)
 		if err != nil {
-			loggerx.Global().Error("foundation: handleFoundationAuctions error", zap.Error(err))
+			loggerx.Global().Error("bendDAO: handleBendDAOEvents error", zap.Error(err))
 
 			return err
 		}
@@ -135,7 +135,7 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 		return nil, "", err
 	}
 
-	loggerx.Global().Info("foundation: kuroraClient FetchDatasetBendDAOEvents result", zap.Int("len", len(events)), zap.String("cursor", cursor))
+	loggerx.Global().Info("benddao: kuroraClient FetchDatasetBendDAOEvents result", zap.Int("len", len(events)), zap.String("cursor", cursor))
 
 	var (
 		metaDataMap = make(map[string]*nftMetadata, 0)
@@ -198,8 +198,7 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 
 			nft := nftData.Metadata
 
-			feedTag = filter.TagCollectible
-			feedType = filter.CollectibleAuction
+			feedTag, feedType = filter.TagCollectible, filter.CollectibleAuction
 
 			nft.Action = event.EventType
 			nft.StartTime = &event.Timestamp
@@ -225,27 +224,9 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 				addressTo = strings.ToLower(benddao.AddressLendPool.String())
 			}
 
-			transfers = append(transfers,
-				model.Transfer{
-					TransactionHash: strings.ToLower(event.TransactionHash.String()),
-					Timestamp:       event.Timestamp,
-					Index:           int64(event.LogIndex),
-					AddressFrom:     strings.ToLower(event.Borrower.String()),
-					AddressTo:       strings.ToLower(event.From.String()),
-					Metadata:        metadataRaw,
-					Network:         s.Network(),
-					Platform:        s.Name(),
-					Source:          protocol.SourceKurora,
-					Tag:             feedTag,
-					Type:            feedType,
-					RelatedUrls: ethereum.BuildURL(
-						[]string{utils.GetTxHashURL(s.Network(), event.TransactionHash.String()), fmt.Sprintf("%s/%s/%v/", "https://www.benddao.xyz/en/auctions/bid/", strings.ToLower(event.NftAddress.String()), event.NftId)},
-						ethereum.BuildTokenURL(s.Network(), event.NftAddress.String(), event.NftId.String())...,
-					),
-				})
+			transfers = s.buildTransfers(transfers, strings.ToLower(event.TransactionHash.String()), strings.ToLower(event.Borrower.String()), strings.ToLower(event.From.String()), feedTag, feedType, event.NftAddress.String(), event.NftId, event.Timestamp, int64(event.LogIndex), metadataRaw, true)
 		case Liquidity:
-			feedTag = filter.TagExchange
-			feedType = filter.ExchangeLiquidity
+			feedTag, feedType = filter.TagExchange, filter.ExchangeLiquidity
 
 			tokenSingle, err := s.tokenClient.ERC20(ctx, s.Network(), event.TokenAddress.String())
 			if err != nil {
@@ -284,23 +265,7 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 					continue
 				}
 
-				transfers = append(transfers,
-					model.Transfer{
-						TransactionHash: strings.ToLower(event.TransactionHash.String()),
-						Timestamp:       event.Timestamp,
-						Index:           int64(event.LogIndex),
-						AddressFrom:     strings.ToLower(event.From.String()),
-						AddressTo:       addressTo,
-						Metadata:        metadataRaw,
-						Network:         s.Network(),
-						Platform:        s.Name(),
-						Source:          protocol.SourceKurora,
-						Tag:             feedTag,
-						Type:            feedType,
-						RelatedUrls: ethereum.BuildURL(ethereum.BuildTokenURL(s.Network(), event.NftAddress.String(), event.NftId.String()),
-							utils.GetTxHashURL(s.Network(), event.TransactionHash.String()),
-						),
-					})
+				transfers = s.buildTransfers(transfers, strings.ToLower(event.TransactionHash.String()), strings.ToLower(event.From.String()), addressTo, feedTag, feedType, event.NftAddress.String(), event.NftId, event.Timestamp, int64(event.LogIndex), metadataRaw, false)
 
 				// borrow eth
 				metadataRaw, err = s.buildLiquidityMetadata(ctx, filter.ExchangeLiquidityBorrow, map[*token.ERC20]*big.Int{
@@ -311,23 +276,8 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 
 					continue
 				}
-				transfers = append(transfers,
-					model.Transfer{
-						TransactionHash: strings.ToLower(event.TransactionHash.String()),
-						Timestamp:       event.Timestamp,
-						Index:           int64(event.LogIndex) + 1,
-						AddressFrom:     strings.ToLower(event.From.String()),
-						AddressTo:       addressTo,
-						Metadata:        metadataRaw,
-						Network:         s.Network(),
-						Platform:        s.Name(),
-						Source:          protocol.SourceKurora,
-						Tag:             feedTag,
-						Type:            feedType,
-						RelatedUrls: ethereum.BuildURL(
-							[]string{utils.GetTxHashURL(s.Network(), event.TransactionHash.String())},
-						),
-					})
+
+				transfers = s.buildTransfers(transfers, strings.ToLower(event.TransactionHash.String()), strings.ToLower(event.From.String()), addressTo, feedTag, feedType, "", decimal.Decimal{}, event.Timestamp, int64(event.LogIndex)+1, metadataRaw, false)
 			case LoadRepay:
 				addressTo = strings.ToLower(benddao.AddressBendDAO.String())
 				metadataRaw, err := s.buildLiquidityMetadata(ctx, filter.ExchangeLiquidityRepay, map[*token.ERC20]*big.Int{
@@ -338,23 +288,8 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 
 					continue
 				}
-				transfers = append(transfers,
-					model.Transfer{
-						TransactionHash: strings.ToLower(event.TransactionHash.String()),
-						Timestamp:       event.Timestamp,
-						Index:           int64(event.LogIndex),
-						AddressFrom:     strings.ToLower(event.From.String()),
-						AddressTo:       strings.ToLower(event.Borrower.String()),
-						Metadata:        metadataRaw,
-						Network:         s.Network(),
-						Platform:        s.Name(),
-						Source:          protocol.SourceKurora,
-						Tag:             feedTag,
-						Type:            feedType,
-						RelatedUrls: ethereum.BuildURL(
-							[]string{utils.GetTxHashURL(s.Network(), event.TransactionHash.String())},
-						),
-					})
+
+				transfers = s.buildTransfers(transfers, strings.ToLower(event.TransactionHash.String()), strings.ToLower(event.From.String()), strings.ToLower(event.Borrower.String()), feedTag, feedType, "", decimal.Decimal{}, event.Timestamp, int64(event.LogIndex), metadataRaw, false)
 			case LoadBorrow:
 				addressTo = strings.ToLower(benddao.AddressBendDAO.String())
 				metadataRaw, err := s.buildLiquidityMetadata(ctx, filter.ExchangeLiquidityBorrow, map[*token.ERC20]*big.Int{
@@ -365,23 +300,8 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 
 					continue
 				}
-				transfers = append(transfers,
-					model.Transfer{
-						TransactionHash: strings.ToLower(event.TransactionHash.String()),
-						Timestamp:       event.Timestamp,
-						Index:           int64(event.LogIndex),
-						AddressFrom:     strings.ToLower(event.From.String()),
-						AddressTo:       strings.ToLower(event.Borrower.String()),
-						Metadata:        metadataRaw,
-						Network:         s.Network(),
-						Platform:        s.Name(),
-						Source:          protocol.SourceKurora,
-						Tag:             feedTag,
-						Type:            feedType,
-						RelatedUrls: ethereum.BuildURL(
-							[]string{utils.GetTxHashURL(s.Network(), event.TransactionHash.String())},
-						),
-					})
+
+				transfers = s.buildTransfers(transfers, strings.ToLower(event.TransactionHash.String()), strings.ToLower(event.From.String()), strings.ToLower(event.Borrower.String()), feedTag, feedType, "", decimal.Decimal{}, event.Timestamp, int64(event.LogIndex), metadataRaw, false)
 			}
 		}
 
@@ -418,6 +338,37 @@ func (s *service) handleBendDAOEvents(ctx context.Context) ([]*model.Transaction
 	}
 
 	return transactions, cursor, nil
+}
+
+func (s *service) buildTransfers(transfers []model.Transfer, hash, from, to, feedTag, feedType, nftAddress string, nftId decimal.Decimal, timestamp time.Time, index int64, metadata json.RawMessage, bendDAOUrl bool) []model.Transfer {
+	transfer := model.Transfer{
+		TransactionHash: hash,
+		Timestamp:       timestamp,
+		Index:           index,
+		AddressFrom:     from,
+		AddressTo:       to,
+		Metadata:        metadata,
+		Network:         s.Network(),
+		Platform:        s.Name(),
+		Source:          protocol.SourceKurora,
+		Tag:             feedTag,
+		Type:            feedType,
+		RelatedUrls: ethereum.BuildURL(
+			[]string{utils.GetTxHashURL(s.Network(), hash)},
+		),
+	}
+
+	if nftAddress != "" {
+		transfer.RelatedUrls = append(transfer.RelatedUrls, ethereum.BuildTokenURL(s.Network(), nftAddress, nftId.String())...)
+	}
+
+	if bendDAOUrl {
+		transfer.RelatedUrls = append(transfer.RelatedUrls, fmt.Sprintf("%s/%s/%v/", "https://www.benddao.xyz/en/auctions/bid/", strings.ToLower(nftAddress), nftId))
+	}
+
+	transfers = append(transfers, transfer)
+
+	return transfers
 }
 
 func (s *service) buildCost(ctx context.Context, network string, address common.Address, value *big.Int) (*metadata.Token, error) {
