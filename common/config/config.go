@@ -54,6 +54,13 @@ func (p *PostgresEtl) String() string {
 	)
 }
 
+func (p *PostgresEtl) StringNoParam() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s",
+		p.User, p.Password, p.Host, p.Port, p.Database,
+	)
+}
+
 var _ fmt.Stringer = (*Kurora)(nil)
 
 type Kurora struct {
