@@ -154,7 +154,7 @@ func (i *internal) buildNameServiceMetadata(name string, action string, tokenTyp
 }
 
 func (i *internal) Jobs() []worker.Job {
-	return nil
+	return []worker.Job{}
 }
 
 func New() worker.Worker {
