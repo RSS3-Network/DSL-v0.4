@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -47,6 +46,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/build_transactions"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/marketplace"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/name_service"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity"
@@ -209,6 +209,7 @@ func (s *Server) Initialize() (err error) {
 		crossbell.New(),
 		lensWorker,
 		multisig.New(),
+		name_service.New(),
 		transaction.New(),
 		metaverse.New(),
 	}

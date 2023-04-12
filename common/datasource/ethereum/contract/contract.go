@@ -122,3 +122,7 @@ var ContractABIs embed.FS
 // Foundation
 // Foundation Market https://etherscan.io/address/0xcda72070e455bb31c7690a170224ce43623d0b6f
 //go:generate abigen --abi ./foundation/NFTMarket.abi --pkg foundation --type Foundation --out ./foundation/foundation.go
+
+// ENS
+// ENS Registrar Controller https://etherscan.io/address/0x283Af0B28c62C092C9727F1Ee09c02CA627EB7F5
+//go:generate abigen --abi ./ens/registrar/ETHRegistrarController.abi --pkg registrar --type Registrar --out ./ens/registrar/registrarController.go
