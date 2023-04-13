@@ -29,6 +29,7 @@ const (
 	PlatformSpaceID           = "Space ID"
 	PlatformUnstoppableDomain = "Unstoppable"
 	PlatformAvvy              = "Avvy"
+	PlatformArb               = "Arb"
 	PlatformSound             = "Sound"
 
 	// donation

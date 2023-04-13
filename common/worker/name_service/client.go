@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid"
+	arb_client "github.com/naturalselectionlabs/pregod/common/worker/name_service/arb"
 	avvy_client "github.com/naturalselectionlabs/pregod/common/worker/name_service/avvy"
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service/ens"
 	spaceid_client "github.com/naturalselectionlabs/pregod/common/worker/name_service/spaceid"
@@ -28,6 +29,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/character"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	lenscontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
+	arbcontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid/arb"
 	spaceidcontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid/contracts"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -70,6 +72,9 @@ func ReverseResolveAll(ctx context.Context, input string, resolveAll bool) model
 	case "avax":
 		address, err = ResolveAvvy(input)
 		result.Avvy = input
+	case "arb":
+		address, err = ResolveARB(input)
+		result.Arb = input
 	default:
 		if len(splits) == 1 {
 			address = input
@@ -146,6 +151,14 @@ func ResolveAll(result *model.NameServiceResult) {
 		defer wg.Done()
 		if result.Avvy == "" {
 			result.Avvy, _ = ResolveAvvy(result.Address)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if result.Arb == "" {
+			result.Arb, _ = ResolveARB(result.Address)
 		}
 	}()
 
@@ -240,9 +253,9 @@ func ResolveLens(input string) (string, error) {
 }
 
 func ResolveSpaceID(input string) (string, error) {
-	ethereumClient, err := ethclientx.Global(protocol.NetworkBinanceSmartChain)
+	ethereumClient, err := ethclientx.Global(protocol.NetworkArbitrum)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to bsc rpc: %s", err)
+		return "", fmt.Errorf("failed to connect to arb rpc: %s", err)
 	}
 
 	spaceidContract, err := spaceidcontract.NewSpaceid(spaceid.AddressSpaceID, ethereumClient)
@@ -416,6 +429,51 @@ func ResolveAvvy(input string) (string, error) {
 
 	avvyClient := avvy_client.New()
 	profile, err := avvyClient.GetProfile(input)
+	if err != nil {
+		return "", err
+	}
+
+	return profile.Handle, nil
+}
+
+func ResolveARB(input string) (string, error) {
+	ethereumClient, err := ethclientx.Global(protocol.NetworkArbitrum)
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to arb rpc: %s", err)
+	}
+
+	arbContract, err := arbcontract.NewArbid(spaceid.AddressArb, ethereumClient)
+	if err != nil {
+		return "", fmt.Errorf("failed to new an arb contract: %w", err)
+	}
+
+	if strings.HasSuffix(input, ".arb") {
+		namehash, _ := goens.NameHash(input)
+
+		resolver, err := arbContract.Resolver(&bind.CallOpts{}, namehash)
+		if err != nil {
+			return "", fmt.Errorf("failed to get arb resolver: %w", err)
+		}
+
+		if resolver == ethereum.AddressGenesis {
+			return "", fmt.Errorf("%s", ErrUnregisterName)
+		}
+
+		arbResolver, err := arbcontract.NewResolver(resolver, ethereumClient)
+		if err != nil {
+			return "", fmt.Errorf("failed to new to arb resolver contract: %w", err)
+		}
+
+		profileID, err := arbResolver.Addr(&bind.CallOpts{}, namehash)
+		if err != nil {
+			return "", fmt.Errorf("failed to get ARB by handle: %s", err)
+		}
+
+		return strings.ToLower(profileID.String()), nil
+	}
+
+	arbClient := arb_client.New()
+	profile, err := arbClient.GetProfile(input)
 	if err != nil {
 		return "", err
 	}
