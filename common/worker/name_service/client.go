@@ -253,9 +253,9 @@ func ResolveLens(input string) (string, error) {
 }
 
 func ResolveSpaceID(input string) (string, error) {
-	ethereumClient, err := ethclientx.Global(protocol.NetworkArbitrum)
+	ethereumClient, err := ethclientx.Global(protocol.NetworkBinanceSmartChain)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to arb rpc: %s", err)
+		return "", fmt.Errorf("failed to connect to bsc rpc: %s", err)
 	}
 
 	spaceidContract, err := spaceidcontract.NewSpaceid(spaceid.AddressSpaceID, ethereumClient)
