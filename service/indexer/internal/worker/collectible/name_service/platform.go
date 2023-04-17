@@ -9,4 +9,6 @@ import (
 var platformMap = map[common.Address]string{
 	// ENS Registrar Controller
 	ens.EnsRegistrarController: protocol.PlatformEns,
+	ens.EnsBulkRenewal:         protocol.PlatformEns,
+	ens.EnsBatchRenew:          protocol.PlatformEns,
 }
