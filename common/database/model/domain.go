@@ -28,6 +28,7 @@ type NameServiceResult struct {
 	UnstoppableDomains string `json:"unstoppable_domains"`
 	Bit                string `json:"bit"`
 	Avvy               string `json:"avvy"`
+	Arb                string `json:"arb"`
 	Address            string `json:"address"`
 	Err                error  `json:"-"`
 }

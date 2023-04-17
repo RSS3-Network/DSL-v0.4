@@ -53,6 +53,7 @@ const (
 	CollectibleApproval string = "approval"
 	CollectibleMusic    string = "music"
 	CollectibleAuction  string = "auction"
+	CollectibleEdit     string = "edit"
 
 	// actions for Collectible-Auction
 	CollectibleAuctionCreate     string = "create"
@@ -61,6 +62,9 @@ const (
 	CollectibleAuctionFinalize   string = "finalize"
 	CollectibleAuctionInvalidate string = "invalidate"
 	CollectibleAuctionUpdate     string = "update"
+
+	// actions for Collectible-Edit
+	CollectibleEditRenew string = "renew"
 
 	// sub-types for Music
 	CollectibleMusicBuyEdition string = "buy"
@@ -128,6 +132,7 @@ var ValidTypeMap = map[string][]string{
 		CollectibleBurn,
 		CollectiblePoap,
 		CollectibleApproval,
+		CollectibleEdit,
 	},
 	TagSocial: {
 		SocialPost,

@@ -17,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/utils/shedlock"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/benddao"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/crossbell"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/ens"
@@ -160,6 +161,7 @@ func (s *Server) Initialize() (err error) {
 		zora.New(s.config),
 		nouns.New(s.config),
 		foundation.New(s.config),
+		benddao.New(s.config),
 	}
 
 	return nil

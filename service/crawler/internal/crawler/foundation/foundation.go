@@ -275,7 +275,6 @@ func (s *service) handleFoundationAuctions(ctx context.Context) ([]*model.Transa
 	last, err := lo.Last(events)
 	if err == nil {
 		cursor = kurora.LogCursor(last.TransactionHash, last.LogIndex)
-		cache.Global().Set(ctx, foundationCacheKey, cursor, 0)
 	}
 
 	for _, transaction := range transactionsMap {
