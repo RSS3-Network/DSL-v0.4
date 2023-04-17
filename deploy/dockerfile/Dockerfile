@@ -20,6 +20,7 @@ RUN go build -o dist/hub ./service/hub/cmd
 RUN go build -o dist/indexer ./service/indexer/cmd
 RUN go build -o dist/crawler ./service/crawler/cmd
 RUN go build -o dist/beat ./service/beat/cmd
+RUN go build -o dist/mask ./service/mask/cmd
 
 FROM alpine:latest AS RUNNER
 
