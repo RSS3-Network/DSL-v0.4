@@ -126,3 +126,7 @@ var ContractABIs embed.FS
 // BendDAO
 // LendPool https://etherscan.io/address/0x70b97A0da65C15dfb0FFA02aEE6FA36e507C2762
 //go:generate abigen --abi ./benddao/lendpool.abi --pkg benddao --type BendDAO --out ./benddao/lendpool.go
+
+// ENS
+// ENS Registrar Controller https://etherscan.io/address/0x283Af0B28c62C092C9727F1Ee09c02CA627EB7F5
+//go:generate abigen --abi ./ens/registrar/ETHRegistrarController.abi --pkg registrar --type Registrar --out ./ens/registrar/registrarController.go
