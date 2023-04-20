@@ -35,6 +35,7 @@ var SupportNetworks = []string{
 	NetworkCrossbell,
 	NetworkFarcaster,
 	NetworkAptos,
+	NetworkConflux,
 }
 
 var EthclientNetworks = []string{

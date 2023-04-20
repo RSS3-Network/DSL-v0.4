@@ -103,12 +103,6 @@ func (d *Datasource) getInternalTransaction(confluxBlock *conflux.ConfluxBlock) 
 			return nil, err
 		}
 
-		txGasUsed, err := hexutil.DecodeBig(tx.Receipt.GasUsed)
-		if err != nil {
-			loggerx.Global().Error("hexutil.DecodeBig error", zap.Error(err), zap.Any("txGasUsed", tx.Receipt.GasUsed))
-			return nil, err
-		}
-
 		valueBig, err := hexutil.DecodeBig(tx.Value)
 		if err != nil {
 			loggerx.Global().Error("hexutil.DecodeBig error", zap.Error(err), zap.Any("value", tx.Value))
