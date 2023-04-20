@@ -37,6 +37,7 @@ func TestOnConfluxGetBlockByEpochNumber(t *testing.T) {
 		assert.Equal(t, "0x415e2", blockInfo.Transactions[0].Nonce)
 	})
 
+	// curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"cfx_getTransactionReceipt","params":["0x30bbb39f7d5d74bc1442b92e8ac786e20c139d1135438e4afb2ecc1e77da1a77"],"id":67}' https://main.confluxrpc.com
 	t.Run("test cfx_getTransactionReceipt", func(t *testing.T) {
 		receiptInfo, err := c.GetTransactionReceipt(ctx, "0x30bbb39f7d5d74bc1442b92e8ac786e20c139d1135438e4afb2ecc1e77da1a77")
 		assert.NilError(t, err)

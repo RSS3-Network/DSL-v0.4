@@ -144,11 +144,8 @@ func (d *Datasource) getInternalTransaction(confluxBlock *conflux.ConfluxBlock) 
 			Source:      protocol.SourceConflux,
 			Tag:         filter.TagTransaction,
 			Type:        filter.TransactionTransfer,
-			// TODO check always success ?
-			Success: lo.ToPtr[bool](true),
-
-			// TODO check fee
-			Fee: lo.ToPtr[decimal.Decimal](decimal.NewFromBigInt(txGasFee, 0).Mul(decimal.NewFromBigInt(txGasUsed, 0))),
+			Success:     lo.ToPtr[bool](tx.Status == ConfluxStatusSuccess),
+			Fee:         lo.ToPtr[decimal.Decimal](decimal.NewFromBigInt(txGasFee, 0).Shift(-ConfluxTokenDecimals)),
 
 			Transfers: []model.Transfer{
 				// This is a virtual transfer

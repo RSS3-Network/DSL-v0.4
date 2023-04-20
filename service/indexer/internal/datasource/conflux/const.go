@@ -7,3 +7,7 @@ const (
 	ConfluxTokenImage    = "https://assets.coingecko.com/coins/images/13079/large/3vuYMbjN.png"
 	ConfluxTokenStandard = "Native"
 )
+
+const (
+	ConfluxStatusSuccess = "0x0"
+)
