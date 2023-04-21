@@ -2,6 +2,7 @@ package filter
 
 import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/database/model/transaction"
 )
 
@@ -231,6 +232,38 @@ var MetadataTypeMap = map[interface{}][]struct {
 			Tag:  TagCollectible,
 			Type: CollectibleApproval,
 		},
+		{
+			Tag:  TagCollectible,
+			Type: CollectibleEdit,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseMint,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseTransfer,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseTrade,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseGift,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseList,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseUnlist,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseClaim,
+		},
 	},
 	&transaction.Bridge{}: {
 		{
@@ -254,6 +287,80 @@ var MetadataTypeMap = map[interface{}][]struct {
 		{
 			Tag:  TagExchange,
 			Type: ExchangeLiquidity,
+		},
+	},
+	&metadata.Post{}: {
+		{
+			Tag:  TagSocial,
+			Type: SocialPost,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialRevise,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialComment,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialShare,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialLike,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialMint,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialWiki,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialReward,
+		},
+	},
+	&social.Profile{}: {
+		{
+			Tag:  TagSocial,
+			Type: SocialProxy,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialProfile,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialFollow,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialUnfollow,
+		},
+	},
+	&metadata.Donation{}: {
+		{
+			Tag:  TagDonation,
+			Type: DonationLaunch,
+		},
+		{
+			Tag:  TagDonation,
+			Type: DonationDonate,
+		},
+	},
+	&metadata.SnapShot{}: {
+		{
+			Tag:  TagGovernance,
+			Type: GovernancePropose,
+		},
+	},
+	&metadata.Vote{}: {
+		{
+			Tag:  TagGovernance,
+			Type: GovernanceVote,
 		},
 	},
 }
