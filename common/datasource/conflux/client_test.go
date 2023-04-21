@@ -51,3 +51,16 @@ func TestOnConfluxGetBlockByEpochNumber(t *testing.T) {
 		assert.Equal(t, "0x427ced0", receiptInfo.EpochNumber)
 	})
 }
+
+func TestOnConfluxScanGetAccountTx(t *testing.T) {
+	c := NewClient()
+	ctx := context.Background()
+	t.Run("test scan api getAccountTransactions", func(t *testing.T) {
+		resp, err := c.GetAccountTransactions(ctx, GetAccountTxParameter{
+			Address: "cfx:aajj1b1gm7k51mhzm80czcx31kwxrm2f6jxvy30mvk",
+			Limit:   10,
+		})
+		assert.NilError(t, err)
+		t.Log(resp)
+	})
+}

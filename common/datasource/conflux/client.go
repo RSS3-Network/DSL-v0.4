@@ -4,19 +4,58 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/google/go-querystring/query"
+	"github.com/naturalselectionlabs/pregod/common/utils/httpx"
 )
 
 const (
-	Endpoint = "https://main.confluxrpc.com"
-	MaxCount = 1000
+	ScanEndpoint = "api.confluxscan.net"
+	NodeEndpoint = "https://main.confluxrpc.com"
+	MaxCount     = 100
 )
 
 type Client struct {
 	httpClient *http.Client
+}
+
+func (c *Client) GetAccountTransactions(ctx context.Context, parameter GetAccountTxParameter) (*ConfluxScanAccountTxResp, error) {
+	if parameter.Limit > MaxCount {
+		parameter.Limit = MaxCount
+	}
+	parameter.Sort = "DESC"
+	parameter.WithInput = false
+
+	values, err := query.Values(parameter)
+	if err != nil {
+		return nil, err
+	}
+
+	url := url.URL{
+		Scheme:   "https",
+		Host:     ScanEndpoint,
+		Path:     "/account/transactions",
+		RawQuery: values.Encode(),
+	}
+	request, err := http.NewRequest(http.MethodGet, url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result ConfluxScanAccountTxResp
+	err = httpx.DoRequest(ctx, c.httpClient, request, &result)
+	if err != nil {
+		return nil, err
+	}
+	if result.Code != 0 || result.Message != "OK" {
+		return nil, fmt.Errorf("confluxscan api error: %s", result.Message)
+	}
+	return &result, nil
 }
 
 func (c *Client) GetBlockTransactions(ctx context.Context, parameter GetBlockTransactionsParameter) (*ConfluxBlock, error) {
@@ -31,7 +70,7 @@ func (c *Client) GetBlockTransactions(ctx context.Context, parameter GetBlockTra
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.httpClient.Post(Endpoint, "application/json", bytes.NewReader(reqBytes))
+	resp, err := c.httpClient.Post(NodeEndpoint, "application/json", bytes.NewReader(reqBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +106,7 @@ func (c *Client) GetTransactionReceipt(ctx context.Context, txHash string) (*Con
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.httpClient.Post(Endpoint, "application/json", bytes.NewReader(reqBytes))
+	resp, err := c.httpClient.Post(NodeEndpoint, "application/json", bytes.NewReader(reqBytes))
 	if err != nil {
 		return nil, err
 	}

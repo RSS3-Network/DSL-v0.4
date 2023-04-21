@@ -9,5 +9,5 @@ const (
 )
 
 const (
-	ConfluxStatusSuccess = "0x0"
+	ConfluxStatusSuccess = 0
 )

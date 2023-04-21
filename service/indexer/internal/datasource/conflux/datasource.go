@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/conflux"
@@ -52,17 +51,18 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		}
 	}()
 
-	query := confluxClient.GetBlockTransactionsParameter{
-		BlockNumber: message.BlockNumber,
+	query := confluxClient.GetAccountTxParameter{
+		MinEpochNumber: decimal.New(message.BlockNumber, 0),
+		Address:        message.Address,
+		Limit:          conflux.MaxCount,
 	}
-	confluxBlock, err := d.client.GetBlockTransactions(ctx, query)
+	confluxAccountTxns, err := d.client.GetAccountTransactions(ctx, query)
 	if err != nil {
 		loggerx.Global().Error("GetBlockTransactions error", zap.Error(err), zap.Any("query", query))
-
 		return nil, err
 	}
 
-	internalTransactions, err = d.getInternalTransaction(confluxBlock)
+	internalTransactions, err = d.getInternalTransaction(confluxAccountTxns)
 	if err != nil {
 		loggerx.Global().Error("getInternalTransaction error", zap.Error(err), zap.Any("query", query))
 		return nil, err
@@ -71,45 +71,20 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	return internalTransactions, nil
 }
 
-func (d *Datasource) getInternalTransaction(confluxBlock *conflux.ConfluxBlock) ([]model.Transaction, error) {
+func (d *Datasource) getInternalTransaction(accountTxns *conflux.ConfluxScanAccountTxResp) ([]model.Transaction, error) {
 	internalTransactions := make([]model.Transaction, 0)
 
-	blockNumber, err := hexutil.DecodeBig(confluxBlock.BlockNumber)
-	if err != nil {
-		loggerx.Global().Error("hexutil.DecodeBig error", zap.Error(err), zap.Any("blockNumber", confluxBlock.BlockNumber))
-		return nil, err
-	}
-
-	blockTimestamp, err := hexutil.DecodeBig(confluxBlock.Timestamp)
-	if err != nil {
-		loggerx.Global().Error("hexutil.DecodeBig error", zap.Error(err), zap.Any("timestamp", confluxBlock.Timestamp))
-		return nil, err
-	}
-
-	for _, tx := range confluxBlock.Transactions {
-		// ignore call transaction
-		if tx.Data != "0x" {
+	for _, tx := range accountTxns.Data.List {
+		gasFee, err := decimal.NewFromString(tx.GasFee)
+		if err != nil {
+			loggerx.Global().Error("getInternalTransaction error", zap.Error(err), zap.Any("gasFee", tx.GasFee))
 			continue
 		}
-		txIndex, err := hexutil.DecodeBig(tx.TransactionIndex)
+		value, err := decimal.NewFromString(tx.Value)
 		if err != nil {
-			loggerx.Global().Error("hexutil.DecodeBig error", zap.Error(err), zap.Any("txIndex", tx.TransactionIndex))
-			return nil, err
+			loggerx.Global().Error("getInternalTransaction error", zap.Error(err), zap.Any("value", tx.Value))
+			continue
 		}
-
-		txGasFee, err := hexutil.DecodeBig(tx.Receipt.GasFee)
-		if err != nil {
-			loggerx.Global().Error("hexutil.DecodeBig error", zap.Error(err), zap.Any("txGas", tx.Gas))
-			return nil, err
-		}
-
-		valueBig, err := hexutil.DecodeBig(tx.Value)
-		if err != nil {
-			loggerx.Global().Error("hexutil.DecodeBig error", zap.Error(err), zap.Any("value", tx.Value))
-			return nil, err
-		}
-		value := decimal.NewFromBigInt(valueBig, 0)
-
 		_metadata := &metadata.Token{
 			Name:         ConfluxTokenName,
 			Value:        lo.ToPtr[decimal.Decimal](value),
@@ -122,16 +97,14 @@ func (d *Datasource) getInternalTransaction(confluxBlock *conflux.ConfluxBlock) 
 		metadataRaw, err := json.Marshal(_metadata)
 		if err != nil {
 			loggerx.Global().Error("json.Marshal error", zap.Error(err), zap.Any("_metadata", _metadata))
-			return nil, err
+			continue
 		}
-
-		internalTransactions = append(internalTransactions, model.Transaction{
-			BlockNumber: blockNumber.Int64(),
-			Timestamp:   time.Unix(blockTimestamp.Int64(), 0),
+		internalTx := model.Transaction{
+			BlockNumber: tx.EpochNumber,
+			Timestamp:   time.Unix(tx.Timestamp, 0),
 			Hash:        tx.Hash,
-			Index:       txIndex.Int64(),
+			Index:       tx.TransactionIndex,
 			Owner:       tx.From,
-
 			AddressFrom: tx.From,
 			AddressTo:   tx.To,
 			Network:     protocol.NetworkConflux,
@@ -139,14 +112,15 @@ func (d *Datasource) getInternalTransaction(confluxBlock *conflux.ConfluxBlock) 
 			Tag:         filter.TagTransaction,
 			Type:        filter.TransactionTransfer,
 			Success:     lo.ToPtr[bool](tx.Status == ConfluxStatusSuccess),
-			Fee:         lo.ToPtr[decimal.Decimal](decimal.NewFromBigInt(txGasFee, 0).Shift(-ConfluxTokenDecimals)),
-
-			Transfers: []model.Transfer{
-				// This is a virtual transfer
+			Fee:         lo.ToPtr[decimal.Decimal](gasFee.Shift(-ConfluxTokenDecimals)),
+		}
+		// original transfer transaction
+		if tx.Method == "0x" {
+			internalTx.Transfers = []model.Transfer{
 				{
 					TransactionHash: tx.Hash,
-					Timestamp:       time.Unix(blockTimestamp.Int64(), 0),
-					Index:           txIndex.Int64(),
+					Timestamp:       time.Unix(tx.Timestamp, 0),
+					Index:           tx.TransactionIndex,
 					AddressFrom:     tx.From,
 					AddressTo:       tx.To,
 					Metadata:        metadataRaw,
@@ -158,10 +132,12 @@ func (d *Datasource) getInternalTransaction(confluxBlock *conflux.ConfluxBlock) 
 					Tag:  filter.TagTransaction,
 					Type: filter.TransactionTransfer,
 				},
-			},
-		})
+			}
+		}
 
+		internalTransactions = append(internalTransactions, internalTx)
 	}
+
 	return internalTransactions, nil
 }
 

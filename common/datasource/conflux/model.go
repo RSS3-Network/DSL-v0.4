@@ -1,10 +1,20 @@
 package conflux
 
+import "github.com/shopspring/decimal"
+
 type JsonRPCRequest struct {
 	Jsonrpc string `json:"jsonrpc"`
 	Method  string `json:"method"`
 	Params  []any  `json:"params"`
 	Id      int    `json:"id"`
+}
+
+type GetAccountTxParameter struct {
+	Address        string          `json:"account" url:"account,omitempty"`
+	MinEpochNumber decimal.Decimal `json:"minEpochNumber" url:"minEpochNumber,omitempty"`
+	Limit          int64           `json:"limit" url:"limit,omitempty"`
+	Sort           string          `json:"sort" url:"sort,omitempty"`
+	WithInput      bool            `json:"withInput" url:"withInput,omitempty"`
 }
 
 type GetBlockTransactionsParameter struct {
@@ -90,4 +100,30 @@ type ConfluxTransactionReceiptResp struct {
 	Jsonrpc string                    `json:"jsonrpc"`
 	Id      int                       `json:"id"`
 	Result  ConfluxTransactionReceipt `json:"result"`
+}
+
+type ConfluxScanAccountTxResp struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		Total int                  `json:"total"`
+		List  []ConfluxScanTxBrief `json:"list"`
+	} `json:"data"`
+}
+
+type ConfluxScanTxBrief struct {
+	EpochNumber      int64  `json:"epochNumber"`
+	BlockPosition    int64  `json:"blockPosition"`
+	TransactionIndex int64  `json:"transactionIndex"`
+	Nonce            string `json:"nonce"`
+	Hash             string `json:"hash"`
+	From             string `json:"from"`
+	To               string `json:"to"`
+	Value            string `json:"value"`
+	GasPrice         string `json:"gasPrice"`
+	GasFee           string `json:"gasFee"`
+	Timestamp        int64  `json:"timestamp"`
+	Status           int64  `json:"status"`
+	ContractCreated  string `json:"contractCreated"`
+	Method           string `json:"method"`
 }
