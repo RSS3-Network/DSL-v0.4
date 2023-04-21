@@ -41,6 +41,7 @@ require (
 	github.com/unstoppabledomains/resolution-go/v2 v2.3.2
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	github.com/wealdtech/go-ens/v3 v3.5.5
+	github.com/ysmood/got v0.34.1
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.14.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.14.0
@@ -123,6 +124,7 @@ require (
 	github.com/willf/bitset v1.1.3 // indirect
 	github.com/willf/bloom v2.0.3+incompatible // indirect
 	github.com/ybbus/jsonrpc v2.1.2+incompatible // indirect
+	github.com/ysmood/gop v0.0.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
