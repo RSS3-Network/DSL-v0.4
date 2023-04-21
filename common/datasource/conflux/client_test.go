@@ -56,11 +56,19 @@ func TestOnConfluxScanGetAccountTx(t *testing.T) {
 	c := NewClient()
 	ctx := context.Background()
 	t.Run("test scan api getAccountTransactions", func(t *testing.T) {
-		resp, err := c.GetAccountTransactions(ctx, GetAccountTxParameter{
+		resp, err := c.GetAccountTransactions(ctx, GetAccountParameter{
 			Address: "cfx:aajj1b1gm7k51mhzm80czcx31kwxrm2f6jxvy30mvk",
 			Limit:   10,
 		})
 		assert.NilError(t, err)
 		t.Log(resp)
+	})
+
+	t.Run("test scan api getAccountTransfers", func(t *testing.T) {
+		_, err := c.GetAccountTransfers(ctx, GetAccountParameter{
+			Address: "cfx:aarng0xfy95yfxn59t15r58gks20vzn88esp76ag6f",
+			Limit:   100,
+		})
+		assert.NilError(t, err)
 	})
 }

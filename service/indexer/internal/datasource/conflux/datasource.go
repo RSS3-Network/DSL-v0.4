@@ -51,12 +51,12 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		}
 	}()
 
-	query := confluxClient.GetAccountTxParameter{
-		MinEpochNumber: decimal.New(message.BlockNumber, 0),
+	query := confluxClient.GetAccountParameter{
+		MinEpochNumber: message.BlockNumber,
 		Address:        message.Address,
 		Limit:          conflux.MaxCount,
 	}
-	confluxAccountTxns, err := d.client.GetAccountTransactions(ctx, query)
+	confluxAccountTxns, err := d.client.GetAccountTransfers(ctx, query)
 	if err != nil {
 		loggerx.Global().Error("GetBlockTransactions error", zap.Error(err), zap.Any("query", query))
 		return nil, err
@@ -71,18 +71,18 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 	return internalTransactions, nil
 }
 
-func (d *Datasource) getInternalTransaction(accountTxns *conflux.ConfluxScanAccountTxResp) ([]model.Transaction, error) {
+func (d *Datasource) getInternalTransaction(accountTxns *conflux.ConfluxScanResp[conflux.ConfluxScanTransferBrief]) ([]model.Transaction, error) {
 	internalTransactions := make([]model.Transaction, 0)
 
 	for _, tx := range accountTxns.Data.List {
 		gasFee, err := decimal.NewFromString(tx.GasFee)
 		if err != nil {
-			loggerx.Global().Error("getInternalTransaction error", zap.Error(err), zap.Any("gasFee", tx.GasFee))
+			loggerx.Global().Error("getInternalTransaction error", zap.Error(err), zap.Any("value", tx.GasFee))
 			continue
 		}
-		value, err := decimal.NewFromString(tx.Value)
+		value, err := decimal.NewFromString(tx.Amount)
 		if err != nil {
-			loggerx.Global().Error("getInternalTransaction error", zap.Error(err), zap.Any("value", tx.Value))
+			loggerx.Global().Error("getInternalTransaction error", zap.Error(err), zap.Any("value", tx.Amount))
 			continue
 		}
 		_metadata := &metadata.Token{
@@ -101,9 +101,9 @@ func (d *Datasource) getInternalTransaction(accountTxns *conflux.ConfluxScanAcco
 		}
 		internalTx := model.Transaction{
 			BlockNumber: tx.EpochNumber,
+			Index:       tx.TxIndex,
+			Hash:        tx.TransactionHash,
 			Timestamp:   time.Unix(tx.Timestamp, 0),
-			Hash:        tx.Hash,
-			Index:       tx.TransactionIndex,
 			Owner:       tx.From,
 			AddressFrom: tx.From,
 			AddressTo:   tx.To,
@@ -111,31 +111,29 @@ func (d *Datasource) getInternalTransaction(accountTxns *conflux.ConfluxScanAcco
 			Source:      protocol.SourceConflux,
 			Tag:         filter.TagTransaction,
 			Type:        filter.TransactionTransfer,
-			Success:     lo.ToPtr[bool](tx.Status == ConfluxStatusSuccess),
+			Success:     lo.ToPtr[bool](true),
 			Fee:         lo.ToPtr[decimal.Decimal](gasFee.Shift(-ConfluxTokenDecimals)),
 		}
 		// original transfer transaction
-		if tx.Method == "0x" {
-			internalTx.Transfers = []model.Transfer{
-				{
-					TransactionHash: tx.Hash,
-					Timestamp:       time.Unix(tx.Timestamp, 0),
-					Index:           tx.TransactionIndex,
-					AddressFrom:     tx.From,
-					AddressTo:       tx.To,
-					Metadata:        metadataRaw,
-					Network:         protocol.NetworkConflux,
-					Source:          protocol.SourceConflux,
-					RelatedUrls: []string{
-						fmt.Sprintf("https://confluxscan.io/transaction/%s", tx.Hash),
-					},
-					Tag:  filter.TagTransaction,
-					Type: filter.TransactionTransfer,
+		internalTx.Transfers = []model.Transfer{
+			{
+				TransactionHash: tx.TransactionHash,
+				Timestamp:       time.Unix(tx.Timestamp, 0),
+				Index:           tx.TxIndex,
+				AddressFrom:     tx.From,
+				AddressTo:       tx.To,
+				Metadata:        metadataRaw,
+				Network:         protocol.NetworkConflux,
+				Source:          protocol.SourceConflux,
+				RelatedUrls: []string{
+					fmt.Sprintf("https://confluxscan.io/transaction/%s", tx.TransactionHash),
 				},
-			}
+				Tag:  filter.TagTransaction,
+				Type: filter.TransactionTransfer,
+			},
 		}
-
 		internalTransactions = append(internalTransactions, internalTx)
+
 	}
 
 	return internalTransactions, nil

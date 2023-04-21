@@ -1,7 +1,5 @@
 package conflux
 
-import "github.com/shopspring/decimal"
-
 type JsonRPCRequest struct {
 	Jsonrpc string `json:"jsonrpc"`
 	Method  string `json:"method"`
@@ -9,12 +7,13 @@ type JsonRPCRequest struct {
 	Id      int    `json:"id"`
 }
 
-type GetAccountTxParameter struct {
-	Address        string          `json:"account" url:"account,omitempty"`
-	MinEpochNumber decimal.Decimal `json:"minEpochNumber" url:"minEpochNumber,omitempty"`
-	Limit          int64           `json:"limit" url:"limit,omitempty"`
-	Sort           string          `json:"sort" url:"sort,omitempty"`
-	WithInput      bool            `json:"withInput" url:"withInput,omitempty"`
+type GetAccountParameter struct {
+	Address        string `json:"account" url:"account,omitempty"`
+	MinEpochNumber int64  `json:"minEpochNumber" url:"minEpochNumber,omitempty"`
+	MaxEpochNumber int64  `json:"maxEpochNumber" url:"maxEpochNumber,omitempty"`
+	Limit          int64  `json:"limit" url:"limit,omitempty"`
+	Sort           string `json:"sort" url:"sort,omitempty"`
+	TransferType   string `json:"transferType" url:"transferType,omitempty"`
 }
 
 type GetBlockTransactionsParameter struct {
@@ -84,16 +83,6 @@ type ConfluxTransactionReceipt struct {
 	To              string `json:"to"`
 	GasUsed         string `json:"gasUsed"`
 	GasFee          string `json:"gasFee"`
-	// ContractCreated         interface{}   `json:"contractCreated"`
-	// Logs                    []interface{} `json:"logs"`
-	// LogsBloom               string        `json:"logsBloom"`
-	// StateRoot               string        `json:"stateRoot"`
-	// OutcomeStatus           string        `json:"outcomeStatus"`
-	// TxExecErrorMsg          interface{}   `json:"txExecErrorMsg"`
-	// GasCoveredBySponsor     bool          `json:"gasCoveredBySponsor"`
-	// StorageCoveredBySponsor bool          `json:"storageCoveredBySponsor"`
-	// StorageCollateralized   string        `json:"storageCollateralized"`
-	// StorageReleased         []interface{} `json:"storageReleased"`
 }
 
 type ConfluxTransactionReceiptResp struct {
@@ -102,13 +91,33 @@ type ConfluxTransactionReceiptResp struct {
 	Result  ConfluxTransactionReceipt `json:"result"`
 }
 
-type ConfluxScanAccountTxResp struct {
+type ConfluxScanResp[T any] struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    struct {
-		Total int                  `json:"total"`
-		List  []ConfluxScanTxBrief `json:"list"`
+		Total int `json:"total"`
+		List  []T `json:"list"`
 	} `json:"data"`
+}
+
+type ConfluxScanTransferBrief struct {
+	EpochNumber     int64  `json:"epochNumber"`
+	BlockIndex      int64  `json:"blockIndex"`
+	TxIndex         int64  `json:"txIndex"`
+	TxLogIndex      int64  `json:"txLogIndex"`
+	From            string `json:"from"`
+	To              string `json:"to"`
+	Type            string `json:"type"`
+	Timestamp       int64  `json:"timestamp"`
+	TransactionHash string `json:"transactionHash"`
+	ChainId         int64  `json:"chainId"`
+	Nonce           int64  `json:"nonce"`
+	Method          string `json:"method"`
+	Status          int64  `json:"status"`
+	GasFee          string `json:"gasFee"`
+	StorageFee      string `json:"storageFee"`
+	Input           string `json:"input"`
+	Amount          string `json:"amount"`
 }
 
 type ConfluxScanTxBrief struct {
