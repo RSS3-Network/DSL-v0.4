@@ -91,7 +91,9 @@ func (c *Client) ERC721(ctx context.Context, network, contractAddress string, to
 	}
 
 	var metadata Metadata
-
+	if len(result.Metadata) == 0 {
+		return &result, nil
+	}
 	if err := json.Unmarshal(result.Metadata, &metadata); err != nil {
 		loggerx.Global().Named(contractAddress).Warn("Get NFT Metadata Unmarshal error", zap.Error(err))
 	}
