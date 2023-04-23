@@ -6,19 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
+	"time"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"go.uber.org/zap"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/google/go-querystring/query"
-	"github.com/naturalselectionlabs/pregod/common/utils/httpx"
 )
 
 const (
-	ScanEndpoint = "api.confluxscan.net"
+	ScanEndpoint = "https://api.confluxscan.net"
 	NodeEndpoint = "https://main.confluxrpc.com"
 	MaxCount     = 100
 	// prevent rate limit
@@ -31,76 +29,66 @@ const (
 )
 
 type Client struct {
-	httpClient *http.Client
+	restyClient *resty.Client
 }
 
 func (c *Client) GetAccountTransactions(ctx context.Context, parameter GetAccountParameter) (*ConfluxScanResp[ConfluxScanTxBrief], error) {
-	if parameter.Limit > MaxCount {
-		parameter.Limit = MaxCount
-	}
-	parameter.Sort = "DESC"
-	parameter.TransferType = TransferTypeTransaction
-
-	values, err := query.Values(parameter)
-	if err != nil {
-		return nil, err
-	}
-
-	url := url.URL{
-		Scheme:   "https",
-		Host:     ScanEndpoint,
-		Path:     "/account/transactions",
-		RawQuery: values.Encode(),
-	}
-	request, err := http.NewRequest(http.MethodGet, url.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
 	var result ConfluxScanResp[ConfluxScanTxBrief]
-	err = httpx.DoRequest(ctx, c.httpClient, request, &result)
+
+	_, err := c.confluxScanRequest(ctx, parameter).SetResult(&result).Get(ScanEndpoint + "/account/transactions")
 	if err != nil {
 		return nil, err
 	}
+
 	if result.Code != 0 || result.Message != "OK" {
 		return nil, fmt.Errorf("confluxscan api error: %s", result.Message)
 	}
+
 	return &result, nil
 }
 
 func (c *Client) GetAccountTransfers(ctx context.Context, parameter GetAccountParameter) (*ConfluxScanResp[ConfluxScanTransferBrief], error) {
-	parameter.Sort = "DESC"
-	parameter.TransferType = TransferTypeTransaction
-	values, err := query.Values(parameter)
-	if err != nil {
-		return nil, err
-	}
-
-	url := url.URL{
-		Scheme:   "https",
-		Host:     ScanEndpoint,
-		Path:     "/account/transfers",
-		RawQuery: values.Encode(),
-	}
-	request, err := http.NewRequest(http.MethodGet, url.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
 	var result ConfluxScanResp[ConfluxScanTransferBrief]
-	err = httpx.DoRequest(ctx, c.httpClient, request, &result)
+
+	_, err := c.confluxScanRequest(ctx, parameter).SetResult(&result).Get(ScanEndpoint + "/account/transfers")
 	if err != nil {
 		return nil, err
 	}
+
 	if result.Code != 0 || result.Message != "OK" {
 		return nil, fmt.Errorf("confluxscan api error: %s", result.Message)
 	}
 	if len(result.Data.List) == 100 {
 		// fetch 500 native token transfers
-		result.Data.List = c.fetchAccountLatestTransfers(ctx, result.Data.List, url, parameter)
+		result.Data.List = c.fetchAccountLatestTransfers(ctx, result.Data.List, parameter)
 	}
 	result.Data.List = c.filterKnownError(result.Data.List)
 	return &result, nil
+}
+
+func (c *Client) confluxScanRequest(ctx context.Context, paramster GetAccountParameter) *resty.Request {
+	r := c.restyClient.R().SetContext(ctx)
+	if paramster.MaxEpochNumber != 0 {
+		r.SetQueryParam("maxEpochNumber", fmt.Sprintf("%d", paramster.MaxEpochNumber))
+	}
+	if paramster.MinEpochNumber != 0 {
+		r.SetQueryParam("minEpochNumber", fmt.Sprintf("%d", paramster.MinEpochNumber))
+	}
+	if paramster.Limit != 0 {
+		r.SetQueryParam("limit", fmt.Sprintf("%d", paramster.Limit))
+	}
+	if paramster.Sort == "" {
+		paramster.Sort = "DESC"
+	}
+	if paramster.TransferType == "" {
+		paramster.TransferType = TransferTypeTransaction
+	}
+	r.SetQueryParams(map[string]string{
+		"account":      paramster.Address,
+		"transferType": paramster.TransferType,
+		"sort":         paramster.Sort,
+	})
+	return r
 }
 
 func (c *Client) filterKnownError(transfers []ConfluxScanTransferBrief) []ConfluxScanTransferBrief {
@@ -114,7 +102,7 @@ func (c *Client) filterKnownError(transfers []ConfluxScanTransferBrief) []Conflu
 	return result
 }
 
-func (c *Client) fetchAccountLatestTransfers(ctx context.Context, result []ConfluxScanTransferBrief, url url.URL, parameter GetAccountParameter) []ConfluxScanTransferBrief {
+func (c *Client) fetchAccountLatestTransfers(ctx context.Context, result []ConfluxScanTransferBrief, parameter GetAccountParameter) []ConfluxScanTransferBrief {
 	for i := 0; i < 4; i++ {
 		// limit 100
 		if len(result)%100 != 0 {
@@ -126,24 +114,11 @@ func (c *Client) fetchAccountLatestTransfers(ctx context.Context, result []Confl
 		parameter.Sort = "DESC"
 		parameter.TransferType = TransferTypeTransaction
 
-		values, err := query.Values(parameter)
-		if err != nil {
-			loggerx.Global().Error("fetchAccountLatestTransfers error", zap.Error(err), zap.Any("parameter", parameter))
-			return result
-		}
-
-		url.RawQuery = values.Encode()
 		var temp ConfluxScanResp[ConfluxScanTransferBrief]
 
-		request, err := http.NewRequest(http.MethodGet, url.String(), nil)
+		_, err := c.confluxScanRequest(ctx, parameter).SetResult(&temp).Get(ScanEndpoint + "/account/transfers")
 		if err != nil {
-			loggerx.Global().Error("fetchAccountLatestTransfers error", zap.Error(err), zap.Any("url", url.String()))
-			return result
-		}
-
-		err = httpx.DoRequest(ctx, c.httpClient, request, &temp)
-		if err != nil {
-			loggerx.Global().Error("fetchAccountLatestTransfers error", zap.Error(err), zap.Any("url", url.String()))
+			loggerx.Global().Error("fetchAccountLatestTransfers error", zap.Error(err), zap.Any("parameter", parameter))
 			return result
 		}
 
@@ -168,7 +143,7 @@ func (c *Client) GetBlockTransactions(ctx context.Context, parameter GetBlockTra
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.httpClient.Post(NodeEndpoint, "application/json", bytes.NewReader(reqBytes))
+	resp, err := c.restyClient.GetClient().Post(NodeEndpoint, "application/json", bytes.NewReader(reqBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +179,8 @@ func (c *Client) GetTransactionReceipt(ctx context.Context, txHash string) (*Con
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.httpClient.Post(NodeEndpoint, "application/json", bytes.NewReader(reqBytes))
+
+	resp, err := c.restyClient.GetClient().Post(NodeEndpoint, "application/json", bytes.NewReader(reqBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -224,6 +200,9 @@ func (c *Client) GetTransactionReceipt(ctx context.Context, txHash string) (*Con
 
 func NewClient() *Client {
 	return &Client{
-		httpClient: http.DefaultClient,
+		restyClient: resty.New().SetRetryCount(10).SetRetryAfter(func(c *resty.Client, r *resty.Response) (time.Duration, error) {
+			loggerx.Global().Warn("retry request conflux scan api", zap.String("url", r.String()))
+			return time.Millisecond * 500, nil
+		}),
 	}
 }

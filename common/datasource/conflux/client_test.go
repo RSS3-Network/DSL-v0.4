@@ -2,9 +2,8 @@ package conflux
 
 import (
 	"context"
-	"testing"
-
 	"gotest.tools/assert"
+	"testing"
 )
 
 func TestOnConfluxGetBlockByEpochNumber(t *testing.T) {
