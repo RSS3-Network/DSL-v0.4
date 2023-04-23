@@ -52,7 +52,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 
 	query := aptosClient.GetAccountTransactionsParameter{
 		Address: message.Address,
-		Start:   decimal.New(message.BlockNumber, 10),
+		Start:   decimal.NewFromInt(message.BlockNumber),
 		Limit:   protocol.DatasourceLimit, // order by desc
 	}
 
