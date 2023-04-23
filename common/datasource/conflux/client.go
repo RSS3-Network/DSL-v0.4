@@ -1,11 +1,8 @@
 package conflux
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -139,24 +136,13 @@ func (c *Client) GetBlockTransactions(ctx context.Context, parameter GetBlockTra
 		Params:  []any{number, true},
 		Id:      67,
 	}
-	reqBytes, err := json.Marshal(jsonRequest)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := c.restyClient.GetClient().Post(NodeEndpoint, "application/json", bytes.NewReader(reqBytes))
-	if err != nil {
-		return nil, err
-	}
-	respBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	_ = resp.Body.Close()
 	var result BlockEpochResp
-	err = json.Unmarshal(respBytes, &result)
+
+	_, err := c.restyClient.R().SetContext(ctx).SetBody(jsonRequest).SetResult(&result).Post(NodeEndpoint)
 	if err != nil {
 		return nil, err
 	}
+
 	for i := range result.Result.Transactions {
 		receiptInfo, err := c.GetTransactionReceipt(ctx, result.Result.Transactions[i].Hash)
 		if err != nil {
@@ -175,22 +161,9 @@ func (c *Client) GetTransactionReceipt(ctx context.Context, txHash string) (*Con
 		Params:  []any{txHash},
 		Id:      67,
 	}
-	reqBytes, err := json.Marshal(jsonRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := c.restyClient.GetClient().Post(NodeEndpoint, "application/json", bytes.NewReader(reqBytes))
-	if err != nil {
-		return nil, err
-	}
-	respBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	_ = resp.Body.Close()
 	var result ConfluxTransactionReceiptResp
-	err = json.Unmarshal(respBytes, &result)
+
+	_, err := c.restyClient.R().SetContext(ctx).SetBody(jsonRequest).SetResult(&result).Post(NodeEndpoint)
 	if err != nil {
 		return nil, err
 	}
