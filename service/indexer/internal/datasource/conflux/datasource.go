@@ -56,7 +56,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) ([]m
 		Address:        message.Address,
 		Limit:          conflux.MaxCount,
 	}
-	confluxAccountTxns, err := d.client.GetAccountTransfers(ctx, query)
+	confluxAccountTxns, err := d.client.GetAccountCfxTransfers(ctx, query)
 	if err != nil {
 		loggerx.Global().Error("GetBlockTransactions error", zap.Error(err), zap.Any("query", query))
 		return nil, err
@@ -75,9 +75,14 @@ func (d *Datasource) getInternalTransaction(accountTxns *conflux.ConfluxScanResp
 	internalTransactions := make([]model.Transaction, 0)
 
 	for _, tx := range accountTxns.Data.List {
-		gasFee, err := decimal.NewFromString(tx.GasFee)
+		receiptInfo, err := d.client.GetTransactionReceipt(context.Background(), tx.TransactionHash)
 		if err != nil {
-			loggerx.Global().Error("getInternalTransaction error", zap.Error(err), zap.Any("value", tx.GasFee))
+			loggerx.Global().Error("getInternalTransaction error", zap.Error(err), zap.Any("tx", tx))
+			continue
+		}
+		gasFee, err := decimal.NewFromString(receiptInfo.GasFee)
+		if err != nil {
+			loggerx.Global().Error("getInternalTransaction error", zap.Error(err), zap.Any("value", receiptInfo.GasFee))
 			continue
 		}
 		value, err := decimal.NewFromString(tx.Amount)

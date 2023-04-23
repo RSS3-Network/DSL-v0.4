@@ -2,8 +2,9 @@ package conflux
 
 import (
 	"context"
-	"gotest.tools/assert"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestOnConfluxGetBlockByEpochNumber(t *testing.T) {
@@ -64,7 +65,7 @@ func TestOnConfluxScanGetAccountTx(t *testing.T) {
 	})
 
 	t.Run("test scan api getAccountTransfers", func(t *testing.T) {
-		_, err := c.GetAccountTransfers(ctx, GetAccountParameter{
+		_, err := c.GetAccountCfxTransfers(ctx, GetAccountParameter{
 			Address: "cfx:aarng0xfy95yfxn59t15r58gks20vzn88esp76ag6f",
 			Limit:   100,
 		})

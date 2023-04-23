@@ -44,10 +44,10 @@ func (c *Client) GetAccountTransactions(ctx context.Context, parameter GetAccoun
 	return &result, nil
 }
 
-func (c *Client) GetAccountTransfers(ctx context.Context, parameter GetAccountParameter) (*ConfluxScanResp[ConfluxScanTransferBrief], error) {
+func (c *Client) GetAccountCfxTransfers(ctx context.Context, parameter GetAccountParameter) (*ConfluxScanResp[ConfluxScanTransferBrief], error) {
 	var result ConfluxScanResp[ConfluxScanTransferBrief]
 
-	_, err := c.confluxScanRequest(ctx, parameter).SetResult(&result).Get(ScanEndpoint + "/account/transfers")
+	_, err := c.confluxScanRequest(ctx, parameter).SetResult(&result).Get(ScanEndpoint + "/account/cfx/transfers")
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (c *Client) fetchAccountLatestTransfers(ctx context.Context, result []Confl
 
 		var temp ConfluxScanResp[ConfluxScanTransferBrief]
 
-		_, err := c.confluxScanRequest(ctx, parameter).SetResult(&temp).Get(ScanEndpoint + "/account/transfers")
+		_, err := c.confluxScanRequest(ctx, parameter).SetResult(&temp).Get(ScanEndpoint + "/account/cfx/transfers")
 		if err != nil {
 			loggerx.Global().Error("fetchAccountLatestTransfers error", zap.Error(err), zap.Any("parameter", parameter))
 			return result
