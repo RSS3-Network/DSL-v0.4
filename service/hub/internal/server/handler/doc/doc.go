@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/pkg/jschema"
-	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 )
 
 type Doc struct {
@@ -46,14 +46,17 @@ func (d *Doc) OpenAPI() echo.HandlerFunc {
 			return c.JSON(http.StatusOK, cache)
 		}
 
-		proto := "https://"
-		if config.ConfigHub.Mode == "development" {
-			proto = "http://"
+		proto := "http://"
+		v := ""
+
+		if strings.HasPrefix(c.Request().Host, "pregod.rss3.dev") {
+			proto = "https://"
+			v = "/v1"
 		}
 
-		u := url.QueryEscape(proto + c.Request().Host + c.Request().URL.Path + "?json=true")
+		u := url.QueryEscape(proto + c.Request().Host + v + c.Request().URL.Path + "?json=true")
 		fmt.Println("url", u)
 
-		return c.Redirect(http.StatusFound, fmt.Sprintf("https://generator.swagger.io//?url=%s", u))
+		return c.Redirect(http.StatusFound, fmt.Sprintf("https://generator.swagger.io/?url=%s", u))
 	}
 }
