@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -17,6 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler/doc"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/service"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/validatorx"
@@ -89,33 +91,37 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.Use(middlewarex.ZapLogger(s.logger))
 
 	s.httpServer.GET("/", func(c echo.Context) error {
+		u, _ := url.JoinPath(c.Request().URL.Path, "openapi")
 		return c.JSON(http.StatusOK, map[string]string{
 			"status":        "ok",
 			"version":       fmt.Sprintf("%s-%s", protocol.Version, protocol.Build),
-			"documentation": "https://docs.rss3.io/PreGod/api/",
+			"documentation": u,
 		})
 	})
 
+	// OpenAPI doc for endpoints
+	s.httpServer.GET("/openapi", doc.New().OpenAPI())
+
 	// GET
-	s.httpServer.GET("/notes/:address", s.httpHandler.GetNotesFunc, middlewarex.APIMiddleware)
-	s.httpServer.GET("/assets/:address", s.httpHandler.GetAssetsFunc, middlewarex.APIMiddleware)
-	s.httpServer.GET("/exchanges/:exchange_type", s.httpHandler.GetExchangeListFunc)
-	s.httpServer.GET("/platforms/:platform_type", s.httpHandler.GetPlatformListFunc)
-	s.httpServer.GET("/profiles/:address", s.httpHandler.GetProfilesFunc2)
-	s.httpServer.GET("/ns/:address", s.httpHandler.GetNameResolveFunc)
-	s.httpServer.GET("/tx/:hash", s.httpHandler.GetTransactionByHashFunc)
+	s.httpServer.GET(handler.PathGetNotes, s.httpHandler.GetNotesFunc, middlewarex.APIMiddleware)
+	s.httpServer.GET(handler.PathGetAssets, s.httpHandler.GetAssetsFunc, middlewarex.APIMiddleware)
+	s.httpServer.GET(handler.PathGetExchanges, s.httpHandler.GetExchangeListFunc)
+	s.httpServer.GET(handler.PathGetPlatformList, s.httpHandler.GetPlatformListFunc)
+	s.httpServer.GET(handler.PathGetProfiles, s.httpHandler.GetProfilesFunc2)
+	s.httpServer.GET(handler.PathGetNameResolve, s.httpHandler.GetNameResolveFunc)
+	s.httpServer.GET(handler.PathGetTransaction, s.httpHandler.GetTransactionByHashFunc)
 
 	// POST
-	s.httpServer.POST("/notes/social", s.httpHandler.BatchGetSocialNotesFunc, middlewarex.CheckAPIKeyMiddleware)
-	s.httpServer.POST("/notes", s.httpHandler.BatchGetNotesFunc, middlewarex.CheckAPIKeyMiddleware)
-	s.httpServer.POST("/profiles", s.httpHandler.BatchGetProfilesFunc2, middlewarex.CheckAPIKeyMiddleware)
+	s.httpServer.POST(handler.PathBatchGetSocialNotes, s.httpHandler.BatchGetSocialNotesFunc, middlewarex.CheckAPIKeyMiddleware)
+	s.httpServer.POST(handler.PathBatchGetNotes, s.httpHandler.BatchGetNotesFunc, middlewarex.CheckAPIKeyMiddleware)
+	s.httpServer.POST(handler.PathBatchGetProfiles, s.httpHandler.BatchGetProfilesFunc2, middlewarex.CheckAPIKeyMiddleware)
 
 	// End of year Wrapped
 	s.httpServer.GET("/wrapped/:address", s.httpHandler.GetWrappedFunc)
 
 	// API KEY
-	s.httpServer.POST("/apikey/apply", s.httpHandler.PostAPIKeyFunc)
-	s.httpServer.GET("/apikey", s.httpHandler.GetAPIKeyFunc)
+	s.httpServer.POST(handler.PathPostAPIKey, s.httpHandler.PostAPIKeyFunc)
+	s.httpServer.GET(handler.PathGetAPIKey, s.httpHandler.GetAPIKeyFunc)
 
 	// WS Initialize
 	// go svc.WsHub.Run()

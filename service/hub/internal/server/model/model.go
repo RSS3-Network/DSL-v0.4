@@ -27,7 +27,7 @@ const (
 )
 
 type Response struct {
-	Total         *int64            `json:"total,omitempty"`
+	Total         *int64            `json:"total,omitempty" description:"total number of items"`
 	Cursor        string            `json:"cursor,omitempty"`
 	Result        any               `json:"result,omitempty"`
 	AddressStatus []dbModel.Address `json:"address_status,omitempty"`
@@ -35,7 +35,7 @@ type Response struct {
 }
 
 type GetRequest struct {
-	Address   string    `param:"address" json:"address" validate:"required"`
+	Address   string    `param:"address" json:"address" validate:"required" description:"address to query"`
 	Limit     int       `query:"limit" json:"limit"`
 	Cursor    string    `query:"cursor" json:"cursor"`
 	Type      []string  `query:"type" json:"type"`
@@ -104,7 +104,11 @@ type BatchGetProfilesRequest struct {
 	Refresh  bool     `query:"refresh"`
 }
 
-type APIKeyRequest struct {
+type GetAPIKeyRequest struct {
+	Address string `param:"address" json:"address" validate:"required"`
+}
+
+type PostAPIKeyRequest struct {
 	Address string `json:"address" validate:"required"`
 }
 
@@ -127,7 +131,7 @@ type DexResult struct {
 }
 
 type GetExchangeRequest struct {
-	ExchangeType string   `param:"exchange_type"`
+	ExchangeType string   `param:"exchange_type" validate:"required"`
 	Cursor       int      `query:"cursor"`
 	Name         []string `query:"name"`
 	Network      []string `query:"network"`
@@ -135,7 +139,7 @@ type GetExchangeRequest struct {
 
 // platform
 type GetPlatformRequest struct {
-	PlatformType string   `param:"platform_type"`
+	PlatformType string   `param:"platform_type" validate:"required"`
 	Network      []string `query:"network"`
 }
 
