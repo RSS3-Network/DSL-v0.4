@@ -118,7 +118,6 @@ type ConfluxScanTransferBrief struct {
 	// GasFee          string `json:"gasFee"`
 	// StorageFee      string `json:"storageFee"`
 	// Input           string `json:"input"`
-
 }
 
 type ConfluxScanTxBrief struct {

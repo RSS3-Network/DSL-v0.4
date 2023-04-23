@@ -84,6 +84,7 @@ func (c *Client) confluxScanRequest(ctx context.Context, paramster GetAccountPar
 		"account":      paramster.Address,
 		"transferType": paramster.TransferType,
 		"sort":         paramster.Sort,
+		"from":         paramster.Address,
 	})
 	return r
 }
