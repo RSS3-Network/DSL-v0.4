@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
-	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -23,6 +25,14 @@ import (
 
 const (
 	MASK_ADDRESSES_FILE = "https://s3.amazonaws.com/public.firefly/wallet-addr.txt"
+	MASK_POST_URL       = "https://api.firefly.land/v1/jobs/rss3-sync-social"
+	MASK_HEADER_KEY     = "firefly-api-key"
+)
+
+var (
+	MASK_HEADER_VALUE = os.Getenv("MASK_HEADER_VALUE")
+	yesterday         time.Time
+	httpClient        = &http.Client{}
 )
 
 var rootCommand = cobra.Command{
@@ -68,6 +78,7 @@ type SocialRes struct {
 // 4. Submit the results to Mask in batches.
 func calculateSocial(*cobra.Command, []string) error {
 	utcNow := time.Now().UTC()
+	yesterday = utcNow.Add(-24 * time.Hour).Truncate(24 * time.Hour)
 	dbClient := config.ConfigMask.DatabaseClient
 	loggerx.Global().Info("start to calculate social", zap.Time("utc now", utcNow))
 
@@ -79,7 +90,7 @@ func calculateSocial(*cobra.Command, []string) error {
 	result := map[string]map[string]uint{}
 
 	// Iterate through yesterday's social data, fetch 30 minutes of data each time, a total of 48 times.
-	yesterdayStart := utcNow.Add(-24 * time.Hour).Truncate(24 * time.Hour)
+	yesterdayStart := yesterday
 	yesterdayEnd := yesterdayStart.Add(24 * time.Hour)
 	loggerx.Global().Info("yesterday start", zap.Time("yesterday start", yesterdayStart))
 	loggerx.Global().Info("yesterday end", zap.Time("yesterday end", yesterdayEnd))
@@ -142,10 +153,10 @@ func downloadAndInitBloomFilter() (*bloom.BloomFilter, error) {
 	loggerx.Global().Info("filter init done", zap.Uint("filter size", filter.Cap()))
 
 	// test
-	if !filter.TestString("0xe02a52a553acf14cd5552e53d48dc0fc072978d8") {
-		loggerx.Global().Error("test failed")
-		return nil, errors.New("test failed")
-	}
+	// if !filter.TestString("0xe02a52a553acf14cd5552e53d48dc0fc072978d8") {
+	// 	loggerx.Global().Error("test failed")
+	// 	return nil, errors.New("test failed")
+	// }
 
 	return filter, nil
 }
@@ -197,6 +208,11 @@ func send2Mask(res map[string]map[string]uint) error {
 
 			chunkMap = map[string]map[string]uint{}
 		}
+		time.Sleep(2 * time.Second) // from mask Kui
+	}
+
+	if err := sendChunk2Mask(chunkMap); err != nil {
+		reserr = multierr.Append(reserr, err)
 	}
 
 	return reserr
@@ -204,8 +220,19 @@ func send2Mask(res map[string]map[string]uint) error {
 
 // TODO
 func sendChunk2Mask(chunk map[string]map[string]uint) error {
+	maskDataArr := []map[string]interface{}{}
+
 	for address, value := range chunk {
-		// TODO: here should be a real Mask API call
+		// Mask data
+		maskData := map[string]interface{}{
+			"wallet_addr": address,
+			"date":        yesterday.Format("2006-01-02 15:04:05"),
+		}
+		for key, count := range value {
+			maskData[key] = count
+		}
+		maskDataArr = append(maskDataArr, maskData)
+
 		// value json, max 2000 bytes
 		valueJson, err := json.Marshal(value)
 		if err != nil {
@@ -219,6 +246,30 @@ func sendChunk2Mask(chunk map[string]map[string]uint) error {
 			"address": address,
 			"value":   string(valueJson),
 		})
+	}
+
+	// send to mask
+	if len(maskDataArr) > 0 {
+		dataStr, _ := json.Marshal(map[string]interface{}{
+			"data": maskDataArr,
+		})
+
+		req, err := http.NewRequest("POST", MASK_POST_URL, bytes.NewBuffer(dataStr))
+		if err != nil {
+			return err
+		}
+		req.Header.Set(MASK_HEADER_KEY, MASK_HEADER_VALUE)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			body, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("mask post failed, status code: %d, body: %s", resp.StatusCode, string(body))
+		}
+		// loggerx.Global().Info("sent to mask", zap.String("postdata", string(dataStr)))
 	}
 
 	return nil

@@ -19,6 +19,9 @@ spec:
               envFrom:
                 - secretRef:
                     name: pregod-1-1
+              env:
+                - name: MASK_HEADER_VALUE
+                  value: $MASK_HEADER_VALUE
               command:
                 - mask
               resources:
@@ -33,6 +36,6 @@ spec:
           schedulerName: default-scheduler
           securityContext: {}
           terminationGracePeriodSeconds: 30
-  schedule: "0 1 * * *"  # 这个需要实验：1. kube-controller-manager 被云厂商托管不能直接找到时区 2. k8s v1.22 不支持指定时区
+  schedule: "0 1 * * *"  # UTC
   successfulJobsHistoryLimit: 3
   suspend: false
