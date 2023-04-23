@@ -207,8 +207,8 @@ func send2Mask(res map[string]map[string]uint) error {
 			}
 
 			chunkMap = map[string]map[string]uint{}
+			time.Sleep(2 * time.Second) // from mask Kui
 		}
-		time.Sleep(2 * time.Second) // from mask Kui
 	}
 
 	if err := sendChunk2Mask(chunkMap); err != nil {
