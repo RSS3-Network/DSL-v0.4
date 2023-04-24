@@ -110,14 +110,14 @@ type ConfluxScanTransferBrief struct {
 	Type            string `json:"type"`
 	Timestamp       int64  `json:"timestamp"`
 	TransactionHash string `json:"transactionHash"`
-	ChainId         int64  `json:"chainId"`
-	Nonce           int64  `json:"nonce"`
-	Method          string `json:"method"`
-	Status          int64  `json:"status"`
-	GasFee          string `json:"gasFee"`
-	StorageFee      string `json:"storageFee"`
-	Input           string `json:"input"`
-	Amount          string `json:"amount"`
+	// ChainId         int64  `json:"chainId"`
+	// Nonce           int64  `json:"nonce"`
+	Amount string `json:"amount"`
+	// Method          string `json:"method"`
+	// Status          int64  `json:"status"`
+	// GasFee          string `json:"gasFee"`
+	// StorageFee      string `json:"storageFee"`
+	// Input           string `json:"input"`
 }
 
 type ConfluxScanTxBrief struct {
