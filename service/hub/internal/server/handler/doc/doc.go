@@ -49,7 +49,7 @@ func (d *Doc) OpenAPI() echo.HandlerFunc {
 		proto := "http://"
 		v := ""
 
-		if strings.HasPrefix(c.Request().Host, "pregod.rss3.dev") {
+		if strings.Contains(c.Request().Host, "pregod.rss3.dev") {
 			proto = "https://"
 			v = "/v1"
 		}
