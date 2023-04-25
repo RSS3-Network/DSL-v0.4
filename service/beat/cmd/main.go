@@ -37,17 +37,13 @@ const (
 						FROM pg_class
 						WHERE relname = 'transfers';`
 
-	addressesCountSQL = `SELECT reltuples::bigint AS total
-							FROM pg_class
-							WHERE relname = 'address';`
+	addressesCountSQL = `SELECT count(*) FROM address;`
 
 	transfersPerTagSQL = `SELECT tag, COUNT(*)
 							FROM (SELECT tag FROM transfers ORDER BY updated_at DESC LIMIT 100000) AS temp
 							GROUP BY tag;`
 
-	profilesCountSQL = `SELECT reltuples::bigint AS total
-								FROM pg_class
-								WHERE relname = 'profiles';`
+	profilesCountSQL = `SELECT count(*) FROM profiles;`
 
 	profilesPerPlatformSQL = `SELECT platform, count(1) AS count
 						FROM dataset_domains.domains
