@@ -3,6 +3,7 @@ package name_service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
@@ -44,26 +45,25 @@ func (i *internal) Initialize(ctx context.Context) error {
 
 func (i *internal) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	var (
-		result    = make([]model.Transaction, 0)
-		waitGroup sync.WaitGroup
-		locker    sync.Mutex
+		internalTransactions = make([]model.Transaction, 0)
+		waitGroup            sync.WaitGroup
+		locker               sync.Mutex
 	)
 
 	for _, transaction := range transactions {
+		if transaction.Type != "" && transaction.Tag != "" {
+			continue
+		}
+
 		// Unsupported Platform
 		platform, exists := platformMap[common.HexToAddress(transaction.AddressTo)]
 		if !exists {
 			continue
 		}
 
-		// Initialize the transaction
-		transaction := transaction
-		transaction.Transfers = make([]model.Transfer, 0)
-		transaction.Platform = platform
-
 		waitGroup.Add(1)
 
-		go func() {
+		go func(transaction model.Transaction) {
 			defer waitGroup.Done()
 
 			var sourceData ethereum.SourceData
@@ -73,6 +73,9 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				return
 			}
 
+			internalTransaction := transaction
+			internalTransaction.Transfers = make([]model.Transfer, 0)
+
 			for _, log := range sourceData.Receipt.Logs {
 				// Filter anonymous log
 				if len(log.Topics) == 0 {
@@ -80,14 +83,18 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				}
 
 				var (
-					transfer *model.Transfer
-					err      error
+					internalTransfer *model.Transfer
+					err              error
 				)
 
 				switch log.Topics[0] {
 				// ENS NameRenewed
 				case ens.EventNameRenewed:
-					transfer, err = i.handleENSNameRenewed(ctx, message, transaction, *log, platform)
+					internalTransfer, err = i.handleENSNameRenewed(ctx, message, transaction, *log, platform)
+				case ens.EventNameRegistered:
+					internalTransfer, err = i.handleENSNameRegistered(ctx, message, transaction, *log, platform)
+				case ens.EventNameRegisteredV2:
+					internalTransfer, err = i.handleENSNameRegisteredV2(ctx, message, transaction, *log, platform)
 				default:
 					continue
 				}
@@ -95,26 +102,28 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				if err != nil {
 					zap.L().Error("handle event", zap.Error(err), zap.Stringer("topic_first", log.Topics[0]))
 
-					return
+					continue
 				}
 
-				transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagCollectible, transfer.Tag, i.Name(), transfer.Type)
-
-				transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagCollectible, transaction.Tag, i.Name(), transaction.Type)
-				transaction.Owner = transaction.AddressFrom
-				transaction.Transfers = append(transaction.Transfers, *transfer)
+				locker.Lock()
+				internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
+				internalTransaction.Type = internalTransfer.Type
+				internalTransaction.Tag = internalTransfer.Tag
+				locker.Unlock()
 			}
 
 			locker.Lock()
-			defer locker.Unlock()
-
-			result = append(result, transaction)
-		}()
+			if len(internalTransaction.Transfers) > 0 {
+				internalTransaction.Platform = platform
+				internalTransactions = append(internalTransactions, internalTransaction)
+			}
+			locker.Unlock()
+		}(transaction)
 	}
 
 	waitGroup.Wait()
 
-	return result, nil
+	return internalTransactions, nil
 }
 
 func (i *internal) buildNameServiceMetadata(name string, action string, tokenType *token.Native, cost *big.Int, expires *big.Int, key, value string) (json.RawMessage, error) {
@@ -151,6 +160,36 @@ func (i *internal) buildNameServiceMetadata(name string, action string, tokenTyp
 	}
 
 	return json.Marshal(&nameServiceMetadata)
+}
+
+func (i *internal) buildTokenMetadata(ctx context.Context, network string, tokenId *big.Int) (json.RawMessage, error) {
+	var tokenMetadata *metadata.Token
+
+	erc721, err := i.tokenClient.ERC721(ctx, network, ens.ENSContractAddress.String(), tokenId)
+	if err != nil {
+		return nil, fmt.Errorf("erc721 %s/%d: %w", ens.ENSContractAddress.String(), tokenId, err)
+	}
+
+	nft, err := erc721.ToNFT(tokenId)
+	if err != nil {
+		return nil, fmt.Errorf("erc721 to nft %s/%d: %w", ens.ENSContractAddress.String(), tokenId, err)
+	}
+
+	if tokenMetadata, err = nft.ToMetadata(); err != nil {
+		return nil, fmt.Errorf("erc721 to metadata %s/%d: %w", ens.ENSContractAddress.String(), tokenId, err)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	tokenMetadata.SetValue(decimal.New(1, 0))
+
+	metadataRaw, err := json.Marshal(tokenMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return metadataRaw, nil
 }
 
 func (i *internal) Jobs() []worker.Job {

@@ -2,14 +2,17 @@ package name_service
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/config"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
@@ -51,7 +54,7 @@ func Test_worker_Handle(t *testing.T) {
 		wantErr   assert.ErrorAssertionFunc
 	}{
 		{
-			name: "ens renew",
+			name: "ens renew v1",
 			arguments: arguments{
 				ctx: context.Background(),
 				message: &protocol.Message{
@@ -75,6 +78,106 @@ func Test_worker_Handle(t *testing.T) {
 
 				for _, transaction := range transactions {
 					assert.Equal(t, transaction.Platform, protocol.PlatformEns)
+					assert.Equal(t, transaction.Type, filter.CollectibleEdit)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "ens renew v2",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x9ca30eaae1b6d8fe2391ef9180d7def2a6fb2b9b",
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0xbf83bc960e06bb5b49ecb32e42135999410cf1a0ab1589eb7d21587f110476b9
+						Hash:        "0xbf83bc960e06bb5b49ecb32e42135999410cf1a0ab1589eb7d21587f110476b9",
+						BlockNumber: 17127800,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformEns)
+					assert.Equal(t, transaction.Type, filter.CollectibleEdit)
+					assert.Equal(t, transaction.AddressTo, strings.ToLower(ens.EnsRegistrarControllerV2.String()))
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "ens registrar v1",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x934b510d4c9103e6a87aef13b816fb080286d649",
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0xeb33f04cc32907fc95e5a7772b814d29baf3b76949a44e6210e0614fae0abcfd
+						Hash:        "0xeb33f04cc32907fc95e5a7772b814d29baf3b76949a44e6210e0614fae0abcfd",
+						BlockNumber: 16999317,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformEns)
+					assert.Equal(t, transaction.Type, filter.CollectibleMint)
+					assert.Equal(t, transaction.AddressTo, strings.ToLower(ens.EnsRegistrarController.String()))
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "ens registrar v2",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x225114369fa6b133400a4bb86d08c62044387266",
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0x4f36e2f576778a5bd8509101b90877bd9961c77999503745627eac479c5acca3
+						Hash:        "0x4f36e2f576778a5bd8509101b90877bd9961c77999503745627eac479c5acca3",
+						BlockNumber: 17127792,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformEns)
+					assert.Equal(t, transaction.Type, filter.CollectibleMint)
+					assert.Equal(t, transaction.AddressTo, strings.ToLower(ens.EnsRegistrarControllerV2.String()))
 				}
 
 				return false
