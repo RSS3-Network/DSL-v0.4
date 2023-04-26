@@ -11,5 +11,6 @@ var platformMap = map[common.Address]string{
 	ens.EnsRegistrarController:   protocol.PlatformEns,
 	ens.EnsBulkRenewal:           protocol.PlatformEns,
 	ens.EnsBatchRenew:            protocol.PlatformEns,
+	ens.EnsBulkRegistrarV1:       protocol.PlatformEns,
 	ens.EnsRegistrarControllerV2: protocol.PlatformEns,
 }

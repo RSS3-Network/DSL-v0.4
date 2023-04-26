@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens"
 	registrarv1 "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens/registrar_v1"
 	registrarv2 "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens/registrar_v2"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
@@ -95,7 +96,7 @@ func (i *internal) handleENSNameRegistered(ctx context.Context, message *protoco
 		Network:         transaction.Network,
 		Platform:        platform,
 		Source:          transaction.Source,
-		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
+		RelatedUrls:     ethereum.BuildURL(ethereum.BuildTokenURL(message.Network, strings.ToLower(ens.ENSContractAddress.String()), tokenId.String()), ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
 
@@ -135,6 +136,6 @@ func (i *internal) handleENSNameRegisteredV2(ctx context.Context, message *proto
 		Network:         transaction.Network,
 		Platform:        platform,
 		Source:          transaction.Source,
-		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
+		RelatedUrls:     ethereum.BuildURL(ethereum.BuildTokenURL(message.Network, strings.ToLower(ens.ENSContractAddress.String()), tokenId.String()), ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
 	}, nil
 }
