@@ -100,6 +100,49 @@ func (i *internal) handleENSNameRegistered(ctx context.Context, message *protoco
 	}, nil
 }
 
+func (i *internal) handleENSNameRenewedV2(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform string) (*model.Transfer, error) {
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	ensContract, err := registrarv2.NewRegistrarV2Filterer(log.Address, ethclient)
+	if err != nil {
+		return nil, err
+	}
+
+	event, err := ensContract.ParseNameRenewed(log)
+	if err != nil {
+		return nil, err
+	}
+
+	nativeToken, err := i.tokenClient.Native(ctx, message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	nameServiceMetadata, err := i.buildNameServiceMetadata(fmt.Sprintf("%s.eth", event.Name), filter.CollectibleEditRenew, nativeToken, event.Cost, event.Expires, "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.Transfer{
+		TransactionHash: transaction.Hash,
+		Timestamp:       transaction.Timestamp,
+		BlockNumber:     big.NewInt(transaction.BlockNumber),
+		Index:           int64(log.Index),
+		AddressFrom:     strings.ToLower(transaction.AddressFrom),
+		AddressTo:       strings.ToLower(log.Address.String()),
+		Tag:             filter.TagCollectible,
+		Type:            filter.CollectibleEdit,
+		Metadata:        nameServiceMetadata,
+		Network:         transaction.Network,
+		Platform:        platform,
+		Source:          transaction.Source,
+		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
+	}, nil
+}
+
 func (i *internal) handleENSNameRegisteredV2(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform string) (*model.Transfer, error) {
 	ethclient, err := ethclientx.Global(message.Network)
 	if err != nil {

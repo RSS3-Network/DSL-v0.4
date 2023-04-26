@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -17,20 +18,24 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
 
-	"github.com/samber/lo"
 	"go.uber.org/zap"
 )
 
 var _ worker.Worker = (*internal)(nil)
+
+const (
+	ThreadSize = 200
+)
 
 type internal struct {
 	tokenClient *token.Client
 }
 
 func (i *internal) Name() string {
-	return filter.CollectibleEdit
+	return filter.TagCollectible
 }
 
 func (i *internal) Networks() []string {
@@ -46,8 +51,21 @@ func (i *internal) Initialize(ctx context.Context) error {
 func (i *internal) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	var (
 		internalTransactions = make([]model.Transaction, 0)
-		waitGroup            sync.WaitGroup
-		locker               sync.Mutex
+		limiter              = make(chan struct{}, ThreadSize)
+
+		waitGroup sync.WaitGroup
+		locker    sync.Mutex
+
+		handlerMap = map[common.Address]map[common.Hash]func(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform string) (*model.Transfer, error){
+			ens.EnsRegistrarController: {
+				ens.EventNameRenewed:    i.handleENSNameRenewed,
+				ens.EventNameRegistered: i.handleENSNameRegistered,
+			},
+			ens.EnsRegistrarControllerV2: {
+				ens.EventNameRenewed:      i.handleENSNameRenewedV2,
+				ens.EventNameRegisteredV2: i.handleENSNameRegisteredV2,
+			},
+		}
 	)
 
 	for _, transaction := range transactions {
@@ -55,18 +73,17 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			continue
 		}
 
-		// Unsupported Platform
-		platform, exists := platformMap[common.HexToAddress(transaction.AddressTo)]
-		if !exists {
-			continue
-		}
-
+		limiter <- struct{}{}
 		waitGroup.Add(1)
 
 		go func(transaction model.Transaction) {
-			defer waitGroup.Done()
+			defer func() {
+				<-limiter
+				waitGroup.Done()
+			}()
 
 			var sourceData ethereum.SourceData
+
 			if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
 				zap.L().Warn("unmarshal source data", zap.Error(err), zap.String("source_data", string(transaction.SourceData)))
 
@@ -87,17 +104,17 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 					err              error
 				)
 
-				switch log.Topics[0] {
-				// ENS NameRenewed
-				case ens.EventNameRenewed:
-					internalTransfer, err = i.handleENSNameRenewed(ctx, message, transaction, *log, platform)
-				case ens.EventNameRegistered:
-					internalTransfer, err = i.handleENSNameRegistered(ctx, message, transaction, *log, platform)
-				case ens.EventNameRegisteredV2:
-					internalTransfer, err = i.handleENSNameRegisteredV2(ctx, message, transaction, *log, platform)
-				default:
+				handler, ok := handlerMap[log.Address][log.Topics[0]]
+				if !ok {
 					continue
 				}
+
+				platform, exists := platformMap[log.Address]
+				if !exists {
+					continue
+				}
+
+				internalTransfer, err = handler(ctx, message, transaction, *log, platform)
 
 				if err != nil {
 					zap.L().Error("handle event", zap.Error(err), zap.Stringer("topic_first", log.Topics[0]))
@@ -109,12 +126,12 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
 				internalTransaction.Type = internalTransfer.Type
 				internalTransaction.Tag = internalTransfer.Tag
+				internalTransaction.Platform = platform
 				locker.Unlock()
 			}
 
 			locker.Lock()
 			if len(internalTransaction.Transfers) > 0 {
-				internalTransaction.Platform = platform
 				internalTransactions = append(internalTransactions, internalTransaction)
 			}
 			locker.Unlock()
