@@ -71,6 +71,7 @@ const (
 
 	// actions for Collectible-Edit
 	CollectibleEditRenew string = "renew"
+	CollectibleEditWrap  string = "wrap"
 
 	// sub-types for Music
 	CollectibleMusicBuyEdition string = "buy"

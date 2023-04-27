@@ -65,6 +65,9 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				ens.EventNameRenewed:      i.handleENSNameRenewedV2,
 				ens.EventNameRegisteredV2: i.handleENSNameRegisteredV2,
 			},
+			ens.EnsNameWrapper: {
+				ens.EventNameWrapper: i.handleENSNameWrapper,
+			},
 		}
 	)
 
