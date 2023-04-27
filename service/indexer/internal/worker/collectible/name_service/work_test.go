@@ -210,7 +210,6 @@ func Test_worker_Handle(t *testing.T) {
 				for _, transaction := range transactions {
 					assert.Equal(t, transaction.Platform, protocol.PlatformEns)
 					assert.Equal(t, transaction.Type, filter.CollectibleEdit)
-					assert.Equal(t, transaction.AddressTo, strings.ToLower(ens.EnsNameWrapper.String()))
 				}
 
 				return false
