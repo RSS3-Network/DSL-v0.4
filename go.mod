@@ -41,12 +41,14 @@ require (
 	github.com/unstoppabledomains/resolution-go/v2 v2.3.2
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	github.com/wealdtech/go-ens/v3 v3.5.5
+	github.com/willf/bloom v2.0.3+incompatible
 	github.com/ysmood/got v0.34.1
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.14.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.14.0
 	go.opentelemetry.io/otel/sdk v1.14.0
 	go.opentelemetry.io/otel/trace v1.14.0
+	go.uber.org/multierr v1.11.0
 	go.uber.org/ratelimit v0.2.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
@@ -54,6 +56,7 @@ require (
 	golang.org/x/sync v0.1.0
 	gorm.io/driver/postgres v1.5.0
 	gorm.io/gorm v1.24.7-0.20230306060331-85eaf9eeda11
+	gotest.tools v2.2.0+incompatible
 )
 
 require (
@@ -123,12 +126,10 @@ require (
 	github.com/vektah/gqlparser/v2 v2.5.1 // indirect
 	github.com/wealdtech/go-multicodec v1.4.0 // indirect
 	github.com/willf/bitset v1.1.3 // indirect
-	github.com/willf/bloom v2.0.3+incompatible // indirect
 	github.com/ybbus/jsonrpc v2.1.2+incompatible // indirect
 	github.com/ysmood/gop v0.0.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
@@ -138,7 +139,6 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gotest.tools v2.2.0+incompatible // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
 	nhooyr.io/websocket v1.8.7 // indirect
 )

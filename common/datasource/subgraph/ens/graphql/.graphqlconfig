@@ -1,0 +1,15 @@
+{
+  "name": "Ens GraphQL",
+  "schemaPath": "schema.graphql",
+  "extensions": {
+    "endpoints": {
+      "default": {
+        "url": "https://api.thegraph.com/subgraphs/name/ensdomains/ens",
+        "headers": {
+          "user-agent": "JS GraphQL"
+        },
+        "introspect": false
+      }
+    }
+  }
+}

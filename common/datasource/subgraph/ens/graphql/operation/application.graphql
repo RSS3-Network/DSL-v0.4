@@ -1,0 +1,17 @@
+query GetEnsNameByNameHash($namehash: ID!) {
+    domains(where: { id: $namehash }) {
+        id
+        name
+        labelName
+        labelhash
+        owner {
+            id
+        }
+        resolvedAddress {
+            id
+        }
+        resolver {
+            id
+        }
+    }
+}
