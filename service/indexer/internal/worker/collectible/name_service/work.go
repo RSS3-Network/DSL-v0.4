@@ -14,6 +14,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens"
+	ensClient "github.com/naturalselectionlabs/pregod/common/datasource/subgraph/ens"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
@@ -32,6 +33,7 @@ const (
 
 type internal struct {
 	tokenClient *token.Client
+	ensClient   ensClient.Client
 }
 
 func (i *internal) Name() string {
@@ -67,6 +69,9 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			},
 			ens.EnsNameWrapper: {
 				ens.EventNameWrapper: i.handleENSNameWrapper,
+			},
+			ens.EnsPublicResolver: {
+				ens.EventTextChanged: i.handleENSTextChanged,
 			},
 		}
 	)
@@ -219,5 +224,6 @@ func (i *internal) Jobs() []worker.Job {
 func New() worker.Worker {
 	return &internal{
 		tokenClient: token.New(),
+		ensClient:   ensClient.New(),
 	}
 }

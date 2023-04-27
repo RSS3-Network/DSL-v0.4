@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -14,6 +15,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens/namewrapper"
 	registrarv1 "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens/registrar_v1"
 	registrarv2 "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens/registrar_v2"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens/resolver"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
@@ -214,6 +216,55 @@ func (i *internal) handleENSNameWrapper(ctx context.Context, message *protocol.M
 	}
 
 	nameServiceMetadata, err := i.buildNameServiceMetadata(name, filter.CollectibleEditWrap, nil, nil, big.NewInt(0).SetUint64(event.Expiry), "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.Transfer{
+		TransactionHash: transaction.Hash,
+		Timestamp:       transaction.Timestamp,
+		BlockNumber:     big.NewInt(transaction.BlockNumber),
+		Index:           int64(log.Index),
+		AddressFrom:     strings.ToLower(transaction.AddressFrom),
+		AddressTo:       strings.ToLower(log.Address.String()),
+		Tag:             filter.TagCollectible,
+		Type:            filter.CollectibleEdit,
+		Metadata:        nameServiceMetadata,
+		Network:         transaction.Network,
+		Platform:        platform,
+		Source:          transaction.Source,
+		RelatedUrls:     ethereum.BuildURL([]string{}, ethereum.BuildScanURL(transaction.Network, transaction.Hash)),
+	}, nil
+}
+
+func (i *internal) handleENSTextChanged(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform string) (*model.Transfer, error) {
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	ensContract, err := resolver.NewResolverFilterer(log.Address, ethclient)
+	if err != nil {
+		return nil, err
+	}
+
+	event, err := ensContract.ParseTextChanged(log)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := i.ensClient.GetEnsName(ctx, common.BytesToHash(event.Node[:]).String())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(resp.Domains) == 0 {
+		return nil, fmt.Errorf("not found ens name")
+	}
+
+	name := resp.Domains[0].Name
+
+	nameServiceMetadata, err := i.buildNameServiceMetadata(name, filter.CollectibleEditText, nil, nil, nil, event.Key, event.Value)
 	if err != nil {
 		return nil, err
 	}

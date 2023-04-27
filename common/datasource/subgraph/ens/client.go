@@ -33,15 +33,12 @@ func (c *client) GetEnsName(ctx context.Context, nameHash string) (*enssubgraph.
 	return response, nil
 }
 
-func Dial(_ context.Context, endpoint string) (Client, error) {
-	endpointURL, err := url.Parse(endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("parse endpoint: %w", err)
-	}
+func New() Client {
+	endpointURL, _ := url.Parse(Endpoint)
 
 	var instance client
 
 	instance.graphqlClient = graphql.NewClient(endpointURL.String(), http.DefaultClient)
 
-	return &instance, nil
+	return &instance
 }

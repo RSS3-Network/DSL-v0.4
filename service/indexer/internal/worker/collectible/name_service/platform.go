@@ -11,4 +11,5 @@ var platformMap = map[common.Address]string{
 	ens.EnsRegistrarController:   protocol.PlatformEns,
 	ens.EnsRegistrarControllerV2: protocol.PlatformEns,
 	ens.EnsNameWrapper:           protocol.PlatformEns,
+	ens.EnsPublicResolver:        protocol.PlatformEns,
 }

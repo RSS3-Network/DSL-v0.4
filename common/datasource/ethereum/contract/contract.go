@@ -132,3 +132,4 @@ var ContractABIs embed.FS
 //go:generate abigen --abi ./ens/registrar_v1/ETHRegistrarController.abi --pkg registrarv1 --type RegistrarV1 --out ./ens/registrar_v1/registrarController.go
 //go:generate abigen --abi ./ens/registrar_v2/ETHRegistrarControllerV2.abi --pkg registrarv2 --type RegistrarV2 --out ./ens/registrar_v2/registrarController.go
 //go:generate abigen --abi ./ens/namewrapper/NameWrapper.abi --pkg namewrapper --type NameWrapper --out ./ens/namewrapper/nameWrapper.go
+//go:generate abigen --abi ./ens/resolver/PublicResolver.abi --pkg resolver --type Resolver --out ./ens/resolver/publicResolver.go

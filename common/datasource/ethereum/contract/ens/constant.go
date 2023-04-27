@@ -18,8 +18,6 @@ var (
 	EnsPublicResolver = common.HexToAddress("0x231b0ee14048e9dccd1d247744d114a4eb5e8e63")
 	EventTextChanged  = common.BytesToHash(crypto.Keccak256([]byte("TextChanged(bytes32,string,string,string)")))
 
-	EnsPublicResolver2 = common.HexToAddress("0x4976fb03C32e5B8cfe2b6cCB31c09Ba78EBaBa41")
-
 	EnsNameWrapper   = common.HexToAddress("0xD4416b13d2b3a9aBae7AcD5D6C2BbDBE25686401")
 	EventNameWrapper = common.BytesToHash(crypto.Keccak256([]byte("NameWrapped(bytes32,bytes,address,uint32,uint64)")))
 )

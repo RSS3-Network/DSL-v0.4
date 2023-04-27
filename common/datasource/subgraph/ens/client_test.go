@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	client, _ = ens.Dial(context.Background(), ens.Endpoint)
+	client = ens.New()
 )
 
 func TestClient_GetIpfs(t *testing.T) {

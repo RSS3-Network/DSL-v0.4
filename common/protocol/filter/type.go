@@ -71,6 +71,7 @@ const (
 
 	// actions for Collectible-Edit
 	CollectibleEditRenew string = "renew"
+	CollectibleEditText  string = "text"
 	CollectibleEditWrap  string = "wrap"
 
 	// sub-types for Music
