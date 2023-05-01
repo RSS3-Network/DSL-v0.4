@@ -3,33 +3,41 @@ package name_service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens"
+	ensClient "github.com/naturalselectionlabs/pregod/common/datasource/subgraph/ens"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/internal/token"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
+	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
 
-	"github.com/samber/lo"
 	"go.uber.org/zap"
 )
 
 var _ worker.Worker = (*internal)(nil)
 
+const (
+	ThreadSize = 200
+)
+
 type internal struct {
 	tokenClient *token.Client
+	ensClient   ensClient.Client
 }
 
 func (i *internal) Name() string {
-	return filter.CollectibleEdit
+	return filter.TagCollectible
 }
 
 func (i *internal) Networks() []string {
@@ -44,34 +52,54 @@ func (i *internal) Initialize(ctx context.Context) error {
 
 func (i *internal) Handle(ctx context.Context, message *protocol.Message, transactions []model.Transaction) ([]model.Transaction, error) {
 	var (
-		result    = make([]model.Transaction, 0)
+		internalTransactions = make([]model.Transaction, 0)
+		limiter              = make(chan struct{}, ThreadSize)
+
 		waitGroup sync.WaitGroup
 		locker    sync.Mutex
+
+		handlerMap = map[common.Address]map[common.Hash]func(ctx context.Context, message *protocol.Message, transaction model.Transaction, log types.Log, platform string) (*model.Transfer, error){
+			ens.EnsRegistrarController: {
+				ens.EventNameRenewed:    i.handleENSNameRenewed,
+				ens.EventNameRegistered: i.handleENSNameRegistered,
+			},
+			ens.EnsRegistrarControllerV2: {
+				ens.EventNameRenewed:      i.handleENSNameRenewedV2,
+				ens.EventNameRegisteredV2: i.handleENSNameRegisteredV2,
+			},
+			ens.EnsNameWrapper: {
+				ens.EventNameWrapper: i.handleENSNameWrapper,
+			},
+			ens.EnsPublicResolver: {
+				ens.EventTextChanged: i.handleENSTextChanged,
+			},
+		}
 	)
 
 	for _, transaction := range transactions {
-		// Unsupported Platform
-		platform, exists := platformMap[common.HexToAddress(transaction.AddressTo)]
-		if !exists {
+		if transaction.Type != "" && transaction.Tag != "" {
 			continue
 		}
 
-		// Initialize the transaction
-		transaction := transaction
-		transaction.Transfers = make([]model.Transfer, 0)
-		transaction.Platform = platform
-
+		limiter <- struct{}{}
 		waitGroup.Add(1)
 
-		go func() {
-			defer waitGroup.Done()
+		go func(transaction model.Transaction) {
+			defer func() {
+				<-limiter
+				waitGroup.Done()
+			}()
 
 			var sourceData ethereum.SourceData
+
 			if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
 				zap.L().Warn("unmarshal source data", zap.Error(err), zap.String("source_data", string(transaction.SourceData)))
 
 				return
 			}
+
+			internalTransaction := transaction
+			internalTransaction.Transfers = make([]model.Transfer, 0)
 
 			for _, log := range sourceData.Receipt.Logs {
 				// Filter anonymous log
@@ -80,41 +108,47 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 				}
 
 				var (
-					transfer *model.Transfer
-					err      error
+					internalTransfer *model.Transfer
+					err              error
 				)
 
-				switch log.Topics[0] {
-				// ENS NameRenewed
-				case ens.EventNameRenewed:
-					transfer, err = i.handleENSNameRenewed(ctx, message, transaction, *log, platform)
-				default:
+				handler, ok := handlerMap[log.Address][log.Topics[0]]
+				if !ok {
 					continue
 				}
+
+				platform, exists := platformMap[log.Address]
+				if !exists {
+					continue
+				}
+
+				internalTransfer, err = handler(ctx, message, transaction, *log, platform)
 
 				if err != nil {
 					zap.L().Error("handle event", zap.Error(err), zap.Stringer("topic_first", log.Topics[0]))
 
-					return
+					continue
 				}
 
-				transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagCollectible, transfer.Tag, i.Name(), transfer.Type)
-
-				transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagCollectible, transaction.Tag, i.Name(), transaction.Type)
-				transaction.Owner = transaction.AddressFrom
-				transaction.Transfers = append(transaction.Transfers, *transfer)
+				locker.Lock()
+				internalTransaction.Transfers = append(internalTransaction.Transfers, *internalTransfer)
+				internalTransaction.Type = internalTransfer.Type
+				internalTransaction.Tag = internalTransfer.Tag
+				internalTransaction.Platform = platform
+				locker.Unlock()
 			}
 
 			locker.Lock()
-			defer locker.Unlock()
-
-			result = append(result, transaction)
-		}()
+			if len(internalTransaction.Transfers) > 0 {
+				internalTransactions = append(internalTransactions, internalTransaction)
+			}
+			locker.Unlock()
+		}(transaction)
 	}
 
 	waitGroup.Wait()
 
-	return result, nil
+	return internalTransactions, nil
 }
 
 func (i *internal) buildNameServiceMetadata(name string, action string, tokenType *token.Native, cost *big.Int, expires *big.Int, key, value string) (json.RawMessage, error) {
@@ -153,6 +187,36 @@ func (i *internal) buildNameServiceMetadata(name string, action string, tokenTyp
 	return json.Marshal(&nameServiceMetadata)
 }
 
+func (i *internal) buildTokenMetadata(ctx context.Context, network string, tokenId *big.Int) (json.RawMessage, error) {
+	var tokenMetadata *metadata.Token
+
+	erc721, err := i.tokenClient.ERC721(ctx, network, ens.ENSContractAddress.String(), tokenId)
+	if err != nil {
+		return nil, fmt.Errorf("erc721 %s/%d: %w", ens.ENSContractAddress.String(), tokenId, err)
+	}
+
+	nft, err := erc721.ToNFT(tokenId)
+	if err != nil {
+		return nil, fmt.Errorf("erc721 to nft %s/%d: %w", ens.ENSContractAddress.String(), tokenId, err)
+	}
+
+	if tokenMetadata, err = nft.ToMetadata(); err != nil {
+		return nil, fmt.Errorf("erc721 to metadata %s/%d: %w", ens.ENSContractAddress.String(), tokenId, err)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	tokenMetadata.SetValue(decimal.New(1, 0))
+
+	metadataRaw, err := json.Marshal(tokenMetadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return metadataRaw, nil
+}
+
 func (i *internal) Jobs() []worker.Job {
 	return []worker.Job{}
 }
@@ -160,5 +224,6 @@ func (i *internal) Jobs() []worker.Job {
 func New() worker.Worker {
 	return &internal{
 		tokenClient: token.New(),
+		ensClient:   ensClient.New(),
 	}
 }

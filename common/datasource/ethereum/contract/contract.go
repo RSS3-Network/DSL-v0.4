@@ -129,4 +129,7 @@ var ContractABIs embed.FS
 
 // ENS
 // ENS Registrar Controller https://etherscan.io/address/0x283Af0B28c62C092C9727F1Ee09c02CA627EB7F5
-//go:generate abigen --abi ./ens/registrar/ETHRegistrarController.abi --pkg registrar --type Registrar --out ./ens/registrar/registrarController.go
+//go:generate abigen --abi ./ens/registrar_v1/ETHRegistrarController.abi --pkg registrarv1 --type RegistrarV1 --out ./ens/registrar_v1/registrarController.go
+//go:generate abigen --abi ./ens/registrar_v2/ETHRegistrarControllerV2.abi --pkg registrarv2 --type RegistrarV2 --out ./ens/registrar_v2/registrarController.go
+//go:generate abigen --abi ./ens/namewrapper/NameWrapper.abi --pkg namewrapper --type NameWrapper --out ./ens/namewrapper/nameWrapper.go
+//go:generate abigen --abi ./ens/resolver/PublicResolver.abi --pkg resolver --type Resolver --out ./ens/resolver/publicResolver.go

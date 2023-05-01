@@ -33,6 +33,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/aptos"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/conflux"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/lens"
@@ -175,6 +176,7 @@ func (s *Server) Initialize() (err error) {
 		eip1577.New(s.employer),
 		lensDatasource,
 		aptos.New(),
+		conflux.New(),
 	}
 
 	swapWorker, err := swap.New(s.employer)

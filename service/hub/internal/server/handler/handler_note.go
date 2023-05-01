@@ -287,7 +287,5 @@ func (h *Handler) GetTransactionByHashFunc(c echo.Context) error {
 		return ErrorResp(c, err, http.StatusBadRequest, ErrorCodeGetTransactionByHashError)
 	}
 
-	return c.JSON(http.StatusOK, &model.Response{
-		Result: transaction,
-	})
+	return c.JSON(http.StatusOK, transaction)
 }

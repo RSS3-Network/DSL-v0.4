@@ -1,5 +1,11 @@
 package filter
 
+import (
+	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
+	"github.com/naturalselectionlabs/pregod/common/database/model/social"
+	"github.com/naturalselectionlabs/pregod/common/database/model/transaction"
+)
+
 const (
 	// transaction types
 	TransactionTransfer string = "transfer"
@@ -65,6 +71,8 @@ const (
 
 	// actions for Collectible-Edit
 	CollectibleEditRenew string = "renew"
+	CollectibleEditText  string = "text"
+	CollectibleEditWrap  string = "wrap"
 
 	// sub-types for Music
 	CollectibleMusicBuyEdition string = "buy"
@@ -164,6 +172,198 @@ var ValidTypeMap = map[string][]string{
 		MetaverseList,
 		MetaverseUnlist,
 		MetaverseClaim,
+	},
+}
+
+// MetadataTypeMap is used to declare the relationship between metadata, type, and tag,
+// so that we can use it to generate doc or to validate metadata, etc.
+var MetadataTypeMap = map[interface{}][]struct {
+	Tag  string
+	Type string
+}{
+	&metadata.Token{}: {
+		{
+			Tag:  TagTransaction,
+			Type: TransactionTransfer,
+		},
+		{
+			Tag:  TagTransaction,
+			Type: TransactionMint,
+		},
+		{
+			Tag:  TagTransaction,
+			Type: TransactionBurn,
+		},
+		{
+			Tag:  TagTransaction,
+			Type: TransactionApproval,
+		},
+		{
+			Tag:  TagExchange,
+			Type: ExchangeWithdraw,
+		},
+		{
+			Tag:  TagExchange,
+			Type: ExchangeDeposit,
+		},
+		{
+			Tag:  TagCollectible,
+			Type: CollectibleTransfer,
+		},
+		{
+			Tag:  TagCollectible,
+			Type: CollectibleAuction,
+		},
+		{
+			Tag:  TagCollectible,
+			Type: CollectibleTrade,
+		},
+		{
+			Tag:  TagCollectible,
+			Type: CollectibleMint,
+		},
+		{
+			Tag:  TagCollectible,
+			Type: CollectibleBurn,
+		},
+		{
+			Tag:  TagCollectible,
+			Type: CollectiblePoap,
+		},
+		{
+			Tag:  TagCollectible,
+			Type: CollectibleApproval,
+		},
+		{
+			Tag:  TagCollectible,
+			Type: CollectibleEdit,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseMint,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseTransfer,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseTrade,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseGift,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseList,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseUnlist,
+		},
+		{
+			Tag:  TagMetaverse,
+			Type: MetaverseClaim,
+		},
+	},
+	&transaction.Bridge{}: {
+		{
+			Tag:  TagTransaction,
+			Type: TransactionBridge,
+		},
+	},
+	&metadata.MultiSig{}: {
+		{
+			Tag:  TagTransaction,
+			Type: TransactionMultiSig,
+		},
+	},
+	&metadata.Swap{}: {
+		{
+			Tag:  TagExchange,
+			Type: ExchangeSwap,
+		},
+	},
+	&metadata.Liquidity{}: {
+		{
+			Tag:  TagExchange,
+			Type: ExchangeLiquidity,
+		},
+	},
+	&metadata.Post{}: {
+		{
+			Tag:  TagSocial,
+			Type: SocialPost,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialRevise,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialComment,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialShare,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialLike,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialMint,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialWiki,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialReward,
+		},
+	},
+	&social.Profile{}: {
+		{
+			Tag:  TagSocial,
+			Type: SocialProxy,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialProfile,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialFollow,
+		},
+		{
+			Tag:  TagSocial,
+			Type: SocialUnfollow,
+		},
+	},
+	&metadata.Donation{}: {
+		{
+			Tag:  TagDonation,
+			Type: DonationLaunch,
+		},
+		{
+			Tag:  TagDonation,
+			Type: DonationDonate,
+		},
+	},
+	&metadata.SnapShot{}: {
+		{
+			Tag:  TagGovernance,
+			Type: GovernancePropose,
+		},
+	},
+	&metadata.Vote{}: {
+		{
+			Tag:  TagGovernance,
+			Type: GovernanceVote,
+		},
 	},
 }
 

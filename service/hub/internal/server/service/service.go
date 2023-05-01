@@ -149,6 +149,11 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		networks = []string{
 			protocol.NetworkAptos,
 		}
+		if strings.HasPrefix(message.Address, "cfx") {
+			networks = []string{
+				protocol.NetworkConflux,
+			}
+		}
 	}
 
 	routingKey := getRoutingKeyByHeader(ctx)

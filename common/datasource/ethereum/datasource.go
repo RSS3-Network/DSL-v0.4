@@ -331,6 +331,11 @@ func handleLog(ctx context.Context, message *protocol.Message, transaction *mode
 				return nil, err
 			}
 
+			// remove burn when from is not tx owner
+			if event.To == ethereum.AddressGenesis && !strings.EqualFold(event.From.String(), transaction.Owner) {
+				return nil, ErrorUnsupportedEvent
+			}
+
 			transfer.AddressFrom = strings.ToLower(event.From.String())
 			transfer.AddressTo = strings.ToLower(event.To.String())
 		default:
