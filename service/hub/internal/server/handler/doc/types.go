@@ -46,7 +46,7 @@ func (d *Doc) AddDecimalHandler() {
 func (d *Doc) DefineTransfer() {
 	d.schemas.Define(dbModel.Transfer{})
 
-	s := d.schemas.GetRawSchema(dbModel.Transfer{})
+	s := d.schemas.GetSchema(dbModel.Transfer{})
 
 	desc := "All the possible mappings for the transfer object:\n\n"
 
