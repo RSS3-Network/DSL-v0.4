@@ -128,6 +128,7 @@ require (
 	github.com/willf/bitset v1.1.3 // indirect
 	github.com/ybbus/jsonrpc v2.1.2+incompatible // indirect
 	github.com/ysmood/gop v0.0.2 // indirect
+	github.com/ysmood/gson v0.7.3
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect

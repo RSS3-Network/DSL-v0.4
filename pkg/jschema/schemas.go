@@ -150,9 +150,9 @@ func (s Schemas) DefineT(t reflect.Type) *Schema {
 				continue
 			}
 
-			tag := parseJSONTag(f.Tag)
+			tag := ParseJSONTag(f.Tag)
 
-			if tag != nil && tag.ignore {
+			if tag != nil && tag.Ignore {
 				continue
 			}
 
@@ -166,14 +166,14 @@ func (s Schemas) DefineT(t reflect.Type) *Schema {
 			}
 
 			if tag != nil {
-				if tag.name != "" {
-					n = tag.name
+				if tag.Name != "" {
+					n = tag.Name
 				}
-				if tag.str {
+				if tag.String {
 					p.Type = TypeString
 				}
 			}
-			if tag == nil || !tag.omitempty {
+			if tag == nil || !tag.Omitempty {
 				scm.Required = append(scm.Required, n)
 			}
 

@@ -8,6 +8,7 @@ import (
 
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
+	"github.com/naturalselectionlabs/pregod/pkg/jschema"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 )
@@ -72,7 +73,6 @@ func (d *Doc) params(e Endpoint) []Obj {
 		name := f.Tag.Get("param")
 		in := "path"
 		query := f.Tag.Get("query")
-		validate := f.Tag.Get("validate")
 
 		if query != "" {
 			name = query
@@ -86,7 +86,7 @@ func (d *Doc) params(e Endpoint) []Obj {
 			"description": f.Tag.Get("description"),
 		}
 
-		if strings.Contains(validate, "required") && !strings.Contains(validate, "required_with") {
+		if echoRequired(f.Tag) {
 			p["required"] = true
 		}
 
@@ -101,10 +101,25 @@ func (d *Doc) reqBody(e Endpoint) Obj {
 		return nil
 	}
 
+	d.schemas.Define(e.Params)
+	required := []string{}
+
+	t := reflect.TypeOf(e.Params)
+
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if echoRequired(f.Tag) {
+			jt := jschema.ParseJSONTag(f.Tag)
+			required = append(required, jt.Name)
+		}
+	}
+
+	d.schemas.GetSchema(e.Params).Required = required
+
 	return Obj{
 		"content": Obj{
 			"application/json": Obj{
-				"schema": d.schemas.Define(e.Params),
+				"schema": d.schemas.GetSchema(e.Params),
 			},
 		},
 		"required": true,
@@ -115,7 +130,7 @@ func (d *Doc) resBody(e Endpoint) Obj {
 	res := d.schemas.Define(e.Result)
 
 	if reflect.TypeOf(e.Result).Kind() == reflect.Slice {
-		res = d.schemas.GetRawSchema(model.Response{}).Clone()
+		res = d.schemas.GetSchema(model.Response{}).Clone()
 		res.Properties["result"] = d.schemas.Define(e.Result)
 	}
 
@@ -136,4 +151,9 @@ var uriReg = regexp.MustCompile(`\:([a-z_]+)`)
 // Convert to URI template format
 func toURITemplate(p string) string {
 	return uriReg.ReplaceAllString(p, "{$1}")
+}
+
+func echoRequired(tag reflect.StructTag) bool {
+	v := tag.Get("validate")
+	return strings.Contains(v, "required") && !strings.Contains(v, "required_with")
 }

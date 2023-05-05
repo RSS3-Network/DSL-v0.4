@@ -10,14 +10,14 @@ func (s Schemas) Define(v interface{}) *Schema {
 	return s.DefineT(reflect.TypeOf(v))
 }
 
-func (s *Schemas) GetRawSchema(v interface{}) *Schema {
+func (s *Schemas) GetSchema(v interface{}) *Schema {
 	r := s.Ref(v)
 	return s.types[r.ID]
 }
 
 func (s *Schemas) SetSchema(target interface{}, v *Schema) {
 	s.Define(target)
-	ss := s.GetRawSchema(target)
+	ss := s.GetSchema(target)
 	title := ss.Title
 	desc := ss.Description
 	*ss = *v

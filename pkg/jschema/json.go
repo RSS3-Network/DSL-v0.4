@@ -15,13 +15,13 @@ func (s Schemas) JSON() map[string]*Schema {
 }
 
 type Tag struct {
-	name      string
-	ignore    bool
-	omitempty bool
-	str       bool
+	Name      string
+	Ignore    bool
+	Omitempty bool
+	String    bool
 }
 
-func parseJSONTag(st reflect.StructTag) *Tag {
+func ParseJSONTag(st reflect.StructTag) *Tag {
 	v := st.Get("json")
 
 	if v == "" {
@@ -30,16 +30,16 @@ func parseJSONTag(st reflect.StructTag) *Tag {
 
 	if v == "-" {
 		return &Tag{
-			ignore: true,
+			Ignore: true,
 		}
 	}
 
 	name, t := parseTag(v)
 
 	return &Tag{
-		name:      name,
-		omitempty: t.Contains("omitempty"),
-		str:       t.Contains("string"),
+		Name:      name,
+		Omitempty: t.Contains("omitempty"),
+		String:    t.Contains("string"),
 	}
 }
 
