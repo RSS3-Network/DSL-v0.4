@@ -19,8 +19,10 @@ func (s *Schemas) SetSchema(target interface{}, v *Schema) {
 	s.Define(target)
 	ss := s.GetRawSchema(target)
 	title := ss.Title
+	desc := ss.Description
 	*ss = *v
 	ss.Title = title
+	ss.Description = desc
 }
 
 func (s *Schema) Clone() *Schema {

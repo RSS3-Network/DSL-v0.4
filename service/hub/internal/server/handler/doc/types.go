@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/pkg/jschema"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
@@ -21,9 +22,15 @@ func (d *Doc) Define() {
 	d.AddDecimalHandler()
 
 	// Define the types that specific for this project
-	d.schemas.Define(model.Response{})
-	d.DefineTransfer()
-	d.schemas.SetSchema(ExchangeResult{}, d.schemas.AnyOf(model.CexResult{}, model.DexResult{}))
+	{
+		d.schemas.Define(model.Response{})
+
+		d.DefineTransfer()
+
+		d.schemas.SetSchema(ExchangeResult{}, d.schemas.AnyOf(model.CexResult{}, model.DexResult{}))
+
+		d.DefinePlatformList()
+	}
 }
 
 func (d *Doc) AddDecimalHandler() {
@@ -73,4 +80,21 @@ func (d *Doc) DefineTransfer() {
 	*s = *t
 
 	s.Description = desc
+}
+
+func (d *Doc) DefinePlatformList() {
+	list := []jschema.JVal{}
+
+	for _, ps := range protocol.PlatformList {
+		for _, p := range ps {
+			list = append(list, p)
+		}
+	}
+
+	type PlatformName string
+
+	d.schemas.SetSchema(PlatformName(""), &jschema.Schema{
+		Type: jschema.TypeString,
+		Enum: list,
+	})
 }
