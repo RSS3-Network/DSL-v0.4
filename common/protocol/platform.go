@@ -76,6 +76,7 @@ const (
 	PlatformFoundation     = "Foundation"
 	PlatformZerion         = "Zerion"
 	PlatformBendDAO        = "BendDAO"
+	PlatformPartyBid       = "PartyBid"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
@@ -143,5 +144,6 @@ var PlatformList = map[string][]string{
 		PlatformVelodrome,
 		PlatformZerion,
 		PlatformBendDAO,
+		PlatformPartyBid,
 	},
 }

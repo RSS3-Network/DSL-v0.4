@@ -28,6 +28,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/matters"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/mirror"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/nouns"
+	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/partybid"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/rara"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/sound"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler/zora"
@@ -162,6 +163,7 @@ func (s *Server) Initialize() (err error) {
 		nouns.New(s.config),
 		foundation.New(s.config),
 		benddao.New(s.config),
+		partybid.New(s.config),
 	}
 
 	return nil
