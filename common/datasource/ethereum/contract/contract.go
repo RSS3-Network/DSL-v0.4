@@ -133,3 +133,7 @@ var ContractABIs embed.FS
 //go:generate abigen --abi ./ens/registrar_v2/ETHRegistrarControllerV2.abi --pkg registrarv2 --type RegistrarV2 --out ./ens/registrar_v2/registrarController.go
 //go:generate abigen --abi ./ens/namewrapper/NameWrapper.abi --pkg namewrapper --type NameWrapper --out ./ens/namewrapper/nameWrapper.go
 //go:generate abigen --abi ./ens/resolver/PublicResolver.abi --pkg resolver --type Resolver --out ./ens/resolver/publicResolver.go
+
+// CyberConnect
+// https://bscscan.com/address/0x2723522702093601e6360cae665518c4f63e9da6#code
+//go:generate abigen --abi ./cyberconnect/ProfileNFT.abi --pkg cyberconnect --type CyberConnect --out ./cyberconnect/profileNFT.go
