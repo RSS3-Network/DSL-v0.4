@@ -15,6 +15,7 @@ func (s *Schemas) GetSchema(v interface{}) *Schema {
 	return s.types[r.ID]
 }
 
+// SetSchema sets the schema for the given target. It will keep the title and description.
 func (s *Schemas) SetSchema(target interface{}, v *Schema) {
 	s.Define(target)
 	ss := s.GetSchema(target)
@@ -57,4 +58,14 @@ func (s *Schemas) Const(v JVal) *Schema {
 	ss := s.Define(v)
 	ss.Enum = []JVal{v}
 	return ss
+}
+
+func ToJValList[T any](list ...T) []JVal {
+	to := []JVal{}
+
+	for _, v := range list {
+		to = append(to, v)
+	}
+
+	return to
 }

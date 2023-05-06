@@ -175,194 +175,219 @@ var ValidTypeMap = map[string][]string{
 	},
 }
 
-// MetadataTypeMap is used to declare the relationship between metadata, type, and tag,
-// so that we can use it to generate doc or to validate metadata, etc.
-var MetadataTypeMap = map[interface{}][]struct {
+type Criteria struct {
 	Tag  string
 	Type string
+}
+
+// MetadataMapping is used to declare the relationship between metadata, type, and tag,
+// so that we can use it to generate doc or to validate metadata, etc.
+var MetadataMapping = []struct {
+	Metadata interface{}
+	Criteria []Criteria
 }{
-	&metadata.Token{}: {
-		{
-			Tag:  TagTransaction,
-			Type: TransactionTransfer,
-		},
-		{
-			Tag:  TagTransaction,
-			Type: TransactionMint,
-		},
-		{
-			Tag:  TagTransaction,
-			Type: TransactionBurn,
-		},
-		{
-			Tag:  TagTransaction,
-			Type: TransactionApproval,
-		},
-		{
-			Tag:  TagExchange,
-			Type: ExchangeWithdraw,
-		},
-		{
-			Tag:  TagExchange,
-			Type: ExchangeDeposit,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleTransfer,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleAuction,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleTrade,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleMint,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleBurn,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectiblePoap,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleApproval,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleEdit,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseMint,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseTransfer,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseTrade,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseGift,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseList,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseUnlist,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseClaim,
-		},
-	},
-	&transaction.Bridge{}: {
-		{
-			Tag:  TagTransaction,
-			Type: TransactionBridge,
+	{
+		&metadata.Token{}, []Criteria{
+			{
+				Tag:  TagTransaction,
+				Type: TransactionTransfer,
+			},
+			{
+				Tag:  TagTransaction,
+				Type: TransactionMint,
+			},
+			{
+				Tag:  TagTransaction,
+				Type: TransactionBurn,
+			},
+			{
+				Tag:  TagTransaction,
+				Type: TransactionApproval,
+			},
+			{
+				Tag:  TagExchange,
+				Type: ExchangeWithdraw,
+			},
+			{
+				Tag:  TagExchange,
+				Type: ExchangeDeposit,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleTransfer,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleAuction,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleTrade,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleMint,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleBurn,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectiblePoap,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleApproval,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleEdit,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseMint,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseTransfer,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseTrade,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseGift,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseList,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseUnlist,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseClaim,
+			},
 		},
 	},
-	&metadata.MultiSig{}: {
-		{
-			Tag:  TagTransaction,
-			Type: TransactionMultiSig,
+	{
+		&transaction.Bridge{}, []Criteria{
+			{
+				Tag:  TagTransaction,
+				Type: TransactionBridge,
+			},
 		},
 	},
-	&metadata.Swap{}: {
-		{
-			Tag:  TagExchange,
-			Type: ExchangeSwap,
+	{
+		&metadata.MultiSig{}, []Criteria{
+			{
+				Tag:  TagTransaction,
+				Type: TransactionMultiSig,
+			},
 		},
 	},
-	&metadata.Liquidity{}: {
-		{
-			Tag:  TagExchange,
-			Type: ExchangeLiquidity,
+	{
+		&metadata.Swap{}, []Criteria{
+			{
+				Tag:  TagExchange,
+				Type: ExchangeSwap,
+			},
 		},
 	},
-	&metadata.Post{}: {
-		{
-			Tag:  TagSocial,
-			Type: SocialPost,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialRevise,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialComment,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialShare,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialLike,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialMint,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialWiki,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialReward,
+	{
+		&metadata.Liquidity{}, []Criteria{
+			{
+				Tag:  TagExchange,
+				Type: ExchangeLiquidity,
+			},
 		},
 	},
-	&social.Profile{}: {
-		{
-			Tag:  TagSocial,
-			Type: SocialProxy,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialProfile,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialFollow,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialUnfollow,
+	{
+		&metadata.Post{}, []Criteria{
+			{
+				Tag:  TagSocial,
+				Type: SocialPost,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialRevise,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialComment,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialShare,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialLike,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialMint,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialWiki,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialReward,
+			},
 		},
 	},
-	&metadata.Donation{}: {
-		{
-			Tag:  TagDonation,
-			Type: DonationLaunch,
-		},
-		{
-			Tag:  TagDonation,
-			Type: DonationDonate,
+	{
+		&social.Profile{}, []Criteria{
+			{
+				Tag:  TagSocial,
+				Type: SocialProxy,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialProfile,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialFollow,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialUnfollow,
+			},
 		},
 	},
-	&metadata.SnapShot{}: {
-		{
-			Tag:  TagGovernance,
-			Type: GovernancePropose,
+	{
+		&metadata.Donation{}, []Criteria{
+			{
+				Tag:  TagDonation,
+				Type: DonationLaunch,
+			},
+			{
+				Tag:  TagDonation,
+				Type: DonationDonate,
+			},
 		},
 	},
-	&metadata.Vote{}: {
-		{
-			Tag:  TagGovernance,
-			Type: GovernanceVote,
+	{
+		&metadata.SnapShot{}, []Criteria{
+			{
+				Tag:  TagGovernance,
+				Type: GovernancePropose,
+			},
+		},
+	},
+	{
+		&metadata.Vote{}, []Criteria{
+			{
+				Tag:  TagGovernance,
+				Type: GovernanceVote,
+			},
 		},
 	},
 }

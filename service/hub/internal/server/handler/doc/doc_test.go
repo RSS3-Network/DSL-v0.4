@@ -43,3 +43,12 @@ func TestBatchGetProfilesRequest(t *testing.T) {
 		[]interface{}{"address"},
 	)
 }
+
+func TestStableSchemaOutput(t *testing.T) {
+	g := got.T(t)
+
+	g.Eq(
+		g.ToJSONString(doc.New().Generate()),
+		g.ToJSONString(doc.New().Generate()),
+	)
+}
