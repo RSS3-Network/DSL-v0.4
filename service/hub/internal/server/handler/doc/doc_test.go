@@ -6,7 +6,18 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler/doc"
 	"github.com/ysmood/got"
 	"github.com/ysmood/gson"
+
+	"github.com/getkin/kin-openapi/openapi3"
 )
+
+func TestValidateSchema(t *testing.T) {
+	g := got.T(t)
+
+	loader := &openapi3.Loader{Context: g.Context()}
+	doc, _ := loader.LoadFromData(g.ToJSON(doc.New().Generate()).Bytes())
+
+	g.E(doc.Validate(g.Context()))
+}
 
 func TestNotes(t *testing.T) {
 	g := got.T(t)
@@ -25,9 +36,7 @@ func TestNotes(t *testing.T) {
 func TestBatchGetProfilesRequest(t *testing.T) {
 	g := got.T(t)
 
-	d := doc.New()
-
-	val := gson.NewFrom(g.ToJSONString(d.Generate()))
+	val := gson.NewFrom(g.ToJSONString(doc.New().Generate()))
 
 	g.Eq(
 		val.Get("components.schemas.BatchGetProfilesRequest.required").Val(),
