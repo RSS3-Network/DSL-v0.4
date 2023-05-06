@@ -117,64 +117,6 @@ const (
 	MetaverseClaim    string = "claim"
 )
 
-var ValidTypeMap = map[string][]string{
-	TagTransaction: {
-		TransactionTransfer,
-		TransactionBridge,
-		TransactionMint,
-		TransactionBurn,
-		TransactionApproval,
-		TransactionMultiSig,
-	},
-	TagExchange: {
-		ExchangeWithdraw,
-		ExchangeDeposit,
-		ExchangeSwap,
-		ExchangeLiquidity,
-	},
-	TagCollectible: {
-		CollectibleTransfer,
-		CollectibleAuction,
-		CollectibleTrade,
-		CollectibleMint,
-		CollectibleBurn,
-		CollectiblePoap,
-		CollectibleApproval,
-		CollectibleEdit,
-	},
-	TagSocial: {
-		SocialPost,
-		SocialRevise,
-		SocialComment,
-		SocialShare,
-		SocialProfile,
-		SocialFollow,
-		SocialUnfollow,
-		SocialLike,
-		SocialMint,
-		SocialWiki,
-		SocialReward,
-		SocialProxy,
-	},
-	TagDonation: {
-		DonationLaunch,
-		DonationDonate,
-	},
-	TagGovernance: {
-		GovernancePropose,
-		GovernanceVote,
-	},
-	TagMetaverse: {
-		MetaverseMint,
-		MetaverseTransfer,
-		MetaverseTrade,
-		MetaverseGift,
-		MetaverseList,
-		MetaverseUnlist,
-		MetaverseClaim,
-	},
-}
-
 type Criteria struct {
 	Tag  string
 	Type string
@@ -392,12 +334,24 @@ var MetadataMapping = []struct {
 	},
 }
 
+var validTypeMap = func() map[string][]string {
+	typeMap := map[string][]string{}
+
+	for _, m := range MetadataMapping {
+		for _, c := range m.Criteria {
+			typeMap[c.Tag] = append(typeMap[c.Tag], c.Type)
+		}
+	}
+
+	return typeMap
+}()
+
 func CheckTypeValid(tag string, transferType string) bool {
 	if len(tag) == 0 {
 		return false
 	}
 
-	validTypeList := ValidTypeMap[tag]
+	validTypeList := validTypeMap[tag]
 	for _, t := range validTypeList {
 		if t == transferType {
 			return true
