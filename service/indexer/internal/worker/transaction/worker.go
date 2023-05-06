@@ -17,6 +17,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/cyberconnect"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/ens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc1155"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc20"
@@ -554,9 +555,11 @@ func (s *service) buildEthereumTokenTransferMetadata(ctx context.Context, messag
 		}
 
 		tokenMetadata.SetValue(decimal.New(1, 0))
-
-		if transfer.AddressTo == strings.ToLower(ens.EnsRegistrarController.String()) || transfer.AddressFrom == strings.ToLower(ens.EnsRegistrarController.String()) {
+		switch {
+		case transfer.AddressTo == strings.ToLower(ens.EnsRegistrarController.String()) || transfer.AddressFrom == strings.ToLower(ens.EnsRegistrarController.String()):
 			transfer.Platform = protocol.PlatformEns
+		case transaction.AddressTo == strings.ToLower(cyberconnect.AddressCcProfile.String()):
+			transfer.Platform = protocol.PlatformLink3
 		}
 
 		transfer.Tag = filter.UpdateTag(filter.TagCollectible, transfer.Tag)
