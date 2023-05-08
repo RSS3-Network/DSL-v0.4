@@ -54,7 +54,7 @@ type Datasource struct {
 }
 
 func (d *Datasource) Name() string {
-	return protocol.SourcePregodETL
+	return protocol.SourceKurora
 }
 
 func (d *Datasource) Networks() []string {
