@@ -191,11 +191,15 @@ func (d *Datasource) getAssestTransactionAndLogs(ctx context.Context, message *p
 		return nil
 	})
 
+	err := eg.Wait()
+	if err != nil {
+		return nil, err
+	}
 	sort.Slice(result.Transfers, func(i, j int) bool {
 		return result.Transfers[i].BlockNum < result.Transfers[j].BlockNum
 	})
 
-	return result, eg.Wait()
+	return result, err
 }
 
 func (d *Datasource) getAssetTransactionHashes(ctx context.Context, message *protocol.Message, parameter GetAssetTransfersParameter) ([]model.Transaction, error) {
