@@ -117,262 +117,241 @@ const (
 	MetaverseClaim    string = "claim"
 )
 
-var ValidTypeMap = map[string][]string{
-	TagTransaction: {
-		TransactionTransfer,
-		TransactionBridge,
-		TransactionMint,
-		TransactionBurn,
-		TransactionApproval,
-		TransactionMultiSig,
+type Criteria struct {
+	Tag  string
+	Type string
+}
+
+// MetadataMapping is used to declare the relationship between metadata, type, and tag,
+// so that we can use it to generate doc or to validate metadata, etc.
+var MetadataMapping = []struct {
+	Metadata interface{}
+	Criteria []Criteria
+}{
+	{
+		&metadata.Token{}, []Criteria{
+			{
+				Tag:  TagTransaction,
+				Type: TransactionTransfer,
+			},
+			{
+				Tag:  TagTransaction,
+				Type: TransactionMint,
+			},
+			{
+				Tag:  TagTransaction,
+				Type: TransactionBurn,
+			},
+			{
+				Tag:  TagTransaction,
+				Type: TransactionApproval,
+			},
+			{
+				Tag:  TagExchange,
+				Type: ExchangeWithdraw,
+			},
+			{
+				Tag:  TagExchange,
+				Type: ExchangeDeposit,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleTransfer,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleAuction,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleTrade,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleMint,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleBurn,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectiblePoap,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleApproval,
+			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleEdit,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseMint,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseTransfer,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseTrade,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseGift,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseList,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseUnlist,
+			},
+			{
+				Tag:  TagMetaverse,
+				Type: MetaverseClaim,
+			},
+		},
 	},
-	TagExchange: {
-		ExchangeWithdraw,
-		ExchangeDeposit,
-		ExchangeSwap,
-		ExchangeLiquidity,
+	{
+		&transaction.Bridge{}, []Criteria{
+			{
+				Tag:  TagTransaction,
+				Type: TransactionBridge,
+			},
+		},
 	},
-	TagCollectible: {
-		CollectibleTransfer,
-		CollectibleAuction,
-		CollectibleTrade,
-		CollectibleMint,
-		CollectibleBurn,
-		CollectiblePoap,
-		CollectibleApproval,
-		CollectibleEdit,
+	{
+		&metadata.MultiSig{}, []Criteria{
+			{
+				Tag:  TagTransaction,
+				Type: TransactionMultiSig,
+			},
+		},
 	},
-	TagSocial: {
-		SocialPost,
-		SocialRevise,
-		SocialComment,
-		SocialShare,
-		SocialProfile,
-		SocialFollow,
-		SocialUnfollow,
-		SocialLike,
-		SocialMint,
-		SocialWiki,
-		SocialReward,
-		SocialProxy,
+	{
+		&metadata.Swap{}, []Criteria{
+			{
+				Tag:  TagExchange,
+				Type: ExchangeSwap,
+			},
+		},
 	},
-	TagDonation: {
-		DonationLaunch,
-		DonationDonate,
+	{
+		&metadata.Liquidity{}, []Criteria{
+			{
+				Tag:  TagExchange,
+				Type: ExchangeLiquidity,
+			},
+		},
 	},
-	TagGovernance: {
-		GovernancePropose,
-		GovernanceVote,
+	{
+		&metadata.Post{}, []Criteria{
+			{
+				Tag:  TagSocial,
+				Type: SocialPost,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialRevise,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialComment,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialShare,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialLike,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialMint,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialWiki,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialReward,
+			},
+		},
 	},
-	TagMetaverse: {
-		MetaverseMint,
-		MetaverseTransfer,
-		MetaverseTrade,
-		MetaverseGift,
-		MetaverseList,
-		MetaverseUnlist,
-		MetaverseClaim,
+	{
+		&social.Profile{}, []Criteria{
+			{
+				Tag:  TagSocial,
+				Type: SocialProxy,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialProfile,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialFollow,
+			},
+			{
+				Tag:  TagSocial,
+				Type: SocialUnfollow,
+			},
+		},
+	},
+	{
+		&metadata.Donation{}, []Criteria{
+			{
+				Tag:  TagDonation,
+				Type: DonationLaunch,
+			},
+			{
+				Tag:  TagDonation,
+				Type: DonationDonate,
+			},
+		},
+	},
+	{
+		&metadata.SnapShot{}, []Criteria{
+			{
+				Tag:  TagGovernance,
+				Type: GovernancePropose,
+			},
+		},
+	},
+	{
+		&metadata.Vote{}, []Criteria{
+			{
+				Tag:  TagGovernance,
+				Type: GovernanceVote,
+			},
+		},
 	},
 }
 
-// MetadataTypeMap is used to declare the relationship between metadata, type, and tag,
-// so that we can use it to generate doc or to validate metadata, etc.
-var MetadataTypeMap = map[interface{}][]struct {
-	Tag  string
-	Type string
-}{
-	&metadata.Token{}: {
-		{
-			Tag:  TagTransaction,
-			Type: TransactionTransfer,
-		},
-		{
-			Tag:  TagTransaction,
-			Type: TransactionMint,
-		},
-		{
-			Tag:  TagTransaction,
-			Type: TransactionBurn,
-		},
-		{
-			Tag:  TagTransaction,
-			Type: TransactionApproval,
-		},
-		{
-			Tag:  TagExchange,
-			Type: ExchangeWithdraw,
-		},
-		{
-			Tag:  TagExchange,
-			Type: ExchangeDeposit,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleTransfer,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleAuction,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleTrade,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleMint,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleBurn,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectiblePoap,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleApproval,
-		},
-		{
-			Tag:  TagCollectible,
-			Type: CollectibleEdit,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseMint,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseTransfer,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseTrade,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseGift,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseList,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseUnlist,
-		},
-		{
-			Tag:  TagMetaverse,
-			Type: MetaverseClaim,
-		},
-	},
-	&transaction.Bridge{}: {
-		{
-			Tag:  TagTransaction,
-			Type: TransactionBridge,
-		},
-	},
-	&metadata.MultiSig{}: {
-		{
-			Tag:  TagTransaction,
-			Type: TransactionMultiSig,
-		},
-	},
-	&metadata.Swap{}: {
-		{
-			Tag:  TagExchange,
-			Type: ExchangeSwap,
-		},
-	},
-	&metadata.Liquidity{}: {
-		{
-			Tag:  TagExchange,
-			Type: ExchangeLiquidity,
-		},
-	},
-	&metadata.Post{}: {
-		{
-			Tag:  TagSocial,
-			Type: SocialPost,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialRevise,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialComment,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialShare,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialLike,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialMint,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialWiki,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialReward,
-		},
-	},
-	&social.Profile{}: {
-		{
-			Tag:  TagSocial,
-			Type: SocialProxy,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialProfile,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialFollow,
-		},
-		{
-			Tag:  TagSocial,
-			Type: SocialUnfollow,
-		},
-	},
-	&metadata.Donation{}: {
-		{
-			Tag:  TagDonation,
-			Type: DonationLaunch,
-		},
-		{
-			Tag:  TagDonation,
-			Type: DonationDonate,
-		},
-	},
-	&metadata.SnapShot{}: {
-		{
-			Tag:  TagGovernance,
-			Type: GovernancePropose,
-		},
-	},
-	&metadata.Vote{}: {
-		{
-			Tag:  TagGovernance,
-			Type: GovernanceVote,
-		},
-	},
-}
+var validTypeMap = func() map[string][]string {
+	typeMap := map[string][]string{}
+
+	for _, m := range MetadataMapping {
+		for _, c := range m.Criteria {
+			typeMap[c.Tag] = append(typeMap[c.Tag], c.Type)
+		}
+	}
+
+	return typeMap
+}()
 
 func CheckTypeValid(tag string, transferType string) bool {
 	if len(tag) == 0 {
 		return false
 	}
 
-	validTypeList := ValidTypeMap[tag]
+	validTypeList := validTypeMap[tag]
 	for _, t := range validTypeList {
 		if t == transferType {
 			return true
