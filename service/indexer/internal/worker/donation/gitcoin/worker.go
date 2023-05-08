@@ -277,7 +277,7 @@ func (s *service) handlerGitcoinZkSync(ctx context.Context, message *protocol.Me
 			continue
 		}
 
-		transfer.RelatedUrls = append(transfer.RelatedUrls, "https://gitcoin.co/grants"+strconv.Itoa(project.ID)+"/"+project.Slug)
+		transfer.RelatedUrls = append(transfer.RelatedUrls, fmt.Sprintf("https://gitcoin.co/grants/%d/%s", project.ID, project.Slug))
 
 		// token matedata
 		tokenInfo, _, err := s.zksyncClient.GetToken(ctx, uint(data.Transaction.Operation.Token))
