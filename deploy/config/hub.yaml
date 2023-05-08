@@ -10,7 +10,7 @@ postgres:
   user: postgres
   password: password
   database: pregod11
-  socialdb: ""
+  socialdburl: ""
 
 ethereumetl:
   host: 127.0.0.1
@@ -58,11 +58,20 @@ rpc:
     crossbell:
       http: ''
       websocket: ''
-    avalanche:
-      http: ''
-      websocket: ''
     arbitrum:
       http: ''
+      websocket: ''
+    optimism:
+      http: ''
+      websocket: ''
+    avalanche:
+      http: ''
+    fantom:
+      http: ''
+      websocket: ''
+    celo:
+      http: ''
+      websocket: ''
   alchemy:
     ethereum: ''
     polygon: ''

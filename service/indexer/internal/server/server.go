@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	kurora_client "github.com/naturalselectionlabs/kurora/client"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/command"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -33,20 +33,23 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/alchemy"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/aptos"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/blockscout"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/conflux"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
+
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/ethereum"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
+
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/nftscan"
 	rabbitmqx "github.com/naturalselectionlabs/pregod/service/indexer/internal/rabbitmq"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/build_transactions"
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/auction"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/marketplace"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/name_service"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/poap"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/exchange/liquidity"
@@ -180,11 +183,7 @@ func (s *Server) Initialize() (err error) {
 		eip1577.New(s.employer),
 		lensDatasource,
 		aptos.New(),
-	}
-
-	kuroraClient, err := kurora_client.Dial(context.Background(), s.config.Kurora.Endpoint)
-	if err != nil {
-		return fmt.Errorf("dial kurora: %w", err)
+		conflux.New(),
 	}
 
 	swapWorker, err := swap.New(s.employer)
@@ -201,20 +200,25 @@ func (s *Server) Initialize() (err error) {
 		ethclientx.ReplaceGlobal(network, client)
 	}
 
+	lensWorker, err := lens_worker.New(context.Background(), s.config.Kurora.Endpoint)
+	if err != nil {
+		return err
+	}
+
 	s.workers = []worker.Worker{
 		build_transactions.New(),
 		staking.New(),
 		liquidity.New(),
 		swapWorker,
 		bridge.New(),
-		auction.New(kuroraClient),
 		marketplace.New(),
 		poap.New(),
 		gitcoin.New(),
 		snapshot.New(),
 		crossbell.New(),
-		lens_worker.New(),
+		lensWorker,
 		multisig.New(),
+		name_service.New(),
 		transaction.New(),
 		metaverse.New(),
 	}
@@ -350,7 +354,11 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		}
 	}(cctx)
 
-	var transactions []model.Transaction
+	var (
+		transactions  []model.Transaction
+		addressStatus model.Address
+	)
+
 	defer func() {
 		cancel()
 		s.employer.UnLock(lockKey)
@@ -369,15 +377,14 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		})
 
 		// upsert address status
-		go s.upsertAddress(ctx, model.Address{
-			Address: message.Address,
-		})
+		addressStatus.Address = message.Address
+		go s.upsertAddress(ctx, addressStatus, len(transactions) == 0)
 	}()
 
 	// convert address to lowercase
 	message.Address = strings.ToLower(message.Address)
-	tracer := otel.Tracer("indexer")
 
+	tracer := otel.Tracer("indexer")
 	ctx, handlerSpan := tracer.Start(ctx, "indexer:handler")
 
 	handlerSpan.SetAttributes(
@@ -385,6 +392,23 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	)
 
 	defer handlerSpan.End()
+
+	ethclient, err := ethclientx.Global(message.Network)
+	if err == nil {
+		// get address status
+		addressStatus, _ = database.GetAddress(message.Address)
+
+		nonce, err := ethclient.NonceAt(context.Background(), common.HexToAddress(message.Address), nil)
+		if err == nil {
+			if addressStatus.NonceMap[message.Network] == int64(nonce) {
+				return nil
+			}
+
+			addressStatus.NonceMap = map[string]int64{
+				message.Network: int64(nonce),
+			}
+		}
+	}
 
 	loggerx.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
@@ -690,7 +714,21 @@ func (s *Server) handleWorkers(ctx context.Context, message *protocol.Message, t
 	return s.upsertTransactions(ctx, message, tx, result)
 }
 
-func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
+func (s *Server) upsertAddress(ctx context.Context, address model.Address, isValid bool) {
+	lockKey := "address:" + address.Address
+	if err := s.employer.WaitForLock(ctx, lockKey, time.Minute); err != nil {
+		loggerx.Global().Error("failed to acquire redis lock", zap.Error(err), zap.String("address", address.Address))
+
+		return
+	}
+	defer s.employer.UnLock(lockKey)
+
+	address.IndexingNetworks = make([]string, 0)
+	address.DoneNetworks = make([]string, 0)
+	if address.NonceMap == nil {
+		address.NonceMap = make(map[string]int64)
+	}
+
 	for _, network := range protocol.SupportNetworks {
 		key := fmt.Sprintf("indexer:%v:%v", address.Address, network)
 		n, err := cache.Global().Exists(ctx, key).Result()
@@ -708,6 +746,20 @@ func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 		address.Status = true
 	}
 
+	currentAddress, _ := database.GetAddress(address.Address)
+
+	for network, nonce := range currentAddress.NonceMap {
+		if _, exists := address.NonceMap[network]; !exists {
+			address.NonceMap[network] = nonce
+		}
+	}
+
+	if isValid {
+		address.Nonce, _ = json.Marshal(address.NonceMap)
+	} else {
+		address.Nonce = currentAddress.Nonce
+	}
+
 	if err := database.Global().
 		Model(model.Address{}).
 		Clauses(clause.OnConflict{
@@ -719,35 +771,11 @@ func (s *Server) upsertAddress(ctx context.Context, address model.Address) {
 			"status":            address.Status,
 			"done_networks":     address.DoneNetworks,
 			"indexing_networks": address.IndexingNetworks,
+			"nonce":             address.Nonce,
 		}).Error; err != nil {
 		loggerx.Global().Error("failed to upsert address", zap.Error(err), zap.String("address", address.Address))
 	}
-
-	// websocket
-	// s.publishRefreshMessage(ctx, address)
 }
-
-// websocket
-// func (s *Server) publishRefreshMessage(ctx context.Context, address model.Address) {
-//	tracer := otel.Tracer("publishRefreshMessage")
-//	_, rabbitmqSnap := tracer.Start(ctx, "rabbitmq")
-//
-//	defer rabbitmqSnap.End()
-//	// refresh or new address
-//	address.UpdatedAt = time.Now().Add(-1 * time.Second)
-//	messageData, err := json.Marshal(&protocol.RefreshMessage{
-//		Address: address,
-//	})
-//	if err != nil {
-//		return
-//	}
-//	if err := rabbitmqx.GetRabbitmqChannel().Publish(protocol.ExchangeRefresh, "", false, false, rabbitmq.Publishing{
-//		ContentType: protocol.ContentTypeJSON,
-//		Body:        messageData,
-//	}); err != nil {
-//		loggerx.Global().Error("failed to publish refresh message to mq", zap.Error(err), zap.String("address", address.Address))
-//	}
-// }
 
 func New(config *config.Config) *Server {
 	return &Server{

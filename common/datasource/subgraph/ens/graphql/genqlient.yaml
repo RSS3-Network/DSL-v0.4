@@ -1,0 +1,12 @@
+# Default genqlient config; for full documentation see:
+# https://github.com/Khan/genqlient/blob/main/docs/genqlient.yaml
+schema: schema.graphql
+operations:
+  - ./operation/application.graphql
+generated: ./generated.go
+bindings:
+  Bytes:
+    type: string
+  BigInt:
+    type: math/big.Int
+package: enssubgraph

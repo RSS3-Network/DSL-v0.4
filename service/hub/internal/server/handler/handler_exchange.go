@@ -24,11 +24,11 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 
 	request := model.GetExchangeRequest{}
 	if err := c.Bind(&request); err != nil {
-		return InternalError(c)
+		return BadRequest(c)
 	}
 
 	if err := c.Validate(&request); err != nil {
-		return err
+		return ValidateFailed(c)
 	}
 
 	var cursor string
@@ -36,7 +36,7 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 	case "cex":
 		result, total, err := dao.GetCexList(ctx, request)
 		if err != nil {
-			return InternalError(c)
+			return ErrorResp(c, err, http.StatusInternalServerError, ErrorCodeInternalError)
 		}
 		if len(result) == 0 {
 			return c.JSON(http.StatusOK, &model.Response{
@@ -56,7 +56,7 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 	case "dex":
 		result, total, err := dao.GetDexList(ctx, request)
 		if err != nil {
-			return InternalError(c)
+			return ErrorResp(c, err, http.StatusInternalServerError, ErrorCodeInternalError)
 		}
 		if len(result) == 0 {
 			return c.JSON(http.StatusOK, &model.Response{
@@ -75,7 +75,8 @@ func (h *Handler) GetExchangeListFunc(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusBadRequest, map[string]string{
-		"status":  "error",
-		"message": "Invalid exchange type, must be cex or dex",
+		"status":     "error",
+		"message":    "Invalid exchange type, must be cex or dex",
+		"error_code": strconv.Itoa(ErrorCodeInvalidExchangeType),
 	})
 }

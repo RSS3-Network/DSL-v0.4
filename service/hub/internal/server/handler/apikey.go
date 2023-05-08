@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -22,14 +22,14 @@ func (h *Handler) PostAPIKeyFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := model.APIKeyRequest{}
+	request := model.GetAPIKeyRequest{}
 
 	if err := c.Bind(&request); err != nil {
 		return BadRequest(c)
 	}
 
 	if err := c.Validate(&request); err != nil {
-		return err
+		return ValidateFailed(c)
 	}
 
 	// check if key already exists
@@ -37,7 +37,7 @@ func (h *Handler) PostAPIKeyFunc(c echo.Context) error {
 	if err := database.Global().
 		Where("address = ?").
 		First(&item).Error; err == nil && len(item.UUID) > 0 {
-		return fmt.Errorf("This address has already applied for API-KEY.")
+		return ErrorResp(c, errors.New("this address has already applied for API-KEY"), http.StatusBadRequest, ErrorCodeKeyAlreadyExists)
 	}
 
 	// generate api key
@@ -47,7 +47,7 @@ func (h *Handler) PostAPIKeyFunc(c echo.Context) error {
 	}
 	if err := database.Global().Create(&item).Error; err != nil {
 		logrus.Errorf("PostAPIKeyFunc: create sql error, %v", err)
-		return InternalError(c)
+		return ErrorResp(c, errors.New("PostAPIKeyFunc: create sql error"), http.StatusInternalServerError, ErrorCodeInternalError)
 	}
 
 	return c.JSON(http.StatusOK, &item)
@@ -60,14 +60,14 @@ func (h *Handler) GetAPIKeyFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := model.APIKeyRequest{}
+	request := model.PostAPIKeyRequest{}
 
 	if err := c.Bind(&request); err != nil {
 		return BadRequest(c)
 	}
 
 	if err := c.Validate(&request); err != nil {
-		return err
+		return ValidateFailed(c)
 	}
 
 	wallet, err := session.Get("user_wallet", c)
@@ -81,13 +81,13 @@ func (h *Handler) GetAPIKeyFunc(c echo.Context) error {
 	sigPublicKeyECDSA, err := crypto.SigToPub([]byte(hash), []byte(signature))
 	if err != nil {
 		logrus.Errorf("GetAPIKeyFunc: crypto.SigToPub error, %v", err)
-		return InternalError(c)
+		return ErrorResp(c, errors.New("GetAPIKeyFunc: crypto.SigToPub error"), http.StatusBadRequest, ErrorCodeSigToPubError)
 	}
 
 	address := crypto.PubkeyToAddress(*sigPublicKeyECDSA)
 
 	if address.String() != request.Address {
-		return InternalError(c)
+		return ErrorResp(c, errors.New("GetAPIKeyFunc: address is not match"), http.StatusBadRequest, ErrorCodeAddressIsNotMatch)
 	}
 
 	item := dbModel.APIKey{}

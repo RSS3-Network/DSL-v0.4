@@ -131,3 +131,12 @@ type CrossbellNote struct {
 	Locked       bool            `json:"locked"`
 	Metadata     json.RawMessage `json:"metadata"`
 }
+
+type NameService struct {
+	Action string     `json:"action"`
+	Name   string     `json:"name"`
+	Cost   *Token     `json:"cost,omitempty"`
+	Expiry *time.Time `json:"expiry,omitempty"`
+	Key    string     `json:"key,omitempty"`
+	Value  string     `json:"value,omitempty"`
+}

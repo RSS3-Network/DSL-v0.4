@@ -34,12 +34,20 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 	}
 
 	if err := c.Validate(&request); err != nil {
-		return err
+		return ValidateFailed(c)
 	}
 
 	// api report
 	if len(request.Cursor) == 0 {
 		go h.filterReport(model.GetNotes, request, c)
+	}
+
+	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
+		request.Limit = model.DefaultLimit
+	}
+
+	if request.ActionLimit <= 0 {
+		request.ActionLimit = model.DefaultActionLimit
 	}
 
 	// header into ctx
@@ -68,7 +76,7 @@ func (h *Handler) GetNotesFunc(c echo.Context) error {
 	}
 
 	if err != nil {
-		return InternalError(c)
+		return ErrorResp(c, err, http.StatusInternalServerError, ErrorCodeInternalError)
 	}
 
 	if request.CountOnly {
@@ -115,10 +123,19 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 	if len(request.Address) > model.DefaultLimit {
 		request.Address = request.Address[:model.DefaultLimit]
 	}
+
+	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
+		request.Limit = model.DefaultLimit
+	}
+
+	if request.ActionLimit <= 0 {
+		request.ActionLimit = model.DefaultActionLimit
+	}
+
 	for i, v := range request.Address {
 		address, err := middlewarex.ResolveAddress(c, v, request.IgnoreContract)
 		if err != nil {
-			return ErrorResp(c, err)
+			return ErrorResp(c, err, http.StatusBadRequest, ErrorCodeNotSupportContract)
 		}
 		request.Address[i] = address
 	}
@@ -128,7 +145,7 @@ func (h *Handler) BatchGetNotesFunc(c echo.Context) error {
 
 	transactions, total, err := h.service.BatchGetNotes(ctx, request)
 	if err != nil {
-		return InternalError(c)
+		return ErrorResp(c, err, http.StatusInternalServerError, ErrorCodeInternalError)
 	}
 
 	var addressStatus []dbModel.Address
@@ -191,14 +208,14 @@ func (h *Handler) BatchGetSocialNotesFunc(c echo.Context) error {
 	for i, v := range request.Address {
 		address, err := middlewarex.ResolveAddress(c, v, true)
 		if err != nil {
-			return ErrorResp(c, err)
+			return ErrorResp(c, err, http.StatusBadRequest, ErrorCodeNotSupportContract)
 		}
 		request.Address[i] = address
 	}
 
 	transactions, total, err := h.service.BatchGetSocialNotes(ctx, request)
 	if err != nil {
-		return InternalError(c)
+		return ErrorResp(c, err, http.StatusInternalServerError, ErrorCodeInternalError)
 	}
 
 	if request.CountOnly {
@@ -262,15 +279,13 @@ func (h *Handler) GetTransactionByHashFunc(c echo.Context) error {
 	}
 
 	if err := c.Validate(&request); err != nil {
-		return err
+		return ValidateFailed(c)
 	}
 
 	transaction, err := h.service.GetTransactionByHash(ctx, request)
 	if err != nil {
-		return ErrorResp(c, err)
+		return ErrorResp(c, err, http.StatusBadRequest, ErrorCodeGetTransactionByHashError)
 	}
 
-	return c.JSON(http.StatusOK, &model.Response{
-		Result: transaction,
-	})
+	return c.JSON(http.StatusOK, transaction)
 }

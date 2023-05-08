@@ -132,6 +132,9 @@ func New() (Interface, error) {
 }
 
 func BuildProfileMetadata(profileMetadata []byte, profile *social.Profile) error {
+	if len(profileMetadata) == 0 {
+		return nil
+	}
 	tempStructure := &CrossbellProfileStruct{}
 	if err := json.Unmarshal(profileMetadata, &tempStructure); err != nil {
 		return err

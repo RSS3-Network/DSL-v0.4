@@ -11,14 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel"
-
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid"
-	avvy_client "github.com/naturalselectionlabs/pregod/common/worker/name_service/avvy"
-	"github.com/naturalselectionlabs/pregod/common/worker/name_service/ens"
-	spaceid_client "github.com/naturalselectionlabs/pregod/common/worker/name_service/spaceid"
-	"github.com/naturalselectionlabs/pregod/common/worker/name_service/unstoppable"
-
 	"github.com/avvydomains/golang-client/avvy"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,15 +18,25 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/crossbell/contract/character"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/cyberconnect"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	lenscontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid"
+	arbcontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid/arb"
 	spaceidcontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/spaceid/contracts"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/utils/httpx"
+	arb_client "github.com/naturalselectionlabs/pregod/common/worker/name_service/arb"
+	avvy_client "github.com/naturalselectionlabs/pregod/common/worker/name_service/avvy"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service/ens"
+	spaceid_client "github.com/naturalselectionlabs/pregod/common/worker/name_service/spaceid"
+	"github.com/naturalselectionlabs/pregod/common/worker/name_service/unstoppable"
 	"github.com/unstoppabledomains/resolution-go/v2"
 	"github.com/unstoppabledomains/resolution-go/v2/namingservice"
 	goens "github.com/wealdtech/go-ens/v3"
+
+	"go.opentelemetry.io/otel"
 )
 
 func ReverseResolveAll(ctx context.Context, input string, resolveAll bool) model.NameServiceResult {
@@ -70,6 +72,12 @@ func ReverseResolveAll(ctx context.Context, input string, resolveAll bool) model
 	case "avax":
 		address, err = ResolveAvvy(input)
 		result.Avvy = input
+	case "arb":
+		address, err = ResolveARB(input)
+		result.Arb = input
+	case "cyber":
+		address, err = ResolveCyber(input)
+		result.Cyber = input
 	default:
 		if len(splits) == 1 {
 			address = input
@@ -146,6 +154,22 @@ func ResolveAll(result *model.NameServiceResult) {
 		defer wg.Done()
 		if result.Avvy == "" {
 			result.Avvy, _ = ResolveAvvy(result.Address)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if result.Arb == "" {
+			result.Arb, _ = ResolveARB(result.Address)
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if result.Cyber == "" {
+			result.Cyber, _ = ResolveCyber(result.Address)
 		}
 	}()
 
@@ -421,4 +445,91 @@ func ResolveAvvy(input string) (string, error) {
 	}
 
 	return profile.Handle, nil
+}
+
+func ResolveARB(input string) (string, error) {
+	ethereumClient, err := ethclientx.Global(protocol.NetworkArbitrum)
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to arb rpc: %s", err)
+	}
+
+	arbContract, err := arbcontract.NewArbid(spaceid.AddressArb, ethereumClient)
+	if err != nil {
+		return "", fmt.Errorf("failed to new an arb contract: %w", err)
+	}
+
+	if strings.HasSuffix(input, ".arb") {
+		namehash, _ := goens.NameHash(input)
+
+		resolver, err := arbContract.Resolver(&bind.CallOpts{}, namehash)
+		if err != nil {
+			return "", fmt.Errorf("failed to get arb resolver: %w", err)
+		}
+
+		if resolver == ethereum.AddressGenesis {
+			return "", fmt.Errorf("%s", ErrUnregisterName)
+		}
+
+		arbResolver, err := arbcontract.NewResolver(resolver, ethereumClient)
+		if err != nil {
+			return "", fmt.Errorf("failed to new to arb resolver contract: %w", err)
+		}
+
+		profileID, err := arbResolver.Addr(&bind.CallOpts{}, namehash)
+		if err != nil {
+			return "", fmt.Errorf("failed to get ARB by handle: %s", err)
+		}
+
+		return strings.ToLower(profileID.String()), nil
+	}
+
+	arbClient := arb_client.New()
+	profile, err := arbClient.GetProfile(input)
+	if err != nil {
+		return "", err
+	}
+
+	return profile.Handle, nil
+}
+
+func ResolveCyber(input string) (string, error) {
+	ethereumClient, err := ethclientx.Global(protocol.NetworkBinanceSmartChain)
+	if err != nil {
+		return "", fmt.Errorf("failed to connect to bsc rpc: %s", err)
+	}
+
+	cyberConnectContract, err := cyberconnect.NewCyberConnectCaller(cyberconnect.AddressCcProfile, ethereumClient)
+	if err != nil {
+		return "", fmt.Errorf("failed to new an cyberConnect contract: %w", err)
+	}
+
+	if strings.HasSuffix(input, ".cyber") {
+		parts := strings.Split(input, ".")
+
+		name := parts[0]
+
+		profileId, err := cyberConnectContract.GetProfileIdByHandle(&bind.CallOpts{}, name)
+		if err != nil {
+			return "", fmt.Errorf("failed to get profileId: %w", err)
+		}
+
+		address, err := cyberConnectContract.OwnerOf(&bind.CallOpts{}, profileId)
+		if err != nil {
+			return "", fmt.Errorf("failed to get owner address: %w", err)
+		}
+
+		return strings.ToLower(address.String()), nil
+	}
+
+	profileId, err := cyberConnectContract.GetPrimaryProfile(&bind.CallOpts{}, common.HexToAddress(input))
+	if err != nil {
+		return "", fmt.Errorf("failed to get profileId: %w", err)
+	}
+
+	primaryHandle, err := cyberConnectContract.GetHandleByProfileId(&bind.CallOpts{}, profileId)
+	if err != nil {
+		return "", fmt.Errorf("failed to get handle: %w", err)
+	}
+
+	return fmt.Sprintf("%s%s", primaryHandle, ".cyber"), nil
 }

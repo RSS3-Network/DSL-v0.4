@@ -12,5 +12,7 @@ const (
 	SourceAptos      = "aptos"
 	SourceNFTScan    = "NFTScan"
 
+	SourceConflux = "conflux"
+
 	DatasourceLimit = 1000
 )

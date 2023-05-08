@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	DefaultLimit = 500
+	DefaultLimit       = 500
+	DefaultActionLimit = 30
 
 	// path
 	GetNotes             = "/notes/"
@@ -26,7 +27,7 @@ const (
 )
 
 type Response struct {
-	Total         *int64            `json:"total,omitempty"`
+	Total         *int64            `json:"total,omitempty" description:"total number of items"`
 	Cursor        string            `json:"cursor,omitempty"`
 	Result        any               `json:"result,omitempty"`
 	AddressStatus []dbModel.Address `json:"address_status,omitempty"`
@@ -34,7 +35,7 @@ type Response struct {
 }
 
 type GetRequest struct {
-	Address   string    `param:"address" json:"address" validate:"required"`
+	Address   string    `param:"address" json:"address" validate:"required" description:"address to query"`
 	Limit     int       `query:"limit" json:"limit"`
 	Cursor    string    `query:"cursor" json:"cursor"`
 	Type      []string  `query:"type" json:"type"`
@@ -51,7 +52,8 @@ type GetRequest struct {
 	QueryStatus bool   `query:"query_status" json:"query_status"`
 	TokenId     string `query:"token_id" json:"token_id"`
 	// returns a count of transactions only
-	CountOnly bool `query:"count_only" json:"count_only"`
+	CountOnly   bool `query:"count_only" json:"count_only"`
+	ActionLimit int  `query:"action_limit" json:"action_limit"`
 }
 
 type GetAssetRequest struct {
@@ -80,6 +82,7 @@ type BatchGetNotesRequest struct {
 	QueryStatus    bool      `json:"query_status"`
 	CountOnly      bool      `json:"count_only"`
 	IgnoreContract bool      `json:"ignore_contract"`
+	ActionLimit    int       `query:"action_limit" json:"action_limit"`
 }
 
 type BatchGetSocialNotesRequest struct {
@@ -101,7 +104,11 @@ type BatchGetProfilesRequest struct {
 	Refresh  bool     `query:"refresh"`
 }
 
-type APIKeyRequest struct {
+type GetAPIKeyRequest struct {
+	Address string `param:"address" json:"address" validate:"required"`
+}
+
+type PostAPIKeyRequest struct {
 	Address string `json:"address" validate:"required"`
 }
 
@@ -124,7 +131,7 @@ type DexResult struct {
 }
 
 type GetExchangeRequest struct {
-	ExchangeType string   `param:"exchange_type"`
+	ExchangeType string   `param:"exchange_type" validate:"required"`
 	Cursor       int      `query:"cursor"`
 	Name         []string `query:"name"`
 	Network      []string `query:"network"`
@@ -132,7 +139,7 @@ type GetExchangeRequest struct {
 
 // platform
 type GetPlatformRequest struct {
-	PlatformType string   `param:"platform_type"`
+	PlatformType string   `param:"platform_type" validate:"required"`
 	Network      []string `query:"network"`
 }
 

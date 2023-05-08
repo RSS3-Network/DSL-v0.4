@@ -144,26 +144,15 @@ func (s *Service) PublishIndexerMessage(ctx context.Context, message protocol.Me
 		dao.InitializeAddressStatus(ctx, address)
 	}
 
-	networks := []string{
-		protocol.NetworkEthereum,
-		protocol.NetworkPolygon,
-		protocol.NetworkArbitrum,
-		protocol.NetworkBinanceSmartChain,
-		protocol.NetworkArweave,
-		protocol.NetworkXDAI,
-		protocol.NetworkZkSync,
-		protocol.NetworkCrossbell,
-		protocol.NetworkOptimism,
-		protocol.NetworkAvalanche,
-		protocol.NetworkCelo,
-		protocol.NetworkFantom,
-		protocol.NetworkEIP1577,
-		protocol.NetworkAptos,
-	}
-
+	networks := protocol.SupportNetworks
 	if !name_service.IsEvmValidAddress(message.Address) {
 		networks = []string{
 			protocol.NetworkAptos,
+		}
+		if strings.HasPrefix(message.Address, "cfx") {
+			networks = []string{
+				protocol.NetworkConflux,
+			}
 		}
 	}
 

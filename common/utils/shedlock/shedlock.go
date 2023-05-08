@@ -64,6 +64,25 @@ func (e *Employer) Renewal(ctx context.Context, name string, duration time.Durat
 	return cache.Global().SetEX(ctx, name, 0, duration).Err()
 }
 
+func (e *Employer) WaitForLock(ctx context.Context, name string, timeout time.Duration) error {
+	if e.DoLock(name, timeout) {
+		return nil
+	}
+
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			if e.DoLock(name, timeout) {
+				return nil
+			}
+		}
+	}
+}
+
 func New() *Employer {
 	return &Employer{
 		crontab: cron.New(),

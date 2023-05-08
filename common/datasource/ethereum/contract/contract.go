@@ -122,3 +122,18 @@ var ContractABIs embed.FS
 // Foundation
 // Foundation Market https://etherscan.io/address/0xcda72070e455bb31c7690a170224ce43623d0b6f
 //go:generate abigen --abi ./foundation/NFTMarket.abi --pkg foundation --type Foundation --out ./foundation/foundation.go
+
+// BendDAO
+// LendPool https://etherscan.io/address/0x70b97A0da65C15dfb0FFA02aEE6FA36e507C2762
+//go:generate abigen --abi ./benddao/lendpool.abi --pkg benddao --type BendDAO --out ./benddao/lendpool.go
+
+// ENS
+// ENS Registrar Controller https://etherscan.io/address/0x283Af0B28c62C092C9727F1Ee09c02CA627EB7F5
+//go:generate abigen --abi ./ens/registrar_v1/ETHRegistrarController.abi --pkg registrarv1 --type RegistrarV1 --out ./ens/registrar_v1/registrarController.go
+//go:generate abigen --abi ./ens/registrar_v2/ETHRegistrarControllerV2.abi --pkg registrarv2 --type RegistrarV2 --out ./ens/registrar_v2/registrarController.go
+//go:generate abigen --abi ./ens/namewrapper/NameWrapper.abi --pkg namewrapper --type NameWrapper --out ./ens/namewrapper/nameWrapper.go
+//go:generate abigen --abi ./ens/resolver/PublicResolver.abi --pkg resolver --type Resolver --out ./ens/resolver/publicResolver.go
+
+// CyberConnect
+// https://bscscan.com/address/0x2723522702093601e6360cae665518c4f63e9da6#code
+//go:generate abigen --abi ./cyberconnect/ProfileNFT.abi --pkg cyberconnect --type CyberConnect --out ./cyberconnect/profileNFT.go

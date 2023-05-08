@@ -29,7 +29,9 @@ const (
 	PlatformSpaceID           = "Space ID"
 	PlatformUnstoppableDomain = "Unstoppable"
 	PlatformAvvy              = "Avvy"
+	PlatformArb               = "Arb"
 	PlatformSound             = "Sound"
+	PlatformLink3             = "Link3"
 
 	// donation
 	PlatformGitcoin = "Gitcoin"
@@ -74,6 +76,7 @@ const (
 	PlatformNouns          = "Nouns"
 	PlatformFoundation     = "Foundation"
 	PlatformZerion         = "Zerion"
+	PlatformBendDAO        = "BendDAO"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
@@ -116,6 +119,7 @@ var PlatformList = map[string][]string{
 		PlatformZora,
 		PlatformNouns,
 		PlatformFoundation,
+		PlatformLink3,
 	},
 	filter.TagDonation: {
 		PlatformGitcoin,
@@ -140,5 +144,6 @@ var PlatformList = map[string][]string{
 		PlatformDODO,
 		PlatformVelodrome,
 		PlatformZerion,
+		PlatformBendDAO,
 	},
 }

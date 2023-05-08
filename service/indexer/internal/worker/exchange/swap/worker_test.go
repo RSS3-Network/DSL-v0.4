@@ -277,6 +277,50 @@ func Test_service_Handle(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "PancakeSwap Smart Router swap",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x1041ed1fd5d7168b0a183386a9174b33d0e967e3", // Unknown
+					Network: protocol.NetworkBinanceSmartChain,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://bscscan.com/tx/0xb45844b0a227e252a953a072a343f26e90cadb7691d451b371e2287c1388702f
+						Hash:        "0xb45844b0a227e252a953a072a343f26e90cadb7691d451b371e2287c1388702f",
+						BlockNumber: 26823306,
+						Network:     protocol.NetworkBinanceSmartChain,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.NotEmpty(t, transactions)
+
+				for _, transaction := range transactions {
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					_, _ = pp.Println(swap)
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "HVT")
+					assert.Equal(t, swap.TokenTo.Symbol, "USDT")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformPancakeswap)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
 			name: "sushiswap swap",
 			fields: fields{
 				employer: shedlock.New(),

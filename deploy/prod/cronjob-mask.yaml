@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pregod-1-1-mask-social-update
+  namespace: pregod
+spec:
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 21600
+      template:
+        spec:
+          containers:
+            - image: $IMAGE_TAG_RELEASE
+              imagePullPolicy: Always
+              name: pregod-1-1
+              envFrom:
+                - secretRef:
+                    name: pregod-1-1
+              env:
+                - name: MASK_HEADER_VALUE
+                  value: $MASK_HEADER_VALUE
+              command:
+                - mask
+              resources:
+                requests:
+                  memory: "1000Mi"
+                  cpu: "200m"
+                limits:
+                  memory: "2000Mi"
+                  cpu: "1000m"
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+  schedule: "0 1 * * *"  # UTC
+  successfulJobsHistoryLimit: 3
+  suspend: false
