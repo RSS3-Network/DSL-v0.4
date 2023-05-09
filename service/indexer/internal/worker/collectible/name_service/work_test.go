@@ -217,7 +217,39 @@ func Test_worker_Handle(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
-			name: "ens text changed",
+			name: "ens text changed v1",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x4f35f7ec953d61d77329e2cc82d032c332f84473",
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0x8cebeb1cd875fba3fe03f4b07ba01ada886da2cd24a0ee976f4d67bdabfc9832
+						Hash:        "0x8cebeb1cd875fba3fe03f4b07ba01ada886da2cd24a0ee976f4d67bdabfc9832",
+						BlockNumber: 17134061,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformEns)
+					assert.Equal(t, transaction.Type, filter.CollectibleEdit)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "ens text changed v2",
 			arguments: arguments{
 				ctx: context.Background(),
 				message: &protocol.Message{
