@@ -31,6 +31,7 @@ const (
 	PlatformAvvy              = "Avvy"
 	PlatformArb               = "Arb"
 	PlatformSound             = "Sound"
+	PlatformLink3             = "Link3"
 
 	// donation
 	PlatformGitcoin = "Gitcoin"
@@ -118,6 +119,7 @@ var PlatformList = map[string][]string{
 		PlatformZora,
 		PlatformNouns,
 		PlatformFoundation,
+		PlatformLink3,
 	},
 	filter.TagDonation: {
 		PlatformGitcoin,

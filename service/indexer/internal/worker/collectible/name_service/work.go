@@ -70,8 +70,11 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 			ens.EnsNameWrapper: {
 				ens.EventNameWrapper: i.handleENSNameWrapper,
 			},
-			ens.EnsPublicResolver: {
-				ens.EventTextChanged: i.handleENSTextChanged,
+			ens.EnsPublicResolverV1: {
+				ens.EventTextChangedV1: i.handleENSTextChangedV1,
+			},
+			ens.EnsPublicResolverV2: {
+				ens.EventTextChangedV2: i.handleENSTextChangedV2,
 			},
 		}
 	)

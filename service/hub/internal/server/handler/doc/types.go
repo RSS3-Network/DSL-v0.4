@@ -3,8 +3,10 @@ package doc
 import (
 	"fmt"
 	"reflect"
+	"sort"
 
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/pkg/jschema"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
@@ -21,9 +23,15 @@ func (d *Doc) Define() {
 	d.AddDecimalHandler()
 
 	// Define the types that specific for this project
-	d.schemas.Define(model.Response{})
-	d.DefineTransfer()
-	d.schemas.SetSchema(ExchangeResult{}, d.schemas.AnyOf(model.CexResult{}, model.DexResult{}))
+	{
+		d.schemas.Define(model.Response{})
+
+		d.DefineTransfer()
+
+		d.schemas.SetSchema(ExchangeResult{}, d.schemas.AnyOf(model.CexResult{}, model.DexResult{}))
+
+		d.DefinePlatformList()
+	}
 }
 
 func (d *Doc) AddDecimalHandler() {
@@ -39,38 +47,49 @@ func (d *Doc) AddDecimalHandler() {
 func (d *Doc) DefineTransfer() {
 	d.schemas.Define(dbModel.Transfer{})
 
-	s := d.schemas.GetRawSchema(dbModel.Transfer{})
+	s := d.schemas.GetSchema(dbModel.Transfer{})
 
-	desc := "All the possible mappings for the transfer object:\n\n"
+	desc := s.Description + "\n\nAll the possible mappings for the transfer object:\n\n"
 
-	t := &jschema.Schema{
-		Type:  s.Type,
-		Title: s.Title,
-		AnyOf: []*jschema.Schema{},
-	}
+	anyOf := []*jschema.Schema{}
 
-	for meta, conditions := range filter.MetadataTypeMap {
-		metaS := d.schemas.DefineT(reflect.TypeOf(meta).Elem())
+	for _, m := range filter.MetadataMapping {
+		meta := d.schemas.DefineT(reflect.TypeOf(m.Metadata).Elem())
 
-		desc += fmt.Sprintf("- %s:\n", metaS.Ref.ID)
+		desc += fmt.Sprintf("- %s:\n", meta.Ref.ID)
 
-		for _, cond := range conditions {
+		for _, c := range m.Criteria {
 			n := s.Clone()
+			n.Description = fmt.Sprintf("Transfer object for tag: '%s', type: '%s', meta: '%s'", c.Tag, c.Type, meta.Ref.Name)
 
-			desc += fmt.Sprintf("  - tag: %s, type: %s\n", cond.Tag, cond.Type)
+			desc += fmt.Sprintf("  - tag: %s, type: %s\n", c.Tag, c.Type)
 
-			n.Properties["tag"] = d.schemas.Const(cond.Tag)
-			n.Properties["type"] = d.schemas.Const(cond.Type)
-			n.Properties["metadata"] = metaS
+			n.Properties["tag"] = d.schemas.Const(c.Tag)
+			n.Properties["type"] = d.schemas.Const(c.Type)
+			n.Properties["metadata"] = meta
 
-			t.AnyOf = append(t.AnyOf, n)
+			anyOf = append(anyOf, n)
 		}
 	}
 
-	// TODO: Remove it once the MetadataTypeMap is complete
-	t.AnyOf = append(t.AnyOf, s.Clone())
-
-	*s = *t
-
+	s.Properties = nil
 	s.Description = desc
+	s.AnyOf = anyOf
+}
+
+func (d *Doc) DefinePlatformList() {
+	list := []string{}
+
+	for _, ps := range protocol.PlatformList {
+		list = append(list, ps...)
+	}
+
+	sort.Strings(list)
+
+	type PlatformName string
+
+	d.schemas.SetSchema(PlatformName(""), &jschema.Schema{
+		Type: jschema.TypeString,
+		Enum: jschema.ToJValList(list...),
+	})
 }

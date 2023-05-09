@@ -187,6 +187,12 @@ func TestResolveAddress(t *testing.T) {
 			output: "0x8aad44321a86b170879d7a244c1e8d360c99dda8",
 			err:    nil,
 		},
+		{
+			name:   "resolve cyberconnect .cyber",
+			input:  arguments{"0x6727a51caefcaf1bc1.cyber", false},
+			output: "0x6727A51CaeFCaF1Bc189A8316eA09f844644b195",
+			err:    nil,
+		},
 	}
 
 	for _, tt := range tests {
