@@ -121,7 +121,6 @@ func (s *service) handleBlendEvents(ctx context.Context) ([]*model.Transaction, 
 
 	query := kurora.DatasetBlendEventQuery{
 		Limit: lo.ToPtr(100),
-		From:  lo.ToPtr(common.HexToAddress("0xe1749558e716eedc94c5651ea78d921432724cea")),
 	}
 
 	if len(cursor) > 0 {
@@ -181,6 +180,19 @@ func (s *service) handleBlendEvents(ctx context.Context) ([]*model.Transaction, 
 	for _, event := range events {
 		key := fmt.Sprintf("%v-%v", event.NftAddress.String(), event.NftId.BigInt())
 
+		if _, ok := metaDataMap[key]; !ok {
+			continue
+		}
+
+		nftData := metaDataMap[key]
+
+		if nftData.Metadata == nil {
+			continue
+		}
+		nft := nftData.Metadata
+
+		nft.Cost = nil
+
 		var (
 			feedTag  string
 			feedType string
@@ -209,17 +221,6 @@ func (s *service) handleBlendEvents(ctx context.Context) ([]*model.Transaction, 
 					continue
 				}
 			}
-
-			if _, ok := metaDataMap[key]; !ok {
-				continue
-			}
-
-			nftData := metaDataMap[key]
-
-			if nftData.Metadata == nil {
-				continue
-			}
-			nft := nftData.Metadata
 
 			// supply nft
 			liquidityMetadata := metadata.Liquidity{
@@ -260,20 +261,8 @@ func (s *service) handleBlendEvents(ctx context.Context) ([]*model.Transaction, 
 				continue
 			}
 
-			transfers = s.buildTransfers(transfers, strings.ToLower(event.TransactionHash.String()), strings.ToLower(event.Borrower.String()), strings.ToLower(event.Lender.String()), feedTag, feedType, "", decimal.Decimal{}, event.Timestamp, int64(event.LogIndex), metadataRaw)
+			transfers = s.buildTransfers(transfers, strings.ToLower(event.TransactionHash.String()), strings.ToLower(event.Borrower.String()), strings.ToLower(event.Lender.String()), feedTag, feedType, event.NftAddress.String(), event.NftId, event.Timestamp, int64(event.LogIndex), metadataRaw)
 		case EventStartAuction:
-			if _, ok := metaDataMap[key]; !ok {
-				continue
-			}
-
-			nftData := metaDataMap[key]
-
-			if nftData.Metadata == nil {
-				continue
-			}
-
-			nft := nftData.Metadata
-
 			feedTag, feedType = filter.TagCollectible, filter.CollectibleAuction
 
 			nft.Action = filter.ActionCreate
@@ -296,18 +285,6 @@ func (s *service) handleBlendEvents(ctx context.Context) ([]*model.Transaction, 
 			transfers = s.buildTransfers(transfers, strings.ToLower(event.TransactionHash.String()), strings.ToLower(event.Lender.String()), strings.ToLower(AddressBlend.String()), feedTag, feedType, event.NftAddress.String(), event.NftId, event.Timestamp, int64(event.LogIndex), metadataRaw)
 		case EventSeize:
 			feedTag, feedType = filter.TagCollectible, filter.CollectibleTransfer
-
-			if _, ok := metaDataMap[key]; !ok {
-				continue
-			}
-
-			nftData := metaDataMap[key]
-
-			if nftData.Metadata == nil {
-				continue
-			}
-			nft := nftData.Metadata
-
 			metadataRaw, err := json.Marshal(nft)
 			if err != nil {
 				zap.L().Error("buildCollectibleMetadata error", zap.Error(err), zap.Stringer("hash", event.TransactionHash))
@@ -318,18 +295,6 @@ func (s *service) handleBlendEvents(ctx context.Context) ([]*model.Transaction, 
 			transfers = s.buildTransfers(transfers, strings.ToLower(event.TransactionHash.String()), strings.ToLower(event.Borrower.String()), strings.ToLower(event.Lender.String()), feedTag, feedType, event.NftAddress.String(), event.NftId, event.Timestamp, int64(event.LogIndex), metadataRaw)
 		case EventBuyLocked:
 			feedTag, feedType = filter.TagCollectible, filter.CollectibleTrade
-
-			if _, ok := metaDataMap[key]; !ok {
-				continue
-			}
-
-			nftData := metaDataMap[key]
-
-			if nftData.Metadata == nil {
-				continue
-			}
-			nft := nftData.Metadata
-
 			cost := &metadata.Token{
 				Name:         nativeToken.Name,
 				Symbol:       nativeToken.Symbol,
@@ -352,7 +317,6 @@ func (s *service) handleBlendEvents(ctx context.Context) ([]*model.Transaction, 
 			}
 
 			transfers = s.buildTransfers(transfers, strings.ToLower(event.TransactionHash.String()), strings.ToLower(event.Lender.String()), strings.ToLower(event.Borrower.String()), feedTag, feedType, event.NftAddress.String(), event.NftId, event.Timestamp, int64(event.LogIndex), metadataRaw)
-
 		}
 
 		transaction := &model.Transaction{
@@ -374,6 +338,11 @@ func (s *service) handleBlendEvents(ctx context.Context) ([]*model.Transaction, 
 		if _, ok := transactionMap[strings.ToLower(event.TransactionHash.String())]; !ok {
 			transactionMap[strings.ToLower(event.TransactionHash.String())] = transaction
 		} else {
+			newTag, newType := filter.UpdateTagAndType(transaction.Tag, transactionMap[strings.ToLower(event.TransactionHash.String())].Tag, transaction.Type, transactionMap[strings.ToLower(event.TransactionHash.String())].Type)
+
+			transactionMap[strings.ToLower(event.TransactionHash.String())].Tag = newTag
+			transactionMap[strings.ToLower(event.TransactionHash.String())].Type = newType
+
 			transactionMap[strings.ToLower(event.TransactionHash.String())].Transfers = append(transactionMap[strings.ToLower(event.TransactionHash.String())].Transfers, transfers...)
 		}
 	}
@@ -405,7 +374,7 @@ func (s *service) buildTransfers(transfers []model.Transfer, hash, from, to, fee
 		Type:            feedType,
 		RelatedUrls: ethereum.BuildURL(
 			[]string{utils.GetTxHashURL(s.Network(), hash)},
-			fmt.Sprintf("%s/%s/%v", "https://blur.io/asset/", strings.ToLower(nftAddress), nftId),
+			fmt.Sprintf("%s/%s/%v", "https://blur.io/asset", strings.ToLower(nftAddress), nftId),
 		),
 	}
 
