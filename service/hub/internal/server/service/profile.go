@@ -123,8 +123,13 @@ func (s *Service) GetProfilesFromPlatform(c context.Context, platform, address s
 		ensClient := ens.New()
 		profile, err = ensClient.GetProfile(address)
 	case protocol.PlatformLens:
-		lensClient := lens.New()
-		lensClient.WithKuroraClient(s.kuroraClient)
+		var lensClient *lens.Client
+
+		lensClient, err = lens.New(s.kuroraClient)
+		if err != nil {
+			return nil, err
+		}
+
 		profiles, err = lensClient.BatchGetProfiles(c, address)
 	case protocol.PlatformCrossbell:
 		var csbClient *crossbell.Client

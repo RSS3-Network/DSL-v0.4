@@ -9,7 +9,10 @@ import (
 	"strings"
 	"sync"
 
-	kurora_client "github.com/naturalselectionlabs/kurora/client"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+
+	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
@@ -23,28 +26,32 @@ import (
 )
 
 type Client struct {
-	KuroraClient  *kurora_client.Client
 	graphqlClient *graphql.Client
 	httpClient    *http.Client
+	kuroraClient  *kurora.Client
+	ethClient     *ethclient.Client
 }
 
-func New() *Client {
+func New(kuroraClient *kurora.Client) (*Client, error) {
 	endpointURL := url.URL{
 		Scheme: "https",
 		Host:   "api.lens.dev",
 		Path:   "/graphql",
 	}
 
+	ethClient, err := ethclientx.Global(protocol.NetworkPolygon)
+	if err != nil {
+		return nil, err
+	}
+
 	client := &Client{
 		graphqlClient: graphql.NewClient(endpointURL.String(), http.DefaultClient),
 		httpClient:    http.DefaultClient,
+		kuroraClient:  kuroraClient,
+		ethClient:     ethClient,
 	}
-	return client
-}
 
-func (c *Client) WithKuroraClient(kuroraClient *kurora_client.Client) *Client {
-	c.KuroraClient = kuroraClient
-	return c
+	return client, nil
 }
 
 // profiles request
