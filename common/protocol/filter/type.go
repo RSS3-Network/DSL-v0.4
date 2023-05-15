@@ -332,6 +332,14 @@ var MetadataMapping = []struct {
 			},
 		},
 	},
+	{
+		&metadata.NameService{}, []Criteria{
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleEdit,
+			},
+		},
+	},
 }
 
 var validTypeMap = func() map[string][]string {
