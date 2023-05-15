@@ -42,6 +42,7 @@ func TestValidateTypeMap(t *testing.T) {
 		CollectiblePoap,
 		CollectibleApproval,
 		CollectibleEdit,
+		CollectibleEdit,
 	})
 
 	eq(TagSocial, []string{
