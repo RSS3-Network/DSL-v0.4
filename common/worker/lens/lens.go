@@ -89,14 +89,7 @@ func (c *Client) GetProfile(profileID *big.Int) (*social.Profile, error) {
 		return nil, fmt.Errorf("empty profile")
 	}
 
-	ethereumClient, err := ethclientx.Global(protocol.NetworkPolygon)
-	if err != nil {
-		loggerx.Global().Error("[common] lens: ethclientx.Global err", zap.Error(err))
-
-		return nil, err
-	}
-
-	lensHubContract, err := lenscontract.NewHub(lens.HubProxyContractAddress, ethereumClient)
+	lensHubContract, err := lenscontract.NewHub(lens.HubProxyContractAddress, c.ethClient)
 	if err != nil {
 		loggerx.Global().Error("[common] lens: NewHub err", zap.Error(err))
 
@@ -137,12 +130,6 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 
 	defer func() { opentelemetry.Log(trace, transaction, transfers, err) }()
 
-	// rpc
-	ethclient, err := ethclientx.Global(protocol.NetworkPolygon)
-	if err != nil {
-		return nil, err
-	}
-
 	var sourceData ethereum.SourceData
 	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal source data: %w", err)
@@ -155,7 +142,7 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			continue
 		}
 
-		lensContract, err := contract.NewEvents(log.Address, ethclient)
+		lensContract, err := contract.NewEvents(log.Address, c.ethClient)
 		if err != nil {
 			logrus.Errorf("[lens worker] handleReceipt: new events error, %v", err)
 
@@ -501,7 +488,7 @@ func (c *Client) HandleCollectNFTTransferred(ctx context.Context, lensContract c
 		}
 	}()
 
-	pubs, err := c.KuroraClient.FetchDatasetLensPublications(ctx, kurora_client.DatasetLensPublicationQuery{
+	pubs, err := c.kuroraClient.FetchDatasetLensPublications(ctx, kurora_client.DatasetLensPublicationQuery{
 		ProfileID:     lo.ToPtr[decimal.Decimal](decimal.NewFromBigInt(event.ProfileId, 0)),
 		PublicationID: lo.ToPtr[decimal.Decimal](decimal.NewFromBigInt(event.PubId, 0)),
 		Limit:         lo.ToPtr[int](1),

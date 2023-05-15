@@ -147,9 +147,14 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	lens, err := lens.New(s.config)
+	if err != nil {
+		return err
+	}
+
 	s.crawlers = []crawler.Crawler{
 		ens.New(s.rabbitmqChannel, s.employer, s.config),
-		lens.New(s.config),
+		lens,
 		mirror.New(s.config),
 		eip1577.New(s.config, s.employer),
 		farcaster.New(s.config),

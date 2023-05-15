@@ -93,14 +93,19 @@ func (s *service) Jobs() []worker.Job {
 }
 
 func New(ctx context.Context, endpoint string) (worker.Worker, error) {
-	s := &service{
-		commWorkerClient: lens_comm.New(),
-	}
 	kc, err := kurora_client.Dial(ctx, endpoint)
 	if err != nil {
 		loggerx.Global().Error(" kurora Dial error", zap.Error(err))
 		return nil, err
 	}
-	s.commWorkerClient.WithKuroraClient(kc)
+
+	worker, err := lens_comm.New(kc)
+	if err != nil {
+		return nil, err
+	}
+
+	s := &service{
+		commWorkerClient: worker,
+	}
 	return s, nil
 }
