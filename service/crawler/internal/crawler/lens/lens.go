@@ -284,7 +284,7 @@ func (s *service) getMomokaTransactions(ctx context.Context) ([]*kurora.DatasetM
 	if blockHeight.Cmp(*latestBlockHeight) == 0 {
 		time.Sleep(1 * time.Minute)
 
-		return nil, "", nil
+		return nil, blockHeight.String(), nil
 	}
 
 	// query momoka transactions
