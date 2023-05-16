@@ -5,16 +5,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/donation"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/gitcoin"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/gitcoin/quadratic"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/gitcoin/round"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
@@ -24,6 +30,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/donation/gitcoin/job"
 	"github.com/shopspring/decimal"
+
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
@@ -73,6 +80,8 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		switch {
 		case message.Network == protocol.NetworkEthereum && transaction.AddressTo == ContractAddressEth:
 			transfers, err = s.handleGitcoinEthereum(ctx, message, transaction)
+		case message.Network == protocol.NetworkEthereum && common.HexToAddress(transaction.AddressTo) == gitcoin.AddressRound:
+			transfers, err = s.handleGitcoinEthereumBetaRound(ctx, message, transaction)
 		case message.Network == protocol.NetworkPolygon && transaction.AddressTo == ContractAddressPolygon:
 			transfers, err = s.handleGitcoinEthereum(ctx, message, transaction)
 		case message.Network == protocol.NetworkZkSync:
@@ -337,6 +346,158 @@ func (s *service) handlerGitcoinZkSync(ctx context.Context, message *protocol.Me
 	}
 
 	return transfers, nil
+}
+
+func (s *service) handleGitcoinEthereumBetaRound(ctx context.Context, message *protocol.Message, transaction model.Transaction) (transfers []model.Transfer, err error) {
+	tracer := otel.Tracer("worker_gitcoin")
+	_, span := tracer.Start(ctx, "worker_gitcoin:handleGitcoin")
+
+	defer opentelemetry.Log(span, transaction, transfers, err)
+
+	// Unsupported network
+	ethclient, err := ethclientx.Global(message.Network)
+	if err != nil {
+		return nil, err
+	}
+
+	var sourceData ethereum.SourceData
+	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal source data: %w", err)
+	}
+
+	for _, log := range sourceData.Receipt.Logs {
+		// Filter anonymous log
+		if len(log.Topics) == 0 {
+			continue
+		}
+
+		if log.Topics[0] != gitcoin.EventVoted {
+			continue
+		}
+
+		quadraticContract, err := quadratic.NewQuadratic(log.Address, ethclient)
+		if err != nil {
+			loggerx.Global().Error("get Quadratic contract error", zap.Error(err))
+
+			continue
+		}
+
+		voted, err := quadraticContract.ParseVoted(*log)
+		if err != nil {
+			loggerx.Global().Error("parse voted event error", zap.Error(err))
+
+			continue
+		}
+
+		roundContract, err := round.NewRound(gitcoin.AddressRound, ethclient)
+		if err != nil {
+			loggerx.Global().Error("get Round contract error", zap.Error(err))
+
+			continue
+		}
+
+		application, err := roundContract.Applications(&bind.CallOpts{}, voted.ApplicationIndex)
+		if err != nil {
+			loggerx.Global().Error("get application metadata error", zap.Error(err))
+
+			continue
+		}
+
+		appIpfsUrl := metadata_url.GetDirectURL(fmt.Sprintf("%s%s", "ipfs://", application.MetaPtr.Pointer))
+
+		projectMeta, err := s.getEthereumBetaRoundMetadata(ctx, appIpfsUrl)
+		if err != nil {
+			loggerx.Global().Error("get project metadata error", zap.Error(err))
+
+			continue
+		}
+
+		sourceData, err := json.Marshal(log)
+		if err != nil {
+			loggerx.Global().Error("marshal source data error", zap.Error(err))
+
+			continue
+		}
+
+		transfer := model.Transfer{
+			TransactionHash: transaction.Hash,
+			Timestamp:       transaction.Timestamp,
+			BlockNumber:     big.NewInt(transaction.BlockNumber),
+			Tag:             transaction.Tag,
+			Index:           int64(log.Index),
+			AddressFrom:     strings.ToLower(voted.Voter.String()),
+			AddressTo:       strings.ToLower(voted.GrantAddress.String()),
+			Metadata:        metadata.Default,
+			Network:         transaction.Network,
+			Source:          transaction.Source,
+			SourceData:      sourceData,
+		}
+
+		transfer.RelatedUrls = append(transfer.RelatedUrls, fmt.Sprintf("%s/%s/%s-%v", "https://explorer.gitcoin.co/#/round/1", strings.ToLower(voted.RoundAddress.String()), strings.ToLower(voted.RoundAddress.String()), voted.ApplicationIndex))
+
+		var tokenMetadata *metadata.Token
+
+		if strings.ToLower(voted.Token.String()) == ContractAddressEthereumNative || voted.Token == ethereum.AddressGenesis {
+			tokenMetadata, err = s.tokenClient.NatvieToMetadata(ctx, transaction.Network)
+		} else {
+			tokenMetadata, err = s.tokenClient.ERC20ToMetadata(ctx, transaction.Network, voted.Token.String())
+		}
+		if err != nil {
+			loggerx.Global().Error("get token error", zap.Error(err))
+		}
+
+		tokenValue := decimal.NewFromBigInt(voted.Amount, 0)
+		tokenValueDisplay := tokenValue.Shift(-int32(tokenMetadata.Decimals))
+		tokenMetadata.Value = &tokenValue
+		tokenMetadata.ValueDisplay = &tokenValueDisplay
+
+		metadataRaw, err := json.Marshal(&metadata.Donation{
+			Title:       projectMeta.Application.Project.Title,
+			Description: projectMeta.Application.Project.Description,
+			Logo:        metadata_url.GetDirectURL(fmt.Sprintf("%s%s", "ipfs://", projectMeta.Application.Project.LogoImg)),
+			Platform:    protocol.PlatformGitcoin,
+			Token:       *tokenMetadata,
+		})
+		if err != nil {
+			loggerx.Global().Error("marshal metadata error", zap.Error(err))
+
+			continue
+		}
+
+		transfer.Metadata = metadataRaw
+		transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagDonation, transfer.Tag, filter.DonationDonate, transfer.Type)
+
+		if transfer.Tag == filter.TagDonation {
+			transfer.Platform = Name
+		}
+
+		transfers = append(transfers, transfer)
+	}
+
+	return transfers, nil
+}
+
+func (s *service) getEthereumBetaRoundMetadata(ctx context.Context, url string) (*ApplicationResp, error) {
+	httpRequest, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("new request: %w", err)
+	}
+
+	httpResponse, err := http.DefaultClient.Do(httpRequest)
+	if err != nil {
+		return nil, fmt.Errorf("http client do request: %w", err)
+	}
+
+	var response *ApplicationResp
+	if err := json.NewDecoder(httpResponse.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+
+	if len(response.Signature) == 0 {
+		return nil, fmt.Errorf("response return an error: %w", nil)
+	}
+
+	return response, nil
 }
 
 func (s *service) Jobs() []worker.Job {
