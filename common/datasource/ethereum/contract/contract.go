@@ -25,8 +25,6 @@ var ContractABIs embed.FS
 //go:generate abigen --abi ./uniswap/position.abi --pkg uniswap --type Position --out ./uniswap/position.go
 // https://etherscan.io/address/0xdef1c0ded9bec7f1a1670819833240f027b25eff
 //go:generate abigen --abi ./zerox/zerox.abi --pkg zerox --type ZeroX --out ./zerox/zerox.go
-// https://etherscan.io/address/0x7d655c57f71464b6f83811c55d84009cd9f5221c
-//go:generate abigen --abi ./gitcoin/gitcoin.abi --pkg gitcoin --type Gitcoin --out ./gitcoin/gitcoin.go
 // https://polygonscan.com/token/0xdb46d1dc155634fbc732f92e853b10b288ad5a1d
 //go:generate abigen --abi ./lens/hub.abi --pkg lens --type Hub --out ./lens/hub.go
 // https://scan.crossbell.io/address/0xa6f969045641Cf486a747A2688F3a5A6d43cd0D8
@@ -138,3 +136,8 @@ var ContractABIs embed.FS
 // CyberConnect
 // https://bscscan.com/address/0x2723522702093601e6360cae665518c4f63e9da6#code
 //go:generate abigen --abi ./cyberconnect/ProfileNFT.abi --pkg cyberconnect --type CyberConnect --out ./cyberconnect/profileNFT.go
+
+// Gitcoin
+//go:generate abigen --abi ./gitcoin/gitcoin.abi --pkg gitcoin --type Gitcoin --out ./gitcoin/gitcoin.go
+//go:generate abigen --abi ./gitcoin/round/round.abi --pkg round --type Round --out ./gitcoin/round/round.go
+//go:generate abigen --abi ./gitcoin/quadratic/quadratic.abi --pkg quadratic --type Quadratic --out ./gitcoin/quadratic/quadratic.go
