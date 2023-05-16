@@ -31,6 +31,8 @@ func (d *Doc) Define() {
 		d.schemas.SetSchema(ExchangeResult{}, d.schemas.AnyOf(model.CexResult{}, model.DexResult{}))
 
 		d.DefinePlatformList()
+
+		d.DefineNetworkList()
 	}
 }
 
@@ -92,4 +94,34 @@ func (d *Doc) DefinePlatformList() {
 		Type: jschema.TypeString,
 		Enum: jschema.ToJValList(list...),
 	})
+}
+
+func (d *Doc) DefineNetworkList() {
+	list := []string{}
+
+	list = append(list, protocol.EthclientNetworks...)
+	list = append(list, protocol.SupportNetworks...)
+
+	sort.Strings(list)
+
+	list = removeDuplicate(list)
+
+	type NetworkName string
+
+	d.schemas.SetSchema(NetworkName(""), &jschema.Schema{
+		Type: jschema.TypeString,
+		Enum: jschema.ToJValList(list...),
+	})
+}
+
+func removeDuplicate[T string | int](sliceList []T) []T {
+	allKeys := make(map[T]bool)
+	list := []T{}
+	for _, item := range sliceList {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
 }

@@ -194,19 +194,21 @@ func (d *Datasource) getLensTransferHashes(ctx context.Context, message *protoco
 }
 
 func New(ctx context.Context, endpoint string) (datasource.Datasource, error) {
-	internalDatasource := Datasource{
-		lensClient: lens_comm.New(),
-	}
-
-	var err error
-
-	internalDatasource.kuroraClient, err = kurora.Dial(ctx, endpoint, kurora.WithHTTPClient(http.DefaultClient))
+	kuroraClient, err := kurora.Dial(ctx, endpoint, kurora.WithHTTPClient(http.DefaultClient))
 	if err != nil {
 		loggerx.Global().Error(" kurora Dial error", zap.Error(err))
 		return nil, err
 	}
 
-	internalDatasource.lensClient.WithKuroraClient(internalDatasource.kuroraClient)
+	lensClient, err := lens_comm.New(kuroraClient)
+	if err != nil {
+		return nil, err
+	}
+
+	internalDatasource := Datasource{
+		lensClient:   lensClient,
+		kuroraClient: kuroraClient,
+	}
 
 	return &internalDatasource, nil
 }

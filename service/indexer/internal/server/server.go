@@ -140,6 +140,15 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
+	ethereumClientMap, err := ethclientx.Dial(s.config.RPC, protocol.EthclientNetworks)
+	if err != nil {
+		return err
+	}
+
+	for network, client := range ethereumClientMap {
+		ethclientx.ReplaceGlobal(network, client)
+	}
+
 	alchemyDatasource, err := alchemy.New(s.config.RPC)
 	if err != nil {
 		return err
@@ -182,15 +191,6 @@ func (s *Server) Initialize() (err error) {
 	swapWorker, err := swap.New(s.employer)
 	if err != nil {
 		return err
-	}
-
-	ethereumClientMap, err := ethclientx.Dial(s.config.RPC, protocol.EthclientNetworks)
-	if err != nil {
-		return err
-	}
-
-	for network, client := range ethereumClientMap {
-		ethclientx.ReplaceGlobal(network, client)
 	}
 
 	lensWorker, err := lens_worker.New(context.Background(), s.config.Kurora.Endpoint)
