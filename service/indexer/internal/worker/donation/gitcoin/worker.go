@@ -202,7 +202,7 @@ func (s *service) handleGitcoinEthereum(ctx context.Context, message *protocol.M
 			SourceData:      sourceData,
 		}
 
-		transfer.RelatedUrls = append(transfer.RelatedUrls, "https://gitcoin.co/grants"+strconv.Itoa(project.ID)+"/"+project.Slug)
+		transfer.RelatedUrls = append(transfer.RelatedUrls, fmt.Sprintf("https://gitcoin.co/grants/%d/%s", project.ID, project.Slug))
 
 		var tokenMetadata *metadata.Token
 
