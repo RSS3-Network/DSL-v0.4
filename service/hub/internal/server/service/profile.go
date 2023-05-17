@@ -226,7 +226,7 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 	// https://avvy.domains/docs/privacy-features-registrations/
 	if len(result) == 0 && !name_service.IsEvmValidAddress(request.Address) {
 		res := name_service.ReverseResolveAll(c, request.Address, false)
-		if len(res.Address) == 0 || !name_service.IsEvmValidAddress(res.Address) {
+		if len(res.Address) == 0 || !name_service.IsEvmValidAddress(res.Address) || strings.EqualFold(res.Address, ethereum.AddressGenesis.String()) {
 			return result, nil
 		}
 
