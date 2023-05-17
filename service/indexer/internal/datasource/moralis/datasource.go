@@ -58,7 +58,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 
 	defer opentelemetry.Log(span, message, transactions, err)
 
-	transactionsMap := make(map[string]*model.Transaction)
+	transactionsMap := make(map[string]model.Transaction)
 
 	nativeTransactions, err := d.handleEthereumTransactions(ctx, message)
 	if err != nil {
@@ -66,7 +66,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 	}
 
 	for _, nativeTransaction := range nativeTransactions {
-		transactionsMap[nativeTransaction.Hash] = &nativeTransaction
+		transactionsMap[nativeTransaction.Hash] = nativeTransaction
 	}
 
 	tokenTransfers, err := d.handleEthereumTokenTransfers(ctx, message)
@@ -80,7 +80,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 			return nil, err
 		}
 
-		transactionsMap[transfer.TransactionHash] = &model.Transaction{
+		transactionsMap[transfer.TransactionHash] = model.Transaction{
 			BlockNumber: transfer.BlockNumber.Int64(),
 			Hash:        transfer.TransactionHash,
 			Network:     message.Network,
@@ -100,7 +100,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 			return nil, err
 		}
 
-		transactionsMap[transfer.TransactionHash] = &model.Transaction{
+		transactionsMap[transfer.TransactionHash] = model.Transaction{
 			BlockNumber: transfer.BlockNumber.Int64(),
 			Hash:        transfer.TransactionHash,
 			Network:     message.Network,
@@ -109,7 +109,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 		}
 	}
 
-	internalTransactions := make([]*model.Transaction, 0)
+	internalTransactions := make([]model.Transaction, 0)
 
 	for _, transaction := range transactionsMap {
 		if transaction.BlockNumber < message.BlockNumber {
@@ -123,16 +123,7 @@ func (d *Datasource) handleEthereum(ctx context.Context, message *protocol.Messa
 		internalTransactions = append(internalTransactions, transaction)
 	}
 
-	// internalTransactions, err = ethereum.BuildTransactions(ctx, message, internalTransactions)
-	// if err != nil {
-	//	 return nil, err
-	// }
-
-	for _, transaction := range internalTransactions {
-		transactions = append(transactions, *transaction)
-	}
-
-	return transactions, nil
+	return internalTransactions, nil
 }
 
 func (d *Datasource) handleEthereumTransactions(ctx context.Context, message *protocol.Message) (transactions []model.Transaction, err error) {
