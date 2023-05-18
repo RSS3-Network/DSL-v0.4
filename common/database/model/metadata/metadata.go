@@ -135,6 +135,7 @@ type CrossbellNote struct {
 type NameService struct {
 	Action string     `json:"action"`
 	Name   string     `json:"name"`
+	Detail *Token     `json:"detail,omitempty"`
 	Cost   *Token     `json:"cost,omitempty"`
 	Expiry *time.Time `json:"expiry,omitempty"`
 	Key    string     `json:"key,omitempty"`

@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
@@ -154,11 +156,16 @@ func (i *internal) Handle(ctx context.Context, message *protocol.Message, transa
 	return internalTransactions, nil
 }
 
-func (i *internal) buildNameServiceMetadata(name string, action string, tokenType *token.Native, cost *big.Int, expires *big.Int, key, value string) (json.RawMessage, error) {
+func (i *internal) buildNameServiceMetadata(ctx context.Context, network, name, action string, tokenType *token.Native, cost, expires *big.Int, key, value string) (json.RawMessage, error) {
 	nameServiceMetadata := metadata.NameService{
 		Action: action,
 		Name:   name,
 	}
+
+	label := strings.Split(name, ".eth")[0]
+	tokenId := common.BytesToHash(crypto.Keccak256([]byte(label))).Big()
+	tokenMetadata, _ := i.buildToken(ctx, network, tokenId)
+	nameServiceMetadata.Detail = tokenMetadata
 
 	if expires != nil {
 		nameServiceMetadata.Expiry = lo.ToPtr(time.Unix(expires.Int64(), 0))
@@ -190,7 +197,7 @@ func (i *internal) buildNameServiceMetadata(name string, action string, tokenTyp
 	return json.Marshal(&nameServiceMetadata)
 }
 
-func (i *internal) buildTokenMetadata(ctx context.Context, network string, tokenId *big.Int) (json.RawMessage, error) {
+func (i *internal) buildToken(ctx context.Context, network string, tokenId *big.Int) (*metadata.Token, error) {
 	var tokenMetadata *metadata.Token
 
 	erc721, err := i.tokenClient.ERC721(ctx, network, ens.ENSContractAddress.String(), tokenId)
@@ -211,6 +218,15 @@ func (i *internal) buildTokenMetadata(ctx context.Context, network string, token
 	}
 
 	tokenMetadata.SetValue(decimal.New(1, 0))
+
+	return tokenMetadata, nil
+}
+
+func (i *internal) buildTokenMetadata(ctx context.Context, network string, tokenId *big.Int) (json.RawMessage, error) {
+	tokenMetadata, err := i.buildToken(ctx, network, tokenId)
+	if err != nil {
+		return nil, err
+	}
 
 	metadataRaw, err := json.Marshal(tokenMetadata)
 	if err != nil {
