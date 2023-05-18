@@ -45,7 +45,7 @@ func (i *internal) handleENSNameRenewed(ctx context.Context, message *protocol.M
 		return nil, err
 	}
 
-	nameServiceMetadata, err := i.buildNameServiceMetadata(ctx, message.Network, fmt.Sprintf("%s.eth", event.Name), filter.CollectibleEditRenew, nativeToken, event.Cost, event.Expires, "", "")
+	nameServiceMetadata, err := i.buildNameServiceMetadata(fmt.Sprintf("%s.eth", event.Name), filter.CollectibleEditRenew, nativeToken, event.Cost, event.Expires, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (i *internal) handleENSNameRenewedV2(ctx context.Context, message *protocol
 		return nil, err
 	}
 
-	nameServiceMetadata, err := i.buildNameServiceMetadata(ctx, message.Network, fmt.Sprintf("%s.eth", event.Name), filter.CollectibleEditRenew, nativeToken, event.Cost, event.Expires, "", "")
+	nameServiceMetadata, err := i.buildNameServiceMetadata(fmt.Sprintf("%s.eth", event.Name), filter.CollectibleEditRenew, nativeToken, event.Cost, event.Expires, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (i *internal) handleENSNameWrapper(ctx context.Context, message *protocol.M
 		name = decodeEnsName[1]
 	}
 
-	nameServiceMetadata, err := i.buildNameServiceMetadata(ctx, message.Network, name, filter.CollectibleEditWrap, nil, nil, big.NewInt(0).SetUint64(event.Expiry), "", "")
+	nameServiceMetadata, err := i.buildNameServiceMetadata(name, filter.CollectibleEditWrap, nil, nil, big.NewInt(0).SetUint64(event.Expiry), "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +265,7 @@ func (i *internal) handleENSTextChangedV2(ctx context.Context, message *protocol
 
 	name := resp.Domains[0].Name
 
-	nameServiceMetadata, err := i.buildNameServiceMetadata(ctx, message.Network, name, filter.CollectibleEditText, nil, nil, nil, event.Key, event.Value)
+	nameServiceMetadata, err := i.buildNameServiceMetadata(name, filter.CollectibleEditText, nil, nil, nil, event.Key, event.Value)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +314,7 @@ func (i *internal) handleENSTextChangedV1(ctx context.Context, message *protocol
 
 	name := resp.Domains[0].Name
 
-	nameServiceMetadata, err := i.buildNameServiceMetadata(ctx, message.Network, name, filter.CollectibleEditText, nil, nil, nil, event.Key, "")
+	nameServiceMetadata, err := i.buildNameServiceMetadata(name, filter.CollectibleEditText, nil, nil, nil, event.Key, "")
 	if err != nil {
 		return nil, err
 	}
