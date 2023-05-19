@@ -36,12 +36,10 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/conflux"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
-
-	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/ethereum"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
-
+	eth_etl "github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/pregod_etl/ethereum"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset/nftscan"
@@ -176,11 +174,6 @@ func (s *Server) Initialize() (err error) {
 		return err
 	}
 
-	ethereumDatasource, err := ethereum.New(context.Background(), s.config.Kurora.Endpoint)
-	if err != nil {
-		return err
-	}
-
 	s.datasources = []datasource.Datasource{
 		kuroraDatasource,
 		mirrorDatasource,
@@ -188,7 +181,7 @@ func (s *Server) Initialize() (err error) {
 		moralis.New(s.config.Moralis.Key),
 		blockscoutDatasource,
 		zksync.New(),
-		ethereumDatasource,
+		eth_etl.New(),
 		eip1577.New(s.employer),
 		lensDatasource,
 		aptos.New(),
