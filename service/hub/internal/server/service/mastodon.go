@@ -24,6 +24,7 @@ import (
 const (
 	SourceName = "Mastodon"
 	ThreadSize = 10
+	Limit      = 40
 )
 
 func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest, client *mastodon.Client) ([]*dbModel.Transaction, error) {
@@ -38,6 +39,10 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 		locker      sync.Mutex
 	)
 
+	pagination := &mastodon.Pagination{
+		Limit: Limit,
+	}
+
 	if isMastodonUsername(request.Address) {
 		accounts, err := client.AccountsSearch(c, query, 1)
 		if err != nil {
@@ -48,9 +53,7 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 			return nil, nil
 		}
 
-		contentList, _ = client.GetAccountStatuses(c, accounts[0].ID, &mastodon.Pagination{
-			Limit: 40,
-		})
+		contentList, _ = client.GetAccountStatuses(c, accounts[0].ID, pagination)
 	} else {
 		result, err := client.Search(c, query, true)
 		if err != nil {
@@ -64,9 +67,7 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 		lop.ForEach(result.Hashtags, func(tag *mastodon.Tag, i int) {
 			name := tag.Name
 
-			list, err := client.GetTimelineHashtag(c, name, false, &mastodon.Pagination{
-				Limit: 40,
-			})
+			list, err := client.GetTimelineHashtag(c, name, false, pagination)
 			if err != nil {
 				zap.L().Error("get time line hashtag", zap.Error(err), zap.String("tag", name))
 
@@ -86,7 +87,7 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 
 	// Sort, latest -> oldest
 	sort.SliceStable(transactions, func(i, j int) bool {
-		return transactions[i].CreatedAt.After(transactions[j].CreatedAt)
+		return transactions[i].BlockNumber > transactions[j].BlockNumber
 	})
 
 	return transactions, nil
