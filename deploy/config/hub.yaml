@@ -35,6 +35,11 @@ opentelemetry:
 kurora:
   endpoint: ''
 
+mastodon:
+  server: ''
+  username: ''
+  password: ''
+
 redis:
   tls: false
   addr: 127.0.0.1:6379
