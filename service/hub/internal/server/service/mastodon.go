@@ -27,7 +27,7 @@ const (
 	Limit      = 40
 )
 
-func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest, client *mastodon.Client) ([]*dbModel.Transaction, error) {
+func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest) ([]*dbModel.Transaction, error) {
 	query := request.Address
 
 	if len(query) == 0 {
@@ -37,6 +37,7 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 	var (
 		contentList []*mastodon.Status
 		locker      sync.Mutex
+		err         error
 	)
 
 	pagination := &mastodon.Pagination{
@@ -44,7 +45,18 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 	}
 
 	if isMastodonUsername(request.Address) {
-		accounts, err := client.AccountsSearch(c, query, 1)
+
+		var accounts []*mastodon.Account
+
+		err = s.mastodonPool.DoRequest(context.Background(), func(client *mastodon.Client) error {
+			accounts, err = client.AccountsSearch(context.Background(), query, 1)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
+
 		if err != nil {
 			return nil, err
 		}
@@ -53,12 +65,34 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 			return nil, nil
 		}
 
-		contentList, _ = client.GetAccountStatuses(c, accounts[0].ID, pagination)
-	} else {
-		result, err := client.Search(c, query, true)
+		err = s.mastodonPool.DoRequest(context.Background(), func(client *mastodon.Client) error {
+			contentList, err = client.GetAccountStatuses(c, accounts[0].ID, pagination)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
+
 		if err != nil {
 			return nil, err
 		}
+
+	} else {
+		var result *mastodon.Results
+		err = s.mastodonPool.DoRequest(context.Background(), func(client *mastodon.Client) error {
+			result, err = client.Search(c, query, true)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
 		if len(result.Hashtags) == 0 {
 			return nil, nil
 		}
@@ -67,7 +101,16 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 		lop.ForEach(result.Hashtags, func(tag *mastodon.Tag, i int) {
 			name := tag.Name
 
-			list, err := client.GetTimelineHashtag(c, name, false, pagination)
+			var list []*mastodon.Status
+			err = s.mastodonPool.DoRequest(context.Background(), func(client *mastodon.Client) error {
+				list, err = client.GetTimelineHashtag(c, name, false, pagination)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			})
+
 			if err != nil {
 				zap.L().Error("get time line hashtag", zap.Error(err), zap.String("tag", name))
 
@@ -80,7 +123,7 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 		}, opt)
 	}
 
-	transactions, err := s.handleContentList(c, contentList, client)
+	transactions, err := s.handleContentList(c, contentList)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +136,7 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 	return transactions, nil
 }
 
-func (s *Service) handleContentList(c context.Context, contentList []*mastodon.Status, client *mastodon.Client) ([]*dbModel.Transaction, error) {
+func (s *Service) handleContentList(c context.Context, contentList []*mastodon.Status) ([]*dbModel.Transaction, error) {
 	var (
 		transactions []*dbModel.Transaction
 		tx           *dbModel.Transaction
@@ -106,7 +149,7 @@ func (s *Service) handleContentList(c context.Context, contentList []*mastodon.S
 
 		switch {
 		case status.InReplyToID != nil:
-			tx = s.buildCommentTransaction(c, status, client)
+			tx = s.buildCommentTransaction(c, status)
 		case status.Reblog != nil:
 			tx = s.buildShareTransaction(c, status)
 		default:
@@ -207,8 +250,20 @@ func (s *Service) buildShareTransaction(c context.Context, status *mastodon.Stat
 	return transaction
 }
 
-func (s *Service) buildCommentTransaction(c context.Context, status *mastodon.Status, client *mastodon.Client) *dbModel.Transaction {
-	target, err := client.GetStatus(c, mastodon.ID(status.InReplyToID.(string)))
+func (s *Service) buildCommentTransaction(c context.Context, status *mastodon.Status) *dbModel.Transaction {
+	var (
+		target *mastodon.Status
+		err    error
+	)
+
+	err = s.mastodonPool.DoRequest(context.Background(), func(client *mastodon.Client) error {
+		target, err = client.GetStatus(c, mastodon.ID(status.InReplyToID.(string)))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 
 	if err != nil || target == nil {
 		return nil

@@ -72,9 +72,10 @@ func (k *Kurora) String() string {
 }
 
 type Mastodon struct {
-	Server   string `mapstructure:"server"`
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Servers   []string `mapstructure:"servers"`
+	Username  string   `mapstructure:"username"`
+	Password  string   `mapstructure:"password"`
+	RateLimit int      `mapstructure:"ratelimit"`
 }
 
 var _ fmt.Stringer = &RabbitMQ{}

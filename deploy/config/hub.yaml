@@ -36,9 +36,10 @@ kurora:
   endpoint: ''
 
 mastodon:
-  server: ''
+  servers: ''
   username: ''
   password: ''
+  ratelimit: 298
 
 redis:
   tls: false
