@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler/maspool"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	lop "github.com/samber/lo/parallel"
 
@@ -23,7 +25,6 @@ import (
 
 const (
 	SourceName = "Mastodon"
-	ThreadSize = 10
 	Limit      = 40
 )
 
@@ -38,6 +39,7 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 		contentList []*mastodon.Status
 		locker      sync.Mutex
 		err         error
+		instance    *maspool.Instance
 	)
 
 	pagination := &mastodon.Pagination{
@@ -45,17 +47,13 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 	}
 
 	if isMastodonUsername(request.Address) {
-
 		var accounts []*mastodon.Account
 
-		err = s.mastodonPool.DoRequest(context.Background(), func(client *mastodon.Client) error {
-			accounts, err = client.AccountsSearch(context.Background(), query, 1)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		})
+		instance = s.mastodonPool.GetAvailableInstance(2)
+		if instance == nil {
+			return nil, fmt.Errorf("mastodon api rate limit, please try again after %s", maspool.GetNext5MinuteTime().Format(time.RFC3339))
+		}
+		accounts, err = instance.Client.AccountsSearch(context.Background(), query, 1)
 
 		if err != nil {
 			return nil, err
@@ -65,14 +63,8 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 			return nil, nil
 		}
 
-		err = s.mastodonPool.DoRequest(context.Background(), func(client *mastodon.Client) error {
-			contentList, err = client.GetAccountStatuses(c, accounts[0].ID, pagination)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		})
+		// different id in different client
+		contentList, err = instance.Client.GetAccountStatuses(c, accounts[0].ID, pagination)
 
 		if err != nil {
 			return nil, err
@@ -80,14 +72,12 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 
 	} else {
 		var result *mastodon.Results
-		err = s.mastodonPool.DoRequest(context.Background(), func(client *mastodon.Client) error {
-			result, err = client.Search(c, query, true)
-			if err != nil {
-				return err
-			}
 
-			return nil
-		})
+		instance = s.mastodonPool.GetAvailableInstance(1)
+		if instance == nil {
+			return nil, fmt.Errorf("mastodon api rate limit, please try this request again after %s", maspool.GetNext5MinuteTime().Format(time.RFC3339))
+		}
+		result, err = instance.Client.Search(c, query, true)
 
 		if err != nil {
 			return nil, err
@@ -97,19 +87,18 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 			return nil, nil
 		}
 
-		opt := lop.NewOption().WithConcurrency(ThreadSize)
+		instance = s.mastodonPool.GetAvailableInstance(len(result.Hashtags))
+		if instance == nil {
+			return nil, fmt.Errorf("mastodon api rate limit, please try this request again after %s", maspool.GetNext5MinuteTime().Format(time.RFC3339))
+		}
+
+		opt := lop.NewOption().WithConcurrency(len(result.Hashtags))
 		lop.ForEach(result.Hashtags, func(tag *mastodon.Tag, i int) {
 			name := tag.Name
 
 			var list []*mastodon.Status
-			err = s.mastodonPool.DoRequest(context.Background(), func(client *mastodon.Client) error {
-				list, err = client.GetTimelineHashtag(c, name, false, pagination)
-				if err != nil {
-					return err
-				}
 
-				return nil
-			})
+			list, err = instance.Client.GetTimelineHashtag(c, name, false, pagination)
 
 			if err != nil {
 				zap.L().Error("get time line hashtag", zap.Error(err), zap.String("tag", name))
@@ -123,7 +112,18 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 		}, opt)
 	}
 
-	transactions, err := s.handleContentList(c, contentList)
+	var comments int
+	for _, content := range contentList {
+		if content.InReplyToID != nil {
+			comments++
+		}
+	}
+
+	if instance.RateLimit < comments {
+		return nil, fmt.Errorf("mastodon api rate limit, please try this request again after %s", maspool.GetNext5MinuteTime().Format(time.RFC3339))
+	}
+
+	transactions, err := s.handleContentList(c, contentList, instance)
 	if err != nil {
 		return nil, err
 	}
@@ -136,20 +136,20 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 	return transactions, nil
 }
 
-func (s *Service) handleContentList(c context.Context, contentList []*mastodon.Status) ([]*dbModel.Transaction, error) {
+func (s *Service) handleContentList(c context.Context, contentList []*mastodon.Status, instance *maspool.Instance) ([]*dbModel.Transaction, error) {
 	var (
 		transactions []*dbModel.Transaction
 		tx           *dbModel.Transaction
 		locker       sync.Mutex
 	)
 
-	opt := lop.NewOption().WithConcurrency(ThreadSize)
+	opt := lop.NewOption().WithConcurrency(10)
 	lop.ForEach(contentList, func(item *mastodon.Status, i int) {
 		status := item
 
 		switch {
 		case status.InReplyToID != nil:
-			tx = s.buildCommentTransaction(c, status)
+			tx = s.buildCommentTransaction(c, status, instance)
 		case status.Reblog != nil:
 			tx = s.buildShareTransaction(c, status)
 		default:
@@ -250,20 +250,13 @@ func (s *Service) buildShareTransaction(c context.Context, status *mastodon.Stat
 	return transaction
 }
 
-func (s *Service) buildCommentTransaction(c context.Context, status *mastodon.Status) *dbModel.Transaction {
+func (s *Service) buildCommentTransaction(c context.Context, status *mastodon.Status, instance *maspool.Instance) *dbModel.Transaction {
 	var (
 		target *mastodon.Status
 		err    error
 	)
 
-	err = s.mastodonPool.DoRequest(context.Background(), func(client *mastodon.Client) error {
-		target, err = client.GetStatus(c, mastodon.ID(status.InReplyToID.(string)))
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
+	target, err = instance.Client.GetStatus(c, mastodon.ID(status.InReplyToID.(string)))
 
 	if err != nil || target == nil {
 		return nil

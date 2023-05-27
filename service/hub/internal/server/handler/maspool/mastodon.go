@@ -2,51 +2,47 @@ package maspool
 
 import (
 	"context"
-	"fmt"
+	"sort"
 	"sync"
 	"time"
 
 	"github.com/mattn/go-mastodon"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
+
+	"go.uber.org/zap"
 )
 
-type Credentials struct {
-	Username  string
-	Password  string
+type Credential struct {
+	Username string
+	Password string
+}
+
+type Instance struct {
+	Client    *mastodon.Client
 	RateLimit int
+	LastReset time.Time
+	Available bool
+	Lock      sync.Mutex
 }
 
-type InstanceEntry struct {
-	Client       *mastodon.Client
-	Requests     int
-	ResetTime    time.Time
-	RateLimit    int
-	Available    bool
-	Availability chan bool
+type InstancePool struct {
+	instances []*Instance
+	mu        sync.Mutex
 }
 
-type MastodonPool struct {
-	mu             sync.Mutex
-	instances      map[string]*InstanceEntry
-	requests       chan *InstanceEntry
-	resetTimers    map[string]*time.Timer // 保存每个实例的定时器
-	resetTimersMux sync.Mutex             // 定时器的互斥锁
-}
+func NewInstancePool(serversAndCredentials map[string]Credential, rateLimit int) (*InstancePool, error) {
+	pool := &InstancePool{}
 
-func NewMastodonPool(serversAndCredentials map[string]Credentials) (*MastodonPool, error) {
-	pool := &MastodonPool{
-		instances:   make(map[string]*InstanceEntry),
-		requests:    make(chan *InstanceEntry),
-		resetTimers: make(map[string]*time.Timer),
-	}
-
-	for server, credentials := range serversAndCredentials {
+	for server, credential := range serversAndCredentials {
 		app, err := mastodon.RegisterApp(context.Background(), &mastodon.AppConfig{
 			Server:     server,
 			ClientName: "RSS3",
 			Scopes:     "read write follow",
 		})
 		if err != nil {
-			return nil, fmt.Errorf("error registering app for server %s: %w", server, err)
+			loggerx.Global().Warn("error registering app for server", zap.String("server", server), zap.Error(err))
+			continue
 		}
 
 		c := mastodon.NewClient(&mastodon.Config{
@@ -55,110 +51,79 @@ func NewMastodonPool(serversAndCredentials map[string]Credentials) (*MastodonPoo
 			ClientSecret: app.ClientSecret,
 		})
 
-		err = c.Authenticate(context.Background(), credentials.Username, credentials.Password)
+		err = c.Authenticate(context.Background(), credential.Username, credential.Password)
 		if err != nil {
-			return nil, fmt.Errorf("error authenticating for server %s: %w", server, err)
+			loggerx.Global().Warn("error authenticating for server", zap.String("server", server), zap.Error(err))
+			continue
 		}
 
-		entry := &InstanceEntry{
-			Client:       c,
-			Requests:     0,
-			ResetTime:    getNext5MinuteTime(),
-			RateLimit:    credentials.RateLimit,
-			Available:    true,
-			Availability: make(chan bool, 1),
+		instance := &Instance{
+			Client:    c,
+			RateLimit: rateLimit,
+			LastReset: GetNext5MinuteTime(),
+			Available: true,
 		}
-		entry.Availability <- true
 
-		pool.instances[server] = entry
+		loggerx.Global().Info("create mastodon instance success", zap.String("server", server))
+
+		pool.instances = append(pool.instances, instance)
 	}
-
-	go pool.processRequests()
 
 	return pool, nil
 }
 
-func (p *MastodonPool) processRequests() {
-	for instance := range p.requests {
-		<-instance.Availability
-		instance.Requests++
-		// fmt.Printf("Sending request to %s, requests: %d, available: %v, resetTime: %s\n", instance.Client.Config.Server, instance.Requests, instance.Available, instance.ResetTime.Format(time.RFC3339))
-
-		if instance.Requests > instance.RateLimit && time.Now().Before(instance.ResetTime) {
-			instance.Available = false
-			duration := time.Until(instance.ResetTime)
-
-			p.resetTimersMux.Lock()
-			timer, ok := p.resetTimers[instance.Client.Config.Server]
-			if ok {
-				timer.Stop() // Stop the previous timer
-			}
-			timer = time.AfterFunc(duration, func() {
-				p.mu.Lock()
-				instance.Available = true
-				instance.Requests = 0
-				instance.ResetTime = getNext5MinuteTime()
-				instance.Availability <- true
-				p.mu.Unlock()
-			})
-			p.resetTimers[instance.Client.Config.Server] = timer
-			p.resetTimersMux.Unlock()
-		} else {
-			if instance.ResetTime.Before(time.Now()) {
-				instance.Requests = 0
-				instance.ResetTime = getNext5MinuteTime()
-			}
-			instance.Availability <- true
-		}
-	}
-}
-
-func (p *MastodonPool) GetClient() (*mastodon.Client, error) {
-	var availableInstances []*InstanceEntry
-
+func (p *InstancePool) GetAvailableInstance(count int) *Instance {
 	p.mu.Lock()
-	for _, instance := range p.instances {
-		if instance.Available {
-			availableInstances = append(availableInstances, instance)
-		}
-	}
-	p.mu.Unlock()
-
-	if len(availableInstances) == 0 {
-		return nil, fmt.Errorf("mastodon api rate limit exceeded, try again after %s", getNext5MinuteTime().Format(time.RFC3339))
-	}
-
-	// Randomly select an available instance
-	instance := availableInstances[time.Now().UnixNano()%int64(len(availableInstances))]
-
-	return instance.Client, nil
-}
-
-func (p *MastodonPool) DoRequest(ctx context.Context, f func(client *mastodon.Client) error) error {
-	client, err := p.GetClient()
-	if err != nil {
-		return err
-	}
-
-	err = f(client)
-	if err != nil {
-		p.mu.Lock()
-		instance := p.instances[client.Config.Server]
-		select {
-		case instance.Availability <- true:
-		default:
-		}
+	defer func() {
+		// get the instance which has the most ratelimit
+		sort.SliceStable(p.instances, func(i, j int) bool {
+			return p.instances[i].RateLimit > p.instances[j].RateLimit
+		})
 		p.mu.Unlock()
+	}()
 
-		return err
+	currentTime := time.Now()
+
+	// restore to initial state
+	if currentTime.After(p.instances[0].LastReset) {
+		for _, instance := range p.instances {
+			instance.Lock.Lock()
+			instance.Available = true
+			instance.LastReset = GetNext5MinuteTime()
+			instance.RateLimit = config.ConfigHub.Mastodon.RateLimit
+			instance.Lock.Unlock()
+		}
 	}
 
-	p.requests <- p.instances[client.Config.Server]
+	for _, instance := range p.instances {
+		instance.Lock.Lock()
+
+		switch {
+		case !instance.Available:
+			if currentTime.Before(instance.LastReset) {
+				instance.Lock.Unlock()
+				continue
+			}
+			instance.RateLimit = config.ConfigHub.Mastodon.RateLimit
+			instance.LastReset = GetNext5MinuteTime()
+			instance.Available = true
+
+		case instance.Available && instance.RateLimit >= count && currentTime.Before(instance.LastReset):
+			instance.RateLimit -= count
+			if instance.RateLimit == 0 {
+				instance.Available = false
+			}
+			instance.Lock.Unlock()
+			return instance
+		}
+
+		instance.Lock.Unlock()
+	}
 
 	return nil
 }
 
-func getNext5MinuteTime() time.Time {
+func GetNext5MinuteTime() time.Time {
 	now := time.Now()
 	minutes := now.Minute()
 	remainder := minutes % 5
