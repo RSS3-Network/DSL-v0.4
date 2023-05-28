@@ -27,6 +27,7 @@ type Config struct {
 	CoinMarketCap *configx.CoinMarketCap `mapstructure:"coinmarketcap"`
 	RPC           *configx.RPC           `mapstructure:"rpc"`
 	Kurora        *configx.Kurora        `mapstructure:"kurora"`
+	Mastodon      *configx.Mastodon      `mapstructure:"mastodon"`
 }
 
 var ConfigHub Config

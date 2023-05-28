@@ -111,6 +111,9 @@ func (s *Server) Initialize() (err error) {
 	s.httpServer.GET(handler.PathGetNameResolve, s.httpHandler.GetNameResolveFunc)
 	s.httpServer.GET(handler.PathGetTransaction, s.httpHandler.GetTransactionByHashFunc)
 
+	// ActivityPub Mastodon
+	s.httpServer.GET("/mastodon/:address", s.httpHandler.GetMastodonFunc)
+
 	// POST
 	s.httpServer.POST(handler.PathBatchGetSocialNotes, s.httpHandler.BatchGetSocialNotesFunc, middlewarex.CheckAPIKeyMiddleware)
 	s.httpServer.POST(handler.PathBatchGetNotes, s.httpHandler.BatchGetNotesFunc, middlewarex.CheckAPIKeyMiddleware)

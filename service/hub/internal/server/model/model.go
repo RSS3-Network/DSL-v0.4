@@ -18,6 +18,7 @@ const (
 	PostProfiles         = "/profiles"
 	GetNS                = "/ns/"
 	GetTransactionByHash = "/tx/"
+	GetMastodon          = "/mastodon/"
 
 	EsIndex = "pregod-v1-visit-path"
 
