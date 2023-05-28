@@ -18,6 +18,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/worker/name_service"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
+	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler/maspool"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/websocket"
 	rabbitmq "github.com/rabbitmq/amqp091-go"
 
@@ -33,6 +34,7 @@ type Service struct {
 	WsHub              *websocket.WSHub
 	DeliveryCh         <-chan rabbitmq.Delivery
 	kuroraClient       *kurora.Client
+	mastodonPool       *maspool.InstancePool
 }
 
 func New() (s *Service) {
@@ -51,6 +53,22 @@ func New() (s *Service) {
 	if err := s.connectMQ(); err != nil {
 		loggerx.Global().Fatal("connect mq failed", zap.Error(err))
 	}
+
+	serversAndCredentials := make(map[string]maspool.Credential, len(config.ConfigHub.Mastodon.Servers))
+
+	for _, server := range config.ConfigHub.Mastodon.Servers {
+		serversAndCredentials[server] = maspool.Credential{
+			Username: config.ConfigHub.Mastodon.Username,
+			Password: config.ConfigHub.Mastodon.Password,
+		}
+	}
+
+	pool, err := maspool.NewInstancePool(serversAndCredentials, config.ConfigHub.Mastodon.RateLimit)
+	if err != nil {
+		loggerx.Global().Fatal("creating Mastodon pool", zap.Error(err))
+	}
+
+	s.mastodonPool = pool
 
 	go func() {
 		maxRetry := 3
