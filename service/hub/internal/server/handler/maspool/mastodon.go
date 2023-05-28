@@ -2,6 +2,7 @@ package maspool
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -67,6 +68,10 @@ func NewInstancePool(serversAndCredentials map[string]Credential, rateLimit int)
 		loggerx.Global().Info("create mastodon instance success", zap.String("server", server))
 
 		pool.instances = append(pool.instances, instance)
+	}
+
+	if len(pool.instances) == 0 {
+		return nil, fmt.Errorf("no mastodon instance available")
 	}
 
 	return pool, nil
