@@ -2,6 +2,7 @@ package maspool
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -69,21 +70,24 @@ func NewInstancePool(serversAndCredentials map[string]Credential, rateLimit int)
 		pool.instances = append(pool.instances, instance)
 	}
 
+	if len(pool.instances) == 0 {
+		return nil, fmt.Errorf("no mastodon instance available")
+	}
+
 	return pool, nil
 }
 
 func (p *InstancePool) GetAvailableInstance(count int) *Instance {
 	p.mu.Lock()
-	defer func() {
-		// get the instance which has the most ratelimit
-		sort.SliceStable(p.instances, func(i, j int) bool {
-			return p.instances[i].RateLimit > p.instances[j].RateLimit
-		})
-		p.mu.Unlock()
-	}()
+	defer p.mu.Unlock()
 
 	currentTime := time.Now()
 
+	loggerx.Global().Info("mastodon instance number", zap.Int("servers", len(p.instances)))
+
+	if len(p.instances) == 0 {
+		loggerx.Global().Error("mastodon has no instance", zap.Int("servers", len(p.instances)))
+	}
 	// restore to initial state
 	if currentTime.After(p.instances[0].LastReset) {
 		for _, instance := range p.instances {
@@ -114,6 +118,9 @@ func (p *InstancePool) GetAvailableInstance(count int) *Instance {
 				instance.Available = false
 			}
 			instance.Lock.Unlock()
+			sort.SliceStable(p.instances, func(i, j int) bool {
+				return p.instances[i].RateLimit > p.instances[j].RateLimit
+			})
 			return instance
 		}
 
