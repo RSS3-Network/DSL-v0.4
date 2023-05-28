@@ -16,6 +16,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler/maspool"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	lop "github.com/samber/lo/parallel"
@@ -50,9 +51,12 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 		var accounts []*mastodon.Account
 
 		instance = s.mastodonPool.GetAvailableInstance(2)
+
 		if instance == nil {
 			return nil, fmt.Errorf("mastodon api rate limit, please try again after %s", maspool.GetNext5MinuteTime().Format(time.RFC3339))
 		}
+
+		loggerx.Global().Info("mastodon instance", zap.String("name", instance.Client.Config.Server), zap.Int("rateLimit", instance.RateLimit), zap.Time("resetTime", instance.LastReset))
 		accounts, err = instance.Client.AccountsSearch(context.Background(), query, 1)
 
 		if err != nil {
@@ -74,9 +78,13 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 		var result *mastodon.Results
 
 		instance = s.mastodonPool.GetAvailableInstance(1)
+
 		if instance == nil {
 			return nil, fmt.Errorf("mastodon api rate limit, please try this request again after %s", maspool.GetNext5MinuteTime().Format(time.RFC3339))
 		}
+
+		loggerx.Global().Info("mastodon instance", zap.String("name", instance.Client.Config.Server), zap.Int("rateLimit", instance.RateLimit), zap.Time("resetTime", instance.LastReset))
+
 		result, err = instance.Client.Search(c, query, true)
 
 		if err != nil {
@@ -91,6 +99,7 @@ func (s *Service) GetMastodonContent(c context.Context, request model.GetRequest
 		if instance == nil {
 			return nil, fmt.Errorf("mastodon api rate limit, please try this request again after %s", maspool.GetNext5MinuteTime().Format(time.RFC3339))
 		}
+		loggerx.Global().Info("mastodon instance", zap.String("name", instance.Client.Config.Server), zap.Int("rateLimit", instance.RateLimit), zap.Time("resetTime", instance.LastReset))
 
 		opt := lop.NewOption().WithConcurrency(len(result.Hashtags))
 		lop.ForEach(result.Hashtags, func(tag *mastodon.Tag, i int) {
