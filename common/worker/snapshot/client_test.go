@@ -21,10 +21,8 @@ func init() {
 func TestGetMultipleSpaces(t *testing.T) {
 
 	variable := snapshot.GetMultipleSpacesVariable{
-		First:          graphql.Int(20),
-		Skip:           graphql.Int(0),
-		OrderBy:        graphql.String("created"),
-		OrderDirection: snapshot.OrderDirectionAsc,
+		First: graphql.Int(20),
+		Where: graphqlx.SpaceWhere{IdArray: []graphql.String{"bonustrack.eth"}},
 	}
 
 	spaces, err := client.GetMultipleSpaces(context.Background(), variable)
@@ -43,8 +41,9 @@ func TestGetMultipleProposals(t *testing.T) {
 		OrderBy:        graphql.String("created"),
 		OrderDirection: snapshot.OrderDirectionAsc,
 		Where: graphqlx.ProposalWhere{
-			Space_in: []graphql.String{"ens.eth"},
-			State:    graphql.String("closed"),
+			Space_in:   []graphql.String{"ens.eth"},
+			State:      graphql.String("closed"),
+			CreatedGte: graphql.Int(1634552593),
 		},
 	}
 
@@ -59,12 +58,13 @@ func TestGetMultipleProposals(t *testing.T) {
 
 func TestGetMultipleVotes(t *testing.T) {
 	variable := snapshot.GetMultipleVotesVariable{
-		First:          graphql.Int(1000),
+		First:          graphql.Int(10),
 		Skip:           graphql.Int(0),
 		OrderBy:        graphql.String("created"),
 		OrderDirection: snapshot.OrderDirectionAsc,
 		Where: graphqlx.VoteWhere{
-			Proposal: graphql.String("QmPvbwguLfcVryzBRrbY4Pb9bCtxURagdv1XjhtFLf3wHj"),
+			//Proposal:   graphql.String("QmPvbwguLfcVryzBRrbY4Pb9bCtxURagdv1XjhtFLf3wHj"),
+			CreatedGte: graphql.Int(1669766184),
 		},
 	}
 

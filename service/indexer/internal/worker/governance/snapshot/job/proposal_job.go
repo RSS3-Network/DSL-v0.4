@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/hasura/go-graphql-client"
-	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -73,81 +72,80 @@ func (job *SnapshotProposalJob) InnerJobRun() (status PullInfoStatus, err error)
 
 	defer func() { opentelemetry.Log(trace, nil, status, err) }()
 
-	var statusStorage StatusStorage
-
-	// get latest proposal id
-	if cache.Global() != nil {
-		statusStorage, err = job.GetLastStatusFromCache(ctx)
-		if err != nil {
-			logrus.Errorf("[snapshot proposal job] get last status, db error: %v", err)
-			statusStorage.Pos = 0
-			statusStorage.Status = PullInfoStatusNotLatest
-		}
-	}
-
-	if cache.Global() == nil || err != nil {
-		statusStorage.Pos, err = job.getProposalTotalFromDB(ctx)
-		if err != nil {
-			return statusStorage.Status, fmt.Errorf("[snapshot proposal job] get proposal total from db, db error: %v", err)
-		}
+	created, err := job.getLatestProposalFromDB(ctx)
+	if err != nil {
+		status = PullInfoStatusNotLatest
+		return status, fmt.Errorf("[snapshot proposal job] get latest proposal total from db, db error: %v", err)
 	}
 
 	// get proposal info from url
-	skip := statusStorage.Pos
 	variable := snapshot.GetMultipleProposalsVariable{
-		First:          graphql.Int(job.Limit),
-		Skip:           graphql.Int(skip),
+		First: graphql.Int(job.Limit),
+		Where: graphqlx.ProposalWhere{
+			CreatedGte: graphql.Int(created),
+		},
 		OrderBy:        "created",
 		OrderDirection: snapshot.OrderDirectionAsc,
 	}
 
 	proposals, err := job.SnapshotClient.GetMultipleProposals(ctx, variable)
 	if err != nil {
-		return statusStorage.Status, fmt.Errorf("[snapshot proposal job] get multiple proposals, graphql error: %v", err)
+		status = PullInfoStatusNotLatest
+		return status, fmt.Errorf("[snapshot proposal job] get multiple proposals, graphql error: %v", err)
 	}
 
 	if len(proposals) > 0 {
 		if err := job.setProposalsInDB(ctx, proposals); err != nil {
-			return statusStorage.Status, fmt.Errorf("[snapshot proposal job] pos[%d], set proposal in db, db error: %v", statusStorage.Pos, err)
+			status = PullInfoStatusNotLatest
+			return status, fmt.Errorf("[snapshot proposal job] created[%d], set proposal in db, db error: %v", created, err)
 		}
-		logrus.Infof("[snapshot proposal job] pull skip [%d]", statusStorage.Pos)
+		logrus.Infof("[snapshot proposal job] pull created [%d]", created)
+
+		// upsert spaces
+		spaceIdMap := make(map[graphql.String]struct{}, 0)
+		spaceIds := make([]graphql.String, 0)
+
+		for _, proposal := range proposals {
+			if _, ok := spaceIdMap[proposal.Space.Id]; !ok {
+				spaceIds = append(spaceIds, proposal.Space.Id)
+			}
+			spaceIdMap[proposal.Space.Id] = struct{}{}
+		}
+
+		if len(spaceIds) > 0 {
+			err = job.upsertSpacesInDB(ctx, spaceIds)
+			if err != nil {
+				status = PullInfoStatusNotLatest
+				return status, fmt.Errorf("[snapshot proposal job] get multiple spaces, graphql error: %v", err)
+			}
+		}
 	}
 
-	skip = statusStorage.Pos + job.Limit
 	// nolint:gocritic // dont' want change nan things
 	if len(proposals) == 0 {
-		statusStorage.Status = PullInfoStatusLatest
+		status = PullInfoStatusLatest
 	} else if len(proposals) < int(job.Limit) {
-		statusStorage.Pos = statusStorage.Pos + int32(len(proposals))
-		statusStorage.Status = PullInfoStatusLatest
+		status = PullInfoStatusLatest
 	} else {
-		statusStorage.Pos = skip
-		statusStorage.Status = PullInfoStatusNotLatest
+		status = PullInfoStatusNotLatest
 	}
 
-	// set space status in cache and db
-	if cache.Global() != nil {
-		err = job.SetCurrentStatus(ctx, statusStorage)
-		if err != nil {
-			return statusStorage.Status, fmt.Errorf("[snapshot proposal job] set current status, db error: %v", err)
-		}
-	}
-
-	return statusStorage.Status, nil
+	return status, nil
 }
 
-func (job *SnapshotProposalJob) getProposalTotalFromDB(ctx context.Context) (int32, error) {
-	var count int64
+func (job *SnapshotProposalJob) getLatestProposalFromDB(ctx context.Context) (int32, error) {
+	var proposal governance.SnapshotProposal
 
 	if err := database.Global().
 		Model(&governance.SnapshotProposal{}).
-		Select("id").
-		Count(&count).Error; err != nil {
-		logrus.Errorf("get proposal total, db error: %v", err)
+		Order("date_created DESC").
+		Limit(1).
+		Take(&proposal).Error; err != nil {
+		logrus.Errorf("get latest proposal, db error: %v", err)
 		return 0, err
 	}
 
-	return int32(count), nil
+	return int32(proposal.DateCreated.Unix()), nil
 }
 
 func (job *SnapshotProposalJob) setProposalsInDB(ctx context.Context, graphqlProposals []graphqlx.Proposal) (err error) {
