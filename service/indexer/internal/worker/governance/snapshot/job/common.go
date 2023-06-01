@@ -6,10 +6,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/naturalselectionlabs/pregod/common/cache"
+	"github.com/hasura/go-graphql-client"
+	"github.com/naturalselectionlabs/pregod/common/database"
+	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
 	"github.com/naturalselectionlabs/pregod/common/worker/snapshot"
+	graphqlx "github.com/naturalselectionlabs/pregod/common/worker/snapshot/graphql"
+	"github.com/sirupsen/logrus"
+
 	"go.opentelemetry.io/otel"
+	"gorm.io/gorm/clause"
 )
 
 type (
@@ -47,57 +53,61 @@ func (job *SnapshotJobBase) Check() error {
 	return nil
 }
 
-func (job *SnapshotJobBase) GetLastStatusFromCache(ctx context.Context) (statusStroge StatusStorage, err error) {
-	tracer := otel.Tracer("snapshot_job")
-	_, trace := tracer.Start(ctx, "snapshot_job:GetLastStatusFromCache")
+func (job *SnapshotJobBase) setSpaceInDB(ctx context.Context, graphqlSpaces []graphqlx.Space) (err error) {
+	tracer := otel.Tracer("snapshot_space_job")
+	_, trace := tracer.Start(ctx, "snapshot_space_job:setSpaceInDB")
 
-	defer func() { opentelemetry.Log(trace, nil, statusStroge, err) }()
+	defer func() { opentelemetry.Log(trace, graphqlSpaces, nil, err) }()
 
-	if job.Name == "" {
-		return StatusStorage{}, fmt.Errorf("job name is empty")
+	var spaces []governance.SnapshotSpace
+
+	for _, graphqlSpace := range graphqlSpaces {
+		metadata, err := json.Marshal(graphqlSpace)
+		if err != nil {
+			logrus.Warnf("[snapshot space job] marshal space metadata, error: %v", err)
+			continue
+		}
+
+		space := governance.SnapshotSpace{
+			ID:       string(graphqlSpace.Id),
+			Metadata: metadata,
+			Network:  string(graphqlSpace.Network),
+		}
+
+		spaces = append(spaces, space)
 	}
 
-	if cache.Global() == nil {
-		return StatusStorage{}, fmt.Errorf("redis worker is nil")
+	if err := database.Global().Clauses(clause.OnConflict{
+		DoUpdates: clause.AssignmentColumns([]string{"updated_at"}),
+		UpdateAll: true,
+	}).Create(&spaces).Error; err != nil {
+		return err
 	}
 
-	statusKey := job.Name + "_status"
-	statusStroge = StatusStorage{
-		Pos:    0,
-		Status: PullInfoStatusNotLatest,
-	}
-
-	data, err := cache.Global().Get(ctx, statusKey).Result()
-	if err != nil {
-		return StatusStorage{}, err
-	}
-
-	if err = json.Unmarshal([]byte(data), &statusStroge); err != nil {
-		return StatusStorage{}, fmt.Errorf("unmarshal %s from cache error:%+v", statusKey, err)
-	}
-
-	return statusStroge, nil
+	return nil
 }
 
-func (job *SnapshotJobBase) SetCurrentStatus(ctx context.Context, stroge StatusStorage) error {
-	if job.Name == "" {
-		return fmt.Errorf("job name is empty")
+func (job *SnapshotJobBase) upsertSpacesInDB(ctx context.Context, spaceIds []graphql.String) error {
+	// get space info from url
+	variable := snapshot.GetMultipleSpacesVariable{
+		First: graphql.Int(len(spaceIds)),
+		Where: graphqlx.SpaceWhere{
+			IdArray: spaceIds,
+		},
 	}
 
-	if cache.Global() == nil {
-		return fmt.Errorf("redis worker is nil")
-	}
-
-	if stroge.Pos <= 0 {
-		return fmt.Errorf("pos is less than 0")
-	}
-
-	data, err := json.Marshal(stroge)
+	spaces, err := job.SnapshotClient.GetMultipleSpaces(ctx, variable)
 	if err != nil {
-		return fmt.Errorf("marshal %+v to json error:%+v", stroge, err)
+		return fmt.Errorf("[snapshot proposal job] get multiple spaces, graphql error: %v", err)
 	}
 
-	cache.Global().Set(ctx, job.Name+"_status", data, 0)
+	// set space info in db
+	if len(spaces) > 0 {
+		if err := job.setSpaceInDB(ctx, spaces); err != nil {
+			return fmt.Errorf("[snapshot proposal job], set space in db, db error: %v", err)
+		}
+		logrus.Infof("[snapshot proposal job] set space [%d]", len(spaces))
+	}
 
 	return nil
 }
