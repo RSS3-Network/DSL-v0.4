@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/hasura/go-graphql-client"
-	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
@@ -72,83 +71,80 @@ func (job *SnapshotVoteJob) InnerJobRun() (status PullInfoStatus, err error) {
 
 	defer func() { opentelemetry.Log(trace, nil, status, err) }()
 
-	var statusStroge StatusStorage
-
-	// get latest vote id
-	if cache.Global() != nil {
-		statusStroge, err = job.GetLastStatusFromCache(ctx)
-		if err != nil {
-			logrus.Errorf("[snapshot vote job] get last status, db error: %v", err)
-			statusStroge.Pos = 0
-			statusStroge.Status = PullInfoStatusNotLatest
-		}
+	created, err := job.getLatestVoteFromDB(ctx)
+	if err != nil {
+		status = PullInfoStatusNotLatest
+		return status, fmt.Errorf("[snapshot vote job] get latest vote total from db, db error: %v", err)
 	}
-
-	if cache.Global() == nil || err != nil {
-		statusStroge.Pos, err = job.getVoteTotalFromDB(ctx)
-		if err != nil {
-			return statusStroge.Status, fmt.Errorf("[snapshot vote job] get vote total from db, db error: %v", err)
-		}
-	}
-
-	// get vote info from url
-	skip := statusStroge.Pos
 
 	variable := snapshot.GetMultipleVotesVariable{
-		First:          graphql.Int(job.Limit),
-		Skip:           graphql.Int(skip),
+		First: graphql.Int(job.Limit),
+		Where: graphqlx.VoteWhere{
+			CreatedGte: graphql.Int(created),
+		},
 		OrderBy:        "created",
 		OrderDirection: snapshot.OrderDirectionAsc,
 	}
 
 	votes, err := job.SnapshotClient.GetMultipleVotes(ctx, variable)
 	if err != nil {
-		return statusStroge.Status, fmt.Errorf("[snapshot vote job] get multiple votes, graphql error: %v", err)
+		status = PullInfoStatusNotLatest
+		return status, fmt.Errorf("[snapshot vote job] get multiple votes, graphql error: %v", err)
 	}
 
 	// set vote info in db
 	if len(votes) > 0 {
 		if err := job.setVoteInDB(ctx, votes); err != nil {
-			return statusStroge.Status, fmt.Errorf("[snapshot vote job] pos[%d], set vote in db, db error: %v", statusStroge.Pos, err)
+			status = PullInfoStatusNotLatest
+			return status, fmt.Errorf("[snapshot vote job] created[%d], set vote in db, db error: %v", created, err)
 		}
-		logrus.Infof("[snapshot vote job] pull skip [%d]", statusStroge.Pos)
+		logrus.Infof("[snapshot vote job] pull created [%d]", created)
+
+		// upsert spaces
+		spaceIdMap := make(map[graphql.String]struct{}, 0)
+		spaceIds := make([]graphql.String, 0)
+
+		for _, vote := range votes {
+			if _, ok := spaceIdMap[vote.Space.Id]; !ok {
+				spaceIds = append(spaceIds, vote.Space.Id)
+			}
+			spaceIdMap[vote.Space.Id] = struct{}{}
+		}
+
+		if len(spaceIds) > 0 {
+			err = job.upsertSpacesInDB(ctx, spaceIds)
+			if err != nil {
+				status = PullInfoStatusNotLatest
+				return status, fmt.Errorf("[snapshot vote job] get multiple spaces, graphql error: %v", err)
+			}
+		}
 	}
 
-	skip = statusStroge.Pos + job.Limit
 	// nolint:gocritic // dont' want change nan things
 	if len(votes) == 0 {
-		statusStroge.Status = PullInfoStatusLatest
+		status = PullInfoStatusLatest
 	} else if len(votes) < int(job.Limit) {
-		statusStroge.Pos = statusStroge.Pos + int32(len(votes))
-		statusStroge.Status = PullInfoStatusLatest
+		status = PullInfoStatusLatest
 	} else {
-		statusStroge.Pos = skip
-		statusStroge.Status = PullInfoStatusNotLatest
+		status = PullInfoStatusNotLatest
 	}
 
-	// set vote status in cache and db
-	if cache.Global() != nil {
-		err = job.SetCurrentStatus(ctx, statusStroge)
-		if err != nil {
-			return statusStroge.Status, fmt.Errorf("[snapshot vote job] set current status, db error: %v", err)
-		}
-	}
-
-	return statusStroge.Status, nil
+	return status, nil
 }
 
-func (job *SnapshotVoteJob) getVoteTotalFromDB(ctx context.Context) (int32, error) {
-	var count int64
+func (job *SnapshotVoteJob) getLatestVoteFromDB(ctx context.Context) (int32, error) {
+	var vote governance.SnapshotVote
 
 	if err := database.Global().
 		Model(&governance.SnapshotVote{}).
-		Select("id").
-		Count(&count).Error; err != nil {
-		logrus.Errorf("get vote total, db error: %v", err)
+		Order("date_created DESC").
+		Limit(1).
+		Take(&vote).Error; err != nil {
+		logrus.Errorf("get latest vote, db error: %v", err)
 		return 0, err
 	}
 
-	return int32(count), nil
+	return int32(vote.DateCreated.Unix()), nil
 }
 
 func (job *SnapshotVoteJob) setVoteInDB(ctx context.Context, graphqlVotes []graphqlx.Vote) (err error) {

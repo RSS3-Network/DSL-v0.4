@@ -30,15 +30,16 @@ type Client struct {
 }
 
 type GetMultipleSpacesVariable struct {
-	First          graphql.Int    `json:"first"`
-	Skip           graphql.Int    `json:"skip"`
-	OrderBy        graphql.String `json:"orderBy"`
-	OrderDirection OrderDirection `json:"orderDirection"`
+	First          graphql.Int         `json:"first"`
+	Skip           graphql.Int         `json:"skip"`
+	Where          graphqlx.SpaceWhere `json:"where"`
+	OrderBy        graphql.String      `json:"orderBy"`
+	OrderDirection OrderDirection      `json:"orderDirection"`
 }
 
 func (c *Client) GetMultipleSpaces(ctx context.Context, variable GetMultipleSpacesVariable) ([]graphqlx.Space, error) {
 	var query struct {
-		Spaces []graphqlx.Space `graphql:"spaces(first: $first, skip: $skip, orderBy: $orderBy, orderDirection: $orderDirection)"`
+		Spaces []graphqlx.Space `graphql:"spaces(first: $first,where: $where)"`
 	}
 
 	variableMap := map[string]interface{}{}
@@ -49,19 +50,7 @@ func (c *Client) GetMultipleSpaces(ctx context.Context, variable GetMultipleSpac
 		return nil, fmt.Errorf("variable 'First' must be greater than 0")
 	}
 
-	if variable.Skip >= 0 {
-		variableMap["skip"] = variable.Skip
-	} else {
-		return nil, fmt.Errorf("variable 'Skip' must be greater than 0")
-	}
-
-	if variable.OrderBy != "" {
-		variableMap["orderBy"] = variable.OrderBy
-	} else {
-		return nil, fmt.Errorf("variable 'OrderBy' must not be nil")
-	}
-
-	variableMap["orderDirection"] = variable.OrderDirection
+	variableMap["where"] = variable.Where
 
 	if err := c.graphqlClient.Query(ctx, &query, variableMap); err != nil {
 		return nil, err

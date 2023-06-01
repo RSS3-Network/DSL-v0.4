@@ -208,15 +208,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 
 func (s *service) Jobs() []worker.Job {
 	return []worker.Job{
-		&job.SnapshotSpaceJob{
-			SnapshotJobBase: job.SnapshotJobBase{
-				Name:           "snapshot_space_job",
-				SnapshotClient: s.snapshotClient,
-				Limit:          1000,
-				HighUpdateTime: time.Second,
-				LowUpdateTime:  time.Minute * 5,
-			},
-		},
 		&job.SnapshotProposalJob{
 			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_proposal_job",
@@ -230,7 +221,7 @@ func (s *service) Jobs() []worker.Job {
 			SnapshotJobBase: job.SnapshotJobBase{
 				Name:           "snapshot_vote_job",
 				SnapshotClient: s.snapshotClient,
-				Limit:          10000,
+				Limit:          1000,
 				HighUpdateTime: time.Second * 15,
 				LowUpdateTime:  time.Minute * 5,
 			},

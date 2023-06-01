@@ -43,8 +43,11 @@ type Space struct {
 	Plugins    json.RawMessage  `json:"plugins"`
 }
 
-// Proposal
+type SpaceWhere struct {
+	IdArray []graphql.String `json:"id_in"`
+}
 
+// Proposal
 type ProposalSpace struct {
 	Id   graphql.String `json:"id"`
 	Name graphql.String `json:"name"`
@@ -65,8 +68,9 @@ type Proposal struct {
 }
 
 type ProposalWhere struct {
-	Space_in []graphql.String `json:"space_in"` // param: ["ens.eth"]
-	State    graphql.String   `json:"state"`    // param: "active" or "closed"
+	Space_in   []graphql.String `json:"space_in"`    // param: ["ens.eth"]
+	State      graphql.String   `json:"state"`       // param: "active" or "closed"
+	CreatedGte graphql.Int      `json:"created_gte"` // param: 1682170931
 }
 
 // Vote
@@ -89,5 +93,5 @@ type Vote struct {
 }
 
 type VoteWhere struct {
-	Proposal graphql.String `json:"proposal"`
+	CreatedGte graphql.Int `json:"created_gte"` // param: 1682170931
 }
