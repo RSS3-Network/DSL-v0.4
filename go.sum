@@ -597,6 +597,8 @@ github.com/naturalselectionlabs/kurora v0.50.2 h1:PXHxEQymrBnkmlR4Pnc+9B2Kz4DNEO
 github.com/naturalselectionlabs/kurora v0.50.2/go.mod h1:4SEyVCkzb5tSShCFHJIqk9sNO9gxYuw9gkRzjcd0LwM=
 github.com/naturalselectionlabs/kurora v0.50.3 h1:zO2u9tYEC6LJksPkq6Tqd8cc+esT6542cXhjdxB0P0c=
 github.com/naturalselectionlabs/kurora v0.50.3/go.mod h1:4SEyVCkzb5tSShCFHJIqk9sNO9gxYuw9gkRzjcd0LwM=
+github.com/naturalselectionlabs/kurora v0.53.1 h1:zorp2tSm57KseCzT5kK3nhuco/YXXjESddB6/GQ2BxU=
+github.com/naturalselectionlabs/kurora v0.53.1/go.mod h1:4SEyVCkzb5tSShCFHJIqk9sNO9gxYuw9gkRzjcd0LwM=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20230513115121-08504fbbd689 h1:tNK9pStHQHyJ2xOdfXKBoFiviG+DZLNV4N1d+gJ7q3g=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20230513115121-08504fbbd689/go.mod h1:ckrxiZFzicNStw6QHmQSgqFQLML5j8CkCcuNoVX4bjw=
 github.com/naturalselectionlabs/kurora/client v0.0.0-20230515135311-2e21033bcaa6 h1:3vRe1rXPHH4Q1Ipz3Pt4O6kNJowS7sqkHyJ6LJuux40=

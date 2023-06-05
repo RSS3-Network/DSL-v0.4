@@ -99,6 +99,15 @@ func Dial(config *configx.RPC, networks []string) (ethereumClientMap map[string]
 			globalLocker.Lock()
 			defer globalLocker.Unlock()
 
+			if network == protocol.NetworkBaseGoerli {
+				globalEthereumXClientMap[network], err = ethereum.Dial(context.TODO(), config.BaseGoerli.Host,
+					rpc.WithHeader("Authorization", fmt.Sprintf("Bearer %s", config.BaseGoerli.AuthToken)))
+				if err != nil {
+					return fmt.Errorf("dial %s: %w", network, err)
+				}
+				return nil
+			}
+
 			// No transaction verification client
 			if globalEthereumXClientMap[network], err = ethereum.Dial(context.TODO(), globalEthereumUrlMap[network]); err != nil {
 				return fmt.Errorf("dial %s: %w", network, err)
