@@ -83,6 +83,9 @@ rpc:
   alchemy:
     ethereum: ''
     polygon: ''
+  base_goerli:
+    host: ''
+    auth_token: ''
   pregod_etl:
     polygon:
       http: ''

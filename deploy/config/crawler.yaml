@@ -44,13 +44,16 @@ rpc:
     crossbell:
       http: ''
       websocket: ''
+  base_goerli:
+    host: ''
+    auth_token: ''
   pregod_etl:
     polygon:
       http: ''
   ipfs:
     io: ''
     internal: ''
-
+  
 eip1577:
   endpoint: ''
 

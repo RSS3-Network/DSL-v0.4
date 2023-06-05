@@ -18,6 +18,7 @@ const (
 	NetworkFarcaster         = "farcaster"
 	NetworkAptos             = "aptos"
 	NetworkConflux           = "conflux"
+	NetworkBaseGoerli        = "base_goerli"
 )
 
 var SupportNetworks = []string{
@@ -36,6 +37,7 @@ var SupportNetworks = []string{
 	NetworkFarcaster,
 	NetworkAptos,
 	NetworkConflux,
+	NetworkBaseGoerli,
 }
 
 var EthclientNetworks = []string{
@@ -49,6 +51,7 @@ var EthclientNetworks = []string{
 	NetworkAvalanche,
 	NetworkCelo,
 	NetworkFantom,
+	NetworkBaseGoerli,
 }
 
 func NetworkToID(networkName string) string {
@@ -73,6 +76,8 @@ func NetworkToID(networkName string) string {
 		return "0xA4EC"
 	case NetworkAvalanche:
 		return "0xA86A"
+	case NetworkBaseGoerli:
+		return "0x14a33"
 	default:
 		return "0x0"
 	}
@@ -100,6 +105,8 @@ func IdToNetwork(chainId string) string {
 		return NetworkCelo
 	case "0xA86A":
 		return NetworkAvalanche
+	case "0x14a33":
+		return NetworkBaseGoerli
 	default:
 		return ""
 	}

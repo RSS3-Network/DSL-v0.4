@@ -153,10 +153,11 @@ type IPFS struct {
 }
 
 type RPC struct {
-	General   RPCNetwork     `mapstructure:"general"`
-	Alchemy   AlchemyNetwork `mapstructure:"alchemy"`
-	PregodETL RPCNetwork     `mapstructure:"pregod_etl"`
-	IPFS      IPFS           `mapstructure:"ipfs"`
+	General    RPCNetwork        `mapstructure:"general"`
+	Alchemy    AlchemyNetwork    `mapstructure:"alchemy"`
+	PregodETL  RPCNetwork        `mapstructure:"pregod_etl"`
+	BaseGoerli BaseGoerliNetwork `mapstructure:"base_goerli"`
+	IPFS       IPFS              `mapstructure:"ipfs"`
 }
 
 type RPCNetwork struct {
@@ -217,4 +218,9 @@ type AlchemyNetwork struct {
 	Polygon  string `mapstructure:"polygon"`
 	Arbitrum string `mapstructure:"arbitrum"`
 	Optimism string `mapstructure:"optimism"`
+}
+
+type BaseGoerliNetwork struct {
+	Host      string `mapstructure:"host"`
+	AuthToken string `mapstructure:"auth_token"`
 }

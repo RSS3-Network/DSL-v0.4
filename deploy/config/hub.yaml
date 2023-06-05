@@ -84,6 +84,9 @@ rpc:
   pregod_etl:
     polygon:
       http: ''
+  base_goerli:
+    host: ''
+    auth_token: ''
   ipfs:
     io: ''
     internal: ''
