@@ -10,16 +10,6 @@ const (
 	TagMetaverse   string = "metaverse"
 )
 
-var ValidTag = map[string]string{
-	TagTransaction: TagTransaction,
-	TagExchange:    TagExchange,
-	TagCollectible: TagCollectible,
-	TagSocial:      TagSocial,
-	TagDonation:    TagDonation,
-	TagGovernance:  TagGovernance,
-	TagMetaverse:   TagMetaverse,
-}
-
 var TagPriority = map[string]int{
 	TagTransaction: 1,
 	TagExchange:    2,
