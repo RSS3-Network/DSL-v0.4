@@ -82,10 +82,11 @@ func Dial(config *configx.RPC, networks []string) (ethereumClientMap map[string]
 
 		// Ethereum standard client
 		if network == protocol.NetworkBaseGoerli {
-			rpcClient, err := rpc.DialOptions(context.Background(), config.BaseGoerli.Host, rpc.WithHeader(fmt.Sprintf("Bearer %s", config.BaseGoerli.AuthToken))))
+			rpcClient, err := rpc.DialOptions(context.Background(), config.BaseGoerli.Host, rpc.WithHeader("Authorization", fmt.Sprintf("Bearer %s", config.BaseGoerli.AuthToken)))
 			if err != nil {
 				return nil, fmt.Errorf("failed to dial base goerli network client, err: %w", err)
 			}
+
 			ethereumClientMap[network] = ethclient.NewClient(rpcClient)
 		} else {
 			if ethereumClientMap[network], err = ethclient.Dial(globalEthereumUrlMap[network]); err != nil {
