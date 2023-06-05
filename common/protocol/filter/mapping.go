@@ -104,6 +104,10 @@ var MetadataMapping = []struct {
 				Tag:  TagMetaverse,
 				Type: MetaverseClaim,
 			},
+			{
+				Tag:  TagCollectible,
+				Type: CollectibleMusic,
+			},
 		},
 	},
 	{

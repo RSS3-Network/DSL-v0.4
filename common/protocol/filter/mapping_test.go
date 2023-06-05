@@ -43,6 +43,7 @@ func TestValidateTypeMap(t *testing.T) {
 		CollectibleApproval,
 		CollectibleEdit,
 		CollectibleEdit,
+		CollectibleMusic,
 	})
 
 	eq(TagSocial, []string{
