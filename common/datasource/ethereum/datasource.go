@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	MaxConcurrency              = 10
+	MaxConcurrency              = 200
 	BaseGoerliNetworkSystemType = 126
 )
 
