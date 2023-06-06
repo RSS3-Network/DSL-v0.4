@@ -34,7 +34,8 @@ import (
 )
 
 const (
-	MaxConcurrency = 200
+	MaxConcurrency              = 10
+	BaseGoerliNetworkSystemType = 126
 )
 
 var (
@@ -192,6 +193,13 @@ func makeTransactionHandlerFunc(ctx context.Context, message *protocol.Message, 
 
 			fee := (decimal.NewFromBigInt(block.BaseFee, 0).Add(decimal.NewFromBigInt(internalTransaction.GasTipCap, 0))).Mul(decimal.NewFromInt(int64(receipt.GasUsed))).Shift(-18)
 			transaction.Fee = &fee
+		case BaseGoerliNetworkSystemType:
+			if transaction.Network != protocol.NetworkBaseGoerli {
+				// L2
+				return nil, fmt.Errorf("unsupported transaction type %d: %s", internalTransaction.Type, internalTransaction.Hash)
+			}
+
+			return nil, nil
 		default:
 			// L2
 			return nil, fmt.Errorf("unsupported transaction type %d: %s", internalTransaction.Type, internalTransaction.Hash)
