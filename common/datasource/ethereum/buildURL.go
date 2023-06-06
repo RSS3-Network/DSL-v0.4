@@ -28,6 +28,8 @@ func BuildScanURL(network string, transactionHash string) string {
 		return fmt.Sprintf("https://celoscan.io/tx/%s", transactionHash)
 	case protocol.NetworkFantom:
 		return fmt.Sprintf("https://ftmscan.com/tx/%s", transactionHash)
+	case protocol.NetworkBaseGoerli:
+		return fmt.Sprintf("https://goerli.basescan.org/tx/%s", transactionHash)
 	default:
 		return ""
 	}
