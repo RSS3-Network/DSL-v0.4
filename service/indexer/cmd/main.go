@@ -1,8 +1,6 @@
 package main
 
 import (
-	"net/http"
-	"net/http/pprof"
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/protocol"
@@ -37,17 +35,6 @@ func main() {
 	}
 
 	srv := server.New(&config.ConfigIndexer)
-
-	// start pprof http server
-	go func() {
-		server := http.NewServeMux()
-		server.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))
-		server.HandleFunc("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-		server.HandleFunc("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-		server.HandleFunc("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-		server.HandleFunc("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-		logrus.Fatal(http.ListenAndServe("localhost:6060", server))
-	}()
 
 	rootCommand.RunE = func(cmd *cobra.Command, args []string) error {
 		return srv.Run()
