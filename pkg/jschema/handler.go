@@ -37,7 +37,7 @@ func (s Schemas) AddBigIntHandler() {
 		return &Schema{
 			Description: "math/big.Int",
 			Title:       "Int",
-			Type:        TypeString,
+			Type:        TypeNumber,
 		}
 	})
 }
