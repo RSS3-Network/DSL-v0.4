@@ -35,6 +35,7 @@ func TestValidateTypeMap(t *testing.T) {
 		ExchangeDeposit,
 		ExchangeSwap,
 		ExchangeLiquidity,
+		ExchangeStaking,
 	})
 
 	eq(TagCollectible, []string{
@@ -107,26 +108,11 @@ func TestAllTagTypeCombinations(t *testing.T) {
 			tag := tags[m[1]]
 			typ := types[m[2]]
 
-			if inWhiteList(tag, typ) {
-				continue
-			}
-
 			g.Desc("%s %s", m[1], m[2]).True(CheckTypeValid(tag, typ))
 		}
 
 		return nil
 	}))
-}
-
-var whiteList = []TagTypeCombo{{TagExchange, ExchangeStaking}}
-
-func inWhiteList(tag, typ string) bool {
-	for _, combo := range whiteList {
-		if combo.Tag == tag && combo.Type == typ {
-			return true
-		}
-	}
-	return false
 }
 
 func getTags(g got.G) map[string]string {

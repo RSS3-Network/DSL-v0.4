@@ -234,6 +234,14 @@ var MetadataMapping = []struct {
 			},
 		},
 	},
+	{
+		&transaction.Staking{}, []TagTypeCombo{
+			{
+				Tag:  TagExchange,
+				Type: ExchangeStaking,
+			},
+		},
+	},
 }
 
 var validTypeMap = func() map[string][]string {
