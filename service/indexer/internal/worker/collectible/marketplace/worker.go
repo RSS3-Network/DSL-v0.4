@@ -229,7 +229,7 @@ func (i *internal) buildCost(ctx context.Context, network string, address common
 	var costToken metadata.Token
 
 	switch {
-	case address == ethereum.AddressGenesis || address == element.AddressNativeToken:
+	case address == ethereum.AddressGenesis || address == element.AddressNativeToken || address == blur.AddressPool:
 		nativeToken, err := i.tokenClient.Native(ctx, network)
 		if err != nil {
 			return nil, err

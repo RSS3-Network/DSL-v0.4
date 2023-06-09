@@ -3,9 +3,7 @@ package marketplace
 import (
 	"context"
 	"fmt"
-	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/blur"
@@ -37,52 +35,24 @@ func (i *internal) handleBlurOrdersMatched(ctx context.Context, transaction mode
 		return nil, fmt.Errorf("parse orders mateched event: %w", err)
 	}
 
-	var (
-		collection      common.Address
-		collectionID    *big.Int
-		collectionValue *big.Int
-		token           common.Address
-		tokenValue      *big.Int
-	)
-
-	buyer, seller := event.Taker, event.Maker
-
-	// Determine the direction of buy and sale
-	if event.Sell.Side == 0 {
-		collection = event.Buy.Collection
-		collectionID = event.Buy.TokenId
-		collectionValue = event.Buy.Amount
-		token = event.Buy.PaymentToken
-		tokenValue = event.Buy.Price
-	} else {
-		// Swap the buyer and seller
-		buyer, seller = seller, buyer
-
-		collection = event.Sell.Collection
-		collectionID = event.Sell.TokenId
-		collectionValue = event.Sell.Amount
-		token = event.Sell.PaymentToken
-		tokenValue = event.Sell.Price
-	}
-
-	nft, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, collection.String(), collectionID)
+	nft, err := i.tokenClient.NFTToMetadata(ctx, transaction.Network, event.Sell.Collection.String(), event.Sell.TokenId)
 	if err != nil {
-		zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.Stringer("contract_address", collection), zap.Stringer("token_id", collectionID))
+		zap.L().Error("nft to metadata", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.Stringer("contract_address", event.Sell.Collection), zap.Stringer("token_id", event.Sell.TokenId))
 
 		return nil, fmt.Errorf("nft to metadata: %w", err)
 	}
 
-	nft.SetValue(decimal.NewFromBigInt(collectionValue, 0))
+	nft.SetValue(decimal.NewFromBigInt(event.Sell.Amount, 0))
 
 	// This contract can only buy NFTs with native tokens,
 	// and only one at a time
-	if nft.Cost, err = i.buildCost(ctx, transaction.Network, token, tokenValue); err != nil {
-		zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.Stringer("contract_address", collection), zap.Stringer("value", collectionID))
+	if nft.Cost, err = i.buildCost(ctx, transaction.Network, event.Buy.PaymentToken, event.Buy.Price); err != nil {
+		zap.L().Error("build cost", zap.Error(err), zap.String("transaction_hash", transaction.Hash), zap.Stringer("contract_address", event.Buy.PaymentToken), zap.Stringer("value", event.Buy.Amount))
 
 		return nil, fmt.Errorf("build cost: %w", err)
 	}
 
-	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, seller, buyer, *nft, nft.Cost)
+	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Sell.Trader, event.Buy.Trader, *nft, nft.Cost)
 	if err != nil {
 		return nil, fmt.Errorf("build trade transfer: %w", err)
 	}
