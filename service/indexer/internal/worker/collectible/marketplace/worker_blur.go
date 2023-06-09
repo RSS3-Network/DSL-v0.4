@@ -45,6 +45,8 @@ func (i *internal) handleBlurOrdersMatched(ctx context.Context, transaction mode
 		tokenValue      *big.Int
 	)
 
+	buyer, seller := event.Taker, event.Maker
+
 	// Determine the direction of buy and sale
 	if event.Sell.Side == 0 {
 		collection = event.Buy.Collection
@@ -53,6 +55,9 @@ func (i *internal) handleBlurOrdersMatched(ctx context.Context, transaction mode
 		token = event.Buy.PaymentToken
 		tokenValue = event.Buy.Price
 	} else {
+		// Swap the buyer and seller
+		buyer, seller = seller, buyer
+
 		collection = event.Sell.Collection
 		collectionID = event.Sell.TokenId
 		collectionValue = event.Sell.Amount
@@ -77,7 +82,7 @@ func (i *internal) handleBlurOrdersMatched(ctx context.Context, transaction mode
 		return nil, fmt.Errorf("build cost: %w", err)
 	}
 
-	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, event.Maker, common.HexToAddress(transaction.AddressFrom) /* The buyer address is not output in event. */, *nft, nft.Cost)
+	internalTransfer, err := i.buildTradeTransfer(transaction, int64(log.Index), platform, seller, buyer, *nft, nft.Cost)
 	if err != nil {
 		return nil, fmt.Errorf("build trade transfer: %w", err)
 	}
