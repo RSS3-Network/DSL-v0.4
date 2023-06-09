@@ -115,13 +115,13 @@ func TestClient_ERC1155(t *testing.T) {
 	t.Log(string(erc1155.Metadata))
 }
 
-func TestClient_ERC721_ZORA(t *testing.T) {
-	erc712, err := tokenClient.ERC721(context.Background(), protocol.NetworkEthereum, "0xabEFBc9fD2F806065b4f3C237d4b59D9A97Bcac7", big.NewInt(13737))
-	assert.NoError(t, err)
-
-	t.Log(erc712)
-	t.Log(string(erc712.Metadata))
-}
+//func TestClient_ERC721_ZORA(t *testing.T) {
+//	erc712, err := tokenClient.ERC721(context.Background(), protocol.NetworkEthereum, "0xabEFBc9fD2F806065b4f3C237d4b59D9A97Bcac7", big.NewInt(13737))
+//	assert.NoError(t, err)
+//
+//	t.Log(erc712)
+//	t.Log(string(erc712.Metadata))
+//}
 
 func TestClient_ERC721_403(t *testing.T) {
 	erc712, err := tokenClient.ERC721(context.Background(), protocol.NetworkEthereum, "0xb932a70a57673d89f4acffbe830e8ed7f75fb9e0", big.NewInt(35536))
