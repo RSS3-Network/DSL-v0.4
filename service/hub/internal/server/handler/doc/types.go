@@ -60,7 +60,7 @@ func (d *Doc) DefineTransfer() {
 
 		desc += fmt.Sprintf("- %s:\n", meta.Ref.ID)
 
-		for _, c := range m.Criteria {
+		for _, c := range m.TagTypeCombos {
 			n := s.Clone()
 			n.Description = fmt.Sprintf("Transfer object for tag: '%s', type: '%s', meta: '%s'", c.Tag, c.Type, meta.Ref.Name)
 

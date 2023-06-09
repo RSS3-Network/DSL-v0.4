@@ -202,7 +202,7 @@ func TestBigInt(t *testing.T) {
 		`Int` /* len=36 */ : map[string]interface{} /* len=3 */ {
 			"description": "math/big.Int",
 			"title":       "Int",
-			"type":        "string",
+			"type":        "number",
 		},
 	})
 }
