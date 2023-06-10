@@ -7,7 +7,7 @@ import (
 
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
-	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/types"
 	"github.com/naturalselectionlabs/pregod/pkg/jschema"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"github.com/shopspring/decimal"
@@ -49,33 +49,30 @@ func (d *Doc) AddDecimalHandler() {
 func (d *Doc) DefineTransfer() {
 	d.schemas.Define(dbModel.Transfer{})
 
-	s := d.schemas.GetSchema(dbModel.Transfer{})
+	type TransferTypes struct{}
+	ts := d.schemas.Const(types.TransferTypes)
+	d.schemas.SetSchema(TransferTypes{}, ts)
+	d.schemas.GetSchema(TransferTypes{}).Description = `The name field on items of actions are the possible values of action field on metadata field.`
 
-	desc := s.Description + "\n\nAll the possible mappings for the transfer object:\n\n"
+	s := d.schemas.GetSchema(dbModel.Transfer{})
 
 	anyOf := []*jschema.Schema{}
 
-	for _, m := range filter.MetadataMapping {
-		meta := d.schemas.DefineT(reflect.TypeOf(m.Metadata).Elem())
+	for _, tt := range types.TransferTypes {
+		meta := d.schemas.DefineT(reflect.TypeOf(tt.Metadata).Elem())
 
-		desc += fmt.Sprintf("- %s:\n", meta.Ref.ID)
+		n := s.Clone()
+		n.Description = fmt.Sprintf("Transfer object for tag: '%s', type: '%s', meta: '%s'", tt.Tag, tt.Type, meta.Ref.Name)
 
-		for _, c := range m.TagTypeCombos {
-			n := s.Clone()
-			n.Description = fmt.Sprintf("Transfer object for tag: '%s', type: '%s', meta: '%s'", c.Tag, c.Type, meta.Ref.Name)
+		n.Properties["tag"] = d.schemas.Const(tt.Tag)
+		n.Properties["type"] = d.schemas.Const(tt.Type)
+		n.Properties["metadata"] = meta
 
-			desc += fmt.Sprintf("  - tag: %s, type: %s\n", c.Tag, c.Type)
-
-			n.Properties["tag"] = d.schemas.Const(c.Tag)
-			n.Properties["type"] = d.schemas.Const(c.Type)
-			n.Properties["metadata"] = meta
-
-			anyOf = append(anyOf, n)
-		}
+		anyOf = append(anyOf, n)
 	}
 
 	s.Properties = nil
-	s.Description = desc
+	s.Description = "For all the possible types of transfer, see the TransferTypes in this doc."
 	s.AnyOf = anyOf
 }
 
