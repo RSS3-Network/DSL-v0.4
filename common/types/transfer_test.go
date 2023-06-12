@@ -1,4 +1,4 @@
-package filter
+package types
 
 import (
 	"os"
@@ -8,6 +8,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/ysmood/got"
 )
 
@@ -21,69 +22,63 @@ func TestValidateTypeMap(t *testing.T) {
 		g.Eq(validTypeMap[tag], list)
 	}
 
-	eq(TagTransaction, []string{
-		TransactionTransfer,
-		TransactionBridge,
-		TransactionMint,
-		TransactionBurn,
-		TransactionApproval,
-		TransactionMultiSig,
+	eq(filter.TagTransaction, []string{
+		filter.TransactionTransfer,
+		filter.TransactionMint,
+		filter.TransactionBurn,
+		filter.TransactionApproval,
+		filter.TransactionMultiSig,
+		filter.TransactionBridge,
 	})
 
-	eq(TagExchange, []string{
-		ExchangeWithdraw,
-		ExchangeDeposit,
-		ExchangeSwap,
-		ExchangeLiquidity,
-		ExchangeStaking,
+	eq(filter.TagExchange, []string{
+		filter.ExchangeWithdraw,
+		filter.ExchangeDeposit,
+		filter.ExchangeSwap,
+		filter.ExchangeLiquidity,
+		filter.ExchangeStaking,
 	})
 
-	eq(TagCollectible, []string{
-		CollectibleTransfer,
-		CollectibleAuction,
-		CollectibleTrade,
-		CollectibleMint,
-		CollectibleBurn,
-		CollectiblePoap,
-		CollectibleApproval,
-		CollectibleEdit,
-		CollectibleEdit,
-		CollectibleMusic,
+	eq(filter.TagCollectible, []string{
+		filter.CollectibleTransfer,
+		filter.CollectibleAuction,
+		filter.CollectibleTrade,
+		filter.CollectibleMint,
+		filter.CollectibleBurn,
+		filter.CollectibleApproval,
+		filter.CollectibleEdit,
+		filter.CollectibleMusic,
 	})
 
-	eq(TagSocial, []string{
-		SocialPost,
-		SocialRevise,
-		SocialComment,
-		SocialShare,
-		SocialProfile,
-		SocialFollow,
-		SocialUnfollow,
-		SocialLike,
-		SocialMint,
-		SocialWiki,
-		SocialReward,
-		SocialProxy,
+	eq(filter.TagSocial, []string{
+		filter.SocialPost,
+		filter.SocialRevise,
+		filter.SocialComment,
+		filter.SocialShare,
+		filter.SocialProfile,
+		filter.SocialFollow,
+		filter.SocialUnfollow,
+		filter.SocialMint,
+		filter.SocialWiki,
+		filter.SocialReward,
+		filter.SocialProxy,
 	})
 
-	eq(TagDonation, []string{
-		DonationLaunch,
-		DonationDonate,
+	eq(filter.TagDonation, []string{
+		filter.DonationDonate,
 	})
 
-	eq(TagGovernance, []string{
-		GovernancePropose,
-		GovernanceVote,
+	eq(filter.TagGovernance, []string{
+		filter.GovernancePropose,
+		filter.GovernanceVote,
 	})
 
-	eq(TagMetaverse, []string{
-		MetaverseMint,
-		MetaverseTransfer,
-		MetaverseTrade,
-		MetaverseGift,
-		MetaverseList,
-		MetaverseUnlist,
-		MetaverseClaim,
+	eq(filter.TagMetaverse, []string{
+		filter.MetaverseMint,
+		filter.MetaverseTrade,
+		filter.MetaverseList,
+		filter.MetaverseUnlist,
+		filter.MetaverseClaim,
 	})
 }
 
