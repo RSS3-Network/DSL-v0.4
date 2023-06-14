@@ -106,7 +106,7 @@ type BatchGetProfilesRequest struct {
 	Address  []string `json:"address" validate:"required"`
 	Network  []string `json:"network"`
 	Platform []string `json:"platform"`
-	Refresh  bool     `query:"refresh"`
+	Refresh  bool     `query:"refresh" json:"refresh"`
 }
 
 type GetAPIKeyRequest struct {
