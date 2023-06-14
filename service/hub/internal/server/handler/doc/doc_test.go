@@ -61,7 +61,12 @@ func TestTransferTypeMetadata(t *testing.T) {
 			"actions": []interface{} /* len=1 cap=1 */ {
 				map[string]interface{} /* len=3 */ {
 					"comment": "交易所提币",
-					"example": `Withdrew 123ETH on xxxx`, /* len=23 */
+					"examples": []interface{} /* len=1 cap=1 */ {
+						map[string]interface{} /* len=2 */ {
+							"text": `Withdrew 123ETH on xxxx`,
+							"hash": "0x1d226709361694160082822cb0a0542aa1a45d04e54fbd00453d8400c3673705",
+						},
+					},
 					"platforms": []interface{} /* len=1 cap=1 */ {
 						"CEX",
 					},
