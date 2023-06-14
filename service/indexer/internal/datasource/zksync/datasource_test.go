@@ -8,9 +8,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 )
 
-var (
-	datasource = zksync.New()
-)
+var datasource = zksync.New()
 
 func TestName(t *testing.T) {
 	transactions, err := datasource.Handle(context.Background(), &protocol.Message{

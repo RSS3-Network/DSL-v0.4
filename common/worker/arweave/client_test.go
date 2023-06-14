@@ -2,16 +2,15 @@ package arweave_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/naturalselectionlabs/pregod/common/worker/arweave"
 	"github.com/naturalselectionlabs/pregod/common/worker/arweave/graphql"
-	"testing"
 
 	"github.com/hasura/go-graphql-client"
 )
 
-var (
-	client *arweave.Client
-)
+var client *arweave.Client
 
 func init() {
 	client = arweave.NewClient()

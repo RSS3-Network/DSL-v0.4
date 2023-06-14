@@ -116,14 +116,15 @@ var TransferTypes = []TransferType{
 		Tag:      filter.TagExchange,
 		Type:     filter.ExchangeWithdraw,
 		Metadata: &metadata.Token{},
-		Actions: []Action{{
-			Examples: []Example{{
-				Text: "Withdrew 123ETH on xxxx",
-				Hash: "0x1d226709361694160082822cb0a0542aa1a45d04e54fbd00453d8400c3673705",
-			}},
-			Comment:   "交易所提币",
-			Platforms: []string{CEX},
-		},
+		Actions: []Action{
+			{
+				Examples: []Example{{
+					Text: "Withdrew 123ETH on xxxx",
+					Hash: "0x1d226709361694160082822cb0a0542aa1a45d04e54fbd00453d8400c3673705",
+				}},
+				Comment:   "交易所提币",
+				Platforms: []string{CEX},
+			},
 		},
 	},
 	{
@@ -544,7 +545,8 @@ var TransferTypes = []TransferType{
 					Text: "Posted on xxxx",
 					Hash: "0x000000000000000000000000108b4ccf9ced0d0975554dab0b11ef3263e5d6d6",
 				}},
-			}},
+			},
+		},
 		Metadata: &metadata.Post{},
 	},
 	{
@@ -559,7 +561,8 @@ var TransferTypes = []TransferType{
 					Text: "Revised a post on xxxx",
 					Hash: "0x1f9586b323f432cd43a1de53a17bc655ce683327cd998334878eb262878f11a7",
 				}},
-			}},
+			},
+		},
 		Metadata: &metadata.Post{},
 	},
 	{
@@ -572,7 +575,8 @@ var TransferTypes = []TransferType{
 					Text: "Commented on xxxx",
 					Hash: "0x549a8a2e362e647faac70c9f1595950aa35f4d2028738521320b6364f3e9823a",
 				}},
-			}},
+			},
+		},
 		Metadata: &metadata.Post{},
 	},
 	{

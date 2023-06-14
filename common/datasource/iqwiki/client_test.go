@@ -1,8 +1,6 @@
 package iqwiki
 
-var (
-	client = NewClient()
-)
+var client = NewClient()
 
 // func TestGetUserActivityList(t *testing.T) {
 // 	address := "0x2fE6aCD015384E1ee5138eF79fe1a434dA8FA12e"
