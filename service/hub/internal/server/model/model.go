@@ -57,6 +57,10 @@ type GetRequest struct {
 	ActionLimit int  `query:"action_limit" json:"action_limit"`
 }
 
+type GetNameResolveRequest struct {
+	Address string `param:"address" validate:"required"`
+}
+
 type GetAssetRequest struct {
 	Address      string   `param:"address" validate:"required"`
 	Network      []string `query:"network"`

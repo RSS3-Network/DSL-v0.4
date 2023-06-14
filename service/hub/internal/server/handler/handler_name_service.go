@@ -17,7 +17,7 @@ func (h *Handler) GetNameResolveFunc(c echo.Context) error {
 
 	defer httpSnap.End()
 
-	request := model.GetRequest{}
+	request := model.GetNameResolveRequest{}
 
 	if err := c.Bind(&request); err != nil {
 		return BadRequest(c)
