@@ -2,24 +2,22 @@ package snapshot_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/naturalselectionlabs/pregod/common/worker/snapshot"
 	"github.com/naturalselectionlabs/pregod/common/worker/snapshot/graphql"
-	"testing"
 
 	"github.com/hasura/go-graphql-client"
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	client *snapshot.Client
-)
+var client *snapshot.Client
 
 func init() {
 	client = snapshot.NewClient()
 }
 
 func TestGetMultipleSpaces(t *testing.T) {
-
 	variable := snapshot.GetMultipleSpacesVariable{
 		First: graphql.Int(20),
 		Where: graphqlx.SpaceWhere{IdArray: []graphql.String{"bonustrack.eth"}},
@@ -34,7 +32,6 @@ func TestGetMultipleSpaces(t *testing.T) {
 }
 
 func TestGetMultipleProposals(t *testing.T) {
-
 	variable := snapshot.GetMultipleProposalsVariable{
 		First:          graphql.Int(20),
 		Skip:           graphql.Int(0),
@@ -63,7 +60,7 @@ func TestGetMultipleVotes(t *testing.T) {
 		OrderBy:        graphql.String("created"),
 		OrderDirection: snapshot.OrderDirectionAsc,
 		Where: graphqlx.VoteWhere{
-			//Proposal:   graphql.String("QmPvbwguLfcVryzBRrbY4Pb9bCtxURagdv1XjhtFLf3wHj"),
+			// Proposal:   graphql.String("QmPvbwguLfcVryzBRrbY4Pb9bCtxURagdv1XjhtFLf3wHj"),
 			CreatedGte: graphql.Int(1669766184),
 		},
 	}

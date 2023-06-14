@@ -58,7 +58,6 @@ func init() {
 }
 
 func TestResolveAddress(t *testing.T) {
-
 	type arguments struct {
 		ns             string
 		ignoreContract bool
@@ -197,7 +196,7 @@ func TestResolveAddress(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var c = echo.New()
+			c := echo.New()
 			output, err := ResolveAddress(c.NewContext(&http.Request{}, nil), tt.input.ns, tt.input.ignoreContract)
 			if tt.err == nil {
 				if err != nil {
