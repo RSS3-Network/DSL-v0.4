@@ -60,10 +60,11 @@ var TransferTypes = []TransferType{
 			Examples: []Example{
 				{
 					Text: "Transferred 123ETH to 0xxx…xx",
-					Hash: "0x558981af55e59fc42da7684a3b803b7e078b4b233d6e0be6ea22dd6b3263b98d", // Transfer
+					Hash: "0x558981af55e59fc42da7684a3b803b7e078b4b233d6e0be6ea22dd6b3263b98d",
 				},
 				{
-					Hash: "0x74a2e680f4dab8f840e52044b75890a329107faa9db5bb312284542953280d33", // Claim
+					Text: "Claimed 123ETH from 0xxx…xx",
+					Hash: "0x74a2e680f4dab8f840e52044b75890a329107faa9db5bb312284542953280d33",
 				},
 			},
 		}},
@@ -159,7 +160,7 @@ var TransferTypes = []TransferType{
 				Name:      filter.CollectibleAuctionCreate,
 				Platforms: []string{protocol.PlatformFoundation, protocol.PlatformZora},
 				Examples: []Example{{
-					Text: "Created an auction on xxxx",
+					Text: "Created an auction on platform xxxx",
 					Hash: "0xaa9bcf4aa0a11598610d4bb82c028dd80dad4f9740d95bf856332c642ede3b71",
 				}},
 			},
@@ -167,7 +168,7 @@ var TransferTypes = []TransferType{
 				Name:      filter.CollectibleAuctionBid,
 				Platforms: []string{protocol.PlatformFoundation, protocol.PlatformZora, protocol.PlatformNouns},
 				Examples: []Example{{
-					Text: "Made a bid on xxxx",
+					Text: "Made a bid on platform xxxx",
 					Hash: "0x3e55fa308f87b14f1f1abe23badf62731e547736819ed6c7e1e98c578d9c87aa",
 				}},
 			},
@@ -175,7 +176,7 @@ var TransferTypes = []TransferType{
 				Name:      filter.CollectibleAuctionCancel,
 				Platforms: []string{protocol.PlatformFoundation, protocol.PlatformZora},
 				Examples: []Example{{
-					Text: "Canceled an auction on xxxx",
+					Text: "Canceled an auction on platform xxxx",
 					Hash: "0x26e44a26e14cd20a0d4e1070d2c7bcab457c5271703d28daeac6a9f8b44eec9a",
 				}},
 			},
@@ -183,7 +184,7 @@ var TransferTypes = []TransferType{
 				Name:      filter.CollectibleAuctionUpdate,
 				Platforms: []string{protocol.PlatformFoundation, protocol.PlatformZora},
 				Examples: []Example{{
-					Text: "Updated an auction on xxxx",
+					Text: "Updated an auction on platform xxxx",
 					Hash: "0x00d25b51a4af650b8a66421f55152383c84746639ea9a020daa2a5cabbddf555",
 				}},
 			},
@@ -191,7 +192,7 @@ var TransferTypes = []TransferType{
 				Name:      filter.CollectibleAuctionFinalize,
 				Platforms: []string{protocol.PlatformFoundation, protocol.PlatformZora, protocol.PlatformNouns},
 				Examples: []Example{{
-					Text: "Won an auction on xxxx",
+					Text: "Won an auction on platform xxxx",
 					Hash: "0xe45780a6de45e7be064ab00a8c53a82a6637c8cbb3e0ee317f57f84b1734d31f",
 				}},
 			},
@@ -199,7 +200,7 @@ var TransferTypes = []TransferType{
 				Name:      filter.CollectibleAuctionInvalidate,
 				Platforms: []string{protocol.PlatformFoundation},
 				Examples: []Example{{
-					Text: "Invalidated an auction on xxxx",
+					Text: "Invalidated an auction on platform xxxx",
 					Hash: "0xb97bead4c050d14eec66a92b8e28d1bc5bdc4f12f8b8c197417f719a85b05262",
 				}},
 			},
@@ -218,7 +219,10 @@ var TransferTypes = []TransferType{
 				},
 				Examples: []Example{{
 					Text: "Bought an NFT from 0xxx…xx",
-					Hash: "0xbf14c5b78920ca4c6cc7107c5901a5294fdbfaac0f2ce204f52f13e7e30f630e", // Bought"0x097c15e4ebe2cbaa8d0b565999795e5fefb71e3c5c7ef42e9ab7d92c2a25980d", // Sold
+					Hash: "0xbf14c5b78920ca4c6cc7107c5901a5294fdbfaac0f2ce204f52f13e7e30f630e",
+				}, {
+					Text: "Sold an NFT to 0xxx…xx",
+					Hash: "0x097c15e4ebe2cbaa8d0b565999795e5fefb71e3c5c7ef42e9ab7d92c2a25980d",
 				}},
 			},
 		},
@@ -257,14 +261,15 @@ var TransferTypes = []TransferType{
 			{
 				Name: filter.ActionApprove,
 				Examples: []Example{{
-					Text: "Approved RSS3 Whitepaper collection to 0xxx…xx",
+					// TODO: what's the difference between with or without an id field on metadata?
+					Text: "Approved KudosToken NFT to 0xxx…xx",
 					Hash: "0xa5e6a2c53a74436bd6038c6091f26c77bf0443ef7185b65e8a00eea4657fda29",
 				}},
 			},
 			{
 				Name: filter.ActionRevoke,
 				Examples: []Example{{
-					Text: "Revoked the approval of from 0xxx…xx (address_to)",
+					Text: "Revoked the approval of KudosToken NFT from 0xxx…xx",
 					Hash: "0x6830623126117af0e853074850dda9d1e7b9acea9120a0e95e64f6fc2e6b42e4",
 				}},
 			},
@@ -290,7 +295,7 @@ var TransferTypes = []TransferType{
 				}},
 			},
 			{
-				Name:      filter.CollectibleEditWrap,
+				Name:      filter.CollectibleEditWrap, // alias for another ENS name
 				Platforms: []string{protocol.PlatformEns},
 				Examples: []Example{{
 					Text: "Wrapped an ENS",
@@ -353,7 +358,7 @@ var TransferTypes = []TransferType{
 		Actions: []Action{{
 			Platforms: []string{protocol.PlatformAavegotchi},
 			Examples: []Example{{
-				Text: "Burned an asset on xxx",
+				Text: "Claimed an asset on xxx",
 				Hash: "0xedb96d0420edcaa996d44df77d218d7af93b5cdaae84bdf985c9ec72afd09ce1",
 			}},
 		}},
@@ -387,7 +392,7 @@ var TransferTypes = []TransferType{
 				Name:      filter.ActionCreate,
 				Platforms: []string{protocol.PlatformGnosisSafe},
 				Examples: []Example{{
-					Text: "Created a multisig transaction of 20 USDT from 0xff...ff to 0xff...ff on Gnosis Safe",
+					Text: "Created a multisig transaction from 0xff...ff to 0xff...ff on Gnosis Safe",
 					Hash: "0x11db423456321efe84cd85a8374cf93bef65706e7a6422421a93a1f62b64d1d1",
 				}},
 				Comment: "add_owner remove_owner change_threshold execution rejection create",
@@ -448,7 +453,7 @@ var TransferTypes = []TransferType{
 				protocol.PlatformVelodrome, protocol.PlatformZerion,
 			},
 			Examples: []Example{{
-				Text: "Swapped on xxxx",
+				Text: "Swapped 1 USDT to 1 ETH on platform xxxx",
 				Hash: "0x0810db21380cec8f0afbf655917b2f0c64ba2035a7acf699fa5c3caa96abe298",
 			}},
 		}},
@@ -465,7 +470,7 @@ var TransferTypes = []TransferType{
 					protocol.PlatformPolygonStaking, protocol.PlatformSushiswap, protocol.PlatformUniswap,
 				},
 				Examples: []Example{{
-					Text: "Added to liquidity on xxxx",
+					Text: "Added 1 USDT to liquidity on xxxx",
 					Hash: "0xc52a62ad6997a4f67d5725b16b27b3fc5bf6bb4076d1c67f5877223c2b85f8a3",
 				}},
 				Comment: "添加流动性",
@@ -477,7 +482,7 @@ var TransferTypes = []TransferType{
 					protocol.PlatformPolygonStaking, protocol.PlatformSushiswap, protocol.PlatformUniswap,
 				},
 				Examples: []Example{{
-					Text: "Removed from liquidity on xxxx",
+					Text: "Removed 1 USDT from liquidity on xxxx",
 					Hash: "0x4501aac1bff46c1e92e5ef139feddc0751a043144590250876fe9c717a9fa460",
 				}},
 				Comment: "移除流动性",
@@ -542,7 +547,7 @@ var TransferTypes = []TransferType{
 					protocol.PlatformCrossbellXSync,
 				},
 				Examples: []Example{{
-					Text: "Posted on xxxx",
+					Text: "Publish a note on platform xxxx",
 					Hash: "0x000000000000000000000000108b4ccf9ced0d0975554dab0b11ef3263e5d6d6",
 				}},
 			},
@@ -558,7 +563,7 @@ var TransferTypes = []TransferType{
 					protocol.PlatformCrossbell, protocol.PlatformMirror,
 				},
 				Examples: []Example{{
-					Text: "Revised a post on xxxx",
+					Text: "Revised a note on platform xxxx",
 					Hash: "0x1f9586b323f432cd43a1de53a17bc655ce683327cd998334878eb262878f11a7",
 				}},
 			},
@@ -572,7 +577,7 @@ var TransferTypes = []TransferType{
 			{
 				Platforms: []string{protocol.PlatformFarcaster, protocol.PlatformRara},
 				Examples: []Example{{
-					Text: "Commented on xxxx",
+					Text: "Commented on platform xxxx",
 					Hash: "0x549a8a2e362e647faac70c9f1595950aa35f4d2028738521320b6364f3e9823a",
 				}},
 			},
@@ -587,7 +592,7 @@ var TransferTypes = []TransferType{
 				protocol.PlatformCrossbell, protocol.PlatformFarcaster,
 			},
 			Examples: []Example{{
-				Text: "Shared a post on xxxx",
+				Text: "Shared a note on platform xxxx",
 				Hash: "0xc9deb029b752837d49265c83bc598d25a5301b28939822e97e12d1bb13be5a64",
 			}},
 		}},
@@ -601,7 +606,7 @@ var TransferTypes = []TransferType{
 				// CrossSync, Crossbell, xLog, xSync
 				Platforms: []string{protocol.PlatformCrossbell, protocol.PlatformCrossbellXLog, protocol.PlatformCrossbellXSync},
 				Examples: []Example{{
-					Text: "Minted a note on xxx",
+					Text: "Minted a post on platform xxx",
 					Hash: "0xa4074d5729d44fd1ad033420c6d424e8224eebd595123339eec36f732b30acb3",
 				}},
 			},
@@ -805,6 +810,19 @@ var TransferTypes = []TransferType{
 			},
 		},
 		Metadata: &transaction.Bridge{},
+	},
+	{
+		Tag:  filter.TagCollectible,
+		Type: filter.CollectiblePoap,
+		Actions: []Action{
+			{
+				Examples: []Example{{
+					Text: "Claimed POAP",
+					Hash: "0x6ef52fe1924cc043d3348881393309f3c77b42c6c30d7b08ab411e16789b7fe5",
+				}},
+			},
+		},
+		Metadata: &metadata.Token{},
 	},
 }
 

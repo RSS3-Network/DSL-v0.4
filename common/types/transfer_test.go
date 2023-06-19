@@ -48,6 +48,7 @@ func TestValidateTypeMap(t *testing.T) {
 		filter.CollectibleApproval,
 		filter.CollectibleEdit,
 		filter.CollectibleMusic,
+		filter.CollectiblePoap,
 	})
 
 	eq(filter.TagSocial, []string{
