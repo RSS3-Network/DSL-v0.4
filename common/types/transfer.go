@@ -292,6 +292,7 @@ var TransferTypes = []TransferType{
 				Platforms: []string{protocol.PlatformEns},
 				Examples: []Example{{
 					Text: "Updated a text record for [ENS name]",
+					Hash: "0xc04455c23c0f73e9ab1df248c62a5776b8a78cccdc67c960b9dc37356ab307c4",
 				}},
 			},
 			{
@@ -299,6 +300,7 @@ var TransferTypes = []TransferType{
 				Platforms: []string{protocol.PlatformEns},
 				Examples: []Example{{
 					Text: "Wrapped an ENS",
+					Hash: "0x6b8680f01690a689644e0604a769661b897acec06263f629311ee45b3c091fcc",
 				}},
 			},
 		},
@@ -804,9 +806,17 @@ var TransferTypes = []TransferType{
 		Actions: []Action{
 			{
 				Name: filter.BridgeDeposit,
+				Examples: []Example{{
+					Text: "Deposited",
+					Hash: "0xb99bbc5ee0e83d5dc839e2cf90369f16a36a54bdccbc8e25ecedac5adcde38f1",
+				}},
 			},
 			{
 				Name: filter.BridgeWithdraw,
+				Examples: []Example{{
+					Text: "Withdrew",
+					Hash: "0xa0a34f35a3eab92867a9b107c8e5887b8e4ccf85ac609006e179745a1af5839f",
+				}},
 			},
 		},
 		Metadata: &transaction.Bridge{},
