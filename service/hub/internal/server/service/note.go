@@ -13,6 +13,7 @@ import (
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/types"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"github.com/samber/lo"
@@ -150,7 +151,7 @@ func (s *Service) BatchGetSocialNotes(ctx context.Context, request model.BatchGe
 func (s *Service) CheckRequestTagAndType(reqTags []string, reqTypes []string) ([]string, []string, bool) {
 	// support many-many relationship between tag and type
 	var tags []string
-	var types []string
+	var typeList []string
 	var includePoap bool
 
 	for _, tag := range reqTags {
@@ -159,9 +160,9 @@ func (s *Service) CheckRequestTagAndType(reqTags []string, reqTypes []string) ([
 			for _, typeX := range reqTypes {
 				typeX = strings.ToLower(typeX)
 
-				if filter.CheckTypeValid(tag, typeX) {
+				if types.CheckTypeValid(tag, typeX) {
 					tags = append(tags, tag)
-					types = append(types, typeX)
+					typeList = append(typeList, typeX)
 					// by default POAPs are not returned
 					if typeX == filter.CollectiblePoap {
 						includePoap = true
@@ -173,7 +174,7 @@ func (s *Service) CheckRequestTagAndType(reqTags []string, reqTypes []string) ([
 		}
 	}
 
-	return tags, types, includePoap
+	return tags, typeList, includePoap
 }
 
 func (s *Service) GetNftFeeds(ctx context.Context, request model.GetRequest) ([]dbModel.Transaction, int64, error) {

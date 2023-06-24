@@ -57,6 +57,10 @@ type GetRequest struct {
 	ActionLimit int  `query:"action_limit" json:"action_limit"`
 }
 
+type GetNameResolveRequest struct {
+	Address string `param:"address" validate:"required"`
+}
+
 type GetAssetRequest struct {
 	Address      string   `param:"address" validate:"required"`
 	Network      []string `query:"network"`
@@ -102,7 +106,7 @@ type BatchGetProfilesRequest struct {
 	Address  []string `json:"address" validate:"required"`
 	Network  []string `json:"network"`
 	Platform []string `json:"platform"`
-	Refresh  bool     `query:"refresh"`
+	Refresh  bool     `query:"refresh" json:"refresh"`
 }
 
 type GetAPIKeyRequest struct {
