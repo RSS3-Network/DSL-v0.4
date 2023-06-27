@@ -394,7 +394,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	defer handlerSpan.End()
 
 	ethclient, err := ethclientx.Global(message.Network)
-	if err == nil {
+	if err == nil && (message.Network == protocol.NetworkPolygon || message.Network == protocol.NetworkBinanceSmartChain) {
 		// get address status
 		addressStatus, _ = database.GetAddress(message.Address)
 
@@ -418,20 +418,22 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 		BlockNumber int64     `gorm:"column:block_number"`
 	}
 
-	if err := database.Global().
-		Model((*model.Transaction)(nil)).
-		Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
-		Where("owner = ?", message.Address).
-		Where("network = ?", message.Network).
-		Order("timestamp DESC").
-		Limit(1).
-		First(&result).
-		Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
-	}
+	if message.Network != protocol.NetworkEthereum {
+		if err := database.Global().
+			Model((*model.Transaction)(nil)).
+			Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
+			Where("owner = ?", message.Address).
+			Where("network = ?", message.Network).
+			Order("timestamp DESC").
+			Limit(1).
+			First(&result).
+			Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
 
-	message.Timestamp = result.Timestamp
-	message.BlockNumber = result.BlockNumber
+		message.Timestamp = result.Timestamp
+		message.BlockNumber = result.BlockNumber
+	}
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
