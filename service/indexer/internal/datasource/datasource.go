@@ -9,7 +9,7 @@ import (
 
 const (
 	DefaultLimit    = 500
-	DatasourceLimit = 20000
+	DatasourceLimit = 2000
 )
 
 type Datasource interface {
