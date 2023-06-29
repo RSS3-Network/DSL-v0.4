@@ -357,6 +357,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	var (
 		transactions  []model.Transaction
 		addressStatus model.Address
+		nonce         uint64
 	)
 
 	defer func() {
@@ -394,18 +395,14 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	defer handlerSpan.End()
 
 	ethclient, err := ethclientx.Global(message.Network)
-	if err == nil && (message.Network == protocol.NetworkPolygon || message.Network == protocol.NetworkBinanceSmartChain) {
+	if err == nil && message.Network != protocol.NetworkXDAI {
 		// get address status
 		addressStatus, _ = database.GetAddress(message.Address)
 
-		nonce, err := ethclient.NonceAt(context.Background(), common.HexToAddress(message.Address), nil)
+		nonce, err = ethclient.NonceAt(context.Background(), common.HexToAddress(message.Address), nil)
 		if err == nil {
 			if addressStatus.NonceMap[message.Network] == int64(nonce) {
 				return nil
-			}
-
-			addressStatus.NonceMap = map[string]int64{
-				message.Network: int64(nonce),
 			}
 		}
 	}
@@ -413,12 +410,9 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	loggerx.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
 	// Get the time of the latest data for this address and network
-	var result struct {
-		Timestamp   time.Time `gorm:"column:timestamp"`
-		BlockNumber int64     `gorm:"column:block_number"`
-	}
+	if message.Network != protocol.NetworkEthereum || addressStatus.NonceMap[message.Network] != 0 {
+		var result model.Transaction
 
-	if message.Network != protocol.NetworkEthereum {
 		if err := database.Global().
 			Model((*model.Transaction)(nil)).
 			Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
@@ -433,6 +427,10 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 		message.Timestamp = result.Timestamp
 		message.BlockNumber = result.BlockNumber
+	}
+
+	addressStatus.NonceMap = map[string]int64{
+		message.Network: int64(nonce),
 	}
 
 	var wg sync.WaitGroup
