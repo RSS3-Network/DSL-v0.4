@@ -379,7 +379,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 		// upsert address status
 		addressStatus.Address = message.Address
-		go s.upsertAddress(ctx, addressStatus, len(transactions) == 0)
+		go s.upsertAddress(ctx, addressStatus, len(transactions) != 0)
 	}()
 
 	// convert address to lowercase
