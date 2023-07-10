@@ -196,7 +196,7 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 		transfers = append(transfers, transfer)
 	}
 
-	if transaction.Tag == filter.TagSocial && (transaction.Type == filter.SocialFollow || transaction.Type == filter.SocialMint) {
+	if len(transfers) > 0 && transfers[0].Tag == filter.TagSocial && (transfers[0].Type == filter.SocialFollow || transfers[0].Type == filter.SocialMint) {
 		return c.HandleTransfer(ctx, transaction, transfers)
 	}
 
