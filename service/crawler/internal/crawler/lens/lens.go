@@ -151,9 +151,10 @@ func (s *service) getPolygonLogs(ctx context.Context, eventHash common.Hash, con
 	defer func() { opentelemetry.Log(trace, nil, internalTransactions, err) }()
 
 	query := kurora.DatasetLensEventQuery{
-		Address:    &contractAddress,
-		TopicFirst: &eventHash,
-		Limit:      lo.ToPtr(100),
+		Address:         &contractAddress,
+		TopicFirst:      &eventHash,
+		BlockNumberFrom: lo.ToPtr(decimal.NewFromInt(28469639)),
+		Limit:           lo.ToPtr(100),
 	}
 
 	cacheKey := fmt.Sprintf(lensLogsCacheKey, eventHash.String())
@@ -213,18 +214,14 @@ func (s *service) handlePolygonReceipts(ctx context.Context, transactions []*mod
 			transferMap[transfer.Index] = transfer
 		}
 
-		// Empty transfer data to avoid data duplication
-		transaction.Transfers = make([]model.Transfer, 0)
-
 		// get receipt
-		internalTransfers, err := s.lensWorker.HandleReceipt(ctx, transaction)
+		var err error
+		transaction.Transfers, err = s.lensWorker.HandleReceipt(ctx, transaction)
 		if err != nil {
 			logrus.Errorf("[lens worker] handleReceipt error, %v", err)
 
 			return
 		}
-
-		transaction.Transfers = s.lensWorker.FilterLensTransfer(transaction.Owner, internalTransfers)
 
 		for _, transfer := range transaction.Transfers {
 			if transaction.Tag == "" {

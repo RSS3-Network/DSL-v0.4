@@ -69,8 +69,6 @@ func (s *service) Handle(ctx context.Context, message *protocol.Message, transac
 		}
 
 		if len(internalTransfers) > 0 {
-			transaction.Transfers = s.commWorkerClient.FilterLensTransfer(transaction.Owner, internalTransfers)
-
 			//nolint:gocritic
 			transaction.Transfers = append(transaction.Transfers, transferMap[protocol.IndexVirtual])
 			transaction.Platform = protocol.PlatformLens
