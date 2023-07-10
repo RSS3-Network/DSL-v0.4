@@ -492,7 +492,7 @@ func (c *Client) HandleCollected(ctx context.Context, lensContract contract.Even
 		return err
 	}
 
-	transaction.Owner = event.Collector.String()
+	transaction.Owner = strings.ToLower(event.Collector.String())
 	transfer.AddressFrom = transaction.Owner
 
 	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
@@ -526,7 +526,7 @@ func (c *Client) HandleTransfer(ctx context.Context, transaction *model.Transact
 			continue
 		}
 
-		transaction.Owner = event.To.String()
+		transaction.Owner = strings.ToLower(event.To.String())
 		for index := range transfers {
 			transfers[index].AddressFrom = transaction.Owner
 		}
