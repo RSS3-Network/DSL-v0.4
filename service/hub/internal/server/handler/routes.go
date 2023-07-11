@@ -8,6 +8,7 @@ const (
 	PathGetProfiles     = "/profiles/:address"
 	PathGetNameResolve  = "/ns/:address"
 	PathGetTransaction  = "/tx/:hash"
+	PathGetMastodon     = "/mastodon/:address"
 
 	PathBatchGetSocialNotes = "/notes/social"
 	PathBatchGetNotes       = "/notes"
