@@ -12,6 +12,7 @@ const (
 
 	// path
 	GetNotes             = "/notes/"
+	GetNotesByPlatform   = "platform/notes/"
 	PostNotes            = "/notes"
 	PostSocialNotes      = "/notes/social"
 	GetProfiles          = "/profiles/"
@@ -107,6 +108,12 @@ type BatchGetProfilesRequest struct {
 	Network  []string `json:"network"`
 	Platform []string `json:"platform"`
 	Refresh  bool     `query:"refresh" json:"refresh"`
+}
+
+type GetNotesByPlatformRequest struct {
+	Platform string `param:"platform" json:"platform" validate:"required" description:"platform to query"`
+	Limit    int    `query:"limit" json:"limit"`
+	Cursor   string `query:"cursor" json:"cursor"`
 }
 
 type GetAPIKeyRequest struct {

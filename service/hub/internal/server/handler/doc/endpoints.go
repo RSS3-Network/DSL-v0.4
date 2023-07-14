@@ -29,6 +29,7 @@ var endpoints = []Endpoint{
 	{http.MethodGet, handler.PathGetNameResolve, model.GetNameResolveRequest{}, dbModel.NameServiceResult{}},
 	{http.MethodGet, handler.PathGetTransaction, model.GetTransactionRequest{}, dbModel.Transaction{}},
 	{http.MethodGet, handler.PathGetMastodon, model.GetRequest{}, []dbModel.Transaction{}},
+	{http.MethodGet, handler.PathGetNotesByPlatform, model.GetNotesByPlatformRequest{}, []dbModel.Transaction{}},
 
 	{http.MethodPost, handler.PathBatchGetSocialNotes, model.BatchGetSocialNotesRequest{}, []dbModel.Transaction{}},
 	{http.MethodPost, handler.PathBatchGetNotes, model.BatchGetNotesRequest{}, []dbModel.Transaction{}},
