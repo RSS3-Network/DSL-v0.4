@@ -10,12 +10,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/naturalselectionlabs/pregod/common/constant"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/middlewarex"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	ws "github.com/naturalselectionlabs/pregod/service/hub/internal/server/websocket"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/otel"
 )
@@ -310,8 +308,6 @@ func (h *Handler) GetNotesByPlatformFunc(c echo.Context) error {
 	if err := c.Validate(&request); err != nil {
 		return ValidateFailed(c)
 	}
-
-	loggerx.Global().Info("GetNotesByPlatformFunc", zap.Any("request", request))
 
 	// api report
 	if len(request.Cursor) == 0 {
