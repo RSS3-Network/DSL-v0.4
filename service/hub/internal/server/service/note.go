@@ -62,6 +62,36 @@ func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbM
 	return transactions, total, nil
 }
 
+func (s *Service) GetNotesByPlatform(ctx context.Context, request model.GetNotesByPlatformRequest) ([]dbModel.Transaction, error) {
+	// get transactions from database
+	transactions, err := dao.GetTransactionsByPlatform(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	// get transfers from database
+	transactionHashes := make([]string, 0)
+	for _, transactionHash := range transactions {
+		transactionHashes = append(transactionHashes, transactionHash.Hash)
+	}
+
+	transfers, err := dao.GetTransfers(ctx, transactionHashes)
+	if err != nil {
+		return nil, err
+	}
+
+	transferMap := make(map[string][]dbModel.Transfer)
+	for _, transfer := range transfers {
+		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
+	}
+
+	for index := range transactions {
+		transactions[index].Transfers = transferMap[transactions[index].Hash]
+	}
+
+	return transactions, nil
+}
+
 func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotesRequest) ([]dbModel.Transaction, int64, error) {
 	if len(request.Tag) > 0 {
 		request.Tag, request.Type, request.IncludePoap = s.CheckRequestTagAndType(request.Tag, request.Type)
