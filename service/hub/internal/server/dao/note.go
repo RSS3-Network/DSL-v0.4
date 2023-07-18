@@ -7,6 +7,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"go.opentelemetry.io/otel"
@@ -98,7 +99,16 @@ func GetTransactionsByPlatform(ctx context.Context, request model.GetNotesByPlat
 	sql := database.Global().
 		WithContext(ctx).
 		Model(&dbModel.Transaction{}).
-		Where("success IS TRUE") // Hide failed transactions
+		Where("success IS TRUE"). // Hide failed transactions
+		Where("platform = ?", request.Platform)
+
+	if request.Platform == protocol.NetworkEIP1577 {
+		sql = database.Global().
+			WithContext(ctx).
+			Model(&dbModel.Transaction{}).
+			Where("success IS TRUE"). // Hide failed transactions
+			Where("network = ?", request.Platform)
+	}
 
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
@@ -111,7 +121,7 @@ func GetTransactionsByPlatform(ctx context.Context, request model.GetNotesByPlat
 		sql = sql.Where("timestamp < ? OR (timestamp = ? AND index < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)
 	}
 
-	if err := sql.Limit(request.Limit).Order("timestamp DESC, index DESC").Where("platform = ?", request.Platform).Find(&transactions).Error; err != nil {
+	if err := sql.Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
 		return nil, err
 	}
 
