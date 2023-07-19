@@ -7,7 +7,6 @@ import (
 	"github.com/lib/pq"
 	"github.com/naturalselectionlabs/pregod/common/database"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
-	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"go.opentelemetry.io/otel"
@@ -101,14 +100,6 @@ func GetTransactionsByPlatform(ctx context.Context, request model.GetNotesByPlat
 		Model(&dbModel.Transaction{}).
 		Where("success IS TRUE"). // Hide failed transactions
 		Where("platform = ?", request.Platform)
-
-	if request.Platform == protocol.NetworkEIP1577 {
-		sql = database.Global().
-			WithContext(ctx).
-			Model(&dbModel.Transaction{}).
-			Where("success IS TRUE"). // Hide failed transactions
-			Where("network = ?", request.Platform)
-	}
 
 	if len(request.Cursor) > 0 {
 		var lastItem dbModel.Transaction
