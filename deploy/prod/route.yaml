@@ -77,9 +77,6 @@ spec:
     period: 1s
     average: 2
     burst: 10
-    sourceCriterion:
-      ipStrategy:
-        depth: 2
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
