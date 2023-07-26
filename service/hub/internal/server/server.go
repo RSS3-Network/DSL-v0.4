@@ -89,6 +89,7 @@ func (s *Server) Initialize() (err error) {
 
 	s.httpServer.Use(middleware.CORSWithConfig(middleware.DefaultCORSConfig))
 	s.httpServer.Use(middlewarex.ZapLogger(s.logger))
+	s.httpServer.Use(middlewarex.PathUnescapeMiddleware)
 
 	s.httpServer.GET("/", func(c echo.Context) error {
 		u, _ := url.JoinPath(c.Request().URL.Path, "openapi")
