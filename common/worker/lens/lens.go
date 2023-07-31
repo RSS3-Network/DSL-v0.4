@@ -9,6 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
+
 	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
@@ -57,6 +60,7 @@ type LensContentMedia struct {
 type FormatOption struct {
 	ContentURI       string
 	ContentType      string
+	Content          json.RawMessage
 	Transfer         *model.Transfer
 	ProfileIdPointed *big.Int
 	PubIdPointed     *big.Int
@@ -69,8 +73,6 @@ const (
 	Post    = "post"
 	Comment = "comment"
 	Share   = "mirror"
-
-	NotSupportedError = "not supported"
 )
 
 var ErrorNotFoundInKurora = errors.New("not found")
@@ -149,13 +151,6 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			continue
 		}
 
-		sourceData, err := json.Marshal(log)
-		if err != nil {
-			logrus.Errorf("[lens worker] marshal source data error, %v", err)
-
-			continue
-		}
-
 		// common attributes
 		transfer := model.Transfer{
 			TransactionHash: transaction.Hash,
@@ -163,7 +158,6 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			BlockNumber:     big.NewInt(transaction.BlockNumber),
 			Index:           int64(log.Index),
 			Network:         transaction.Network,
-			SourceData:      sourceData,
 			Platform:        protocol.PlatformLens,
 			Source:          transaction.Source,
 			RelatedUrls:     []string{utils.GetTxHashURL(protocol.NetworkPolygon, transaction.Hash)},
@@ -185,8 +179,8 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 			batchTransfers, handleErr = c.HandleFollowed(ctx, *lensContract, transaction, &transfer, *log)
 		case lens.EventHashFollowNFTTransferred:
 			handleErr = c.HandleFollowNFTTransferred(ctx, *lensContract, transaction, &transfer, *log)
-		case lens.EventHashCollectNFTTransferred:
-			handleErr = c.HandleCollectNFTTransferred(ctx, *lensContract, transaction, &transfer, *log)
+		case lens.EventHashCollected:
+			handleErr = c.HandleCollected(ctx, *lensContract, transaction, &transfer, *log)
 		default:
 			continue
 		}
@@ -202,10 +196,14 @@ func (c *Client) HandleReceipt(ctx context.Context, transaction *model.Transacti
 		transfers = append(transfers, transfer)
 	}
 
+	if len(transfers) > 0 && transfers[0].Tag == filter.TagSocial && (transfers[0].Type == filter.SocialFollow || transfers[0].Type == filter.SocialMint) {
+		return c.HandleTransfer(ctx, transaction, transfers)
+	}
+
 	return transfers, nil
 }
 
-func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (err error) {
+func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) error {
 	event, err := lensContract.EventsFilterer.ParsePostCreated(log)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] HandlePostCreated: ParsePostCreated error", zap.Error(err))
@@ -244,7 +242,7 @@ func (c *Client) HandlePostCreated(ctx context.Context, lensContract contract.Ev
 	return nil
 }
 
-func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (err error) {
+func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) error {
 	event, err := lensContract.EventsFilterer.ParseCommentCreated(log)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] handleCommentCreated: ParseCommentCreated error", zap.Error(err))
@@ -286,7 +284,7 @@ func (c *Client) HandleCommentCreated(ctx context.Context, lensContract contract
 	return nil
 }
 
-func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (err error) {
+func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) error {
 	event, err := lensContract.EventsFilterer.ParseProfileCreated(log)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] handleProfileCreated: ParseProfileCreated error", zap.Error(err))
@@ -323,7 +321,7 @@ func (c *Client) HandleProfileCreated(ctx context.Context, lensContract contract
 	return nil
 }
 
-func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (err error) {
+func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) error {
 	event, err := lensContract.EventsFilterer.ParseMirrorCreated(log)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] handleMirrorCreated: ParseMirrorCreated error", zap.Error(err))
@@ -370,7 +368,7 @@ func (c *Client) HandleMirrorCreated(ctx context.Context, lensContract contract.
 	return nil
 }
 
-func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (transfers []model.Transfer, err error) {
+func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) ([]model.Transfer, error) {
 	event, err := lensContract.EventsFilterer.ParseFollowed(log)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] HandleFollowed: ParseFollowed error", zap.Error(err))
@@ -380,6 +378,7 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 	transaction.Owner = strings.ToLower(event.Follower.String())
 	transfer.AddressFrom = transaction.Owner
 
+	transfers := make([]model.Transfer, 0)
 	for index, profileID := range event.ProfileIds {
 		profile, err := c.GetProfile(profileID)
 		if err != nil {
@@ -407,7 +406,7 @@ func (c *Client) HandleFollowed(ctx context.Context, lensContract contract.Event
 	return transfers, nil
 }
 
-func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (err error) {
+func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) error {
 	event, err := lensContract.EventsFilterer.ParseFollowNFTTransferred(log)
 	if err != nil {
 		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: ParseFollowNFTTransferred error", zap.Error(err))
@@ -443,91 +442,97 @@ func (c *Client) HandleFollowNFTTransferred(ctx context.Context, lensContract co
 	return nil
 }
 
-func (c *Client) HandleCollectNFTTransferred(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) (err error) {
-	event, err := lensContract.EventsFilterer.ParseCollectNFTTransferred(log)
+func (c *Client) HandleCollected(ctx context.Context, lensContract contract.Events, transaction *model.Transaction, transfer *model.Transfer, log types.Log) error {
+	event, err := lensContract.EventsFilterer.ParseCollected(log)
 	if err != nil {
-		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: ParseFollowNFTTransferred error", zap.Error(err))
+		loggerx.Global().Error("[lens worker] HandleCollected: ParseCollected error", zap.Error(err))
 
 		return err
 	}
 
-	// ipfs as back up choice to fetch metadata if failed to fetch from db
-	defer func() {
-		if err != nil {
-			contentURI, err := c.GetContentURI(ctx, event.ProfileId, event.PubId)
-			if err != nil {
-				loggerx.Global().Error("[lens worker] HandleMirrorCreated: GetContentURI error", zap.Error(err))
-			}
-
-			profile, err := c.GetProfile(event.ProfileId)
-			if err != nil {
-				loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))
-				return
-			}
-
-			err = c.FormatContent(ctx, &FormatOption{
-				ContentURI:  contentURI,
-				ContentType: Post,
-				Transfer:    transfer,
-				ProfileId:   event.ProfileId,
-				PubId:       event.PubId,
-				Handle:      profile.Handle,
-			})
-			if err != nil {
-				loggerx.Global().Error("[lens worker] HandleMirrorCreated: FormatContent error", zap.Error(err))
-				return
-			}
-
-			transaction.Owner = strings.ToLower(event.To.String())
-			transfer.AddressFrom = strings.ToLower(event.From.String())
-			transfer.AddressTo = transaction.Owner
-
-			transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
-			transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialMint, transfer.Type)
-			transfer.RelatedUrls = append(transfer.RelatedUrls, c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId))
-		}
-	}()
+	var contentURI string
+	var content json.RawMessage
 
 	pubs, err := c.kuroraClient.FetchDatasetLensPublications(ctx, kurora_client.DatasetLensPublicationQuery{
 		ProfileID:     lo.ToPtr[decimal.Decimal](decimal.NewFromBigInt(event.ProfileId, 0)),
 		PublicationID: lo.ToPtr[decimal.Decimal](decimal.NewFromBigInt(event.PubId, 0)),
 		Limit:         lo.ToPtr[int](1),
 	})
-	if err != nil {
-		loggerx.Global().Error("[lens worker] HandleCollectNFTTransferred: FetchDatasetLensPublications error", zap.Error(err))
-		return err
-	}
 
-	if len(pubs) != 1 {
-		err = ErrorNotFoundInKurora
-		loggerx.Global().Error("[lens worker] HandleCollectNFTTransferred: FetchDatasetLensPublications error", zap.Any("publications", pubs), zap.Error(err))
-		return err
+	if err != nil || len(pubs) == 0 {
+		contentURI, err = c.GetContentURI(ctx, event.ProfileId, event.PubId)
+		if err != nil {
+			loggerx.Global().Error("[lens worker] HandleCollected: GetContentURI error", zap.Error(err))
+
+			return err
+		}
+	} else {
+		contentURI = pubs[0].ContentURI
+		content = pubs[0].Content
 	}
 
 	profile, err := c.GetProfile(event.ProfileId)
 	if err != nil {
-		loggerx.Global().Error("[lens worker] HandleFollowNFTTransferred: GetProfile error", zap.Error(err))
+		loggerx.Global().Error("[lens worker] HandleCollected: GetProfile error", zap.Error(err))
 		return err
 	}
 
 	err = c.FormatContent(ctx, &FormatOption{
-		ContentURI:  pubs[0].ContentURI,
-		ContentType: Post,
-		Transfer:    transfer,
-		ProfileId:   event.ProfileId,
-		PubId:       event.PubId,
-		Handle:      profile.Handle,
+		ContentURI: contentURI,
+		Content:    content,
+		Transfer:   transfer,
+		ProfileId:  event.ProfileId,
+		PubId:      event.PubId,
+		Handle:     profile.Handle,
 	})
 
-	transaction.Owner = strings.ToLower(event.To.String())
-	transfer.AddressFrom = strings.ToLower(event.From.String())
-	transfer.AddressTo = transaction.Owner
+	if err != nil {
+		loggerx.Global().Error("[lens worker] HandleCollected: FormatContent error", zap.Error(err))
+
+		return err
+	}
+
+	transaction.Owner = strings.ToLower(event.Collector.String())
+	transfer.AddressFrom = transaction.Owner
 
 	transfer.Timestamp = time.Unix(event.Timestamp.Int64(), 0)
 	transfer.Tag, transfer.Type = filter.UpdateTagAndType(filter.TagSocial, transfer.Tag, filter.SocialMint, transfer.Type)
 	transfer.RelatedUrls = append(transfer.RelatedUrls, c.GetLensRelatedURL(ctx, event.ProfileId, event.PubId))
 
 	return nil
+}
+
+func (c *Client) HandleTransfer(ctx context.Context, transaction *model.Transaction, transfers []model.Transfer) ([]model.Transfer, error) {
+	var sourceData ethereum.SourceData
+	if err := json.Unmarshal(transaction.SourceData, &sourceData); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal source data: %w", err)
+	}
+
+	for _, log := range sourceData.Receipt.Logs {
+		if len(log.Topics) != 4 || log.Topics[0] != erc721.EventHashTransfer {
+			continue
+		}
+
+		transferFiltered := lo.Must(erc721.NewERC721Filterer(ethereum.AddressGenesis, nil))
+
+		event, err := transferFiltered.ParseTransfer(*log)
+		if err != nil {
+			zap.L().Error("[lens worker] HandleTransfer: ParseTransfer error", zap.Error(err), zap.String("transaction", transaction.Hash))
+
+			return nil, err
+		}
+
+		if event.From != common.HexToAddress(transaction.Owner) {
+			continue
+		}
+
+		transaction.Owner = strings.ToLower(event.To.String())
+		for index := range transfers {
+			transfers[index].AddressFrom = transaction.Owner
+		}
+	}
+
+	return transfers, nil
 }
 
 func (c *Client) GetContentURI(ctx context.Context, profileId *big.Int, pubId *big.Int) (string, error) {
@@ -619,11 +624,13 @@ func (c *Client) CreatePost(ctx context.Context, lensContent *LensContent, handl
 
 func (c *Client) FormatContent(ctx context.Context, opt *FormatOption) error {
 	lensContent := LensContent{}
-	err := c.GetContent(ctx, opt.ContentURI, &lensContent)
-	if err != nil {
-		loggerx.Global().Error("[lens worker] FormatContent: GetContent error", zap.Error(err))
+	if opt.Content == nil || json.Unmarshal(opt.Content, &lensContent) != nil {
+		err := c.GetContent(ctx, opt.ContentURI, &lensContent)
+		if err != nil {
+			loggerx.Global().Error("[lens worker] FormatContent: GetContent error", zap.Error(err))
 
-		return err
+			return err
+		}
 	}
 
 	// handle transfer fields
@@ -720,22 +727,4 @@ func (c *Client) FormatTypeOnPlatform(input string) string {
 	}
 
 	return ""
-}
-
-// Filter Lens Mint Transfer, ignore neither `from_address` nor `to_address` is owner in lens mint(collect nft) event
-// eg. Two Transfers In Same Transaction: 0x00 -> Proxy, Proxy -> Owner
-// `Ignore` 0x00 -> Proxy and `Keep` Proxy -> Owner
-func (c *Client) FilterLensTransfer(owner string, internalTransfers []model.Transfer) []model.Transfer {
-	filterResult := make([]model.Transfer, 0)
-	for _, transfer := range internalTransfers {
-		// ignore neither `from_address` nor `to_address` is owner in lens mint(collect nft) event
-		if strings.EqualFold(transfer.Tag, filter.TagSocial) && strings.EqualFold(transfer.Type, filter.SocialMint) &&
-			!strings.EqualFold(transfer.AddressFrom, owner) && !strings.EqualFold(transfer.AddressTo, owner) {
-			loggerx.Global().Warn("[lens worker] HandleReceipt: ignore neither `from_address` nor `to_address` is owner in lens mint(collect nft) event", zap.Any("transfers", transfer),
-				zap.Any("transaction owner", owner))
-			continue
-		}
-		filterResult = append(filterResult, transfer)
-	}
-	return filterResult
 }

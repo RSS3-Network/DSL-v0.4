@@ -87,6 +87,38 @@ func GetTransactions(ctx context.Context, request model.GetRequest) ([]dbModel.T
 	return transactions, total, nil
 }
 
+// getTransactions get transaction data from database
+func GetTransactionsByPlatform(ctx context.Context, request model.GetNotesByPlatformRequest) ([]dbModel.Transaction, error) {
+	tracer := otel.Tracer("getTransactions")
+	_, postgresSnap := tracer.Start(ctx, "postgres")
+
+	defer postgresSnap.End()
+
+	transactions := make([]dbModel.Transaction, 0)
+	sql := database.Global().
+		WithContext(ctx).
+		Model(&dbModel.Transaction{}).
+		Where("success IS TRUE"). // Hide failed transactions
+		Where("platform = ?", request.Platform)
+
+	if len(request.Cursor) > 0 {
+		var lastItem dbModel.Transaction
+
+		// no need to lowercase
+		if err := database.Global().Where("hash = ?", request.Cursor).First(&lastItem).Error; err != nil {
+			return nil, err
+		}
+
+		sql = sql.Where("timestamp < ? OR (timestamp = ? AND index < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)
+	}
+
+	if err := sql.Limit(request.Limit).Order("timestamp DESC, index DESC").Find(&transactions).Error; err != nil {
+		return nil, err
+	}
+
+	return transactions, nil
+}
+
 func BatchGetTransactions(ctx context.Context, request model.BatchGetNotesRequest) ([]dbModel.Transaction, int64, error) {
 	tracer := otel.Tracer("batchGetTransactions")
 	_, postgresSnap := tracer.Start(ctx, "postgres")
@@ -130,7 +162,7 @@ func BatchGetTransactions(ctx context.Context, request model.BatchGetNotesReques
 			request.Network[i] = strings.ToLower(v)
 		}
 
-		sql = sql.Where("network IN ?", request.Network)
+		sql = sql.Where("LOWER(network) IN ?", request.Network)
 	}
 
 	if len(request.Platform) > 0 {

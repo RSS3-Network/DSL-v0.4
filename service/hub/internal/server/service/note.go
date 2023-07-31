@@ -13,6 +13,7 @@ import (
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
+	"github.com/naturalselectionlabs/pregod/common/types"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"github.com/samber/lo"
@@ -59,6 +60,36 @@ func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbM
 	}
 
 	return transactions, total, nil
+}
+
+func (s *Service) GetNotesByPlatform(ctx context.Context, request model.GetNotesByPlatformRequest) ([]dbModel.Transaction, error) {
+	// get transactions from database
+	transactions, err := dao.GetTransactionsByPlatform(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	// get transfers from database
+	transactionHashes := make([]string, 0)
+	for _, transactionHash := range transactions {
+		transactionHashes = append(transactionHashes, transactionHash.Hash)
+	}
+
+	transfers, err := dao.GetTransfers(ctx, transactionHashes)
+	if err != nil {
+		return nil, err
+	}
+
+	transferMap := make(map[string][]dbModel.Transfer)
+	for _, transfer := range transfers {
+		transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
+	}
+
+	for index := range transactions {
+		transactions[index].Transfers = transferMap[transactions[index].Hash]
+	}
+
+	return transactions, nil
 }
 
 func (s *Service) BatchGetNotes(ctx context.Context, request model.BatchGetNotesRequest) ([]dbModel.Transaction, int64, error) {
@@ -150,7 +181,7 @@ func (s *Service) BatchGetSocialNotes(ctx context.Context, request model.BatchGe
 func (s *Service) CheckRequestTagAndType(reqTags []string, reqTypes []string) ([]string, []string, bool) {
 	// support many-many relationship between tag and type
 	var tags []string
-	var types []string
+	var typeList []string
 	var includePoap bool
 
 	for _, tag := range reqTags {
@@ -159,9 +190,9 @@ func (s *Service) CheckRequestTagAndType(reqTags []string, reqTypes []string) ([
 			for _, typeX := range reqTypes {
 				typeX = strings.ToLower(typeX)
 
-				if filter.CheckTypeValid(tag, typeX) {
+				if types.CheckTypeValid(tag, typeX) {
 					tags = append(tags, tag)
-					types = append(types, typeX)
+					typeList = append(typeList, typeX)
 					// by default POAPs are not returned
 					if typeX == filter.CollectiblePoap {
 						includePoap = true
@@ -173,7 +204,7 @@ func (s *Service) CheckRequestTagAndType(reqTags []string, reqTypes []string) ([
 		}
 	}
 
-	return tags, types, includePoap
+	return tags, typeList, includePoap
 }
 
 func (s *Service) GetNftFeeds(ctx context.Context, request model.GetRequest) ([]dbModel.Transaction, int64, error) {

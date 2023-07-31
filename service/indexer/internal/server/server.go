@@ -357,6 +357,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	var (
 		transactions  []model.Transaction
 		addressStatus model.Address
+		nonce         uint64
 	)
 
 	defer func() {
@@ -378,7 +379,7 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 
 		// upsert address status
 		addressStatus.Address = message.Address
-		go s.upsertAddress(ctx, addressStatus, len(transactions) == 0)
+		go s.upsertAddress(ctx, addressStatus, len(transactions) != 0)
 	}()
 
 	// convert address to lowercase
@@ -394,18 +395,14 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	defer handlerSpan.End()
 
 	ethclient, err := ethclientx.Global(message.Network)
-	if err == nil {
+	if err == nil && message.Network != protocol.NetworkXDAI {
 		// get address status
 		addressStatus, _ = database.GetAddress(message.Address)
 
-		nonce, err := ethclient.NonceAt(context.Background(), common.HexToAddress(message.Address), nil)
+		nonce, err = ethclient.NonceAt(context.Background(), common.HexToAddress(message.Address), nil)
 		if err == nil {
 			if addressStatus.NonceMap[message.Network] == int64(nonce) {
 				return nil
-			}
-
-			addressStatus.NonceMap = map[string]int64{
-				message.Network: int64(nonce),
 			}
 		}
 	}
@@ -413,25 +410,28 @@ func (s *Server) handle(ctx context.Context, message *protocol.Message) (err err
 	loggerx.Global().Info("start indexing data", zap.String("address", message.Address), zap.String("network", message.Network))
 
 	// Get the time of the latest data for this address and network
-	var result struct {
-		Timestamp   time.Time `gorm:"column:timestamp"`
-		BlockNumber int64     `gorm:"column:block_number"`
+	if message.Network != protocol.NetworkEthereum || addressStatus.NonceMap[message.Network] != 0 {
+		var result model.Transaction
+
+		if err := database.Global().
+			Model((*model.Transaction)(nil)).
+			Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
+			Where("owner = ?", message.Address).
+			Where("network = ?", message.Network).
+			Order("timestamp DESC").
+			Limit(1).
+			First(&result).
+			Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		message.Timestamp = result.Timestamp
+		message.BlockNumber = result.BlockNumber
 	}
 
-	if err := database.Global().
-		Model((*model.Transaction)(nil)).
-		Select("COALESCE(timestamp, 'epoch'::timestamp) AS timestamp, COALESCE(block_number, 0) AS block_number").
-		Where("owner = ?", message.Address).
-		Where("network = ?", message.Network).
-		Order("timestamp DESC").
-		Limit(1).
-		First(&result).
-		Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
+	addressStatus.NonceMap = map[string]int64{
+		message.Network: int64(nonce),
 	}
-
-	message.Timestamp = result.Timestamp
-	message.BlockNumber = result.BlockNumber
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex

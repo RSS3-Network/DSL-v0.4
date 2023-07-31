@@ -12,6 +12,7 @@ const (
 
 	// path
 	GetNotes             = "/notes/"
+	GetNotesByPlatform   = "platform/notes/"
 	PostNotes            = "/notes"
 	PostSocialNotes      = "/notes/social"
 	GetProfiles          = "/profiles/"
@@ -55,6 +56,10 @@ type GetRequest struct {
 	// returns a count of transactions only
 	CountOnly   bool `query:"count_only" json:"count_only"`
 	ActionLimit int  `query:"action_limit" json:"action_limit"`
+}
+
+type GetNameResolveRequest struct {
+	Address string `param:"address" validate:"required"`
 }
 
 type GetAssetRequest struct {
@@ -102,7 +107,13 @@ type BatchGetProfilesRequest struct {
 	Address  []string `json:"address" validate:"required"`
 	Network  []string `json:"network"`
 	Platform []string `json:"platform"`
-	Refresh  bool     `query:"refresh"`
+	Refresh  bool     `query:"refresh" json:"refresh"`
+}
+
+type GetNotesByPlatformRequest struct {
+	Platform string `param:"platform" json:"platform" validate:"required" description:"platform to query"`
+	Limit    int    `query:"limit" json:"limit"`
+	Cursor   string `query:"cursor" json:"cursor"`
 }
 
 type GetAPIKeyRequest struct {

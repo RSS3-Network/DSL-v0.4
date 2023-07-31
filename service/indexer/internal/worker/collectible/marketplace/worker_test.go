@@ -43,6 +43,8 @@ func initialize(t *testing.T) {
 }
 
 func Test_internal_Handle(t *testing.T) {
+	t.Parallel()
+
 	initialize(t)
 
 	type arguments struct {
@@ -1017,10 +1019,55 @@ func Test_internal_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "Accept an offer on Blur",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x79C4213a328E3B4F1D87b4953C14759399dB25E2", // Unknown
+					Network: protocol.NetworkEthereum,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://etherscan.io/tx/0xc62137ad7e20dbe70b01c87fcfd03721031979f38a47278bbc24557937e9d8cf
+						Hash:        "0xc62137ad7e20dbe70b01c87fcfd03721031979f38a47278bbc24557937e9d8cf",
+						BlockNumber: 17391315,
+						Network:     protocol.NetworkEthereum,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Len(t, transactions, 1)
+
+				for _, transaction := range transactions {
+					zap.L().Info("", zap.Any("transaction", transaction))
+
+					assert.Len(t, transaction.Transfers, 1)
+				}
+
+				for _, transaction := range transactions {
+					if !assert.Equal(t, transaction.Platform, protocol.PlatformBlur) {
+						return false
+					}
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {
+		testcase := testcase
+
 		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
 			worker := New()
 
 			assert.NotEmpty(t, worker.Name(), "worker name")

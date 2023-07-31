@@ -14,7 +14,7 @@ import (
 
 func Example() {
 	// log_models.go
-	var UserRegisteredLog = DataModel{
+	UserRegisteredLog := DataModel{
 		Name:   "user-user_registered",
 		Fields: []string{"user_id", "created_at", "reg_source", "username", "nickname"},
 	}

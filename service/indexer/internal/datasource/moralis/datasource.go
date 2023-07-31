@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	MaxPage = 5
+	MaxPage = 1
 )
 
 var _ datasource.Datasource = &Datasource{}

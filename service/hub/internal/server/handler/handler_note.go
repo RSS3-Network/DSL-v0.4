@@ -289,3 +289,57 @@ func (h *Handler) GetTransactionByHashFunc(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, transaction)
 }
+
+// BatchGetNotesByPlatformFunc HTTP handler for action API
+// parse query parameters, query and assemble data
+func (h *Handler) GetNotesByPlatformFunc(c echo.Context) error {
+	go h.apiReport(model.GetNotesByPlatform, c)
+	tracer := otel.Tracer("GetNotesByPlatformFunc")
+	ctx, httpSnap := tracer.Start(c.Request().Context(), "http")
+
+	defer httpSnap.End()
+
+	request := model.GetNotesByPlatformRequest{}
+
+	if err := c.Bind(&request); err != nil {
+		return BadRequest(c)
+	}
+
+	if err := c.Validate(&request); err != nil {
+		return ValidateFailed(c)
+	}
+
+	// api report
+	if len(request.Cursor) == 0 {
+		go h.filterReport(model.GetNotesByPlatform, request, c)
+	}
+
+	if request.Limit <= 0 || request.Limit > model.DefaultLimit {
+		request.Limit = model.DefaultLimit
+	}
+
+	// header into ctx
+	ctx = context.WithValue(ctx, constant.HEADER_CTX_KEY, c.Request().Header)
+
+	var (
+		transactions []dbModel.Transaction
+		err          error
+	)
+	response := &model.Response{}
+
+	transactions, err = h.service.GetNotesByPlatform(ctx, request)
+
+	if err != nil {
+		return ErrorResp(c, err, http.StatusInternalServerError, ErrorCodeInternalError)
+	}
+
+	var cursor string
+	if len(transactions) != 0 {
+		cursor = transactions[len(transactions)-1].Hash
+	}
+
+	response.Cursor = cursor
+	response.Result = transactions
+
+	return c.JSON(http.StatusOK, response)
+}

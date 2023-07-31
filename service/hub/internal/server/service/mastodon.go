@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"sort"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/mattn/go-mastodon"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
@@ -147,7 +149,7 @@ func (s *Service) handleContentList(c context.Context, contentList []*mastodon.S
 		locker       sync.Mutex
 	)
 
-	opt := lop.NewOption().WithConcurrency(10)
+	opt := lop.NewOption().WithConcurrency(100)
 	lop.ForEach(contentList, func(item *mastodon.Status, i int) {
 		status := item
 
@@ -172,7 +174,7 @@ func (s *Service) handleContentList(c context.Context, contentList []*mastodon.S
 	return transactions, nil
 }
 
-func (s *Service) buildPostTransaction(c context.Context, status *mastodon.Status) *dbModel.Transaction {
+func (s *Service) buildPostTransaction(_ context.Context, status *mastodon.Status) *dbModel.Transaction {
 	post := &metadata.Post{
 		CreatedAt:      status.CreatedAt.Format(time.RFC3339),
 		Author:         []string{status.Account.Username, status.Account.Acct, status.Account.DisplayName},
@@ -181,6 +183,8 @@ func (s *Service) buildPostTransaction(c context.Context, status *mastodon.Statu
 		Media:          []metadata.Media{{Address: status.Account.Avatar, MimeType: "image/png"}},
 		TypeOnPlatform: []string{"post"},
 	}
+
+	s.buildPostAttachments(post, status)
 
 	metadataPost, _ := json.Marshal(post)
 
@@ -210,21 +214,27 @@ func (s *Service) buildPostTransaction(c context.Context, status *mastodon.Statu
 	return transaction
 }
 
-func (s *Service) buildShareTransaction(c context.Context, status *mastodon.Status) *dbModel.Transaction {
+func (s *Service) buildShareTransaction(_ context.Context, status *mastodon.Status) *dbModel.Transaction {
+	target := &metadata.Post{
+		CreatedAt:      status.Reblog.CreatedAt.Format(time.RFC3339),
+		Author:         []string{status.Reblog.Account.Username, status.Reblog.Account.Acct, status.Reblog.Account.DisplayName},
+		Title:          status.Reblog.SpoilerText,
+		Body:           status.Reblog.Content,
+		Media:          []metadata.Media{{Address: status.Reblog.Account.Avatar, MimeType: "image/png"}},
+		TypeOnPlatform: []string{"post"},
+	}
+
+	s.buildPostAttachments(target, status.Reblog)
+
 	post := &metadata.Post{
-		CreatedAt: status.CreatedAt.Format(time.RFC3339),
-		Author:    []string{status.Account.Username, status.Account.Acct, status.Account.DisplayName},
-		Target: &metadata.Post{
-			CreatedAt:      status.Reblog.CreatedAt.Format(time.RFC3339),
-			Author:         []string{status.Reblog.Account.Username, status.Reblog.Account.Acct, status.Reblog.Account.DisplayName},
-			Title:          status.Reblog.SpoilerText,
-			Body:           status.Reblog.Content,
-			Media:          []metadata.Media{{Address: status.Reblog.Account.Avatar, MimeType: "image/png"}},
-			TypeOnPlatform: []string{"post"},
-		},
+		CreatedAt:      status.CreatedAt.Format(time.RFC3339),
+		Author:         []string{status.Account.Username, status.Account.Acct, status.Account.DisplayName},
+		Target:         target,
 		Media:          []metadata.Media{{Address: status.Account.Avatar, MimeType: "image/png"}},
 		TypeOnPlatform: []string{"share"},
 	}
+
+	s.buildPostAttachments(post, status)
 
 	metadataPost, _ := json.Marshal(post)
 
@@ -266,21 +276,27 @@ func (s *Service) buildCommentTransaction(c context.Context, status *mastodon.St
 		return nil
 	}
 
+	targetPost := &metadata.Post{
+		CreatedAt:      target.CreatedAt.Format(time.RFC3339),
+		Author:         []string{target.Account.Username, target.Account.Acct, target.Account.DisplayName},
+		Title:          target.SpoilerText,
+		Body:           target.Content,
+		Media:          []metadata.Media{{Address: target.Account.Avatar, MimeType: "image/png"}},
+		TypeOnPlatform: []string{"post"},
+	}
+
+	s.buildPostAttachments(targetPost, target)
+
 	post := &metadata.Post{
-		CreatedAt: status.CreatedAt.Format(time.RFC3339),
-		Author:    []string{status.Account.Username, status.Account.Acct, status.Account.DisplayName},
-		Target: &metadata.Post{
-			CreatedAt:      target.CreatedAt.Format(time.RFC3339),
-			Author:         []string{target.Account.Username, target.Account.Acct, target.Account.DisplayName},
-			Title:          target.SpoilerText,
-			Body:           target.Content,
-			Media:          []metadata.Media{{Address: target.Account.Avatar, MimeType: "image/png"}},
-			TypeOnPlatform: []string{"post"},
-		},
+		CreatedAt:      status.CreatedAt.Format(time.RFC3339),
+		Author:         []string{status.Account.Username, status.Account.Acct, status.Account.DisplayName},
+		Target:         targetPost,
 		Body:           status.Content,
 		Media:          []metadata.Media{{Address: status.Account.Avatar, MimeType: "image/png"}},
 		TypeOnPlatform: []string{"comment"},
 	}
+
+	s.buildPostAttachments(post, status)
 
 	metadataPost, _ := json.Marshal(post)
 
@@ -310,7 +326,40 @@ func (s *Service) buildCommentTransaction(c context.Context, status *mastodon.St
 	return transaction
 }
 
+func (s *Service) buildPostAttachments(post *metadata.Post, status *mastodon.Status) {
+	var locker sync.Mutex
+
+	opt := lop.NewOption().WithConcurrency(10)
+
+	lop.ForEach(status.MediaAttachments, func(item mastodon.Attachment, i int) {
+		attachment := item
+		mimeType, err := detectMimeType(attachment.URL)
+		if err != nil {
+			loggerx.Global().Warn("detect mime type error", zap.String("url", attachment.URL), zap.Error(err))
+			return
+		}
+
+		locker.Lock()
+		post.Media = append(post.Media, metadata.Media{Address: attachment.URL, MimeType: mimeType})
+		locker.Unlock()
+	}, opt)
+}
+
 func isMastodonUsername(username string) bool {
 	re := regexp.MustCompile(`^[a-zA-Z0-9_]{1,30}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	return re.MatchString(username)
+}
+
+func detectMimeType(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("http request error %w", err)
+	}
+	defer resp.Body.Close()
+	mimeType, err := mimetype.DetectReader(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("detect mime type error %w", err)
+	}
+
+	return mimeType.String(), nil
 }

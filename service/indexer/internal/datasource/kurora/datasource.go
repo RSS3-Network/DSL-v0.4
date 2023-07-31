@@ -56,7 +56,7 @@ func (d *Datasource) Handle(ctx context.Context, message *protocol.Message) (tra
 
 	// Increase index by timestamp and block number
 	if !message.Timestamp.IsZero() {
-		ethereumReceiptQuery.TimestampFrom = lo.ToPtr(message.Timestamp)
+		ethereumReceiptQuery.TimestampTo = lo.ToPtr(message.Timestamp)
 	}
 
 	if message.BlockNumber > 0 {
