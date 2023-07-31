@@ -34,7 +34,7 @@ func (s *service) Networks() []string {
 		protocol.NetworkCelo,              // source: kurora
 		protocol.NetworkBinanceSmartChain, // source: moralis
 		protocol.NetworkEthereum,          // source: ethereum
-		protocol.NetworkBaseGoerli,        // source: base goerli
+		protocol.NetworkBase,              // source: base
 	}
 }
 

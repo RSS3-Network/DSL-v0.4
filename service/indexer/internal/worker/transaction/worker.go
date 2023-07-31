@@ -70,7 +70,7 @@ func (s *service) Networks() []string {
 		protocol.NetworkAvalanche,
 		protocol.NetworkCelo,
 		protocol.NetworkFantom,
-		protocol.NetworkBaseGoerli,
+		protocol.NetworkBase,
 	}
 }
 

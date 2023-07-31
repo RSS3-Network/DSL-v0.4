@@ -39,7 +39,7 @@ func (d *Datasource) Networks() []string {
 		protocol.NetworkAvalanche,
 		protocol.NetworkFantom,
 		protocol.NetworkCelo,
-		protocol.NetworkBaseGoerli,
+		protocol.NetworkBase,
 	}
 }
 

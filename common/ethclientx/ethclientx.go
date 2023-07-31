@@ -6,10 +6,8 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/naturalselectionlabs/kurora/common/client/ethereum"
 	configx "github.com/naturalselectionlabs/pregod/common/config"
-	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
 
 var (
@@ -81,32 +79,14 @@ func Dial(config *configx.RPC, networks []string) (ethereumClientMap map[string]
 		}
 
 		// Ethereum standard client
-		if network == protocol.NetworkBaseGoerli {
-			rpcClient, err := rpc.DialOptions(context.Background(), config.BaseGoerli.Host, rpc.WithHeader("Authorization", fmt.Sprintf("Bearer %s", config.BaseGoerli.AuthToken)))
-			if err != nil {
-				return nil, fmt.Errorf("failed to dial base goerli network client, err: %w", err)
-			}
-
-			ethereumClientMap[network] = ethclient.NewClient(rpcClient)
-		} else {
-			if ethereumClientMap[network], err = ethclient.Dial(globalEthereumUrlMap[network]); err != nil {
-				return nil, fmt.Errorf("failed to dial %s %s: %w", network, globalEthereumUrlMap[network], err)
-			}
+		if ethereumClientMap[network], err = ethclient.Dial(globalEthereumUrlMap[network]); err != nil {
+			return nil, fmt.Errorf("failed to dial %s %s: %w", network, globalEthereumUrlMap[network], err)
 		}
 
 		// Register global ethereum client
 		registerGlobal := func() error {
 			globalLocker.Lock()
 			defer globalLocker.Unlock()
-
-			if network == protocol.NetworkBaseGoerli {
-				globalEthereumXClientMap[network], err = ethereum.Dial(context.TODO(), config.BaseGoerli.Host,
-					rpc.WithHeader("Authorization", fmt.Sprintf("Bearer %s", config.BaseGoerli.AuthToken)))
-				if err != nil {
-					return fmt.Errorf("dial %s: %w", network, err)
-				}
-				return nil
-			}
 
 			// No transaction verification client
 			if globalEthereumXClientMap[network], err = ethereum.Dial(context.TODO(), globalEthereumUrlMap[network]); err != nil {

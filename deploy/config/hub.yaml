@@ -78,15 +78,15 @@ rpc:
     celo:
       http: ''
       websocket: ''
+    base:
+      http: ''
+      websocket: ''
   alchemy:
     ethereum: ''
     polygon: ''
   pregod_etl:
     polygon:
       http: ''
-  base_goerli:
-    host: ''
-    auth_token: ''
   ipfs:
     io: ''
     internal: ''

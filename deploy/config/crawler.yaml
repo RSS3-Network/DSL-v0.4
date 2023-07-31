@@ -44,9 +44,9 @@ rpc:
     crossbell:
       http: ''
       websocket: ''
-  base_goerli:
-    host: ''
-    auth_token: ''
+    base:
+      http: ''
+      websocket: ''
   pregod_etl:
     polygon:
       http: ''
