@@ -44,6 +44,9 @@ rpc:
     crossbell:
       http: ''
       websocket: ''
+    base:
+      http: ''
+      websocket: ''
   pregod_etl:
     polygon:
       http: ''
