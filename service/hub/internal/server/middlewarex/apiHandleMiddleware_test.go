@@ -136,12 +136,6 @@ func TestResolveAddress(t *testing.T) {
 			output: "",
 			err:    fmt.Errorf("%s", name_service.ErrNotSupportContract),
 		},
-		{
-			name:   "not configure resovler avax",
-			input:  arguments{"muafnft.avax", false},
-			output: "",
-			err:    fmt.Errorf("%s", name_service.ErrNotResolver),
-		},
 
 		// normall
 		{

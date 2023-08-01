@@ -170,6 +170,7 @@ type RPCNetwork struct {
 	Avalanche         *RPCEndpoint `mapstructure:"avalanche"`
 	Celo              *RPCEndpoint `mapstructure:"celo"`
 	Fantom            *RPCEndpoint `mapstructure:"fantom"`
+	Base              *RPCEndpoint `mapstructure:"base"`
 }
 
 type Sound struct {
@@ -188,6 +189,7 @@ func (r RPCNetwork) network2EP() map[string]*RPCEndpoint {
 		protocol.NetworkAvalanche:         r.Avalanche,
 		protocol.NetworkCelo:              r.Celo,
 		protocol.NetworkFantom:            r.Fantom,
+		protocol.NetworkBase:              r.Base,
 	}
 }
 

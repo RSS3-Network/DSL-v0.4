@@ -102,6 +102,7 @@ func Test_service_Networks(t *testing.T) {
 				protocol.NetworkAvalanche,
 				protocol.NetworkCelo,
 				protocol.NetworkFantom,
+				protocol.NetworkBase,
 			},
 		},
 	}

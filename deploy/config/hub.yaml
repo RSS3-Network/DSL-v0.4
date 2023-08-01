@@ -78,6 +78,9 @@ rpc:
     celo:
       http: ''
       websocket: ''
+    base:
+      http: ''
+      websocket: ''
   alchemy:
     ethereum: ''
     polygon: ''
