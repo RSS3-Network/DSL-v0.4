@@ -36,10 +36,9 @@ func BatchGetSocialTransactions(ctx context.Context, request model.BatchGetSocia
 		sql = sql.Where("timestamp < ? OR (timestamp = ? AND index < ?)", lastItem.Timestamp, lastItem.Timestamp, lastItem.Index)
 	}
 
-	sql = sql.Where("tag = ?", "social")
-	if len(request.Type) > 0 {
+	if len(request.Tag) > 0 && len(request.Type) > 0 {
 		// type was already converted to lowercase
-		sql = sql.Where("\"type\" IN ?", request.Type)
+		sql = sql.Where("tag IN ? and \"type\" IN ?", request.Tag, request.Type)
 	}
 
 	if len(request.Network) > 0 {
