@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/NaturalSelectionLabs/jschema"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
-	"github.com/naturalselectionlabs/pregod/pkg/jschema"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/handler"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 )
@@ -116,12 +116,12 @@ func (d *Doc) reqBody(e Endpoint) Obj {
 		}
 	}
 
-	d.schemas.GetSchema(e.Params).Required = required
+	d.schemas.PeakSchema(e.Params).Required = required
 
 	return Obj{
 		"content": Obj{
 			"application/json": Obj{
-				"schema": d.schemas.GetSchema(e.Params),
+				"schema": d.schemas.PeakSchema(e.Params),
 			},
 		},
 		"required": true,
@@ -132,7 +132,7 @@ func (d *Doc) resBody(e Endpoint) Obj {
 	res := d.schemas.Define(e.Result)
 
 	if reflect.TypeOf(e.Result).Kind() == reflect.Slice {
-		res = d.schemas.GetSchema(model.Response{}).Clone()
+		res = d.schemas.PeakSchema(model.Response{}).Clone()
 		res.Properties["result"] = d.schemas.Define(e.Result)
 	}
 

@@ -42,7 +42,7 @@ require (
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	github.com/wealdtech/go-ens/v3 v3.5.5
 	github.com/willf/bloom v2.0.3+incompatible
-	github.com/ysmood/got v0.34.1
+	github.com/ysmood/got v0.34.2
 	go.opentelemetry.io/otel v1.14.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.14.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.14.0
@@ -60,6 +60,7 @@ require (
 )
 
 require (
+	github.com/NaturalSelectionLabs/jschema v0.0.3 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.5 // indirect
