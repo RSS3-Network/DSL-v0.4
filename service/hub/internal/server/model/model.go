@@ -93,6 +93,7 @@ type BatchGetNotesRequest struct {
 
 type BatchGetSocialNotesRequest struct {
 	Address   []string  `json:"address" validate:"required"`
+	Tag       []string  `json:"tag"`
 	Type      []string  `json:"type"`
 	Network   []string  `json:"network"`
 	Platform  []string  `json:"platform"`
