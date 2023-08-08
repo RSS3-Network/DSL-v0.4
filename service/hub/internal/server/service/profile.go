@@ -186,19 +186,8 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 			return nil, err
 		}
 
+		uniqueAddress := make(map[common.Address]bool)
 		for _, profile := range profiles {
-			if profile.Address == ethereum.AddressGenesis {
-				continue
-			}
-			request.Address = profile.Address.String()
-
-			tempRes, err := s.GetKuroraAddress(c, request)
-			if err != nil {
-				return nil, err
-			}
-
-			result = append(result, tempRes...)
-
 			if profile.ReverseAddress != profile.Address {
 				var expiredAt *time.Time
 				if !profile.ExpiredAt.IsZero() {
@@ -218,6 +207,22 @@ func (s *Service) GetKuroraProfiles(c context.Context, request model.GetRequest)
 					SocialUris:  profile.SocialUris,
 					Source:      profile.Platform,
 				})
+			}
+
+			if _, ok := uniqueAddress[profile.Address]; !ok {
+				uniqueAddress[profile.Address] = true
+
+				if profile.Address == ethereum.AddressGenesis {
+					continue
+				}
+				request.Address = profile.Address.String()
+
+				tempRes, err := s.GetKuroraAddress(c, request)
+				if err != nil {
+					return nil, err
+				}
+
+				result = append(result, tempRes...)
 			}
 		}
 	}
