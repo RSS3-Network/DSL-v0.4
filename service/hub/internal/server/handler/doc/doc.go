@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/NaturalSelectionLabs/jschema"
 	"github.com/labstack/echo/v4"
-	"github.com/naturalselectionlabs/pregod/pkg/jschema"
 )
 
 type Doc struct {

@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/NaturalSelectionLabs/jschema"
 	dbModel "github.com/naturalselectionlabs/pregod/common/database/model"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/types"
-	"github.com/naturalselectionlabs/pregod/pkg/jschema"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"github.com/shopspring/decimal"
 )
@@ -52,9 +52,9 @@ func (d *Doc) DefineTransfer() {
 	type TransferTypes struct{}
 	ts := d.schemas.Const(types.TransferTypes)
 	d.schemas.SetSchema(TransferTypes{}, ts)
-	d.schemas.GetSchema(TransferTypes{}).Description = `The name field on items of actions are the possible values of action field on metadata field.`
+	d.schemas.PeakSchema(TransferTypes{}).Description = `The name field on items of actions are the possible values of action field on metadata field.`
 
-	s := d.schemas.GetSchema(dbModel.Transfer{})
+	s := d.schemas.PeakSchema(dbModel.Transfer{})
 
 	anyOf := []*jschema.Schema{}
 
