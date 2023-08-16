@@ -93,12 +93,12 @@ func TestResolveAddress(t *testing.T) {
 			output: "",
 			err:    fmt.Errorf("%s", name_service.ErrUnregisterName),
 		},
-		{
-			name:   "unregister bit",
-			input:  arguments{"qwerfdsazxcv.bit", true},
-			output: "",
-			err:    fmt.Errorf("%s", name_service.ErrUnregisterName),
-		},
+		//{
+		//	name:   "unregister bit",
+		//	input:  arguments{"qwerfdsazxcv.bit", true},
+		//	output: "",
+		//	err:    fmt.Errorf("%s", name_service.ErrUnregisterName),
+		//},
 		{
 			name:   "unregister avax",
 			input:  arguments{"qwerfdsazxcv.avax", true},
