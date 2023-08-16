@@ -80,7 +80,7 @@ func (s *service) Run() error {
 			}
 		}
 
-		zap.L().Debug("build transactions", zap.String("cursor", lo.FromPtr(query.Cursor)))
+		zap.L().Info("mirror build transactions", zap.String("cursor", lo.FromPtr(query.Cursor)))
 
 		// Fetch the mirror entries and then build them as transactions
 		transactions, err := s.buildTransactions(ctx, query)
@@ -148,9 +148,21 @@ func (s *service) buildTransactions(ctx context.Context, query kurora.DatasetMir
 		}
 
 		filterType := filter.SocialPost
+		if entry.OriginContentDigital != "" {
+			firstMirror, err := s.kuroraClient.FetchDatasetMirrorEntries(ctx, kurora.DatasetMirrorEntryQuery{
+				OriginContentDigital: lo.ToPtr(entry.OriginContentDigital),
+				Order:                lo.ToPtr("asc"),
+				Limit:                lo.ToPtr(1),
+			})
+			if err != nil {
+				zap.L().Error("fetch first mirror entry", zap.Error(err))
 
-		if entry.ContentDigital != entry.OriginContentDigital {
-			filterType = filter.SocialRevise
+				continue
+			}
+
+			if len(firstMirror) > 0 && entry.TransactionID != firstMirror[0].TransactionID {
+				filterType = filter.SocialRevise
+			}
 		}
 
 		transaction := model.Transaction{
