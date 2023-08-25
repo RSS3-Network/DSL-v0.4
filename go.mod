@@ -30,8 +30,8 @@ require (
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-mastodon v0.0.6
-	github.com/naturalselectionlabs/kurora v0.59.0
-	github.com/naturalselectionlabs/kurora/client v0.0.0-20230816091615-85b927fdf31d
+	github.com/naturalselectionlabs/kurora v0.60.0
+	github.com/naturalselectionlabs/kurora/client v0.0.0-20230825093104-131c525b47d5
 	github.com/rabbitmq/amqp091-go v1.6.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/samber/lo v1.38.1
@@ -64,6 +64,7 @@ require (
 
 require (
 	github.com/bits-and-blooms/bitset v1.7.0 // indirect
+	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.2 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.10.0 // indirect
 	github.com/crate-crypto/go-kzg-4844 v0.3.0 // indirect

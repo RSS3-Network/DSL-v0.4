@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gabriel-vasile/mimetype"
 	kurora "github.com/naturalselectionlabs/kurora/client"
 	"github.com/naturalselectionlabs/pregod/common/cache"
 	"github.com/naturalselectionlabs/pregod/common/database"
@@ -22,7 +23,7 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/config"
 	"github.com/naturalselectionlabs/pregod/service/crawler/internal/crawler"
 	"github.com/samber/lo"
-
+	lop "github.com/samber/lo/parallel"
 	"go.uber.org/zap"
 )
 
@@ -121,6 +122,7 @@ func (s *service) GetKuroraCasts(ctx context.Context) ([]*model.Transaction, str
 			AuthorDisplayname:    rawCast.AuthorDisplayname,
 			AuthorPfpUrl:         rawCast.AuthorPfpUrl,
 			Text:                 rawCast.Text,
+			Media:                rawCast.Media,
 			PublishedAt:          rawCast.PublishedAt,
 			RepliesCount:         rawCast.RepliesCount,
 			ReactionsCount:       rawCast.ReactionsCount,
@@ -183,6 +185,10 @@ func (s *service) buildTransactions(ctx context.Context, cast Cast) ([]*model.Tr
 		Author:         []string{cast.AuthorUsername, strings.ToLower(user.Address.String())},
 		Body:           cast.Text,
 		TypeOnPlatform: []string{"cast"},
+	}
+
+	if len(cast.Media) > 0 {
+		s.buildPostAttachments(post, cast.Media)
 	}
 
 	if cast.Hash == cast.ThreadHash {
@@ -280,6 +286,10 @@ func (s *service) buildTransactions(ctx context.Context, cast Cast) ([]*model.Tr
 			TypeOnPlatform: []string{"cast"},
 		}
 
+		if len(target.Media) > 0 {
+			s.buildPostAttachments(post.Target, target.Media)
+		}
+
 		metadataPost, _ := json.Marshal(post)
 
 		for _, evmAddress := range user.SignerAddresses {
@@ -317,4 +327,37 @@ func (s *service) buildTransactions(ctx context.Context, cast Cast) ([]*model.Tr
 	}
 
 	return internalTransactions, nil
+}
+
+func (s *service) buildPostAttachments(post *metadata.Post, embeds []string) {
+	var locker sync.Mutex
+
+	opt := lop.NewOption().WithConcurrency(10)
+
+	lop.ForEach(embeds, func(embed string, i int) {
+		address := embed
+		mimeType, err := detectMimeType(embed)
+		if err != nil {
+			loggerx.Global().Warn("detect mime type error", zap.String("url", address), zap.Error(err))
+			return
+		}
+
+		locker.Lock()
+		post.Media = append(post.Media, metadata.Media{Address: address, MimeType: mimeType})
+		locker.Unlock()
+	}, opt)
+}
+
+func detectMimeType(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("http request error %w", err)
+	}
+	defer resp.Body.Close()
+	mimeType, err := mimetype.DetectReader(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("detect mime type error %w", err)
+	}
+
+	return mimeType.String(), nil
 }
