@@ -15,6 +15,7 @@ type Cast struct {
 	AuthorDisplayname    string
 	AuthorPfpUrl         string
 	Text                 string
+	Media                []string
 	PublishedAt          time.Time
 	RepliesCount         int64
 	ReactionsCount       int64
