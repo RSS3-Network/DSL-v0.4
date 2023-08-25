@@ -3,6 +3,7 @@ package snapshot_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/worker/snapshot"
 	"github.com/naturalselectionlabs/pregod/common/worker/snapshot/graphql"
@@ -61,7 +62,7 @@ func TestGetMultipleVotes(t *testing.T) {
 		OrderDirection: snapshot.OrderDirectionAsc,
 		Where: graphqlx.VoteWhere{
 			// Proposal:   graphql.String("QmPvbwguLfcVryzBRrbY4Pb9bCtxURagdv1XjhtFLf3wHj"),
-			CreatedGte: graphql.Int(1669766184),
+			CreatedGte: graphql.Int(time.Now().Unix()),
 		},
 	}
 
