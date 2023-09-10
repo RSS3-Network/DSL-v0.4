@@ -90,6 +90,7 @@ func (s *service) handleEthereum(ctx context.Context, message *protocol.Message,
 		transaction.Tag, transaction.Type = filter.UpdateTagAndType(filter.TagCollectible, transaction.Tag, filter.CollectibleTrade, transaction.Type)
 
 		transaction.Owner = transaction.AddressFrom
+		transaction.Platform = s.Name()
 
 		mu.Lock()
 		internalTransactionMap[transaction.Hash] = transaction
