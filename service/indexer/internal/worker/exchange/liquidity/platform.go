@@ -77,6 +77,7 @@ var (
 		common.HexToAddress("0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"): platformAAVEV2, // AAVE Lending Pool V2
 		common.HexToAddress("0x9BdB5fcc80A49640c7872ac089Cc0e00A98451B6"): platformAAVEV3, // AAVE WETH Gateway V3 Polygon
 		common.HexToAddress("0x794a61358D6845594F94dc1DB02A252b5b4814aD"): platformAAVEV3, // AAVE Pool V3
+		common.HexToAddress("0xA238Dd80C259a72e81d7e4664a9801593F98d1c5"): platformAAVEV3, // AAVE Pool V3 Base
 		// Curve
 		common.HexToAddress("0x1d8b86e3D88cDb2d34688e87E72F388Cb541B7C8"): platformCurve, // Curve Polygon ATriCrypto3 Zap
 		// Lido

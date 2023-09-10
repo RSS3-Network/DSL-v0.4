@@ -17,6 +17,7 @@ var (
 	AddressUniversalRouterCelo     = common.HexToAddress("0xC73d61d192FB994157168Fb56730FdEc64C9Cb8F")
 	AddressUniversalRouterOptimism = common.HexToAddress("0xb555edF5dcF85f42cEeF1f3630a52A108E55A654")
 	AddressUniversalRouterPolygon  = common.HexToAddress("0x4C60051384bd2d3C01bfc845Cf5F4b44bcbE9de5")
+	AddressUniversalRouterBase     = common.HexToAddress("0x198EF79F1F515F02dFE9e3115eD9fC07183f02fC")
 
 	EventHashTransfer            = common.BytesToHash(crypto.Keccak256([]byte("Transfer(address,address,uint256)")))
 	EventHashSwapV2              = common.BytesToHash(crypto.Keccak256([]byte("Swap(address,uint256,uint256,uint256,uint256,address)")))

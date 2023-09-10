@@ -763,7 +763,7 @@ func Test_service_Handle(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		// There is currently no way to address the issue of dApp handling fees and native token transfer events.
-		//{
+		// {
 		//	name: "curve swap of aave pool",
 		//	fields: fields{
 		//		employer: shedlock.New(),
@@ -804,7 +804,7 @@ func Test_service_Handle(t *testing.T) {
 		//		return false
 		//	},
 		//	wantErr: assert.NoError,
-		//},
+		// },
 		{
 			name: "paraswap of curve pool",
 			fields: fields{
@@ -1019,6 +1019,50 @@ func Test_service_Handle(t *testing.T) {
 					assert.Equal(t, swap.TokenTo.Symbol, "COLLAB")
 
 					assert.Equal(t, transaction.Platform, protocol.PlatformZerion)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Swap ETH for WETH at Uniswap on Base",
+			fields: fields{
+				employer: shedlock.New(),
+			},
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0x4802c2c5dae6252e7b3e4b619bbde55e956b2cfd", // Unknown
+					Network: protocol.NetworkBase,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://basescan.org/tx/0x0476148000a8ecaaef7b9d857c236de5c3afc0f4d237cbd541e8fd38d65a3412
+						Hash:        "0x0476148000a8ecaaef7b9d857c236de5c3afc0f4d237cbd541e8fd38d65a3412",
+						BlockNumber: 3782400,
+						Network:     protocol.NetworkBase,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				assert.Equal(t, len(transactions), 1)
+
+				for _, transaction := range transactions {
+					assert.Equal(t, len(transaction.Transfers), 1)
+
+					var swap metadata.Swap
+					assert.NoError(t, json.Unmarshal(transaction.Transfers[0].Metadata, &swap))
+
+					assert.Equal(t, swap.TokenFrom.Symbol, "WETH")
+					assert.Equal(t, swap.TokenTo.Symbol, "USDbC")
+
+					assert.Equal(t, transaction.Platform, protocol.PlatformUniswap)
 				}
 
 				return false
