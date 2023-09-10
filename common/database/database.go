@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/naturalselectionlabs/pregod/common/database/model"
+	"github.com/naturalselectionlabs/pregod/common/database/model/collectibe"
 	"github.com/naturalselectionlabs/pregod/common/database/model/exchange"
 	"github.com/naturalselectionlabs/pregod/common/database/model/governance"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
@@ -34,6 +35,7 @@ var tables = []any{
 	&model.Domain{},
 	&model.APIKey{},
 	&model.Address{},
+	&collectibe.FriendTech{},
 }
 
 var (
