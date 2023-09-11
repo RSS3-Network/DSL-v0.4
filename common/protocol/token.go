@@ -7,5 +7,5 @@ const (
 	TokenStandardERC20           = "ERC-20"
 	TokenStandardERC721          = "ERC-721"
 	TokenStandardERC1155         = "ERC-1155"
-	TokenStandardFriendTechShare = "Friend.Tech-Shares"
+	TokenStandardFriendTechShare = "Friend.tech-Shares"
 )
