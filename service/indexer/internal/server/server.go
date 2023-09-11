@@ -36,11 +36,11 @@ import (
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/conflux"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/eip1577"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora"
-
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/ethereum"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/lens"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/kurora/mirror"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/moralis"
+	"github.com/naturalselectionlabs/pregod/service/indexer/internal/worker/collectible/friendtech"
 
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource/zksync"
 	"github.com/naturalselectionlabs/pregod/service/indexer/internal/datasource_asset"
@@ -221,6 +221,7 @@ func (s *Server) Initialize() (err error) {
 		name_service.New(),
 		transaction.New(),
 		metaverse.New(),
+		friendtech.New(),
 	}
 
 	s.employer = shedlock.New()

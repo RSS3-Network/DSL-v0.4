@@ -77,6 +77,7 @@ const (
 	PlatformFoundation     = "Foundation"
 	PlatformZerion         = "Zerion"
 	PlatformBendDAO        = "BendDAO"
+	PlatformFriendTech     = "friend.tech"
 
 	// metaverse
 	PlatformMars4      = "Mars4"
@@ -120,6 +121,7 @@ var PlatformList = map[string][]string{
 		PlatformNouns,
 		PlatformFoundation,
 		PlatformLink3,
+		PlatformFriendTech,
 	},
 	filter.TagDonation: {
 		PlatformGitcoin,

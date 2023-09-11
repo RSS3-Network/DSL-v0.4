@@ -53,6 +53,7 @@ func (i *internal) Networks() []string {
 		protocol.NetworkXDAI,
 		protocol.NetworkCelo,
 		protocol.NetworkFantom,
+		protocol.NetworkBase,
 	}
 }
 

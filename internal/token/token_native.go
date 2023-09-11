@@ -76,6 +76,12 @@ var nativeMap = map[string]Native{
 		Decimals: 18,
 		Logo:     "https://assets.coingecko.com/coins/images/11090/large/icon-celo-CELO-color-500.png",
 	},
+	protocol.NetworkBase: {
+		Name:     "Ethereum", // https://www.coingecko.com/en/coins/ethereum
+		Symbol:   "ETH",
+		Decimals: 18,
+		Logo:     "https://assets.coingecko.com/coins/images/279/large/ethereum.png",
+	},
 }
 
 func (c *Client) Native(context context.Context, network string) (*Native, error) {

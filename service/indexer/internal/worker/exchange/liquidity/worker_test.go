@@ -214,6 +214,37 @@ func Test_worker_Handle(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+		{
+			name: "Supply USDbC at AAVE Pool V3 on Base",
+			arguments: arguments{
+				ctx: context.Background(),
+				message: &protocol.Message{
+					Address: "0xd9d187a8126f5f9808f8d05c28db8311ec3f7078", // Unknown
+					Network: protocol.NetworkBase,
+				},
+				transactions: []model.Transaction{
+					{
+						// https://basescan.org/tx/0xfccf602f6bdd6065cf396cc969d58a3eae69a702d2a9216fb243620fdbe8c773
+						Hash:        "0xfccf602f6bdd6065cf396cc969d58a3eae69a702d2a9216fb243620fdbe8c773",
+						BlockNumber: 3779647,
+						Network:     protocol.NetworkBase,
+					},
+				},
+			},
+			want: func(t assert.TestingT, i interface{}, i2 ...interface{}) bool {
+				transactions, ok := i.([]model.Transaction)
+				if !ok {
+					return false
+				}
+
+				for _, transaction := range transactions {
+					assert.Equal(t, transaction.Platform, protocol.PlatformAAVE)
+				}
+
+				return false
+			},
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, testcase := range testcases {

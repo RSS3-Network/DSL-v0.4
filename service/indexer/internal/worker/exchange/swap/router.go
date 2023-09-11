@@ -171,6 +171,7 @@ var (
 		strings.ToLower(uniswap.AddressUniversalRouterCelo.String()):     routerUniswapV3, // Celo
 		strings.ToLower(uniswap.AddressUniversalRouterOptimism.String()): routerUniswapV3, // Optimism
 		strings.ToLower(uniswap.AddressUniversalRouterPolygon.String()):  routerUniswapV3, // Polygon
+		strings.ToLower(uniswap.AddressUniversalRouterBase.String()):     routerUniswapV3, // Base
 		// SushiSwap
 		// https://docs.sushi.com/docs/Developers/Deployment%20Addresses
 		strings.ToLower("0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F"): routerSushiSwap, // SushiSwap Ethereum
