@@ -57,7 +57,7 @@ func (c *Client) GetUserMetaByID(ctx context.Context, id int64) (*UserResponse, 
 
 func NewClient() *Client {
 	return &Client{
-		restyClient: resty.New().SetRetryCount(10).SetRetryAfter(func(c *resty.Client, r *resty.Response) (time.Duration, error) {
+		restyClient: resty.New().SetRetryCount(10).SetTimeout(time.Second * 3).SetRetryAfter(func(c *resty.Client, r *resty.Response) (time.Duration, error) {
 			loggerx.Global().Warn("retry request friend.tech public api", zap.String("url", r.String()))
 			return time.Millisecond * 500, nil
 		}),
