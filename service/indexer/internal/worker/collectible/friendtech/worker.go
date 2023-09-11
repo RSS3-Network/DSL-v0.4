@@ -202,7 +202,7 @@ func (s *service) buildEthereumTransfer(ctx context.Context, message *protocol.M
 		ContractAddress: user.Address,
 		Collection:      "friend.tech: Shares",
 		Image:           user.TwitterPfpURL,
-		Standard:        protocol.TokenStandardERC1155,
+		Standard:        protocol.TokenStandardFriendTechShare,
 		Value:           lo.ToPtr(decimal.NewFromBigInt(event.ShareAmount, 0)),
 		ValueDisplay:    lo.ToPtr(decimal.NewFromBigInt(event.ShareAmount, 0)),
 		Cost: &metadata.Token{
