@@ -66,10 +66,20 @@ func (job *Job) fetchFriendTechUser(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	user, err := job.client.GetUserMetaByID(ctx, id+1)
+	var (
+		user *friendtechClient.UserResponse
+		flag = true
+	)
+	for ; flag; id++ {
+		user, err = job.client.GetUserMetaByID(ctx, id+1)
 
-	if err != nil || user == nil {
-		return false, err
+		if err != nil {
+			return false, err
+		}
+
+		if user.ID != -1 {
+			flag = false
+		}
 	}
 
 	err = job.setItemToDB(ctx, *user)
