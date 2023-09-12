@@ -10,3 +10,7 @@ type UserResponse struct {
 	ShareSupply     int    `json:"shareSupply"`
 	DisplayPrice    string `json:"displayPrice"`
 }
+
+type MessageResponse struct {
+	Message string `json:"message"`
+}

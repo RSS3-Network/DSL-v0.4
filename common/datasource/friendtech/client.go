@@ -2,6 +2,7 @@ package friendtech
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 	"time"
 
@@ -40,7 +41,7 @@ func (c *Client) GetUserMeta(ctx context.Context, address string) (*UserResponse
 func (c *Client) GetUserMetaByID(ctx context.Context, id int64) (*UserResponse, error) {
 	var result UserResponse
 
-	_, err := c.restyClient.R().SetPathParams(
+	r, err := c.restyClient.R().SetPathParams(
 		map[string]string{
 			"id": strconv.FormatInt(id, 10),
 		},
@@ -49,9 +50,14 @@ func (c *Client) GetUserMetaByID(ctx context.Context, id int64) (*UserResponse, 
 		return nil, err
 	}
 
-	if result.TwitterUserID == "" && result.Address == "" {
-		return nil, nil
+	if r.RawResponse.StatusCode != 200 {
+		var message MessageResponse
+		_ = json.Unmarshal(r.Body(), &message)
+		if message.Message == "Address/User not found." {
+			result.ID = -1
+		}
 	}
+
 	return &result, nil
 }
 
