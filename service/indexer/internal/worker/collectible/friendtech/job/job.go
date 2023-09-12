@@ -73,7 +73,7 @@ func (job *Job) fetchFriendTechUser(ctx context.Context) (bool, error) {
 	for ; flag; id++ {
 		user, err = job.client.GetUserMetaByID(ctx, id+1)
 
-		if err != nil {
+		if err != nil || user.ID == 0 {
 			return false, err
 		}
 
