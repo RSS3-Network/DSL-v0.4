@@ -18,6 +18,7 @@ const (
 	PlatformLensLenstube         = "Lenstube"
 	PlatformLensLenstubeBytes    = "lenstube-bytes"
 	PlatformLensLensterCrowdfund = "Lenster Crowdfund"
+	PlatformLensButtrfly         = "Buttrfly"
 
 	PlatformMatters = "Matters"
 	PlatformRara    = "RARA"

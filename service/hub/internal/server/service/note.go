@@ -14,9 +14,11 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/types"
+	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/dao"
 	"github.com/naturalselectionlabs/pregod/service/hub/internal/server/model"
 	"github.com/samber/lo"
+	"github.com/tidwall/gjson"
 )
 
 func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbModel.Transaction, int64, error) {
@@ -45,6 +47,19 @@ func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbM
 
 	transferMap := make(map[string][]dbModel.Transfer)
 	for _, transfer := range transfers {
+		if utils.SupportLensPlatform[strings.ToLower(transfer.Platform)] {
+			metadata := gjson.ParseBytes(transfer.Metadata)
+			profileID := metadata.Get("profile_id").Int()
+			publicationID := metadata.Get("publication_id").Int()
+
+			if profileID > 0 && publicationID > 0 {
+				lensterURL := utils.GetLensRelatedURL(big.NewInt(profileID), big.NewInt(publicationID))
+				transfer.RelatedUrls = append(transfer.RelatedUrls, lensterURL)
+			}
+		}
+
+		transfer.RelatedUrls = lo.Uniq(transfer.RelatedUrls)
+
 		if len(transferMap[transfer.TransactionHash]) < request.ActionLimit {
 			transferMap[transfer.TransactionHash] = append(transferMap[transfer.TransactionHash], transfer)
 		}

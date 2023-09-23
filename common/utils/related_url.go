@@ -2,6 +2,9 @@ package utils
 
 import (
 	"fmt"
+	kurora "github.com/naturalselectionlabs/kurora/common/contract/lens"
+	"math/big"
+	"strings"
 
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 )
@@ -26,4 +29,17 @@ func GetTxHashURL(network string, transactionHash string) string {
 	default:
 		return ""
 	}
+}
+func GetLensRelatedURL(profileId *big.Int, pubId *big.Int) string {
+	return fmt.Sprintf("https://lenster.xyz/posts/%v-%v", kurora.EncodeID(profileId), kurora.EncodeID(pubId))
+}
+
+var SupportLensPlatform = map[string]bool{
+	strings.ToLower(protocol.PlatformLens):                 true,
+	strings.ToLower(protocol.PlatformLensOrb):              true,
+	strings.ToLower(protocol.PlatformLensLenster):          true,
+	strings.ToLower(protocol.PlatformLensLenstube):         true,
+	strings.ToLower(protocol.PlatformLensLenstubeBytes):    true,
+	strings.ToLower(protocol.PlatformLensLensterCrowdfund): true,
+	strings.ToLower(protocol.PlatformLensButtrfly):         true,
 }
