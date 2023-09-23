@@ -47,15 +47,13 @@ func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbM
 
 	transferMap := make(map[string][]dbModel.Transfer)
 	for _, transfer := range transfers {
-		if utils.SupportLensPlatform[strings.ToLower(transfer.Platform)] {
-			metadata := gjson.ParseBytes(transfer.Metadata)
-			profileID := metadata.Get("profile_id").Int()
-			publicationID := metadata.Get("publication_id").Int()
+		metadata := gjson.ParseBytes(transfer.Metadata)
+		profileID := metadata.Get("profile_id").Int()
+		publicationID := metadata.Get("publication_id").Int()
 
-			if profileID > 0 && publicationID > 0 {
-				lensterURL := utils.GetLensRelatedURL(big.NewInt(profileID), big.NewInt(publicationID))
-				transfer.RelatedUrls = append(transfer.RelatedUrls, lensterURL)
-			}
+		if profileID > 0 && publicationID > 0 {
+			lensterURL := utils.GetLensRelatedURL(big.NewInt(profileID), big.NewInt(publicationID))
+			transfer.RelatedUrls = append(transfer.RelatedUrls, lensterURL)
 		}
 
 		transfer.RelatedUrls = lo.Uniq(transfer.RelatedUrls)
