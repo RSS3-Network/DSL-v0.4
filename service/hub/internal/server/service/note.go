@@ -52,8 +52,18 @@ func (s *Service) GetNotes(ctx context.Context, request model.GetRequest) ([]dbM
 		publicationID := metadata.Get("publication_id").Int()
 
 		if profileID > 0 && publicationID > 0 {
-			lensterURL := utils.GetLensRelatedURL(big.NewInt(profileID), big.NewInt(publicationID))
-			transfer.RelatedUrls = append(transfer.RelatedUrls, lensterURL)
+			lensterUrl := utils.GetLensRelatedURL(big.NewInt(profileID), big.NewInt(publicationID))
+
+			for _, url := range transfer.RelatedUrls {
+				if strings.HasPrefix(url, "https://lenster.xyz/posts/") {
+					lensterUrl = ""
+					break
+				}
+			}
+
+			if len(lensterUrl) > 0 {
+				transfer.RelatedUrls = append(transfer.RelatedUrls, lensterUrl)
+			}
 		}
 
 		transfer.RelatedUrls = lo.Uniq(transfer.RelatedUrls)
