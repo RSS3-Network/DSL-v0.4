@@ -9,14 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
-
-	"github.com/naturalselectionlabs/pregod/common/metadata_url"
-	"github.com/samber/lo"
-	"github.com/shopspring/decimal"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	kurora_client "github.com/naturalselectionlabs/kurora/client"
 	kurora "github.com/naturalselectionlabs/kurora/common/contract/lens"
@@ -24,15 +18,19 @@ import (
 	"github.com/naturalselectionlabs/pregod/common/database/model/metadata"
 	"github.com/naturalselectionlabs/pregod/common/database/model/social"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum"
+	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/erc721"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens"
 	"github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 	lenscontract "github.com/naturalselectionlabs/pregod/common/datasource/ethereum/contract/lens/contract"
 	"github.com/naturalselectionlabs/pregod/common/ethclientx"
+	"github.com/naturalselectionlabs/pregod/common/metadata_url"
 	"github.com/naturalselectionlabs/pregod/common/protocol"
 	"github.com/naturalselectionlabs/pregod/common/protocol/filter"
 	"github.com/naturalselectionlabs/pregod/common/utils"
 	"github.com/naturalselectionlabs/pregod/common/utils/loggerx"
 	"github.com/naturalselectionlabs/pregod/common/utils/opentelemetry"
+	"github.com/samber/lo"
+	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -84,6 +82,7 @@ var SupportLensPlatform = map[string]bool{
 	protocol.PlatformLensLenstube:         true,
 	protocol.PlatformLensLenstubeBytes:    true,
 	protocol.PlatformLensLensterCrowdfund: true,
+	protocol.PlatformLensButtrfly:         true,
 }
 
 func (c *Client) GetProfile(profileID *big.Int) (*social.Profile, error) {
