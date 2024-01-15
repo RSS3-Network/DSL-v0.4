@@ -12,9 +12,9 @@
 </p>
 <!-- markdownlint-enable -->
 
-# RSS3 Data Sublayer v0.4
+# RSS3 Data Sublayer v0.9
 
-The RSS3 Data Sublayer (DSL) v0.4 (codename PreGod) was a version that served the RSS3 Network Testnet between late 2021 and mid 2022.
+The RSS3 Data Sublayer (DSL) v0.9 (codename PreGod) was a version that served the RSS3 Network Testnet between late 2021 and mid 2022.
 
 The development and operation of this version provided invaluable practical experience that the RSS3 engineers leveraged for enhancing future iterations.
 
